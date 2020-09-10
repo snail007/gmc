@@ -19,6 +19,7 @@ type GPool struct {
 	workerCnt   int
 }
 
+//create a gpool object to using
 func New(workerCount int) (p *GPool) {
 	cnt := int32(0)
 	ctx0, cancel0 := context.WithCancel(context.Background())
@@ -35,6 +36,7 @@ func New(workerCount int) (p *GPool) {
 	return
 }
 
+//initialize workers to run tasks, a work is a goroutine
 func (s *GPool) init() {
 	go func() {
 		defer func() {
@@ -42,6 +44,7 @@ func (s *GPool) init() {
 				s.log("GPool stopped unexceptedly, err: %s", e)
 			}
 		}()
+		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
 			go func(i int) {
 				defer func() {
@@ -52,18 +55,21 @@ func (s *GPool) init() {
 				// s.log("GPool: worker[%d] started ...", i)
 				ctx, cancle := context.WithCancel(s.ctx)
 				defer cancle()
+				var fn func()
 				for {
 					select {
+					//checking stop is called
 					case <-ctx.Done():
 						// s.log("GPool: worker[%d] stopped.", i)
 						return
 					default:
-						if fn := s.pop(); fn != nil {
+						if fn = s.pop(); fn != nil {
 							atomic.AddInt32(s.runningtCnt, 1)
 							s.run(fn)
 							atomic.AddInt32(s.runningtCnt, -1)
 							fn = nil
 						} else {
+							//no task to run, we sleep a while
 							time.Sleep(time.Second * 3)
 						}
 					}
@@ -73,6 +79,7 @@ func (s *GPool) init() {
 	}()
 }
 
+//run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -81,12 +88,15 @@ func (s *GPool) run(fn func()) {
 	}()
 	fn()
 }
+
+//submit a function as a task ready to run
 func (s *GPool) Submit(task func()) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.tasks = append(s.tasks, task)
 }
 
+//shift an element from array head
 func (s *GPool) pop() (fn func()) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -102,12 +112,18 @@ func (s *GPool) pop() (fn func()) {
 	}
 	return
 }
+
+//stop all workers in the pool
 func (s *GPool) Stop() {
 	s.cancel()
 }
+
+//return the number of running workers
 func (s *GPool) Running() (cnt int32) {
 	return atomic.LoadInt32(s.runningtCnt)
 }
+
+//return the number of task ready to run
 func (s *GPool) Awaiting() (cnt int32) {
 	return int32(len(s.tasks))
 }
@@ -117,6 +133,10 @@ func (s *GPool) log(fmt string, v ...interface{}) {
 	}
 	s.logger.Printf(fmt, v...)
 }
+
+//SetLogger set the logger to logging, you can SetLogger(nil) to disable logging
+//
+//default is log.New(os.Stdout, "", log.LstdFlags),
 func (s *GPool) SetLogger(l *log.Logger) {
 	s.logger = l
 }

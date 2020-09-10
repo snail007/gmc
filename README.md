@@ -7,7 +7,7 @@ this project is undergoing development, will be changed frequently.
 ## Pull Request
 PR is welcomed, but you should keep well code specification, such as : comment, testing, benchmark, example.
 
-a package must be have the fllowing file:   
+A package must be include the fllowing files:   
 
 `xxx` is package name.  
 
@@ -18,7 +18,7 @@ a package must be have the fllowing file:
 | benchmark_test.go | benchmark testing file |
 | README.md | testing and benchmarkresult must be include |
 
-you can reference the package sync/gpool to get more infomation about code specification.
+You can reference the package sync/gpool to get more infomation about code specification.
 
 
  

@@ -9,7 +9,7 @@ package main
 
 func main() {
 	//StartArg will search command line arguments "profiling" , using it's value as store data folder.
-	StartArg("profiling")
+    StartArg("profiling")
     defer Stop()
     //do something, keep long time, such 15 minutes
 }
@@ -22,7 +22,7 @@ package main
 
 func main() {
     //Start will using the argument as store data folder
-	Start("debug")
+    Start("debug")
     defer Stop()
     //do something, keep long time, such 15 minutes
 }

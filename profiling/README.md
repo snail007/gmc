@@ -26,6 +26,8 @@ func main() {
     defer Stop()
     //do something, keep long time, such 15 minutes
 }
+```
+
 start your programe with `./foobar`
 
 cpu.prof, memory.prof, block.prof, goroutine.prof, threadcreate.prof files will be create in debug folder after your program exited.

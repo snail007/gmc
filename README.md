@@ -16,6 +16,7 @@ A package must be include the fllowing files:
 | xxx_test.go | testing file, code coverage must be than 90% |
 | example_test.go  | each public function example code |
 | benchmark_test.go | benchmark testing file |
+| doc.go | description of package |
 | README.md | testing and benchmarkresult must be include |
 
 You can reference the package sync/gpool to get more infomation about code specification.

@@ -11,7 +11,7 @@ a package must be have the fllowing file:
 
 xxx is package name.  
 
-| File ｜Description |
+| File | Description |
 | ---- | ---- |
 | xxx_test.go | testing file, code coverage must be than 90% |
 | example_test.go  | each public function example code |

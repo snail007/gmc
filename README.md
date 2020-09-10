@@ -5,7 +5,7 @@ GMC , full name is golang Mellivora capensis framework. The golang  web framewor
 this project is undergoing development, will be changed frequently.
 
 ## Pull Request
-PR is welcome, but you should keep well code specification, such as : comment, testing, benchmark, example.
+PR is welcomed, but you should keep well code specification, such as : comment, testing, benchmark, example.
 
 a package must be have the fllowing file:   
 

@@ -9,7 +9,7 @@ PR is welcomed, but you should keep well code specification, such as : comment, 
 
 a package must be have the fllowing file:   
 
-xxx is package name.  
+`xxx` is package name.  
 
 | File | Description |
 | ---- | ---- |

@@ -40,7 +40,7 @@ import (
 	"github.com/snail007/gmc/process/daemon"
 )
 
-func Example() {
+func main() {
 	//the code block should be in your main function,and the actual main() change to doMain()
 	if err := daemon.Start(); err != nil {
 		fmt.Println(err)

@@ -8,7 +8,7 @@ profiling package help you do profiling your program in easy way.
 package main
 
 func main() {
-	//StartArg will search command line arguments "profiling" , using it's value as store data folder.
+    //StartArg will search command line arguments "profiling" , using it's value as store data folder.
     StartArg("profiling")
     defer Stop()
     //do something, keep long time, such 15 minutes

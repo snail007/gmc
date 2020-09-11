@@ -12,13 +12,24 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	t.Funcs(map[string]interface{}{
+		"add": add,
+	})
+	// t.Extension(".tpl")
 	err = t.Parse()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	html, err := t.Execute("layout/list.html", map[string]string{
+	html, err := t.Execute("layout/list", map[string]string{
 		"head": "test",
 	})
-	fmt.Println(string(html), err, t)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(html))
+}
+func add(a, b string) string {
+	return a + ">>>" + b
 }

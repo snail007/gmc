@@ -7,6 +7,7 @@ package template
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,12 +16,26 @@ import (
 	gotemplate "text/template"
 )
 
+var (
+	bindata = map[string][]byte{}
+)
+
+func SetBinData(data map[string]string) {
+	bindata = map[string][]byte{}
+	for k, v := range data {
+		b, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			panic("init template bin data fail, error: " + err.Error())
+		}
+		bindata[k] = b
+	}
+}
+
 type Template struct {
-	rootDir  string
-	tpl      *gotemplate.Template
-	bindData map[string][]byte
-	parsed   bool
-	ext      string
+	rootDir string
+	tpl     *gotemplate.Template
+	parsed  bool
+	ext     string
 }
 
 // New create a template object, and config it.
@@ -65,14 +80,6 @@ func (t *Template) String() string {
 	return t.tpl.DefinedTemplates()
 }
 
-// BinData sets view files binary data map to parse.
-// data map key is relative path to rootDir, such as: user/list.html
-// map value is bytes data of the key (view file).
-func (t *Template) BinData(bindData map[string][]byte) *Template {
-	t.bindData = bindData
-	return t
-}
-
 //Extension sets template file extension, default is : .html
 //only files have the extension will be parsed.
 func (t *Template) Extension(ext string) *Template {
@@ -104,7 +111,7 @@ func (t *Template) Parse() (err error) {
 	if t.parsed {
 		return
 	}
-	if len(t.bindData) > 0 {
+	if len(bindata) > 0 {
 		err = t.parseFromBinData()
 	} else {
 		err = t.parseFromDisk()
@@ -113,11 +120,11 @@ func (t *Template) Parse() (err error) {
 		return
 	}
 	t.parsed = true
-	t.bindData = nil
+	bindata = nil
 	return
 }
 func (t *Template) parseFromBinData() (err error) {
-	for k, v := range t.bindData {
+	for k, v := range bindata {
 		html := fmt.Sprintf("{{define \"%s\"}}%s{{end}}", k, string(v))
 		_, err = t.tpl.Parse(html)
 		if err != nil {

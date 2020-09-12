@@ -15,6 +15,7 @@ func TestParse(t *testing.T) {
 	})
 }
 func TestMain(m *testing.M) {
+	tpl.Delims("{{", "}}")
 	tpl.Parse()
 	os.Exit(m.Run())
 }

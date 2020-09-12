@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	template "../../template"
+	template "github.com/snail007/gmc/template"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 	t.Funcs(map[string]interface{}{
 		"add": add,
 	})
-	// t.Extension(".tpl")
+	t.Extension(".html")
 	err = t.Parse()
 	if err != nil {
 		fmt.Println(err)

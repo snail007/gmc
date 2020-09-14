@@ -5,7 +5,9 @@
 
 package fileutil
 
-import "os"
+import (
+	"os"
+)
 
 func ExistsFile(path string) bool {
 	f, err := os.Open(path)

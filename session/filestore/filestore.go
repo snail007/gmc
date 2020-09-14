@@ -54,7 +54,7 @@ func New(config interface{}) (st session.Store, err error) {
 	return
 }
 
-func (s *FileStore) Load(sessionID string) (sess *session.Session, isExits bool) {
+func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool) {
 	f := s.file(sessionID)
 	if !fileutil.ExistsFile(f) {
 		// s.cfg.Logger.Printf("filestore file not found: %s", f)
@@ -76,7 +76,7 @@ func (s *FileStore) Load(sessionID string) (sess *session.Session, isExits bool)
 		sess = nil
 		return
 	}
-	isExits = true
+	isExists = true
 	return
 }
 func (s *FileStore) Save(sess *session.Session) (err error) {

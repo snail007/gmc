@@ -22,7 +22,7 @@ func (this *Controller) Method1() {
 func TestRoute(t *testing.T) {
 	assert := assert.New(t)
 	r := router.NewHttpRouter()
-	r.Route("/user/", new(Controller))
+	r.Controller("/user/", new(Controller))
 	h, args, _ := r.Lookup("GET", "/user/method1")
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	w := httptest.NewRecorder()

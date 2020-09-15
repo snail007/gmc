@@ -25,7 +25,7 @@ func NewHttpRouter() *HttpRouter {
 	}
 	return hr
 }
-func (s *HttpRouter) Route(urlPath string, obj interface{}) {
+func (s *HttpRouter) Controller(urlPath string, obj interface{}) {
 	for _, m := range methods(obj) {
 		path := urlPath + strings.ToLower(m)
 		for _, vv := range shortcutMethods {
@@ -43,6 +43,6 @@ func (s *HttpRouter) Route(urlPath string, obj interface{}) {
 		}
 	}
 }
-func (s *HttpRouter) RouteMethod(urlPath, handler func(http.ResponseWriter, *http.Request)) {
+func (s *HttpRouter) ControllerMethod(urlPath, handler func(http.ResponseWriter, *http.Request)) {
 
 }

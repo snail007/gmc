@@ -1,8 +1,11 @@
 package router
 
 import (
+	"io/ioutil"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/snail007/gmc/router"
 
@@ -14,15 +17,16 @@ type Controller struct {
 }
 
 func (this *Controller) Method1() {
-
+	this.Response.Write([]byte("OKAY"))
 }
 func TestRoute(t *testing.T) {
+	assert := assert.New(t)
 	r := router.NewHttpRouter()
 	r.Route("/user/", new(Controller))
-	h, args, ok := r.Lookup("GET", "/user/method1")
+	h, args, _ := r.Lookup("GET", "/user/method1")
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	w := httptest.NewRecorder()
-	h(w, req, router.Params{})
-	t.Log(h, args, ok)
-	t.Fail()
+	h(w, req, args)
+	body, _ := ioutil.ReadAll(w.Body)
+	assert.Equal("OKAY", string(body))
 }

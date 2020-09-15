@@ -1,8 +1,8 @@
 package router
 
 import (
-	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -27,22 +27,19 @@ func NewHttpRouter() *HttpRouter {
 }
 func (s *HttpRouter) Route(urlPath string, obj interface{}) {
 	for _, m := range methods(obj) {
-
 		path := urlPath + strings.ToLower(m)
-		fmt.Println(m, path)
 		for _, vv := range shortcutMethods {
-			if strings.HasSuffix(vv, "_") {
+			if strings.HasSuffix(vv, "__") {
 				continue
 			}
-			s.HandlerFunc(vv, path, func(w http.ResponseWriter, r *http.Request) {
-				// objv := reflect.ValueOf(obj)
-				objv := obj
-				fmt.Println(">>>>", m, ">>>>", s, ">>>>", w, ">>>>", r)
-				// invoke(objv, "Pre_", s, w, r)
-				invoke(objv, "Pre_", w)
-				invoke(objv, m)
-				invoke(objv, "Post_")
-			})
+			func(httpMethod, objMethod string) {
+				s.Handle(httpMethod, path, func(w http.ResponseWriter, r *http.Request, ps Params) {
+					objv := reflect.ValueOf(obj)
+					invoke(objv, "PreCall__", w, r, ps)
+					invoke(objv, objMethod)
+					invoke(objv, "PostCall__")
+				})
+			}(vv, m)
 		}
 	}
 }

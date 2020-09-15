@@ -7,17 +7,16 @@ import (
 )
 
 type Controller struct {
-	w      http.ResponseWriter
-	r      *http.Request
-	Router *router.HttpRouter
+	Response http.ResponseWriter
+	Request  *http.Request
+	Args     router.Params
 }
 
-func (this *Controller) Pre_(w http.ResponseWriter) {
-	//router *router.HttpRouter, w http.ResponseWriter, r *http.Request
-	// this.r = r
-	// this.w = w
-	// this.Router = router
+func (this *Controller) PreCall__(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	this.Response = w
+	this.Request = r
+	this.Args = ps
 }
-func (this *Controller) Post_() {
+func (this *Controller) PostCall__() {
 
 }

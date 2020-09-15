@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/snail007/gmc/fileutil"
@@ -32,7 +33,8 @@ func NewConfig() FileStoreConfig {
 
 type FileStore struct {
 	session.Store
-	cfg FileStoreConfig
+	cfg  FileStoreConfig
+	lock *sync.RWMutex
 }
 
 func New(config interface{}) (st session.Store, err error) {
@@ -47,7 +49,8 @@ func New(config interface{}) (st session.Store, err error) {
 		cfg.GCtime = 300
 	}
 	s := &FileStore{
-		cfg: cfg,
+		cfg:  cfg,
+		lock: &sync.RWMutex{},
 	}
 	go s.gc()
 	st = s
@@ -55,6 +58,8 @@ func New(config interface{}) (st session.Store, err error) {
 }
 
 func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	f := s.file(sessionID)
 	if !fileutil.ExistsFile(f) {
 		// s.cfg.Logger.Printf("filestore file not found: %s", f)
@@ -65,7 +70,7 @@ func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool
 		s.cfg.Logger.Printf("filestore read file error: %s", err)
 		return
 	}
-	sess = session.NewSession(s.cfg.TTL)
+	sess = session.NewSession()
 	err = sess.Unserialize(string(str))
 	if err != nil {
 		sess = nil
@@ -74,12 +79,15 @@ func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool
 	}
 	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
 		sess = nil
+		os.Remove(s.file(sessionID))
 		return
 	}
 	isExists = true
 	return
 }
 func (s *FileStore) Save(sess *session.Session) (err error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	str, err := sess.Serialize()
 	if err != nil {
 		return
@@ -89,6 +97,8 @@ func (s *FileStore) Save(sess *session.Session) (err error) {
 }
 
 func (s *FileStore) Delete(sessionID string) (err error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	err = os.Remove(s.file(sessionID))
 	return
 }

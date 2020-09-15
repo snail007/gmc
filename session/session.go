@@ -23,15 +23,13 @@ type Session struct {
 	lock      *sync.Mutex
 	isDestory bool
 	touchtime int64
-	ttl       int64
 }
 
-func NewSession(ttl int64) *Session {
+func NewSession() *Session {
 	s := &Session{
 		id:     newSessionID(),
 		lock:   &sync.Mutex{},
 		values: map[interface{}]interface{}{},
-		ttl:    ttl,
 	}
 	return s
 }
@@ -96,9 +94,6 @@ func (s *Session) IsDestory() bool {
 	return s.isDestory
 }
 func (s *Session) SessionID() (sessionID string) {
-	if !s.isDestory {
-		s.touch()
-	}
 	return s.id
 }
 

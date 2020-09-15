@@ -1,10 +1,8 @@
-package filestore
+package memorystore
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -24,32 +22,19 @@ func TestNew(t *testing.T) {
 
 	sess := session.NewSession()
 	sess.Touch()
-	err := store.Save(sess)
-	assert.Nil(err)
-	_, ok = store.Load(sess.SessionID())
-	assert.True(ok)
-	time.Sleep(time.Second * 2)
+	assert.Nil(store.Save(sess))
+	time.Sleep(time.Second * 3)
 	_, ok = store.Load(sess.SessionID())
 	assert.False(ok)
 }
-func TestMkdir(t *testing.T) {
+func TestLoad(t *testing.T) {
 	assert := assert.New(t)
 	cfg := NewConfig()
 	cfg.GCtime = 0
-	cfg.Dir = ".gmcsess"
-	os.RemoveAll(cfg.Dir)
-	ioutil.WriteFile(cfg.Dir, []byte("."), 0700)
-	New(cfg)
-	os.Remove(cfg.Dir)
 	store, _ := New(cfg)
-	assert.DirExists(cfg.Dir)
 	k := "testbbb"
-	f := filepath.Join(cfg.Dir, cfg.Prefix+k)
-	ioutil.WriteFile(f, []byte("\n"), 0700)
 	_, ok := store.Load(k)
 	assert.False(ok)
-	os.Remove(f)
-	os.RemoveAll(cfg.Dir)
 }
 func TestDelete(t *testing.T) {
 	assert := assert.New(t)
@@ -65,7 +50,20 @@ func TestDelete(t *testing.T) {
 	_, ok = store.Load(sess0.SessionID())
 	assert.False(ok)
 }
-
+func TestNoGC(t *testing.T) {
+	assert := assert.New(t)
+	cfg := NewConfig()
+	cfg.TTL = 1
+	cfg.GCtime = 100
+	store, _ := New(cfg)
+	sess0 := session.NewSession()
+	sid := sess0.SessionID()
+	sess0.Touch()
+	store.Save(sess0)
+	time.Sleep(time.Second * 2)
+	_, ok := store.Load(sid)
+	assert.False(ok)
+}
 func TestMain(m *testing.M) {
 	cfg := NewConfig()
 	cfg.GCtime = 1

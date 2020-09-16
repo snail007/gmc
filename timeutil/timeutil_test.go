@@ -1,5 +1,5 @@
 /*
- * @Description:Time tools
+ * @Description:Time tools test
  * @Author: bearcat-panda
  * @Date: 2020-09-16 8:00:24
  * @LastEditTime: 2020-09-16 10:36:24
@@ -63,8 +63,14 @@ func Test_GetTimeByInt64(t *testing.T) {
 	t.Log(nanoTime)
 
 	assert.NotNil(t, secondTime)
+	assert.Equal(t, secondTime.Format("2006-01-02 15:04:05"),
+		time.Now().Format("2006-01-02 15:04:05"))
 	assert.NotNil(t, milliTime)
+	assert.Equal(t, milliTime.Format("2006-01-02 15:04:05"),
+		time.Now().Format("2006-01-02 15:04:05"))
 	assert.NotNil(t, nanoTime)
+	assert.Equal(t, nanoTime.Format("2006-01-02 15:04:05"),
+		time.Now().Format("2006-01-02 15:04:05"))
 
 }
 
@@ -111,32 +117,49 @@ func Test_GetTimeByString(t *testing.T) {
 	t.Log(t6_2)
 
 	assert.NotNil(t, t1_1)
-	assert.NotNil(t, t1_1)
+	assert.Len(t, t1_1.Format("2006-01-02 15:04:05"), len(str1))
 	assert.NotNil(t, t1_2)
+	assert.Len(t, t1_2.Format("2006-01-02 15:04:05"), len(str1))
 	assert.NotNil(t, t2_1)
+	assert.Len(t, t2_1.Format("2006-01-02 15:04:05"), len(str2))
 	assert.NotNil(t, t2_2)
+	assert.Len(t, t2_2.Format("2006-01-02 15:04:05"), len(str2))
 	assert.NotNil(t, t3_1)
+	assert.Len(t, t3_1.Format("2006-01-02"), len(str3))
 	assert.NotNil(t, t3_2)
+	assert.Len(t, t3_2.Format("2006-01-02"), len(str3))
 	assert.NotNil(t, t4_1)
+	assert.Len(t, t4_1.Format("2006-01-02"), len(str4))
 	assert.NotNil(t, t4_2)
+	assert.Len(t, t4_2.Format("2006-01-02"), len(str4))
 	assert.NotNil(t, t5_1)
+	assert.Len(t, t5_1.Format("20060102150405"), len(str5))
 	assert.NotNil(t, t5_2)
+	assert.Len(t, t5_2.Format("20060102150405"), len(str5))
 	assert.NotNil(t, t6_1)
+	assert.Len(t, t6_1.Format("20060102"), len(str6))
 	assert.NotNil(t, t6_2)
+	assert.Len(t, t6_2.Format("20060102"), len(str6))
 }
 
 //Get the zero point of incoming time
 func Test_GetZeroTime(t *testing.T) {
 	zeroTime := GetZeroTime(time.Now())
 	t.Log(zeroTime)
+
 	assert.NotNil(t, zeroTime)
+	assert.Equal(t, zeroTime.Format("2006-01-02"),
+		time.Now().Format("2006-01-02"))
 }
 
 //Get the zero time of the day
 func Test_GetNowZeroTime(t *testing.T) {
 	zeroTime := GetNowZeroTime()
 	t.Log(zeroTime)
+
 	assert.NotNil(t, zeroTime)
+	assert.Equal(t, zeroTime.Format("2006-01-02"),
+		time.Now().Format("2006-01-02"))
 }
 
 //Get the first day of the month where the time is passed in.
@@ -145,6 +168,10 @@ func Test_GetFirstDateOfMonth(t *testing.T) {
 	firstDay := GetFirstDateOfMonth(time.Now())
 	t.Log(firstDay)
 	assert.NotNil(t, firstDay)
+
+	now := time.Now()
+	assert.Equal(t, firstDay.Format("2006-01-02"),
+		now.AddDate(0, 0, -now.Day()+1).Format("2006-01-02"))
 }
 
 //Get the last day of the month where the time is passed in
@@ -153,20 +180,32 @@ func Test_GetLaDateOfMonth(t *testing.T) {
 	lastDay := GetLastDateOfMonth(time.Now())
 	t.Log(lastDay)
 	assert.NotNil(t, lastDay)
+
+	now := time.Now()
+	assert.Equal(t, lastDay.Format("2006-01-02"),
+		now.AddDate(0, 1, -now.Day()).Format("2006-01-02"))
 }
 
 //Start of this year
 func Test_GetFirstDateOfYear(t *testing.T) {
 	first := GetFirstDateOfYear(time.Now())
 	t.Log(first)
-	assert.NotNil(t, first)
+	assert.NotNil(t, first.String())
+
+	now := time.Now()
+	assert.Equal(t, first.Format("2006-01-02"),
+		now.AddDate(0, -int(now.Month())+1, -now.Day()+1).Format("2006-01-02"))
 }
 
 //End of this year
 func Test_GetLastDateOfYear(t *testing.T) {
 	last := GetLastDateOfYear(time.Now())
 	t.Log(last)
+
 	assert.NotNil(t, last)
+	now := time.Now()
+	assert.Equal(t, last.Format("2006-01-02"),
+		now.AddDate(1, -int(now.Month())+1, -now.Day()).Format("2006-01-02"))
 }
 
 //Get the day of the week for the incoming time
@@ -221,6 +260,7 @@ func Test_ParseWithLocation(t *testing.T) {
 	t.Log(lt)
 
 	assert.NotNil(t, lt)
+	assert.Len(t, lt.Format("2006-01-02 15:04:05"), len("2020-09-16 09:21:18"))
 }
 
 //Convert to full time

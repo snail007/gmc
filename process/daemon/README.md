@@ -4,21 +4,21 @@ daemon package does add daemon, logging and forever function to your program.
 
 the below command line arguments you can passed to your program after you using daemon package.
 
---forver or -forver
+1. `--forver` or `-forver`
 
 the argument will fork a worker process and master process monit worker process , and restart it when it crashed.
 
---daemon or -daemon
+2. `--daemon` or `-daemon`
 
 the argument will put your program running in background , only working in linux uinx etc.
 
---flog or -flog <filename.log>
+3. `--flog` or `-flog` <filename.log>
 
 the argument will logging your program stdout to the log file.
 
-notice:
+4. notice
 
-before you maybe execute your program like this:
+you maybe execute your program without "daemon package" like this:
 
 ./foobar -u root
 

@@ -9,6 +9,7 @@ package timeutil
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -17,24 +18,28 @@ import (
 func Test_GetNowSecond(t *testing.T) {
 	nowSecond := GetNowSecond()
 	t.Log(nowSecond)
+	assert.Len(t, fmt.Sprintf("%d", nowSecond), 10)
 }
 
 //Get seconds based on time
 func Test_GetSecondByTime(t *testing.T) {
 	second := GetSecondByTime(time.Now())
 	t.Log(second)
+	assert.Len(t, fmt.Sprintf("%d", second), 10)
 }
 
 //Get the current time in milliseconds
 func Test_GetNowMilliSecond(t *testing.T) {
 	nowMilliSecond := GetNowMilliSecond()
 	t.Log(nowMilliSecond)
+	assert.Len(t, fmt.Sprintf("%d", nowMilliSecond), 13)
 }
 
 //Get the millisecond value based on time
 func Test_GetMilliSecondByTime(t *testing.T) {
 	milliSecond := GetMilliSecondByTime(time.Now())
 	t.Log(milliSecond)
+	assert.Len(t, fmt.Sprintf("%d", milliSecond), 13)
 }
 
 //Change integer type to time type
@@ -56,6 +61,10 @@ func Test_GetTimeByInt64(t *testing.T) {
 	t.Log(secondTime)
 	t.Log(milliTime)
 	t.Log(nanoTime)
+
+	assert.NotNil(t, secondTime)
+	assert.NotNil(t, milliTime)
+	assert.NotNil(t, nanoTime)
 
 }
 
@@ -100,18 +109,34 @@ func Test_GetTimeByString(t *testing.T) {
 	t.Log(t5_2)
 	t.Log(t6_1)
 	t.Log(t6_2)
+
+	assert.NotNil(t, t1_1)
+	assert.NotNil(t, t1_1)
+	assert.NotNil(t, t1_2)
+	assert.NotNil(t, t2_1)
+	assert.NotNil(t, t2_2)
+	assert.NotNil(t, t3_1)
+	assert.NotNil(t, t3_2)
+	assert.NotNil(t, t4_1)
+	assert.NotNil(t, t4_2)
+	assert.NotNil(t, t5_1)
+	assert.NotNil(t, t5_2)
+	assert.NotNil(t, t6_1)
+	assert.NotNil(t, t6_2)
 }
 
 //Get the zero point of incoming time
 func Test_GetZeroTime(t *testing.T) {
 	zeroTime := GetZeroTime(time.Now())
 	t.Log(zeroTime)
+	assert.NotNil(t, zeroTime)
 }
 
 //Get the zero time of the day
 func Test_GetNowZeroTime(t *testing.T) {
 	zeroTime := GetNowZeroTime()
 	t.Log(zeroTime)
+	assert.NotNil(t, zeroTime)
 }
 
 //Get the first day of the month where the time is passed in.
@@ -119,6 +144,7 @@ func Test_GetNowZeroTime(t *testing.T) {
 func Test_GetFirstDateOfMonth(t *testing.T) {
 	firstDay := GetFirstDateOfMonth(time.Now())
 	t.Log(firstDay)
+	assert.NotNil(t, firstDay)
 }
 
 //Get the last day of the month where the time is passed in
@@ -126,18 +152,21 @@ func Test_GetFirstDateOfMonth(t *testing.T) {
 func Test_GetLaDateOfMonth(t *testing.T) {
 	lastDay := GetLastDateOfMonth(time.Now())
 	t.Log(lastDay)
+	assert.NotNil(t, lastDay)
 }
 
 //Start of this year
 func Test_GetFirstDateOfYear(t *testing.T) {
 	first := GetFirstDateOfYear(time.Now())
 	t.Log(first)
+	assert.NotNil(t, first)
 }
 
 //End of this year
 func Test_GetLastDateOfYear(t *testing.T) {
 	last := GetLastDateOfYear(time.Now())
 	t.Log(last)
+	assert.NotNil(t, last)
 }
 
 //Get the day of the week for the incoming time
@@ -157,18 +186,28 @@ func Test_GetWeek(t *testing.T) {
 	t.Log(friday)
 	t.Log(saturday)
 	t.Log(sunday)
+
+	assert.Equal(t, monday, 1)
+	assert.Equal(t, tuesday, 2)
+	assert.Equal(t, wednesday, 3)
+	assert.Equal(t, thursday, 4)
+	assert.Equal(t, friday, 5)
+	assert.Equal(t, saturday, 6)
+	assert.Equal(t, sunday, 7)
 }
 
 //Get the month of the year
 func Test_GetMonth(t *testing.T) {
 	month := GetMonth(GetTimeByString("2020/09/16", false))
 	t.Log(month)
+	assert.Equal(t, month, 9)
 }
 
 //Is it a leap year
 func Test_IsLeapYear(t *testing.T) {
 	flag := IsLeapYear(GetTimeByString("2020/09/16", false))
 	t.Log(flag)
+	assert.Equal(t, flag, true)
 }
 
 //Time zone conversion
@@ -180,16 +219,48 @@ func Test_ParseWithLocation(t *testing.T) {
 	}
 
 	t.Log(lt)
+
+	assert.NotNil(t, lt)
 }
 
 //Convert to full time
 func Test_DateTimeToString(t *testing.T) {
 	dateTime := DateTimeToString(time.Now())
 	t.Log(dateTime)
+
+	assert.Len(t, dateTime, 19)
 }
 
 //Convert to date
 func Test_DateToString(t *testing.T) {
 	date := DateToString(time.Now())
 	t.Log(date)
+	assert.Len(t, date, 10)
+}
+
+//time format
+func Test_TimeFormat(t *testing.T) {
+	format1 := "h:i:s"
+	format2 := "y-m-d"
+	format3 := "Y-m-d"
+	format4 := "Y-m-d h:i:s"
+	format5 := "Y/m/dh:i:s"
+
+	s1 := TimeFormat(time.Now(), format1)
+	s2 := TimeFormat(time.Now(), format2)
+	s3 := TimeFormat(time.Now(), format3)
+	s4 := TimeFormat(time.Now(), format4)
+	s5 := TimeFormat(time.Now(), format5)
+
+	t.Log(s1)
+	t.Log(s2)
+	t.Log(s3)
+	t.Log(s4)
+	t.Log(s5)
+
+	assert.Len(t, s1, 8)
+	assert.Len(t, s2, 8)
+	assert.Len(t, s3, 10)
+	assert.Len(t, s4, 19)
+	assert.Len(t, s5, 18)
 }

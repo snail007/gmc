@@ -10,6 +10,7 @@ package timeutil
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -199,3 +200,48 @@ func DateTimeToString(t time.Time) string {
 func DateToString(t time.Time) string {
 	return t.Format("2006-01-02")
 }
+
+//Time format
+func TimeFormat(t time.Time, format string) string {
+	return t.Format(formatToLayout(format))
+}
+
+//format to layout
+func formatToLayout(format string) string {
+	format = strings.TrimSpace(format)
+	format = stringDedup(format) //String deduplication
+	layout := strings.Replace(format, "Y", "2006", 1)
+	layout = strings.Replace(layout, "y", "06", 1)
+	layout = strings.Replace(layout, "m", "01", 1)
+	layout = strings.Replace(layout, "n", "1", 1)
+	layout = strings.Replace(layout, "d", "02", 1)
+	layout = strings.Replace(layout, "j", "2", 1)
+	layout = strings.Replace(layout, "H", "15", 1)
+	layout = strings.Replace(layout, "h", "03", 1)
+	layout = strings.Replace(layout, "g", "3", 1)
+	layout = strings.Replace(layout, "i", "04", 1)
+	layout = strings.Replace(layout, "s", "05", 1)
+	return layout
+}
+
+//String deduplication
+func stringDedup(format string) string {
+	var maps = make(map[string]int)
+	var temp []int32
+	var index int
+	for _, v := range format {
+		if _, ok := maps[string(v)]; !ok &&
+			regexp.MustCompile("[a-zA-Z]").MatchString(string(v)) { //Add letters
+			maps[string(v)] = index
+			temp = append(temp, v)
+			index++
+		}
+		if regexp.MustCompile("[^a-zA-Z]").MatchString(string(v)) { //Add non-letter
+			temp = append(temp, v)
+			index++
+		}
+	}
+	return string(temp)
+}
+
+//-----------------------------------------

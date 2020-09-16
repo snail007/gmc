@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/snail007/gmc/appconfig"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,8 @@ func TestSessionStart(t *testing.T) {
 	w := httptest.NewRecorder()
 	c.MethodCallPre__(w, r, nil)
 	c.SessionStart()
-
+	err := appconfig.Parse()
+	assert.Nil(err)
 	resp := w.Result()
 	t.Log(w.HeaderMap, w.Code)
 	b, _ := ioutil.ReadAll(resp.Body)

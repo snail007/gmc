@@ -53,8 +53,9 @@ func (this *Controller) SessionStart() {
 }
 
 func (this *Controller) SessionDestory() {
-
+	this.Session.Destory()
 }
+
 func (this *Controller) Write(data interface{}) (err error) {
 	switch v := data.(type) {
 	case []byte:
@@ -75,6 +76,7 @@ func (this *Controller) Write(data interface{}) (err error) {
 		this.Response.Write([]byte(v.Error()))
 	default:
 		t := reflect.TypeOf(v)
+		//map, slice
 		jsonType := []string{"[", "map["}
 		found := false
 		vTypeStr := t.String()

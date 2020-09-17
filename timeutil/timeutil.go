@@ -52,7 +52,8 @@ func GetTimeByInt64(s int64) time.Time {
 }
 
 //Acquire the time according to the string
-//isH true-24 hour clock false-12 hour clock
+//@param s timString "2006-01-02","2006/01/02 15:04:05","2006/01/02 03:04:05"
+//@param isH true-24 hour clock false-12 hour clock
 //No hours involved. The second field is ignored
 func GetTimeByString(s string, isH bool) time.Time {
 	value := strings.TrimSpace(s)
@@ -174,17 +175,19 @@ func IsLeapYear(t time.Time) bool {
 }
 
 //Time zone conversion
+//@param location "","UTC","America/New_York"
+//@param timeStrEx	"2006-01-02 15:04:05"
 func ParseWithLocation(location, timeStr string) (time.Time, error) {
 	//Load time zone
 	l, err := time.LoadLocation(location)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return time.Time{}, err
 	}
 
 	t, err := time.ParseInLocation("2006-01-02 15:04:05", timeStr, l)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return time.Time{}, err
 	}
 
@@ -202,6 +205,7 @@ func DateToString(t time.Time) string {
 }
 
 //Time format
+//@param format  "h:i:s","Y-m-d h:i:s","y-m-d"
 func TimeFormat(t time.Time, format string) string {
 	return t.Format(formatToLayout(format))
 }

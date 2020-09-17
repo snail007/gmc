@@ -72,10 +72,14 @@ func Test_GetTimeByInt64(t *testing.T) {
 	assert.Equal(t, nanoTime.Format("2006-01-02 15:04:05"),
 		time.Now().Format("2006-01-02 15:04:05"))
 
+	assert.Panics(t, func() { //panic
+		GetTimeByInt64(123)
+	}, "Length does not meet the requirements")
 }
 
 //Acquire the time according to the string
-//isH true-24 hour clock false-12 hour clock
+//@param s timString "2006-01-02","2006/01/02 15:04:05","2006/01/02 03:04:05"
+//@param isH true-24 hour clock false-12 hour clock
 //No hours involved. The second field is ignored
 func Test_GetTimeByString(t *testing.T) {
 	str1 := "2020-09-16 09:21:18"
@@ -140,6 +144,14 @@ func Test_GetTimeByString(t *testing.T) {
 	assert.Len(t, t6_1.Format("20060102"), len(str6))
 	assert.NotNil(t, t6_2)
 	assert.Len(t, t6_2.Format("20060102"), len(str6))
+
+	assert.Panics(t, func() { //panic
+		GetTimeByString("", true)
+	}, "String format error")
+
+	assert.Panics(t, func() { //panic
+		GetTimeByString("1", true)
+	}, "String format error")
 }
 
 //Get the zero point of incoming time
@@ -247,13 +259,19 @@ func Test_IsLeapYear(t *testing.T) {
 	flag := IsLeapYear(GetTimeByString("2020/09/16", false))
 	t.Log(flag)
 	assert.Equal(t, flag, true)
+
+	flag = IsLeapYear(GetTimeByString("2007/09/16", false))
+	t.Log(flag)
+	assert.Equal(t, flag, false)
 }
 
 //Time zone conversion
+//@param location "","UTC","merica/New_York"
+//@param timeStrEx	"2006-01-02 15:04:05"
 func Test_ParseWithLocation(t *testing.T) {
 	lt, err := ParseWithLocation("America/New_York", "2020-09-16 09:21:18")
 	if err != nil {
-		t.Fatal(err)
+		t.Log(err)
 		return
 	}
 
@@ -261,6 +279,24 @@ func Test_ParseWithLocation(t *testing.T) {
 
 	assert.NotNil(t, lt)
 	assert.Len(t, lt.Format("2006-01-02 15:04:05"), len("2020-09-16 09:21:18"))
+
+	//panic
+	lt, err = ParseWithLocation("", "panic")
+	if err != nil {
+		t.Log(err)
+	}
+	t.Log(lt)
+
+	assert.Error(t, err, "unknown time zone panic")
+
+	//panic
+	lt, err = ParseWithLocation("panic", "panic")
+	if err != nil {
+		t.Log(err)
+	}
+	t.Log(lt)
+
+	assert.Error(t, err, "unknown time zone panic")
 }
 
 //Convert to full time
@@ -278,7 +314,8 @@ func Test_DateToString(t *testing.T) {
 	assert.Len(t, date, 10)
 }
 
-//time format
+//Time format
+//@param format  "h:i:s","Y-m-d h:i:s","y-m-d"
 func Test_TimeFormat(t *testing.T) {
 	format1 := "h:i:s"
 	format2 := "y-m-d"

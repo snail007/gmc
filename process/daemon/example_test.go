@@ -1,3 +1,8 @@
+// Copyright 2020 The GMC Author. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// More infomation at https://github.com/snail007/gmc
+
 package daemon
 
 import (
@@ -5,17 +10,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/snail007/gmc/process/daemon"
 )
 
 func Example() {
 	//the code block should be in your main function,and the actual main() change to doMain()
-	if err := daemon.Start(); err != nil {
+	if err := Start(); err != nil {
 		fmt.Println(err)
 		return
 	}
-	if daemon.CanRun() {
+	if CanRun() {
 		//call actual main()
 		go doMain()
 	}
@@ -24,7 +27,7 @@ func Example() {
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-signalChan
 	//do clean
-	daemon.Clean()
+	Clean()
 }
 
 //your main function

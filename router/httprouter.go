@@ -1,6 +1,12 @@
+// Copyright 2020 The GMC Author. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// More infomation at https://github.com/snail007/gmc
+
 package router
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -25,24 +31,73 @@ func NewHttpRouter() *HttpRouter {
 	}
 	return hr
 }
+
+//Controller binds a controller's methods to router
 func (s *HttpRouter) Controller(urlPath string, obj interface{}) {
+	s.controller(urlPath, obj, "")
+}
+
+//ControllerMethod binds a controller's method to router
+func (s *HttpRouter) ControllerMethod(urlPath string, obj interface{}, method string) {
+	s.controller(urlPath, obj, method)
+}
+func (s *HttpRouter) controller(urlPath string, obj interface{}, method string) {
+	beforeIsFound := false
+	afterIsFound := false
 	for _, m := range methods(obj) {
+		switch m {
+		case "Before__":
+			beforeIsFound = true
+		case "After__":
+			afterIsFound = true
+		}
+		if strings.HasSuffix(m, "__") {
+			continue
+		}
 		path := urlPath + strings.ToLower(m)
-		for _, vv := range shortcutMethods {
-			if strings.HasSuffix(vv, "__") {
+		if method != "" {
+			if m != method {
 				continue
 			}
+			path = urlPath
+		}
+		for _, vv := range shortcutMethods {
 			func(httpMethod, objMethod string) {
 				s.Handle(httpMethod, path, func(w http.ResponseWriter, r *http.Request, ps Params) {
 					objv := reflect.ValueOf(obj)
-					invoke(objv, "PreCall__", w, r, ps)
-					invoke(objv, objMethod)
-					invoke(objv, "PostCall__")
+					invoke(objv, "MethodCallPre__", w, r, ps)
+					if beforeIsFound && s.call(&objv, "Before__") {
+						return
+					}
+					if s.call(&objv, objMethod) {
+						return
+					}
+					if afterIsFound && s.call(&objv, "After__") {
+						return
+					}
+					invoke(objv, "MethodCallPost__")
 				})
 			}(vv, m)
 		}
 	}
 }
-func (s *HttpRouter) ControllerMethod(urlPath, handler func(http.ResponseWriter, *http.Request)) {
 
+func (s *HttpRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
+	func() {
+		defer func() {
+			e := recover()
+			if e != nil {
+				switch fmt.Sprintf("%s", e) {
+				case "__DIE__":
+					//ignore PostCall__
+					isDIE = true
+				default:
+					//@todo
+					//exception
+				}
+			}
+		}()
+		invoke(*objv, objMethod)
+	}()
+	return
 }

@@ -6,7 +6,7 @@
 package controller
 
 import (
-	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -16,17 +16,22 @@ import (
 
 func TestSessionStart(t *testing.T) {
 	assert := assert.New(t)
+	//init app
+	cfg := appconfig.NewAPPConfig()
+	err := appconfig.Parse(cfg)
+	assert.Nil(err)
+	//call controller
 	c := Controller{}
 	r := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	r.AddCookie(&http.Cookie{
+		Name:  "gmcsid",
+		Value: "442445e36aaf565cbefc65a8bd5675df",
+	})
 	w := httptest.NewRecorder()
 	c.MethodCallPre__(w, r, nil)
 	c.SessionStart()
-	err := appconfig.Parse()
-	assert.Nil(err)
+	//response
 	resp := w.Result()
-	t.Log(w.HeaderMap, w.Code)
-	b, _ := ioutil.ReadAll(resp.Body)
-	t.Log(string(b))
-
+	t.Log(resp.Header, c.Session.SessionID())
 	assert.Fail("")
 }

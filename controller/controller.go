@@ -12,9 +12,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/snail007/gmc/session"
+	"github.com/snail007/gmc/appconfig"
 
+	"github.com/snail007/gmc/cookie"
 	"github.com/snail007/gmc/router"
+	"github.com/snail007/gmc/session"
 )
 
 type Controller struct {
@@ -33,7 +35,9 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 
 //MethodCallPost__ called after controller method and After__() if have.
 func (this *Controller) MethodCallPost__() {
-
+	if appconfig.SessionStore != nil && this.Session != nil && this.Session.IsDestory() {
+		appconfig.SessionStore.Delete(this.Session.SessionID())
+	}
 }
 
 //Die will prevent to call After__() if have, and MethodCallPost__()
@@ -41,19 +45,42 @@ func (this *Controller) Die() {
 	panic("__DIE__")
 }
 
-func (this *Controller) SessionStart() {
-	this.Response.WriteHeader(http.StatusNoContent)
-	this.Request.Cookie("session_id")
-	err := this.Write([1]string{"a"})
-	if err != nil {
-		this.Write(err)
+//Stop will exit controller method at once
+func (this *Controller) Stop() {
+	panic("__STOP__")
+}
+func (this *Controller) SessionStart() (err error) {
+	if appconfig.SessionStore == nil {
+		err = fmt.Errorf("session is disabled")
+		return
 	}
-	this.Write(false)
+	cookies := cookie.New(this.Response, this.Request)
+	sid, _ := cookies.Get(appconfig.SessionCookieName)
+	var isExists bool
+	if sid != "" {
+		this.Session, isExists = appconfig.SessionStore.Load(sid)
+	}
+	if !isExists {
+		sess := session.NewSession()
+		sess.Touch()
+		cookies.Set(appconfig.SessionCookieName, sess.SessionID(), &cookie.Options{
+			MaxAge: appconfig.FileConfig.GetInt("session.ttl"),
+		})
+		err = appconfig.SessionStore.Save(sess)
 
+	}
+	return
 }
 
-func (this *Controller) SessionDestory() {
-	this.Session.Destory()
+func (this *Controller) SessionDestory() (err error) {
+	if appconfig.SessionStore == nil {
+		err = fmt.Errorf("session is disabled")
+		return
+	}
+	if this.Session != nil {
+		this.Session.Destory()
+	}
+	return
 }
 
 func (this *Controller) Write(data interface{}) (err error) {

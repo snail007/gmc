@@ -91,6 +91,8 @@ func (s *HttpRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
 				case "__DIE__":
 					//ignore PostCall__
 					isDIE = true
+				case "__STOP__":
+					//do nothing
 				default:
 					//@todo
 					//exception

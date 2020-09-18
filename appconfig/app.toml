@@ -1,6 +1,8 @@
 [session]
+# turn on/off session
+enable=true
 # maybe "file", "memory", "redis" 
-store="file"
+store="redis"
 cookie_name="gmcsid"
 ttl=3600
 
@@ -13,14 +15,29 @@ prefix=".gmcsession_"
 gctime=300
 
 [session.redis]
-url=""
 debug=false
+address="127.0.0.1:6379"
 prefix=""
 password=""
 timeout=10
 dbnum=0
 maxidle=10
 maxactive=30
-idletimeout=240
+idletimeout=300
+maxconnlifetime=3600
+wait=true
+
+[cache]
+# maybe "redis" 
+[cache.redis]
+debug=false
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
 maxconnlifetime=3600
 wait=true

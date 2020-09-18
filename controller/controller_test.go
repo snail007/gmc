@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/snail007/gmc/appconfig"
+	"github.com/snail007/gmc/config/app"
 	"github.com/stretchr/testify/assert"
 )
 

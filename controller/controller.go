@@ -12,11 +12,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/snail007/gmc/appconfig"
+	"github.com/snail007/gmc/config/app"
 
-	"github.com/snail007/gmc/cookie"
-	"github.com/snail007/gmc/router"
-	"github.com/snail007/gmc/session"
+	"github.com/snail007/gmc/http/cookie"
+	"github.com/snail007/gmc/http/router"
+	"github.com/snail007/gmc/http/session"
 )
 
 type Controller struct {

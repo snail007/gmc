@@ -9,7 +9,6 @@ package timeutil
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -163,13 +162,13 @@ func StrToTimeOfLocation(location, timeStr string) (time.Time, error) {
 	//Load time zone
 	l, err := time.LoadLocation(location)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return time.Time{}, err
 	}
 
 	t, err := time.ParseInLocation("2006-01-02 15:04:05", timeStr, l)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return time.Time{}, err
 	}
 

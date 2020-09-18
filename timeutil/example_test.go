@@ -102,7 +102,7 @@ func ExampleZeroTime() {
 //Get the first day of the month where the time is passed in.
 // That is the zero point on the first day of a month
 func ExampleMonthZeroTimeOf() {
-	firstDate := MonthZeroTimeOf(time.Now())
+	firstDate := MonthZeroTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
 	fmt.Println(firstDate)
 
 	//Output:
@@ -112,7 +112,7 @@ func ExampleMonthZeroTimeOf() {
 //Get the last day of the month where the time is passed in
 //That is, 0 o'clock on the last day of a month
 func ExampleMonthLastTimeOf() {
-	lastDate := MonthLastTimeOf(time.Now())
+	lastDate := MonthLastTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
 	fmt.Println(lastDate)
 
 	//Output:
@@ -121,7 +121,7 @@ func ExampleMonthLastTimeOf() {
 
 //Start of this year
 func ExampleYearZeroTimeOf() {
-	firstData := YearZeroTimeOf(time.Now())
+	firstData := YearZeroTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
 	fmt.Println(firstData)
 
 	//Output:
@@ -130,7 +130,7 @@ func ExampleYearZeroTimeOf() {
 
 //End of this year
 func ExampleYearLastTimeOf() {
-	lastDate := YearLastTimeOf(time.Now())
+	lastDate := YearLastTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
 	fmt.Println(lastDate)
 
 	//Output:

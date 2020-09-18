@@ -18,28 +18,28 @@ import (
 //Get the current time in seconds
 func Test_Unix(t *testing.T) {
 	nowSecond := Unix()
-	t.Log(nowSecond)
+	// t.Log(nowSecond)
 	assert.Len(t, fmt.Sprintf("%d", nowSecond), 10)
 }
 
 //Get seconds based on time
 func Test_TimeToUnix(t *testing.T) {
 	second := TimeToUnix(time.Now())
-	t.Log(second)
+	// t.Log(second)
 	assert.Len(t, fmt.Sprintf("%d", second), 10)
 }
 
 //Get the current time in milliseconds
 func Test_MilliSeconds(t *testing.T) {
 	nowMilliSecond := MilliSeconds()
-	t.Log(nowMilliSecond)
+	// t.Log(nowMilliSecond)
 	assert.Len(t, fmt.Sprintf("%d", nowMilliSecond), 13)
 }
 
 //Get the millisecond value based on time
 func Test_TimeToMilliSeconds(t *testing.T) {
 	milliSecond := TimeToMilliSeconds(time.Now())
-	t.Log(milliSecond)
+	// t.Log(milliSecond)
 	assert.Len(t, fmt.Sprintf("%d", milliSecond), 13)
 }
 
@@ -49,9 +49,9 @@ func Test_Int64ToTime(t *testing.T) {
 	milliSecond := MilliSeconds()       //Get the current time in milliseconds
 	nanoSecond := time.Now().UnixNano() //Get the nanosecond value of the current time
 
-	t.Log(len(fmt.Sprintf("%d", second)))      //The length of the second value
-	t.Log(len(fmt.Sprintf("%d", milliSecond))) //The length of the millisecond value
-	t.Log(len(fmt.Sprintf("%d", nanoSecond)))  //The length of the nanosecond value
+	// t.Log(len(fmt.Sprintf("%d", second)))      //The length of the second value
+	// t.Log(len(fmt.Sprintf("%d", milliSecond))) //The length of the millisecond value
+	// t.Log(len(fmt.Sprintf("%d", nanoSecond)))  //The length of the nanosecond value
 
 	//Convert to time type
 	secondTime := Int64ToTime(second)
@@ -59,9 +59,9 @@ func Test_Int64ToTime(t *testing.T) {
 	nanoTime := Int64ToTime(int64(nanoSecond))
 
 	//print
-	t.Log(secondTime)
-	t.Log(milliTime)
-	t.Log(nanoTime)
+	// t.Log(secondTime)
+	// t.Log(milliTime)
+	// t.Log(nanoTime)
 
 	assert.NotNil(t, secondTime)
 	assert.Equal(t, secondTime.Format("2006-01-02 15:04:05"),
@@ -106,18 +106,18 @@ func Test_StrToTime(t *testing.T) {
 	t6_1 := MustStrToTime(str6) //No hours involved. The second field is ignored
 	t6_2 := MustStrToTime(str6)
 
-	t.Log(t1_1)
-	t.Log(t1_2)
-	t.Log(t2_1)
-	t.Log(t2_2)
-	t.Log(t3_1)
-	t.Log(t3_2)
-	t.Log(t4_1)
-	t.Log(t4_2)
-	t.Log(t5_1)
-	t.Log(t5_2)
-	t.Log(t6_1)
-	t.Log(t6_2)
+	// t.Log(t1_1)
+	// t.Log(t1_2)
+	// t.Log(t2_1)
+	// t.Log(t2_2)
+	// t.Log(t3_1)
+	// t.Log(t3_2)
+	// t.Log(t4_1)
+	// t.Log(t4_2)
+	// t.Log(t5_1)
+	// t.Log(t5_2)
+	// t.Log(t6_1)
+	// t.Log(t6_2)
 
 	assert.NotNil(t, t1_1)
 	assert.Len(t, t1_1.Format("2006-01-02 15:04:05"), len(str1))
@@ -152,7 +152,7 @@ func Test_StrToTime(t *testing.T) {
 //Get the zero point of incoming time
 func Test_ZeroTimeOf(t *testing.T) {
 	zeroTime := ZeroTimeOf(time.Now())
-	t.Log(zeroTime)
+	// t.Log(zeroTime)
 
 	assert.NotNil(t, zeroTime)
 	assert.Equal(t, zeroTime.Format("2006-01-02"),
@@ -162,7 +162,7 @@ func Test_ZeroTimeOf(t *testing.T) {
 //Get the zero time of the day
 func Test_ZeroTime(t *testing.T) {
 	zeroTime := ZeroTime()
-	t.Log(zeroTime)
+	// t.Log(zeroTime)
 
 	assert.NotNil(t, zeroTime)
 	assert.Equal(t, zeroTime.Format("2006-01-02"),
@@ -173,7 +173,7 @@ func Test_ZeroTime(t *testing.T) {
 // That is the zero point on the first day of a month
 func Test_MonthZeroTimeOf(t *testing.T) {
 	firstDay := MonthZeroTimeOf(time.Now())
-	t.Log(firstDay)
+	// t.Log(firstDay)
 	assert.NotNil(t, firstDay)
 
 	now := time.Now()
@@ -185,7 +185,7 @@ func Test_MonthZeroTimeOf(t *testing.T) {
 //That is, 0 o'clock on the last day of a month
 func Test_GetLaDateOfMonth(t *testing.T) {
 	lastDay := MonthLastTimeOf(time.Now())
-	t.Log(lastDay)
+	// t.Log(lastDay)
 	assert.NotNil(t, lastDay)
 
 	now := time.Now()
@@ -196,7 +196,7 @@ func Test_GetLaDateOfMonth(t *testing.T) {
 //Start of this year
 func Test_YearZeroTimeOf(t *testing.T) {
 	first := YearZeroTimeOf(time.Now())
-	t.Log(first)
+	// t.Log(first)
 	assert.NotNil(t, first.String())
 
 	now := time.Now()
@@ -207,7 +207,7 @@ func Test_YearZeroTimeOf(t *testing.T) {
 //End of this year
 func Test_YearLastTimeOf(t *testing.T) {
 	last := YearLastTimeOf(time.Now())
-	t.Log(last)
+	// t.Log(last)
 
 	assert.NotNil(t, last)
 	now := time.Now()
@@ -225,13 +225,13 @@ func Test_WeekdayOf(t *testing.T) {
 	saturday := WeekdayOf(MustStrToTime("2020/09/19"))
 	sunday := WeekdayOf(MustStrToTime("2020/09/20"))
 
-	t.Log(monday)
-	t.Log(tuesday)
-	t.Log(wednesday)
-	t.Log(thursday)
-	t.Log(friday)
-	t.Log(saturday)
-	t.Log(sunday)
+	// t.Log(monday)
+	// t.Log(tuesday)
+	// t.Log(wednesday)
+	// t.Log(thursday)
+	// t.Log(friday)
+	// t.Log(saturday)
+	// t.Log(sunday)
 
 	assert.Equal(t, monday, 1)
 	assert.Equal(t, tuesday, 2)
@@ -245,18 +245,18 @@ func Test_WeekdayOf(t *testing.T) {
 //Get the month of the year
 func Test_MonthOf(t *testing.T) {
 	month := MonthOf(MustStrToTime("2020/09/16"))
-	t.Log(month)
+	// t.Log(month)
 	assert.Equal(t, month, 9)
 }
 
 //Is it a leap year
 func Test_IsLeapYear(t *testing.T) {
 	flag := IsLeapYear(MustStrToTime("2020/09/16"))
-	t.Log(flag)
+	// t.Log(flag)
 	assert.Equal(t, flag, true)
 
 	flag = IsLeapYear(MustStrToTime("2007/09/16"))
-	t.Log(flag)
+	// t.Log(flag)
 	assert.Equal(t, flag, false)
 }
 
@@ -270,26 +270,26 @@ func Test_StrToTimeOfLocation(t *testing.T) {
 		return
 	}
 
-	t.Log(lt)
+	// t.Log(lt)
 
 	assert.NotNil(t, lt)
 	assert.Len(t, lt.Format("2006-01-02 15:04:05"), len("2020-09-16 09:21:18"))
 
 	//panic
 	lt, err = StrToTimeOfLocation("", "panic")
-	if err != nil {
-		t.Log(err)
-	}
-	t.Log(lt)
+	// if err != nil {
+	// 	t.Log(err)
+	// }
+	// t.Log(lt)
 
 	assert.Error(t, err, "unknown time zone panic")
 
 	//panic
 	lt, err = StrToTimeOfLocation("panic", "panic")
-	if err != nil {
-		t.Log(err)
-	}
-	t.Log(lt)
+	// if err != nil {
+	// 	t.Log(err)
+	// }
+	// t.Log(lt)
 
 	assert.Error(t, err, "unknown time zone panic")
 }
@@ -297,7 +297,7 @@ func Test_StrToTimeOfLocation(t *testing.T) {
 //Convert to full time
 func Test_TimeToStr(t *testing.T) {
 	dateTime := TimeToStr(time.Now())
-	t.Log(dateTime)
+	// t.Log(dateTime)
 
 	assert.Len(t, dateTime, 19)
 }
@@ -305,7 +305,7 @@ func Test_TimeToStr(t *testing.T) {
 //Convert to date
 func Test_TimeToDateStr(t *testing.T) {
 	date := TimeToDateStr(time.Now())
-	t.Log(date)
+	// t.Log(date)
 	assert.Len(t, date, 10)
 }
 
@@ -324,11 +324,11 @@ func Test_TimeFormat(t *testing.T) {
 	s4 := TimeFormat(time.Now(), format4)
 	s5 := TimeFormat(time.Now(), format5)
 
-	t.Log(s1)
-	t.Log(s2)
-	t.Log(s3)
-	t.Log(s4)
-	t.Log(s5)
+	// t.Log(s1)
+	// t.Log(s2)
+	// t.Log(s3)
+	// t.Log(s4)
+	// t.Log(s5)
 
 	assert.Len(t, s1, 8)
 	assert.Len(t, s2, 8)

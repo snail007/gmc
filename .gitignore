@@ -8,3 +8,5 @@
 *.prof
 /gmc
 /*.html
+.idea
+.idea/

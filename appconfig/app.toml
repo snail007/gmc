@@ -1,5 +1,26 @@
 [session]
-# maybe "file", "memory" 
+# maybe "file", "memory", "redis" 
 store="file"
 cookie_name="gmcsid"
+ttl=3600
 
+[session.file]
+dir=""
+gctime=300
+prefix=".gmcsession_"
+
+[session.memory]
+gctime=300
+
+[session.redis]
+url=""
+debug=false
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=240
+maxconnlifetime=3600
+wait=true

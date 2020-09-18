@@ -27,5 +27,13 @@ func Parse() (err error) {
 	Config.AddConfigPath("conf")
 	Config.AddConfigPath("../appconfig")
 	err = Config.ReadInConfig()
+	if err != nil {
+		return
+	}
+	initSessionStore()
 	return
+}
+
+func initSessionStore() {
+
 }

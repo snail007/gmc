@@ -17,7 +17,6 @@ import (
 
 type MemoryStoreConfig struct {
 	GCtime int //seconds
-	Prefix string
 	Logger *log.Logger
 	TTL    int64 //seconds
 }

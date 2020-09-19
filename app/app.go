@@ -3,8 +3,9 @@ package gmcapp
 import (
 	"fmt"
 
-	"github.com/snail007/gmc/config/app"
+	appconfig "github.com/snail007/gmc/config/app"
 	"github.com/snail007/gmc/process/hook"
+	"github.com/spf13/viper"
 )
 
 type GMCApp struct {
@@ -12,17 +13,46 @@ type GMCApp struct {
 	beforeShutdown []func()
 	cfg            *appconfig.APPConfig
 	isBlock        bool
+	isParsed       bool
+	config         *viper.Viper
+	configfile     string
 }
 
-func NewConfig() *appconfig.APPConfig {
-	return appconfig.NewAPPConfig()
-}
-
-func New(cfg *appconfig.APPConfig) GMCApp {
+func New() GMCApp {
 	return GMCApp{
-		cfg:     cfg,
 		isBlock: true,
 	}
+}
+func (s *GMCApp) SetConfigFile(file string) *GMCApp {
+	s.configfile = file
+	return s
+}
+func (s *GMCApp) ParseConfig() (err error) {
+	if s.isParsed {
+		return
+	}
+	defer func() {
+		if err == nil {
+			s.isParsed = true
+		}
+	}()
+	//create config file object
+	s.config = viper.New()
+	if s.configfile == "" {
+		s.config.SetConfigName("app")
+		s.config.AddConfigPath(".")
+		s.config.AddConfigPath("config")
+		s.config.AddConfigPath("conf")
+		//for testing
+		// s.config.AddConfigPath("../app")
+	} else {
+		s.config.SetConfigFile(s.configfile)
+	}
+	err = s.config.ReadInConfig()
+	if err != nil {
+		return
+	}
+	return
 }
 func (s *GMCApp) Run() (err error) {
 	//before run hooks

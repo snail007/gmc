@@ -14,54 +14,79 @@ import (
 
 var (
 	shortcutMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
+	skipMethods     = map[string]bool{
+		"Die":            true,
+		"SessionDestory": true,
+		"SessionStart":   true,
+		"Stop":           true,
+		"Write":          true}
 )
 
-type HttpRouter struct {
+type HTTPRouter struct {
 	Router
+	handle50x func(val *reflect.Value, err interface{})
 }
 
-func NewHttpRouter() *HttpRouter {
-	hr := &HttpRouter{
+func NewHTTPRouter() *HTTPRouter {
+	hr := &HTTPRouter{
 		Router: Router{
-			RedirectTrailingSlash:  true,
+			RedirectTrailingSlash:  false,
 			RedirectFixedPath:      true,
 			HandleMethodNotAllowed: true,
 			HandleOPTIONS:          true,
+			SaveMatchedRoutePath:   true,
 		},
 	}
 	return hr
 }
 
+//SetHandle50x sets handler func to handle exception error
+func (s *HTTPRouter) SetHandle50x(fn func(c *reflect.Value, err interface{})) {
+	s.handle50x = fn
+}
+
 //Controller binds a controller's methods to router
-func (s *HttpRouter) Controller(urlPath string, obj interface{}) {
+func (s *HTTPRouter) Controller(urlPath string, obj interface{}) {
 	s.controller(urlPath, obj, "")
 }
 
+//RouteTable returns all routes in router
+func (s *HTTPRouter) RouteTable() (table map[string]string) {
+	table = map[string]string{}
+	for k, v := range s.trees {
+		table[k] = v.path + v.indices
+	}
+	return
+}
+
 //ControllerMethod binds a controller's method to router
-func (s *HttpRouter) ControllerMethod(urlPath string, obj interface{}, method string) {
+func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method string) {
 	s.controller(urlPath, obj, method)
 }
-func (s *HttpRouter) controller(urlPath string, obj interface{}, method string) {
+func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) {
 	beforeIsFound := false
 	afterIsFound := false
-	for _, m := range methods(obj) {
-		switch m {
+	for _, objMethod := range methods(obj) {
+		if skipMethods[objMethod] {
+			continue
+		}
+		switch objMethod {
 		case "Before__":
 			beforeIsFound = true
 		case "After__":
 			afterIsFound = true
 		}
-		if strings.HasSuffix(m, "__") {
+		if strings.HasSuffix(objMethod, "__") {
 			continue
 		}
-		path := urlPath + strings.ToLower(m)
+		path := urlPath + strings.ToLower(objMethod)
 		if method != "" {
-			if m != method {
+			if objMethod != method {
 				continue
 			}
 			path = urlPath
 		}
-		for _, vv := range shortcutMethods {
+		for _, httpMethod := range shortcutMethods {
 			func(httpMethod, objMethod string) {
 				s.Handle(httpMethod, path, func(w http.ResponseWriter, r *http.Request, ps Params) {
 					objv := reflect.ValueOf(obj)
@@ -77,12 +102,12 @@ func (s *HttpRouter) controller(urlPath string, obj interface{}, method string) 
 					}
 					invoke(objv, "MethodCallPost__")
 				})
-			}(vv, m)
+			}(httpMethod, objMethod)
 		}
 	}
 }
 
-func (s *HttpRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
+func (s *HTTPRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
 	func() {
 		defer func() {
 			e := recover()
@@ -96,6 +121,9 @@ func (s *HttpRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
 				default:
 					//@todo
 					//exception
+					if s.handle50x != nil {
+						s.handle50x(objv, e)
+					}
 				}
 			}
 		}()

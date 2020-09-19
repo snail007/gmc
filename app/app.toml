@@ -1,9 +1,20 @@
+[httpserver]
+listen=":7080"
+tlsenable=false
+tlscert="conf/server.crt"
+tlskey="conf/server.key"
+tlsclientauth=false
+tlsclientsca="./conf/clintsca.crt"
+
+[template]
+dir="views"
+
 [session]
 # turn on/off session
 enable=true
 # maybe "file", "memory", "redis" 
-store="redis"
-cookie_name="gmcsid"
+store="memory"
+cookiename="gmcsid"
 ttl=3600
 
 [session.file]

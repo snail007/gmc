@@ -6,15 +6,13 @@
 package router
 
 import (
-	"io/ioutil"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/snail007/gmc/http/router"
 
-	"github.com/snail007/gmc/controller"
+	"github.com/snail007/gmc/http/controller"
 )
 
 type Controller struct {
@@ -35,26 +33,16 @@ func (this *Controller) TestMethod() {
 }
 func TestController(t *testing.T) {
 	assert := assert.New(t)
-	r := router.NewHttpRouter()
+	r := router.NewHTTPRouter()
 	r.Controller("/user/", new(Controller))
-	h, args, _ := r.Lookup("GET", "/user/method1")
-	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	w := httptest.NewRecorder()
-	h(w, req, args)
-	resp := w.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
-	assert.Equal("OKAYOKAYOKAY", string(body))
+	h, _, _ := r.Lookup("GET", "/user/method1")
+	assert.NotNil(h)
 }
 func TestControllerMethod(t *testing.T) {
 	assert := assert.New(t)
-	r := router.NewHttpRouter()
+	r := router.NewHTTPRouter()
 	r.ControllerMethod("/method/:name", new(Controller), "TestMethod")
 	//test Controller
-	h, args, _ := r.Lookup("GET", "/method/hello")
-	req := httptest.NewRequest("GET", "http://example.com/foo/", nil)
-	w := httptest.NewRecorder()
-	h(w, req, args)
-	resp := w.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
-	assert.Equal("OKAYOKAYhelloOKAY", string(body))
+	h, _, _ := r.Lookup("GET", "/method/hello")
+	assert.NotNil(h)
 }

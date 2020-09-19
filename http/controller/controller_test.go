@@ -10,16 +10,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/snail007/gmc/config/app"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSessionStart(t *testing.T) {
 	assert := assert.New(t)
-	//init app
-	cfg := appconfig.NewAPPConfig()
-	err := appconfig.Parse(cfg)
-	assert.Nil(err)
 	//call controller
 	c := Controller{}
 	r := httptest.NewRequest("GET", "http://example.com/foo", nil)
@@ -28,6 +23,7 @@ func TestSessionStart(t *testing.T) {
 		Value: "442445e36aaf565cbefc65a8bd5675df",
 	})
 	w := httptest.NewRecorder()
+
 	c.MethodCallPre__(w, r, nil)
 	c.SessionStart()
 	//response

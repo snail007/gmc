@@ -12,7 +12,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/snail007/gmc/config/app"
+	"github.com/spf13/viper"
+
+	"github.com/snail007/gmc/http/server/ctxvalue"
+	"github.com/snail007/gmc/http/template"
 
 	"github.com/snail007/gmc/http/cookie"
 	"github.com/snail007/gmc/http/router"
@@ -20,10 +23,14 @@ import (
 )
 
 type Controller struct {
-	Response http.ResponseWriter
-	Request  *http.Request
-	Args     router.Params
-	Session  *session.Session
+	Response     http.ResponseWriter
+	Request      *http.Request
+	Args         router.Params
+	Session      *session.Session
+	Tpl          *template.Template
+	SessionStore session.Store
+	Router       *router.HTTPRouter
+	Config       *viper.Viper
 }
 
 //MethodCallPre__ called before controller method and Before__() if have.
@@ -31,12 +38,17 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 	this.Response = w
 	this.Request = r
 	this.Args = ps
+	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
+	this.Tpl = ctxvalue.Tpl
+	this.SessionStore = ctxvalue.SessionStore
+	this.Router = ctxvalue.Router
+	this.Config = ctxvalue.Config
 }
 
 //MethodCallPost__ called after controller method and After__() if have.
 func (this *Controller) MethodCallPost__() {
-	if appconfig.SessionStore != nil && this.Session != nil && this.Session.IsDestory() {
-		appconfig.SessionStore.Delete(this.Session.SessionID())
+	if this.SessionStore != nil && this.Session != nil && this.Session.IsDestory() {
+		this.SessionStore.Delete(this.Session.SessionID())
 	}
 }
 
@@ -50,30 +62,30 @@ func (this *Controller) Stop() {
 	panic("__STOP__")
 }
 func (this *Controller) SessionStart() (err error) {
-	if appconfig.SessionStore == nil {
+	if this.SessionStore == nil {
 		err = fmt.Errorf("session is disabled")
 		return
 	}
+	sessionCookieName := this.Config.GetString("session.cookiename")
 	cookies := cookie.New(this.Response, this.Request)
-	sid, _ := cookies.Get(appconfig.SessionCookieName)
+	sid, _ := cookies.Get(sessionCookieName)
 	var isExists bool
 	if sid != "" {
-		this.Session, isExists = appconfig.SessionStore.Load(sid)
+		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
 		sess := session.NewSession()
 		sess.Touch()
-		cookies.Set(appconfig.SessionCookieName, sess.SessionID(), &cookie.Options{
-			MaxAge: appconfig.FileConfig.GetInt("session.ttl"),
+		cookies.Set(sessionCookieName, sess.SessionID(), &cookie.Options{
+			MaxAge: this.Config.GetInt("session.ttl"),
 		})
-		err = appconfig.SessionStore.Save(sess)
-
+		err = this.SessionStore.Save(sess)
 	}
 	return
 }
 
 func (this *Controller) SessionDestory() (err error) {
-	if appconfig.SessionStore == nil {
+	if this.SessionStore == nil {
 		err = fmt.Errorf("session is disabled")
 		return
 	}

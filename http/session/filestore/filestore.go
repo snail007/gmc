@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/snail007/gmc/util/file"
 	"github.com/snail007/gmc/http/session"
+	"github.com/snail007/gmc/util/fileutil"
 )
 
 type FileStoreConfig struct {

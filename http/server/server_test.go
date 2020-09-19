@@ -26,11 +26,11 @@ func TestNew(t *testing.T) {
 	assert := assert.New(t)
 	cfg := mockConfig()
 	s, _ := New(cfg)
-	err := s.Bind(":").Listen()
+	err := s.bind(":").Listen()
 	assert.Nil(err)
 	addr := s.Listener().Addr().String()
 	s0, _ := New(cfg)
-	err = s0.Bind(addr).Listen()
+	err = s0.bind(addr).Listen()
 	assert.NotNil(err)
 }
 func Test_handle50x(t *testing.T) {
@@ -106,7 +106,7 @@ func TestInit_0(t *testing.T) {
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	s, _ := New(cfg)
-	err = s.Bind(":").Listen()
+	err = s.bind(":").Listen()
 	assert.Nil(err)
 }
 func TestInit_1(t *testing.T) {
@@ -117,7 +117,7 @@ func TestInit_1(t *testing.T) {
 	assert.Nil(err)
 	cfg.Set("session.store", "file")
 	s, _ := New(cfg)
-	err = s.Bind(":").Listen()
+	err = s.bind(":").Listen()
 	assert.Nil(err)
 }
 func TestInit_2(t *testing.T) {
@@ -128,7 +128,7 @@ func TestInit_2(t *testing.T) {
 	assert.Nil(err)
 	cfg.Set("session.store", "redis")
 	s, _ := New(cfg)
-	s.Bind(":")
+	s.bind(":")
 	err = s.Listen()
 	assert.Nil(err)
 }
@@ -147,14 +147,14 @@ func TestInit_4(t *testing.T) {
 	assert.Nil(err)
 	cfg.Set("session.store", "")
 	s, _ := New(cfg)
-	s.Bind(":")
+	s.bind(":")
 	err = s.Listen()
 	assert.Nil(err)
 }
 func TestHelper(t *testing.T) {
 	assert := assert.New(t)
 	s, _ := New(viper.New())
-	err := s.Bind(":").Listen()
+	err := s.bind(":").Listen()
 	assert.Nil(err)
 	assert.NotNil(s.Server().Addr)
 	s.SetLogger(logutil.New(""))
@@ -288,7 +288,7 @@ func Test_handler40x(t *testing.T) {
 		w.Write([]byte("404"))
 	})
 	w, r := mockRequest(s, "/foo")
-	s.handle40x(w, r, &router.Params{})
+	s.handle40x(w, r, router.Params{})
 	str, _ := result(w)
 	assert.Equal("404", str)
 }
@@ -298,7 +298,14 @@ type User struct {
 }
 
 func (this *User) URL() {
-	this.Write(this.Request.URL.Path)
+	a := "a"
+	if this.Args != nil {
+		a = ""
+	}
+	this.Write(this.Request.URL.Path + a)
+}
+func (this *User) Ps() {
+	this.Write(this.Args.ByName("args") + this.Args.MatchedRoutePath())
 }
 func Test_Controller(t *testing.T) {
 	assert := assert.New(t)
@@ -310,6 +317,17 @@ func Test_Controller(t *testing.T) {
 	s.ServeHTTP(w, r)
 	str, _ := result(w)
 	assert.Equal("/user/url", str)
+}
+func Test_Controller_Args(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.router.ControllerMethod("/user/:args", new(User), "Ps")
+	h, _, _ := s.router.Lookup("GET", "/user/hello")
+	assert.NotNil(h)
+	w, r := mockRequest(s, "/user/hello")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("hello/user/:args", str)
 }
 
 func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
@@ -343,7 +361,7 @@ func mockRequest(s *HTTPServer, uri string) (w *httptest.ResponseRecorder, r *ht
 
 func mockHTTPServer() *HTTPServer {
 	s, _ := New(mockConfig())
-	s.Bind(":")
+	s.bind(":")
 	s.SetRouter(router.NewHTTPRouter())
 	s.SetLogger(logutil.New(""))
 	st, _ := memorystore.New(memorystore.NewConfig())

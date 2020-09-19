@@ -86,7 +86,7 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h(w, r, args)
 	} else {
 		//404
-		s.handle40x(w, r, &args)
+		s.handle40x(w, r, args)
 	}
 }
 func (s *HTTPServer) SetHandler40x(fn func(w http.ResponseWriter, r *http.Request, tpl *template.Template)) *HTTPServer {
@@ -98,8 +98,7 @@ func (s *HTTPServer) SetHandler50x(fn func(c *controller.Controller, err interfa
 	return s
 }
 
-//@todo
-func (s *HTTPServer) handle40x(w http.ResponseWriter, r *http.Request, ps *router.Params) {
+func (s *HTTPServer) handle40x(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	if s.handler40x == nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Page not found"))
@@ -171,7 +170,9 @@ func (s *HTTPServer) SetSessionStore(st session.Store) *HTTPServer {
 func (s *HTTPServer) SessionStore() session.Store {
 	return s.sessionStore
 }
-func (s *HTTPServer) Bind(addr string) *HTTPServer {
+
+//just for testing
+func (s *HTTPServer) bind(addr string) *HTTPServer {
 	s.addr = addr
 	return s
 }

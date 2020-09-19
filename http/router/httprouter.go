@@ -19,7 +19,8 @@ var (
 		"SessionDestory": true,
 		"SessionStart":   true,
 		"Stop":           true,
-		"Write":          true}
+		"Write":          true,
+	}
 )
 
 type HTTPRouter struct {
@@ -34,7 +35,7 @@ func NewHTTPRouter() *HTTPRouter {
 			RedirectFixedPath:      true,
 			HandleMethodNotAllowed: true,
 			HandleOPTIONS:          true,
-			SaveMatchedRoutePath:   true,
+			SaveMatchedRoutePath:   true, //if true this.Args in controller is always not be nil, if false it maybe nil.
 		},
 	}
 	return hr

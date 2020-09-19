@@ -196,7 +196,6 @@ func TestListenTLS(t *testing.T) {
 	err := s.ListenTLS()
 	assert.Nil(err)
 	s.Close()
-	t.Fail()
 }
 func TestListenTLS_0(t *testing.T) {
 	assert := assert.New(t)

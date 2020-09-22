@@ -108,14 +108,14 @@ func (s *Session) SessionID() (sessionID string) {
 func (s *Session) Touchtime() (time int64) {
 	return s.touchtime
 }
-func (s *Session) Touch() {
+func (s *Session) Touch() *Session {
 	if s.isDestory {
-		return
+		return s
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.touch()
-	return
+	return s
 }
 func (s *Session) touch() {
 	s.touchtime = time.Now().Unix()

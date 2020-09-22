@@ -1,6 +1,9 @@
 package httpserver
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -329,6 +332,74 @@ func Test_Controller_Args(t *testing.T) {
 	str, _ := result(w)
 	assert.Equal("hello/user/:args", str)
 }
+func Test_SetBindata(t *testing.T) {
+	assert := assert.New(t)
+	str := base64.StdEncoding.EncodeToString([]byte("{}"))
+	SetBinData(map[string]string{
+		"js/juqery.js": str,
+	})
+	assert.NotNil(bindata["js/juqery.js"])
+	s := mockHTTPServer()
+	w, r := mockRequest(s, "/static/js/juqery.js")
+	r.Header.Set("Accept-Encoding", "gzip")
+	s.router.HandlerFunc("GET", "/static/", s.serveStatic)
+	s.serveStatic(w, r)
+	resp := w.Result()
+	b, _ := ioutil.ReadAll(resp.Body)
+	gz, _ := gzip.NewReader(bytes.NewReader(b))
+	buf := make([]byte, 128)
+	n, _ := gz.Read(buf)
+	assert.Equal("{}", string(buf[:n]))
+	bindata = nil
+}
+func Test_SetBindata_1(t *testing.T) {
+	assert := assert.New(t)
+	cfg := mockConfig()
+	cfg.Set("static.urlpath", "/static")
+	s := mockHTTPServer(cfg)
+	w, r := mockRequest(s, "/static/js/juqery.js")
+	r.Header.Set("Accept-Encoding", "gzip")
+	s.serveStatic(w, r)
+	resp := w.Result()
+	assert.Equal(404, resp.StatusCode)
+}
+
+func Test_SetBindata_2(t *testing.T) {
+	assert := assert.New(t)
+	str := base64.StdEncoding.EncodeToString([]byte("{}"))
+	SetBinData(map[string]string{
+		"js/juqery.js": str,
+	})
+	assert.NotNil(bindata["js/juqery.js"])
+	s := mockHTTPServer()
+	w, r := mockRequest(s, "/static/js/juqery.js")
+	s.serveStatic(w, r)
+	resp := w.Result()
+	b, _ := ioutil.ReadAll(resp.Body)
+	assert.Equal("{}", string(b))
+	bindata = nil
+}
+func Test_SetBindata_3(t *testing.T) {
+	assert := assert.New(t)
+	assert.Panics(func() {
+		SetBinData(map[string]string{
+			"/js/juqery.js": ".",
+		})
+	})
+}
+func Test_SetBindata_4(t *testing.T) {
+	assert := assert.New(t)
+	cfg := mockConfig()
+	cfg.Set("static.dir", "tests")
+	cfg.Set("static.urlpath", "/static")
+	s := mockHTTPServer(cfg)
+	w, r := mockRequest(s, "/static/d.txt")
+	r.Header.Set("Accept-Encoding", "gzip")
+	s.serveStatic(w, r)
+	resp := w.Result()
+	b, _ := ioutil.ReadAll(resp.Body)
+	assert.Equal("d", string(b))
+}
 
 func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 	resp = w.Result()
@@ -359,8 +430,12 @@ func mockRequest(s *HTTPServer, uri string) (w *httptest.ResponseRecorder, r *ht
 	return
 }
 
-func mockHTTPServer() *HTTPServer {
-	s, _ := New(mockConfig())
+func mockHTTPServer(cfg ...*viper.Viper) *HTTPServer {
+	c := mockConfig()
+	if len(cfg) > 0 {
+		c = cfg[0]
+	}
+	s, _ := New(c)
 	s.bind(":")
 	s.SetRouter(router.NewHTTPRouter())
 	s.SetLogger(logutil.New(""))

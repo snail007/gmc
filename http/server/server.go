@@ -1,16 +1,19 @@
 package httpserver
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net"
 	"net/http"
-	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -28,6 +31,21 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	bindata = map[string][]byte{}
+)
+
+func SetBinData(data map[string]string) {
+	bindata = map[string][]byte{}
+	for k, v := range data {
+		b, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			panic("init static bin data fail, error: " + err.Error())
+		}
+		bindata[k] = b
+	}
+}
+
 type HTTPServer struct {
 	tpl          *template.Template
 	sessionStore session.Store
@@ -42,6 +60,8 @@ type HTTPServer struct {
 	handler50x   func(c *controller.Controller, err interface{})
 	//just for testing
 	isTestNotClosedError bool
+	staticDir            string
+	staticUrlpath        string
 }
 
 func New(appconfig *viper.Viper) (s *HTTPServer, err error) {
@@ -64,16 +84,22 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	if err != nil {
 		return
 	}
+	//init session store
 	err = s.initSessionStore()
 	if err != nil {
 		return
 	}
+	//init http server tls configuration
 	err = s.initTLSConfig()
 	if err != nil {
 		return
 	}
+	//init http server router
 	s.router = router.NewHTTPRouter()
 	s.addr = s.config.GetString("httpserver.listen")
+
+	//init static files handler, must be after router inited
+	s.initStatic()
 	return
 }
 
@@ -243,6 +269,17 @@ func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 	}
 }
 
+// must be called after router inited
+func (s *HTTPServer) initStatic() {
+	s.staticDir = s.config.GetString("static.dir")
+	s.staticUrlpath = s.config.GetString("static.urlpath")
+	if s.staticDir != "" && s.staticUrlpath != "" {
+		if !strings.HasSuffix(s.staticUrlpath, "/") {
+			s.staticUrlpath += "/"
+		}
+		s.router.HandlerFunc("GET", s.staticUrlpath, s.serveStatic)
+	}
+}
 func (s *HTTPServer) initTLSConfig() (err error) {
 	if s.config.GetBool("httpserver.tlsenable") {
 		tlsCfg := &tls.Config{}
@@ -278,11 +315,7 @@ func (s *HTTPServer) initSessionStore() (err error) {
 	case "file":
 		cfg := filestore.NewConfig()
 		cfg.TTL = ttl
-		dir := s.config.GetString("session.file.dir")
-		if dir == "" {
-			dir = os.TempDir()
-		}
-		cfg.Dir = dir
+		cfg.Dir = s.config.GetString("session.file.dir")
 		cfg.GCtime = s.config.GetInt("session.file.gctime")
 		cfg.Prefix = s.config.GetString("session.file.prefix")
 		s.sessionStore, err = filestore.New(cfg)
@@ -309,4 +342,46 @@ func (s *HTTPServer) initSessionStore() (err error) {
 		err = fmt.Errorf("unknown session store type %s", typ)
 	}
 	return
+}
+
+func (s *HTTPServer) serveStatic(w http.ResponseWriter, r *http.Request) {
+	pathA := strings.Split(r.URL.Path, "?")
+	path := router.CleanPath(pathA[0])
+	path = strings.TrimPrefix(path, s.staticUrlpath)
+	var b []byte
+	var ok bool
+	//1. find in bindata
+	if len(bindata) > 0 {
+		b, ok = bindata[path]
+	}
+	//2. find in system path
+	if !ok {
+		var e error
+		b, e = ioutil.ReadFile(filepath.Join(s.staticDir, path))
+		ok = e == nil
+	}
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Not Found"))
+		return
+	}
+	cacheSince := time.Now().Format(http.TimeFormat)
+	cacheUntil := time.Now().AddDate(66, 0, 0).Format(http.TimeFormat)
+	ext := filepath.Ext(path)
+	typ := mime.TypeByExtension(ext)
+	w.Header().Set("Cache-Control", "max-age:290304000, public")
+	w.Header().Set("Last-Modified", cacheSince)
+	w.Header().Set("Expires", cacheUntil)
+	w.Header().Set("Content-Type", typ)
+	gizpCheck := map[string]bool{".js": true, ".css": true}
+	if _, ok := gizpCheck[ext]; ok {
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			w.Header().Set("Content-Encoding", "gzip")
+			gz := gzip.NewWriter(w)
+			defer gz.Close()
+			gz.Write(b)
+			return
+		}
+	}
+	w.Write(b)
 }

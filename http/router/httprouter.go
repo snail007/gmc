@@ -80,12 +80,18 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 		if strings.HasSuffix(objMethod, "__") {
 			continue
 		}
-		path := urlPath + strings.ToLower(objMethod)
+		path := ""
 		if method != "" {
 			if objMethod != method {
 				continue
 			}
 			path = urlPath
+		} else {
+			p := urlPath
+			if !strings.HasSuffix(p, "/") {
+				p += "/"
+			}
+			path = p + strings.ToLower(objMethod)
 		}
 		for _, httpMethod := range shortcutMethods {
 			func(httpMethod, objMethod string) {

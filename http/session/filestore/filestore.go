@@ -6,11 +6,13 @@
 package filestore
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,7 +30,7 @@ type FileStoreConfig struct {
 
 func NewConfig() FileStoreConfig {
 	return FileStoreConfig{
-		Dir:    os.TempDir(),
+		Dir:    filepath.Join(os.TempDir(), ".gmcsessons"),
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
@@ -50,6 +52,7 @@ func New(config interface{}) (st session.Store, err error) {
 			return
 		}
 	}
+	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
 	if cfg.GCtime <= 0 {
 		cfg.GCtime = 300
 	}
@@ -97,7 +100,15 @@ func (s *FileStore) Save(sess *session.Session) (err error) {
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(s.file(sess.SessionID()), []byte(str), 0700)
+	f := s.file(sess.SessionID())
+	dir := filepath.Dir(f)
+	if !fileutil.ExistsDir(dir) {
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return
+		}
+	}
+	err = ioutil.WriteFile(f, []byte(str), 0700)
 	return
 }
 
@@ -108,7 +119,11 @@ func (s *FileStore) Delete(sessionID string) (err error) {
 	return
 }
 func (s *FileStore) file(sessionID string) string {
-	return filepath.Join(s.cfg.Dir, s.cfg.Prefix+sessionID)
+	f := s.cfg.Prefix + sessionID
+	m := fmt.Sprintf("%x", md5.Sum([]byte(f)))
+	subDir := fmt.Sprintf("%s/%s/%s", string(m[0]), string(m[1]), string(m[2]))
+	path := filepath.Join(s.cfg.Dir, subDir, f)
+	return path
 }
 func (s *FileStore) gc() {
 	defer func() {
@@ -127,11 +142,13 @@ func (s *FileStore) gc() {
 		} else {
 			time.Sleep(time.Second * time.Duration(s.cfg.GCtime))
 		}
-		files, err = filepath.Glob(s.file("*"))
+		names := []string{}
+		err = s.tree(s.cfg.Dir, &names)
 		if err != nil {
 			s.cfg.Logger.Printf("filestore gc error: %s", err)
 			continue
 		}
+		files = names
 		for _, v := range files {
 			if file != nil {
 				file.Close()
@@ -153,4 +170,57 @@ func (s *FileStore) gc() {
 			file.Close()
 		}
 	}
+}
+func (s *FileStore) tree(folder string, names *[]string) (err error) {
+	f, err := os.Open(folder)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	finfo, err := f.Stat()
+	if err != nil {
+		return
+	}
+	if !finfo.IsDir() {
+		return
+	}
+	files, err := filepath.Glob(folder + "/*")
+	if err != nil {
+		return
+	}
+	var file *os.File
+	for _, v := range files {
+		if file != nil {
+			file.Close()
+		}
+		file, err = os.Open(v)
+		if err != nil {
+			return
+		}
+		fileInfo, err := file.Stat()
+		if err != nil {
+			return err
+		}
+		if fileInfo.IsDir() {
+			err = s.tree(v, names)
+			if err != nil {
+				return err
+			}
+		} else {
+			v, err = filepath.Abs(v)
+			if err != nil {
+				return err
+			}
+			name := filepath.Base(v)
+			if !strings.HasPrefix(name, s.cfg.Prefix) {
+				continue
+			}
+			v0 := strings.Replace(v, "\\", "/", -1)
+			*names = append(*names, v0)
+		}
+	}
+	if file != nil {
+		file.Close()
+	}
+	return
 }

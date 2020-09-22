@@ -6,6 +6,10 @@ tlskey="conf/server.key"
 tlsclientauth=false
 tlsclientsca="./conf/clintsca.crt"
 
+[static]
+dir="static"
+urlpath="/static/"
+
 [template]
 dir="views"
 
@@ -18,7 +22,7 @@ cookiename="gmcsid"
 ttl=3600
 
 [session.file]
-dir=""
+dir="{tmp}/.gmcsessions"
 gctime=300
 prefix=".gmcsession_"
 

@@ -1,10 +1,8 @@
 package initialize
 
-import (
-	gmchttpserver "github.com/snail007/gmc/http/server"
-)
+import "github.com/snail007/gmc"
 
-func Initialize(s *gmchttpserver.HTTPServer) (err error) {
+func Initialize(s *gmc.HTTPServer) (err error) {
 	// initialize your something here
 	s.Logger().Println("using config file : ", s.Config().ConfigFileUsed())
 	return

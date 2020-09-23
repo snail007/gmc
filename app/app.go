@@ -26,6 +26,7 @@ type GMCApp struct {
 	afterServiceInit []func(app *GMCApp, srv interface{}) error
 }
 type ServiceItem struct {
+	BeforeInit   func(srv *gmcconfig.GMCConfig) (err error)
 	AfterInit    func(srv *ServiceItem) (err error)
 	Service      gmcservice.Service
 	ConfigIDname string
@@ -165,6 +166,9 @@ func (s *GMCApp) AddService(item ServiceItem) *GMCApp {
 	s.services = append(s.services, item)
 	return s
 }
+func (s *GMCApp) Logger() *log.Logger {
+	return s.logger
+}
 
 // run all services
 func (s *GMCApp) run() (err error) {
@@ -176,16 +180,26 @@ func (s *GMCApp) run() (err error) {
 		} else {
 			cfg = s.mainConfig
 		}
+		//BeforeInit
+		if srvI.BeforeInit != nil {
+			err = srvI.BeforeInit(cfg)
+			if err != nil {
+				return
+			}
+		}
+		//init service
 		err = srv.Init(cfg)
 		if err != nil {
 			return
 		}
+		//AfterInit
 		if srvI.AfterInit != nil {
 			err = srvI.AfterInit(&srvI)
 			if err != nil {
 				return
 			}
 		}
+		//run service
 		err = srv.Start()
 		if err != nil {
 			return

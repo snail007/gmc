@@ -4,13 +4,12 @@ import (
 	"net/http"
 	"strings"
 
-	gmcrouter "github.com/snail007/gmc/http/router"
+	"github.com/snail007/gmc"
 
 	"github.com/snail007/gmc/demos/website/controller"
-	gmchttpserver "github.com/snail007/gmc/http/server"
 )
 
-func InitRouter(s *gmchttpserver.HTTPServer) {
+func InitRouter(s *gmc.HTTPServer) {
 	// sets pre routing handler, it be called with any request.
 	s.BeforeRouting(filiterAll)
 
@@ -27,11 +26,11 @@ func InitRouter(s *gmchttpserver.HTTPServer) {
 	// indicates router initialized
 	s.Logger().Printf("router inited.")
 }
-func filiterAll(w http.ResponseWriter, r *http.Request, server *gmchttpserver.HTTPServer) bool {
+func filiterAll(w http.ResponseWriter, r *http.Request, server *gmc.HTTPServer) bool {
 	server.Logger().Printf(r.RequestURI)
 	return true
 }
-func filiter(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, server *gmchttpserver.HTTPServer) bool {
+func filiter(w http.ResponseWriter, r *http.Request, ps gmc.RouterParams, server *gmc.HTTPServer) bool {
 	path := strings.TrimRight(r.URL.Path, "/\\")
 
 	// we want to prevent user to access method `controller.Demo.Protected`

@@ -4,7 +4,7 @@ import (
 	gmcapp "github.com/snail007/gmc/app"
 	"github.com/snail007/gmc/demos/website/initialize"
 	"github.com/snail007/gmc/demos/website/router"
-	httpserver "github.com/snail007/gmc/http/server"
+	gmchttpserver "github.com/snail007/gmc/http/server"
 )
 
 func main() {
@@ -22,9 +22,9 @@ func main() {
 
 	//4.add service to app
 	app.AddService(gmcapp.ServiceItem{
-		Service: httpserver.New(), //create a http server
+		Service: gmchttpserver.New(), //create a http server
 		AfterInit: func(s *gmcapp.ServiceItem) (err error) {
-			server := s.Service.(*httpserver.HTTPServer)
+			server := s.Service.(*gmchttpserver.HTTPServer)
 			//1.do something after http server inited
 			initialize.Initialize(server)
 			//2.configuration your routers

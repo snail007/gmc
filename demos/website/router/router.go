@@ -6,7 +6,7 @@ import (
 
 	"github.com/snail007/gmc/http/router"
 
-	"github.com/snail007/gmc/demos/base/controller"
+	"github.com/snail007/gmc/demos/website/controller"
 	httpserver "github.com/snail007/gmc/http/server"
 )
 

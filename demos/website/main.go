@@ -2,8 +2,8 @@ package main
 
 import (
 	gmcapp "github.com/snail007/gmc/app"
-	"github.com/snail007/gmc/demos/base/initialize"
-	"github.com/snail007/gmc/demos/base/router"
+	"github.com/snail007/gmc/demos/website/initialize"
+	"github.com/snail007/gmc/demos/website/router"
 	httpserver "github.com/snail007/gmc/http/server"
 )
 

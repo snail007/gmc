@@ -41,6 +41,9 @@ func (s *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bo
 func (s *Map) Store(key, value interface{}) *Map {
 	s.data.Store(key, value)
 	s.lock.Lock()
+	if v, ok := s.keyElMap[key]; ok {
+		s.keys.Remove(v)
+	}
 	s.keyElMap[key] = s.keys.PushBack(key)
 	s.lock.Unlock()
 	return s

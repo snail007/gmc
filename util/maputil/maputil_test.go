@@ -95,3 +95,15 @@ func TestKeys_1(t *testing.T) {
 	assert.Equal(0, m.Len())
 
 }
+func TestKeys_2(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	m.Store("a", "111").
+		Store("b", "111").
+		Store("c", "111").
+		Store("d", "111")
+	m.Delete("b")
+	m.Delete("d")
+	assert.Equal([]interface{}{"a", "c"}, m.Keys())
+
+}

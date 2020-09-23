@@ -12,10 +12,10 @@ import (
 func main() {
 	//your business code here
 	
-	hook.RegistShutdown(func() {
+	gmchook.RegistShutdown(func() {
 		//do something before program exit
 	})
     //this will waiting for singal, prevent program main function to exit
-	hook.WaitShutdown()
+	gmchook.WaitShutdown()
 }
 ```

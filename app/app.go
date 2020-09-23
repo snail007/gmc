@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	gmchook "github.com/snail007/gmc/process/hook"
+
+	gmcservice "github.com/snail007/gmc/service"
+
 	gmcconfig "github.com/snail007/gmc/config/gmc"
-	"github.com/snail007/gmc/process/hook"
-	"github.com/snail007/gmc/service"
 	"github.com/snail007/gmc/util/logutil"
 )
 
@@ -25,7 +27,7 @@ type GMCApp struct {
 }
 type ServiceItem struct {
 	AfterInit    func(srv *ServiceItem) (err error)
-	Service      service.Service
+	Service      gmcservice.Service
 	ConfigIDname string
 }
 
@@ -121,13 +123,13 @@ func (s *GMCApp) Run() (err error) {
 	if err != nil {
 		return
 	}
-	hook.RegistShutdown(func() {
+	gmchook.RegistShutdown(func() {
 		s.Stop()
 	})
 	if s.isBlock {
-		hook.WaitShutdown()
+		gmchook.WaitShutdown()
 	} else {
-		go hook.WaitShutdown()
+		go gmchook.WaitShutdown()
 	}
 	return
 }

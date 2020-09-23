@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package filestore
+package gmcfilestore
 
 import (
 	"crypto/md5"
@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/snail007/gmc/http/session"
+	gmcsession "github.com/snail007/gmc/http/session"
 	"github.com/snail007/gmc/util/fileutil"
 )
 
@@ -39,12 +39,12 @@ func NewConfig() FileStoreConfig {
 }
 
 type FileStore struct {
-	session.Store
+	gmcsession.Store
 	cfg  FileStoreConfig
 	lock *sync.RWMutex
 }
 
-func New(config interface{}) (st session.Store, err error) {
+func New(config interface{}) (st gmcsession.Store, err error) {
 	cfg := config.(FileStoreConfig)
 	if !fileutil.ExistsDir(cfg.Dir) {
 		err = os.Mkdir(cfg.Dir, 0700)
@@ -65,7 +65,7 @@ func New(config interface{}) (st session.Store, err error) {
 	return
 }
 
-func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool) {
+func (s *FileStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	f := s.file(sessionID)
@@ -78,7 +78,7 @@ func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool
 		s.cfg.Logger.Printf("filestore read file error: %s", err)
 		return
 	}
-	sess = session.NewSession()
+	sess = gmcsession.NewSession()
 	err = sess.Unserialize(string(str))
 	if err != nil {
 		sess = nil
@@ -93,7 +93,7 @@ func (s *FileStore) Load(sessionID string) (sess *session.Session, isExists bool
 	isExists = true
 	return
 }
-func (s *FileStore) Save(sess *session.Session) (err error) {
+func (s *FileStore) Save(sess *gmcsession.Session) (err error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	str, err := sess.Serialize()

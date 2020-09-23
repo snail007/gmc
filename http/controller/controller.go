@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package controller
+package gmccontroller
 
 import (
 	"encoding/json"
@@ -12,29 +12,28 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config/gmc"
 
+	gmccookie "github.com/snail007/gmc/http/cookie"
+	gmcrouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
-	"github.com/snail007/gmc/http/template"
-
-	"github.com/snail007/gmc/http/cookie"
-	"github.com/snail007/gmc/http/router"
-	"github.com/snail007/gmc/http/session"
+	gmcsession "github.com/snail007/gmc/http/session"
+	gmctemplate "github.com/snail007/gmc/http/template"
 )
 
 type Controller struct {
 	Response     http.ResponseWriter
 	Request      *http.Request
-	Args         router.Params
-	Session      *session.Session
-	Tpl          *template.Template
-	SessionStore session.Store
-	Router       *router.HTTPRouter
+	Args         gmcrouter.Params
+	Session      *gmcsession.Session
+	Tpl          *gmctemplate.Template
+	SessionStore gmcsession.Store
+	Router       *gmcrouter.HTTPRouter
 	Config       *gmcconfig.GMCConfig
 }
 
 //MethodCallPre__ called before controller method and Before__() if have.
-func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, ps router.Params) {
+func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
 	this.Response = w
 	this.Request = r
 	this.Args = ps
@@ -67,16 +66,16 @@ func (this *Controller) SessionStart() (err error) {
 		return
 	}
 	sessionCookieName := this.Config.GetString("session.cookiename")
-	cookies := cookie.New(this.Response, this.Request)
+	cookies := gmccookie.New(this.Response, this.Request)
 	sid, _ := cookies.Get(sessionCookieName)
 	var isExists bool
 	if sid != "" {
 		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
-		sess := session.NewSession()
+		sess := gmcsession.NewSession()
 		sess.Touch()
-		cookies.Set(sessionCookieName, sess.SessionID(), &cookie.Options{
+		cookies.Set(sessionCookieName, sess.SessionID(), &gmccookie.Options{
 			MaxAge: this.Config.GetInt("session.ttl"),
 		})
 		err = this.SessionStore.Save(sess)

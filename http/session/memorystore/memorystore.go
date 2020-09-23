@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package memorystore
+package gmcmemorystore
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/snail007/gmc/http/session"
+	gmcsession "github.com/snail007/gmc/http/session"
 )
 
 type MemoryStoreConfig struct {
@@ -30,12 +30,12 @@ func NewConfig() MemoryStoreConfig {
 }
 
 type MemoryStore struct {
-	session.Store
+	gmcsession.Store
 	cfg  MemoryStoreConfig
 	data sync.Map
 }
 
-func New(config interface{}) (st session.Store, err error) {
+func New(config interface{}) (st gmcsession.Store, err error) {
 	cfg := config.(MemoryStoreConfig)
 	s := &MemoryStore{
 		cfg:  cfg,
@@ -46,12 +46,12 @@ func New(config interface{}) (st session.Store, err error) {
 	return
 }
 
-func (s *MemoryStore) Load(sessionID string) (sess *session.Session, isExists bool) {
+func (s *MemoryStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
 	sess0, ok := s.data.Load(sessionID)
 	if !ok {
 		return
 	}
-	sess = sess0.(*session.Session)
+	sess = sess0.(*gmcsession.Session)
 	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
 		sess = nil
 		s.data.Delete(sessionID)
@@ -60,7 +60,7 @@ func (s *MemoryStore) Load(sessionID string) (sess *session.Session, isExists bo
 	isExists = true
 	return
 }
-func (s *MemoryStore) Save(sess *session.Session) (err error) {
+func (s *MemoryStore) Save(sess *gmcsession.Session) (err error) {
 	s.data.Store(sess.SessionID(), sess)
 	return
 }
@@ -85,7 +85,7 @@ func (s *MemoryStore) gc() {
 			time.Sleep(time.Second * time.Duration(s.cfg.GCtime))
 		}
 		s.data.Range(func(k, v interface{}) bool {
-			sess := v.(*session.Session)
+			sess := v.(*gmcsession.Session)
 			if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
 				s.data.Delete(k)
 			}

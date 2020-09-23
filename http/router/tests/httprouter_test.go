@@ -8,15 +8,15 @@ package router
 import (
 	"testing"
 
+	gmccontroller "github.com/snail007/gmc/http/controller"
+
 	"github.com/stretchr/testify/assert"
 
-	"github.com/snail007/gmc/http/router"
-
-	"github.com/snail007/gmc/http/controller"
+	gmcrouter "github.com/snail007/gmc/http/router"
 )
 
 type Controller struct {
-	controller.Controller
+	gmccontroller.Controller
 }
 
 func (this *Controller) Before__() {
@@ -33,14 +33,14 @@ func (this *Controller) TestMethod() {
 }
 func TestController(t *testing.T) {
 	assert := assert.New(t)
-	r := router.NewHTTPRouter()
+	r := gmcrouter.NewHTTPRouter()
 	r.Controller("/user/", new(Controller))
 	h, _, _ := r.Lookup("GET", "/user/method1")
 	assert.NotNil(h)
 }
 func TestControllerMethod(t *testing.T) {
 	assert := assert.New(t)
-	r := router.NewHTTPRouter()
+	r := gmcrouter.NewHTTPRouter()
 	r.ControllerMethod("/method/:name", new(Controller), "TestMethod")
 	//test Controller
 	h, _, _ := r.Lookup("GET", "/method/hello")

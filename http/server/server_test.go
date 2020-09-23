@@ -1,4 +1,4 @@
-package httpserver
+package gmchttpserver
 
 import (
 	"bytes"
@@ -12,14 +12,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/snail007/gmc/service"
+	gmcservice "github.com/snail007/gmc/service"
 
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 
-	"github.com/snail007/gmc/http/controller"
-	"github.com/snail007/gmc/http/router"
-	"github.com/snail007/gmc/http/session/memorystore"
-	"github.com/snail007/gmc/http/template"
+	gmccontroller "github.com/snail007/gmc/http/controller"
+	gmcrouter "github.com/snail007/gmc/http/router"
+	gmcmemorystore "github.com/snail007/gmc/http/session/memorystore"
+	gmctemplate "github.com/snail007/gmc/http/template"
 	"github.com/snail007/gmc/util/logutil"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +59,7 @@ func TestRouting(t *testing.T) {
 func TestRouting_1(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.RoutingFiliter(func(w http.ResponseWriter, r *http.Request, ps router.Params, server *HTTPServer) (isContinue bool) {
+	s.RoutingFiliter(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, server *HTTPServer) (isContinue bool) {
 		w.Write([]byte("error"))
 		return false
 	})
@@ -73,9 +73,9 @@ func TestRouting_1(t *testing.T) {
 }
 func Test_handle50x(t *testing.T) {
 	assert := assert.New(t)
-	obj := new(controller.Controller)
+	obj := new(gmccontroller.Controller)
 	objrf := reflect.ValueOf(obj)
-	objv := objrf.Interface().(*controller.Controller)
+	objv := objrf.Interface().(*gmccontroller.Controller)
 	w := httptest.NewRecorder()
 	objv.Response = w
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
@@ -91,15 +91,15 @@ func Test_handle50x(t *testing.T) {
 }
 func Test_handle50x_1(t *testing.T) {
 	assert := assert.New(t)
-	obj := new(controller.Controller)
+	obj := new(gmccontroller.Controller)
 	objrf := reflect.ValueOf(obj)
-	objv := objrf.Interface().(*controller.Controller)
+	objv := objrf.Interface().(*gmccontroller.Controller)
 	w := httptest.NewRecorder()
 	objv.Response = w
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := New()
 	s.Init(gmcconfig.New())
-	s.SetHandler50x(func(c *controller.Controller, err interface{}) {
+	s.SetHandler50x(func(c *gmccontroller.Controller, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
 	s.handle50x(&objrf, fmt.Errorf("aaa"))
@@ -205,14 +205,14 @@ func TestHelper(t *testing.T) {
 	assert.NotNil(s.Server().Addr)
 	s.SetLogger(logutil.New(""))
 	assert.NotNil(s.logger)
-	r := router.NewHTTPRouter()
+	r := gmcrouter.NewHTTPRouter()
 	s.SetRouter(r)
 	assert.NotNil(s.router)
-	tpl, err := template.New("views")
+	tpl, err := gmctemplate.New("views")
 	assert.Nil(err)
 	s.SetTpl(tpl)
 	assert.NotNil(s.tpl)
-	st, err := memorystore.New(memorystore.NewConfig())
+	st, err := gmcmemorystore.New(gmcmemorystore.NewConfig())
 	assert.Nil(err)
 	s.SetSessionStore(st)
 	assert.NotNil(s.sessionStore)
@@ -330,17 +330,17 @@ func TestListen_2(t *testing.T) {
 func Test_handler40x(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.SetHandler40x(func(w http.ResponseWriter, r *http.Request, tpl *template.Template) {
+	s.SetHandler40x(func(w http.ResponseWriter, r *http.Request, tpl *gmctemplate.Template) {
 		w.Write([]byte("404"))
 	})
 	w, r := mockRequest(s, "/foo")
-	s.handle40x(w, r, router.Params{})
+	s.handle40x(w, r, gmcrouter.Params{})
 	str, _ := result(w)
 	assert.Equal("404", str)
 }
 
 type User struct {
-	controller.Controller
+	gmccontroller.Controller
 }
 
 func (this *User) URL() {
@@ -446,7 +446,7 @@ func Test_SetBindata_4(t *testing.T) {
 func Test_Service(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s0 := (service.Service)(s)
+	s0 := (gmcservice.Service)(s)
 	err := s0.Start()
 	assert.Nil(err)
 	s0.Stop()
@@ -457,7 +457,7 @@ func Test_Service_2(t *testing.T) {
 	cfg := mockConfig()
 	cfg.Set("httpserver.tlsenable", true)
 	s := mockHTTPServer(cfg)
-	s0 := (service.Service)(s)
+	s0 := (gmcservice.Service)(s)
 	err := s0.Start()
 	assert.Nil(err)
 	s.SetLog(s.logger)
@@ -476,7 +476,7 @@ func mockConfig() *gmcconfig.GMCConfig {
 	return cfg
 }
 func mockController(obj interface{}, s *HTTPServer, w http.ResponseWriter, r *http.Request) interface{} {
-	objv := reflect.ValueOf(obj).Interface().(*controller.Controller)
+	objv := reflect.ValueOf(obj).Interface().(*gmccontroller.Controller)
 	objv.Response = w
 	objv.Request = r
 	objv.Tpl = s.tpl
@@ -499,11 +499,11 @@ func mockHTTPServer(cfg ...*gmcconfig.GMCConfig) *HTTPServer {
 	s := New()
 	s.Init(c)
 	s.bind(":")
-	s.SetRouter(router.NewHTTPRouter())
+	s.SetRouter(gmcrouter.NewHTTPRouter())
 	s.SetLogger(logutil.New(""))
-	st, _ := memorystore.New(memorystore.NewConfig())
+	st, _ := gmcmemorystore.New(gmcmemorystore.NewConfig())
 	s.SetSessionStore(st)
-	tpl, _ := template.New("../template/tests/views")
+	tpl, _ := gmctemplate.New("../template/tests/views")
 	s.SetTpl(tpl)
 	return s
 }

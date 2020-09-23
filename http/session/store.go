@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package session
+package gmcsession
 
 type Store interface {
 	Load(sessionID string) (session *Session, isExits bool)

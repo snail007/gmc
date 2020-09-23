@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package profiling
+package gmcprofiling
 
 func ExampleStartArg() {
 	//StartArg will search command line arguments "profiling" , using it's value as store data folder.

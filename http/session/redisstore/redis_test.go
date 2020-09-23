@@ -1,11 +1,10 @@
-package redisstore
+package gmcredisstore
 
 import (
 	"testing"
 	"time"
 
-	"github.com/snail007/gmc/http/session"
-
+	gmcsession "github.com/snail007/gmc/http/session"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +14,7 @@ func TestNew(t *testing.T) {
 	cfg.TTL = 1
 	store, err := New(cfg)
 	assert.Nil(err)
-	sess := session.NewSession()
+	sess := gmcsession.NewSession()
 	sid := sess.SessionID()
 	sess.Set("test", "aaa")
 	sess.Touch()

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package memorystore
+package gmcmemorystore
 
 import (
 	"fmt"
@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/snail007/gmc/http/session"
+	gmcsession "github.com/snail007/gmc/http/session"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	store session.Store
+	store gmcsession.Store
 )
 
 func TestNew(t *testing.T) {
@@ -25,7 +25,7 @@ func TestNew(t *testing.T) {
 	_, ok := store.Load(sid)
 	assert.False(ok)
 
-	sess := session.NewSession()
+	sess := gmcsession.NewSession()
 	sess.Touch()
 	assert.Nil(store.Save(sess))
 	time.Sleep(time.Second * 3)
@@ -46,7 +46,7 @@ func TestDelete(t *testing.T) {
 	cfg := NewConfig()
 	store, err := New(cfg)
 	assert.Nil(err)
-	sess0 := session.NewSession()
+	sess0 := gmcsession.NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -61,7 +61,7 @@ func TestNoGC(t *testing.T) {
 	cfg.TTL = 1
 	cfg.GCtime = 100
 	store, _ := New(cfg)
-	sess0 := session.NewSession()
+	sess0 := gmcsession.NewSession()
 	sid := sess0.SessionID()
 	sess0.Touch()
 	store.Save(sess0)

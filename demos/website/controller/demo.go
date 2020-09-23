@@ -1,11 +1,11 @@
 package controller
 
 import (
-	gcontroller "github.com/snail007/gmc/http/controller"
+	gmccontroller "github.com/snail007/gmc/http/controller"
 )
 
 type Demo struct {
-	gcontroller.Controller
+	gmccontroller.Controller
 }
 
 func (this *Demo) Before__() {

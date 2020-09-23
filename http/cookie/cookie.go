@@ -1,4 +1,4 @@
-package cookie
+package gmccookie
 
 import (
 	"net/http"

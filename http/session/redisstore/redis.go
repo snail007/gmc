@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package redisstore
+package gmcredisstore
 
 import (
 	"log"
@@ -12,7 +12,7 @@ import (
 
 	gmccache "github.com/snail007/gmc/cache"
 	gmcredis "github.com/snail007/gmc/cache/redis"
-	"github.com/snail007/gmc/http/session"
+	gmcsession "github.com/snail007/gmc/http/session"
 )
 
 type RedisStoreConfig struct {
@@ -30,12 +30,12 @@ func NewRedisStoreConfig() RedisStoreConfig {
 }
 
 type RedisStore struct {
-	session.Store
+	gmcsession.Store
 	cfg   RedisStoreConfig
 	cache gmccache.Cache
 }
 
-func New(config interface{}) (st session.Store, err error) {
+func New(config interface{}) (st gmcsession.Store, err error) {
 	cfg := config.(RedisStoreConfig)
 	s := &RedisStore{
 		cfg:   cfg,
@@ -45,13 +45,13 @@ func New(config interface{}) (st session.Store, err error) {
 	return
 }
 
-func (s *RedisStore) Load(sessionID string) (sess *session.Session, isExists bool) {
+func (s *RedisStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
 	v, e := s.cache.Get(sessionID)
 	if v == nil || e != nil {
 		return
 	}
 	str := string(v.([]byte))
-	sess = session.NewSession()
+	sess = gmcsession.NewSession()
 	err := sess.Unserialize(string(str))
 	if err != nil {
 		sess = nil
@@ -66,7 +66,7 @@ func (s *RedisStore) Load(sessionID string) (sess *session.Session, isExists boo
 	isExists = true
 	return
 }
-func (s *RedisStore) Save(sess *session.Session) (err error) {
+func (s *RedisStore) Save(sess *gmcsession.Session) (err error) {
 	str, err := sess.Serialize()
 	if err != nil {
 		return

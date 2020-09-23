@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/snail007/gmc/http/router"
+	gmcrouter "github.com/snail007/gmc/http/router"
 
 	"github.com/snail007/gmc/demos/website/controller"
 	httpserver "github.com/snail007/gmc/http/server"
@@ -21,7 +21,7 @@ func filiterAll(w http.ResponseWriter, r *http.Request, server *httpserver.HTTPS
 	server.Logger().Printf(r.RequestURI)
 	return true
 }
-func filiter(w http.ResponseWriter, r *http.Request, ps router.Params, server *httpserver.HTTPServer) bool {
+func filiter(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, server *httpserver.HTTPServer) bool {
 	path := strings.TrimRight(r.URL.Path, "/\\")
 	if strings.HasSuffix(path, "protected") {
 		w.Write([]byte("404"))

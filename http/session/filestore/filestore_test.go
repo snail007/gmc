@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package filestore
+package gmcfilestore
 
 import (
 	"fmt"
@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/snail007/gmc/http/session"
+	gmcsession "github.com/snail007/gmc/http/session"
 	"github.com/snail007/gmc/util/fileutil"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	store session.Store
+	store gmcsession.Store
 )
 
 func TestNew(t *testing.T) {
@@ -27,13 +27,13 @@ func TestNew(t *testing.T) {
 	sid := "testaaaa"
 	_, ok := store.Load(sid)
 	assert.False(ok)
-	sess := session.NewSession().Touch()
+	sess := gmcsession.NewSession().Touch()
 	err := store.Save(sess)
 	assert.Nil(err)
 	_, ok = store.Load(sess.SessionID())
 	assert.True(ok)
 	for i := 0; i < 10; i++ {
-		err := store.Save(session.NewSession().Touch())
+		err := store.Save(gmcsession.NewSession().Touch())
 		assert.Nil(err)
 	}
 	time.Sleep(time.Second * 3)
@@ -71,7 +71,7 @@ func TestDelete(t *testing.T) {
 	cfg := NewConfig()
 	store, err := New(cfg)
 	assert.Nil(err)
-	sess0 := session.NewSession()
+	sess0 := gmcsession.NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -86,7 +86,7 @@ func TestDelete_2(t *testing.T) {
 	cfg.TTL = 1
 	store, err := New(cfg)
 	assert.Nil(err)
-	sess0 := session.NewSession()
+	sess0 := gmcsession.NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())

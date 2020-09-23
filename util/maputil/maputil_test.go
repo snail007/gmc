@@ -11,14 +11,14 @@ func TestRange(t *testing.T) {
 	m := NewMap()
 	m.Store("a", "111").
 		Store("b", "111")
-	assert.Equal(int64(2), m.Len())
+	assert.Equal(2, m.Len())
 	m.Delete("a")
-	assert.Equal(int64(1), m.Len())
+	assert.Equal(1, m.Len())
 	m.Range(func(k, v interface{}) bool {
 		m.Delete(k)
 		return true
 	})
-	assert.Equal(int64(0), m.Len())
+	assert.Equal(0, m.Len())
 }
 
 func TestLoad(t *testing.T) {

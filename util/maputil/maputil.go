@@ -54,6 +54,7 @@ func (s *Map) Delete(key interface{}) *Map {
 	s.lock.Lock()
 	if el, ok := s.keyElMap[key]; ok {
 		s.keys.Remove(el)
+		delete(s.keyElMap, key)
 	}
 	s.lock.Unlock()
 	return s
@@ -130,6 +131,51 @@ func (s *MapStringString) Keys() (keys []string) {
 func (s *MapStringString) Range(f func(key, value string) bool) *MapStringString {
 	fn := func(key, value interface{}) bool {
 		return f(key.(string), value.(string))
+	}
+	s.data.Range(fn)
+	return s
+}
+
+//MapStringInterface relative to map[string]interface{}
+type MapStringInterface struct {
+	data *Map
+}
+
+func NewMapStringInterface() *MapStringInterface {
+	return &MapStringInterface{
+		data: NewMap(),
+	}
+}
+func (s *MapStringInterface) Load(key string) (value interface{}, ok bool) {
+	value, ok = s.data.Load(key)
+	return
+}
+func (s *MapStringInterface) LoadOrStore(key string, value interface{}) (actual interface{}, loaded bool) {
+	actual, loaded = s.data.LoadOrStore(key, value)
+	return
+}
+func (s *MapStringInterface) Store(key string, value interface{}) *MapStringInterface {
+	s.data.Store(key, value)
+	return s
+}
+
+func (s *MapStringInterface) Delete(key string) *MapStringInterface {
+	s.data.Delete(key)
+	return s
+}
+
+func (s *MapStringInterface) Len() int {
+	return s.data.Len()
+}
+func (s *MapStringInterface) Keys() (keys []string) {
+	for _, k := range s.data.Keys() {
+		keys = append(keys, k.(string))
+	}
+	return
+}
+func (s *MapStringInterface) Range(f func(key string, value interface{}) bool) *MapStringInterface {
+	fn := func(key, value interface{}) bool {
+		return f(key.(string), value)
 	}
 	s.data.Range(fn)
 	return s

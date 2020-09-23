@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/snail007/gmc/config/gmc"
 
 	"github.com/snail007/gmc/http/server/ctxvalue"
 	"github.com/snail007/gmc/http/template"
@@ -30,7 +30,7 @@ type Controller struct {
 	Tpl          *template.Template
 	SessionStore session.Store
 	Router       *router.HTTPRouter
-	Config       *viper.Viper
+	Config       *gmcconfig.GMCConfig
 }
 
 //MethodCallPre__ called before controller method and Before__() if have.

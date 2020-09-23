@@ -52,13 +52,13 @@ func (s *HTTPRouter) Controller(urlPath string, obj interface{}) {
 }
 
 //RouteTable returns all routes in router
-func (s *HTTPRouter) RouteTable() (table map[string]string) {
-	table = map[string]string{}
-	for k, v := range s.trees {
-		table[k] = v.path + v.indices
-	}
-	return
-}
+// func (s *HTTPRouter) RouteTable() (table map[string]string) {
+// 	table = map[string]string{}
+// 	for k, v := range s.trees {
+// 		table[k] = v.path + v.indices
+// 	}
+// 	return
+// }
 
 //ControllerMethod binds a controller's method to router
 func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method string) {

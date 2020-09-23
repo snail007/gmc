@@ -1,17 +1,18 @@
 package ctxvalue
 
 import (
+	gmcconfig "github.com/snail007/gmc/config/gmc"
 	"github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/session"
 	"github.com/snail007/gmc/http/template"
-	"github.com/spf13/viper"
 )
 
 type CtxValue struct {
 	Tpl          *template.Template
 	SessionStore session.Store
 	Router       *router.HTTPRouter
-	Config       *viper.Viper
+	Config       *gmcconfig.GMCConfig
+	AppConfig    *gmcconfig.GMCConfig
 }
 type (
 	ctxValueKey struct{}

@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	gmcconfig "github.com/snail007/gmc/config/gmc"
 	"github.com/snail007/gmc/http/controller"
 	"github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
@@ -28,7 +29,6 @@ import (
 	"github.com/snail007/gmc/http/session/redisstore"
 	"github.com/snail007/gmc/http/template"
 	"github.com/snail007/gmc/util/logutil"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -55,26 +55,32 @@ type HTTPServer struct {
 	listener     net.Listener
 	server       *http.Server
 	connCnt      *int64
-	config       *viper.Viper
+	config       *gmcconfig.GMCConfig
 	handler40x   func(w http.ResponseWriter, r *http.Request, tpl *template.Template)
 	handler50x   func(c *controller.Controller, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
+	beforeRouting        func(w http.ResponseWriter, r *http.Request, server *HTTPServer) (isContinue bool)
+	routingFiliter       func(w http.ResponseWriter, r *http.Request, ps router.Params, server *HTTPServer) (isContinue bool)
 }
 
-func New(appconfig *viper.Viper) (s *HTTPServer, err error) {
+func New() *HTTPServer {
+	return &HTTPServer{}
+}
+
+//Init implements service.Services Init
+func (s *HTTPServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
 	connCnt := int64(0)
-	s = &HTTPServer{
-		server:               &http.Server{},
-		logger:               logutil.New(""),
-		connCnt:              &connCnt,
-		config:               appconfig,
-		isTestNotClosedError: false,
-	}
+	s.server = &http.Server{}
+	s.logger = logutil.New("")
+	s.connCnt = &connCnt
+	s.config = cfg
+	s.isTestNotClosedError = false
 	s.server.ConnState = s.connState
 	s.server.Handler = s
+
 	//init base objects
 	err = s.initBaseObjets()
 	return
@@ -105,10 +111,23 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 
 func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ctx = context.WithValue(ctx, ctxvalue.CtxValueKey, ctxvalue.CtxValue{})
+	ctx = context.WithValue(ctx, ctxvalue.CtxValueKey, ctxvalue.CtxValue{
+		Tpl:          s.tpl,
+		SessionStore: s.sessionStore,
+		Router:       s.router,
+		Config:       s.config,
+	})
 	r = r.WithContext(ctx)
+	//before routing
+	if s.beforeRouting != nil && !s.beforeRouting(w, r, s) {
+		return
+	}
 	h, args, _ := s.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
+		// routing filiter
+		if s.routingFiliter != nil && !s.routingFiliter(w, r, args, s) {
+			return
+		}
 		h(w, r, args)
 	} else {
 		//404
@@ -145,11 +164,11 @@ func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
 	}
 }
 
-func (s *HTTPServer) SetConfig(c *viper.Viper) *HTTPServer {
+func (s *HTTPServer) SetConfig(c *gmcconfig.GMCConfig) *HTTPServer {
 	s.config = c
 	return s
 }
-func (s *HTTPServer) Config() *viper.Viper {
+func (s *HTTPServer) Config() *gmcconfig.GMCConfig {
 	return s.config
 }
 
@@ -195,6 +214,14 @@ func (s *HTTPServer) SetSessionStore(st session.Store) *HTTPServer {
 }
 func (s *HTTPServer) SessionStore() session.Store {
 	return s.sessionStore
+}
+func (s *HTTPServer) BeforeRouting(fn func(w http.ResponseWriter, r *http.Request, server *HTTPServer) (isContinue bool)) *HTTPServer {
+	s.beforeRouting = fn
+	return s
+}
+func (s *HTTPServer) RoutingFiliter(fn func(w http.ResponseWriter, r *http.Request, ps router.Params, server *HTTPServer) (isContinue bool)) *HTTPServer {
+	s.routingFiliter = fn
+	return s
 }
 
 //just for testing
@@ -384,4 +411,30 @@ func (s *HTTPServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Write(b)
+}
+
+//Start implements service.Services Start
+func (s *HTTPServer) Start() (err error) {
+	if s.config.GetBool("httpserver.tlsenable") {
+		return s.ListenTLS()
+	}
+	return s.Listen()
+}
+
+//Stop implements service.Services Stop
+func (s *HTTPServer) Stop() {
+	s.Close()
+	return
+}
+
+//GracefulStop implements service.Services GracefulStop
+func (s *HTTPServer) GracefulStop() {
+	s.Close()
+	return
+}
+
+//SetLog implements service.Services SetLog
+func (s *HTTPServer) SetLog(l *log.Logger) {
+	s.logger = l
+	return
 }

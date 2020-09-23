@@ -12,7 +12,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spf13/viper"
+	"github.com/snail007/gmc/service"
+
+	gmcconfig "github.com/snail007/gmc/config/gmc"
 
 	"github.com/snail007/gmc/http/controller"
 	"github.com/snail007/gmc/http/router"
@@ -28,13 +30,46 @@ import (
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
 	cfg := mockConfig()
-	s, _ := New(cfg)
+	s := New()
+	s.Init(cfg)
 	err := s.bind(":").Listen()
 	assert.Nil(err)
 	addr := s.Listener().Addr().String()
-	s0, _ := New(cfg)
+	s0 := New()
+	s0.Init(cfg)
 	err = s0.bind(addr).Listen()
 	assert.NotNil(err)
+}
+func TestRouting(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.BeforeRouting(func(w http.ResponseWriter, r *http.Request, tpl *HTTPServer) (isContinue bool) {
+		w.Write([]byte("error"))
+		return false
+	})
+	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("routing"))
+	})
+	w, r := mockRequest(s, "/routing")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("error", str)
+}
+
+func TestRouting_1(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.RoutingFiliter(func(w http.ResponseWriter, r *http.Request, ps router.Params, server *HTTPServer) (isContinue bool) {
+		w.Write([]byte("error"))
+		return false
+	})
+	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("routing"))
+	})
+	w, r := mockRequest(s, "/routing")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("error", str)
 }
 func Test_handle50x(t *testing.T) {
 	assert := assert.New(t)
@@ -44,7 +79,8 @@ func Test_handle50x(t *testing.T) {
 	w := httptest.NewRecorder()
 	objv.Response = w
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
-	s, _ := New(viper.New())
+	s := New()
+	s.Init(gmcconfig.New())
 	s.handle50x(&objrf, fmt.Errorf("aaa"))
 
 	//response
@@ -61,7 +97,8 @@ func Test_handle50x_1(t *testing.T) {
 	w := httptest.NewRecorder()
 	objv.Response = w
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
-	s, _ := New(viper.New())
+	s := New()
+	s.Init(gmcconfig.New())
 	s.SetHandler50x(func(c *controller.Controller, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
@@ -104,33 +141,36 @@ func TestConnCount_2(t *testing.T) {
 
 func TestInit_0(t *testing.T) {
 	assert := assert.New(t)
-	cfg := viper.New()
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
-	s, _ := New(cfg)
+	s := New()
+	s.Init(cfg)
 	err = s.bind(":").Listen()
 	assert.Nil(err)
 }
 func TestInit_1(t *testing.T) {
 	assert := assert.New(t)
-	cfg := viper.New()
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	cfg.Set("session.store", "file")
-	s, _ := New(cfg)
+	s := New()
+	s.Init(cfg)
 	err = s.bind(":").Listen()
 	assert.Nil(err)
 }
 func TestInit_2(t *testing.T) {
 	assert := assert.New(t)
-	cfg := viper.New()
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	cfg.Set("session.store", "redis")
-	s, _ := New(cfg)
+	s := New()
+	s.Init(cfg)
 	s.bind(":")
 	err = s.Listen()
 	assert.Nil(err)
@@ -139,24 +179,27 @@ func TestInit_3(t *testing.T) {
 	assert := assert.New(t)
 	cfg := mockConfig()
 	cfg.Set("session.store", "none")
-	_, err := New(cfg)
+	s := New()
+	err := s.Init(cfg)
 	assert.Equal("unknown session store type none", err.Error())
 }
 func TestInit_4(t *testing.T) {
 	assert := assert.New(t)
-	cfg := viper.New()
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	cfg.Set("session.store", "")
-	s, _ := New(cfg)
+	s := New()
+	s.Init(cfg)
 	s.bind(":")
 	err = s.Listen()
 	assert.Nil(err)
 }
 func TestHelper(t *testing.T) {
 	assert := assert.New(t)
-	s, _ := New(viper.New())
+	s := New()
+	s.Init(gmcconfig.New())
 	err := s.bind(":").Listen()
 	assert.Nil(err)
 	assert.NotNil(s.Server().Addr)
@@ -400,7 +443,25 @@ func Test_SetBindata_4(t *testing.T) {
 	b, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal("d", string(b))
 }
-
+func Test_Service(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s0 := (service.Service)(s)
+	err := s0.Start()
+	assert.Nil(err)
+	s0.Stop()
+	s0.GracefulStop()
+}
+func Test_Service_2(t *testing.T) {
+	assert := assert.New(t)
+	cfg := mockConfig()
+	cfg.Set("httpserver.tlsenable", true)
+	s := mockHTTPServer(cfg)
+	s0 := (service.Service)(s)
+	err := s0.Start()
+	assert.Nil(err)
+	s.SetLog(s.logger)
+}
 func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 	resp = w.Result()
 	defer resp.Body.Close()
@@ -408,8 +469,8 @@ func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 	str = string(body)
 	return
 }
-func mockConfig() *viper.Viper {
-	cfg := viper.New()
+func mockConfig() *gmcconfig.GMCConfig {
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	cfg.ReadInConfig()
 	return cfg
@@ -430,12 +491,13 @@ func mockRequest(s *HTTPServer, uri string) (w *httptest.ResponseRecorder, r *ht
 	return
 }
 
-func mockHTTPServer(cfg ...*viper.Viper) *HTTPServer {
+func mockHTTPServer(cfg ...*gmcconfig.GMCConfig) *HTTPServer {
 	c := mockConfig()
 	if len(cfg) > 0 {
 		c = cfg[0]
 	}
-	s, _ := New(c)
+	s := New()
+	s.Init(c)
 	s.bind(":")
 	s.SetRouter(router.NewHTTPRouter())
 	s.SetLogger(logutil.New(""))

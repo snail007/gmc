@@ -123,6 +123,9 @@ func (db *DB) AR() (ar *ActiveRecord) {
 	ar.tablePrefixSqlIdentifier = db.Config.TablePrefixSqlIdentifier
 	return
 }
+func (db *DB) Stats() sql.DBStats {
+	return db.ConnPool.Stats()
+}
 func (db *DB) Begin(config DBConfig) (tx *sql.Tx, err error) {
 	return db.ConnPool.Begin()
 }
@@ -174,7 +177,56 @@ func (db *DB) ExecSQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet
 	}
 	return
 }
+func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+	var results []map[string][]byte
+	var stmt *sql.Stmt
+	stmt, err = db.ConnPool.Prepare(sqlStr)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+	var rows *sql.Rows
+	rows, err = stmt.Query(values...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	cols, e := rows.Columns()
+	if e != nil {
+		return nil, e
+	}
+	closCnt := len(cols)
 
+	// scans := make([]interface{},closCnt)
+	var scans []interface{}
+	scans = makeleaky.GetX(scans, uint64(len(cols)), func() interface{} {
+		a := make([]interface{}, closCnt)
+		for i := 0; i < closCnt; i++ {
+			a[i] = new([]byte)
+		}
+		return a
+	}).([]interface{})
+	defer func() {
+		for i := 0; i < closCnt; i++ {
+			scans[i] = new([]byte)
+		}
+		makeleaky.PutX(scans, uint64(len(cols)))
+	}()
+
+	for rows.Next() {
+		err = rows.Scan(scans...)
+		if err != nil {
+			return
+		}
+		row := map[string][]byte{}
+		for i := range cols {
+			row[cols[i]] = *(scans[i].(*[]byte))
+		}
+		results = append(results, row)
+	}
+	rs = gmcdb.NewResultSet(&results)
+	return
+}
 func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
 	var results []map[string][]byte
 	if ar.cacheKey != "" {

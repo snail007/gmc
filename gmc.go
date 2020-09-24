@@ -6,6 +6,7 @@ import (
 	gmccacheredis "github.com/snail007/gmc/cache/redis"
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcdb "github.com/snail007/gmc/db"
+	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmccontroller "github.com/snail007/gmc/http/controller"
 	gmccookie "github.com/snail007/gmc/http/cookie"
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -41,15 +42,20 @@ type (
 )
 
 var (
-	NewCacheRedisConfig   = gmccacheredis.NewRedisCacheConfig
-	NewAPP                = gmcapp.New
-	NewCacheRedis         = gmccacheredis.New
-	NewConfig             = gmcconfig.New
-	NewResultSet          = gmcdb.NewResultSet
-	NewRouter             = gmcrouter.NewHTTPRouter()
-	NewHTTPServer         = gmchttpserver.New
-	NewTemplate           = gmctemplate.New
+	NewCacheRedisConfig = gmccacheredis.NewRedisCacheConfig
+	NewAPP              = gmcapp.New
+	NewCacheRedis       = gmccacheredis.New
+	NewConfig           = gmcconfig.New
+	NewResultSet        = gmcdb.NewResultSet
+	NewRouter           = gmcrouter.NewHTTPRouter()
+	NewHTTPServer       = gmchttpserver.New
+	NewTemplate         = gmctemplate.New
+	// Map
 	NewMap                = maputil.NewMap
 	NewMapStringString    = maputil.NewMapStringString
 	NewMapStringInterface = maputil.NewMapStringInterface
+	//Database
+	InitDB    = gmcdbhelper.RegistGroup
+	DBMySQL   = gmcdbhelper.DBMySQL
+	DBSQLite3 = gmcdbhelper.DBSQLite3
 )

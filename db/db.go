@@ -2,10 +2,16 @@ package gmcdb
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 )
+
+type Cache interface {
+	Set(key string, val []byte, expire uint) (err error)
+	Get(key string) (data []byte, err error)
+}
 
 type ResultSet struct {
 	rawRows      *[]map[string][]byte
@@ -14,6 +20,7 @@ type ResultSet struct {
 }
 
 func NewResultSet(rawRows *[]map[string][]byte) (rs *ResultSet) {
+	fmt.Println(">>>>>>11111")
 	rs = &ResultSet{}
 	if rawRows != nil {
 		rs.rawRows = rawRows
@@ -167,9 +174,4 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) 
 		}
 	}
 	return rv.Interface(), err
-}
-
-type Cache interface {
-	Set(key string, val []byte, expire uint) (err error)
-	Get(key string) (data []byte, err error)
 }

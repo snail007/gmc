@@ -52,12 +52,18 @@ func (this *Controller) MethodCallPost__() {
 }
 
 //Die will prevent to call After__() if have, and MethodCallPost__()
-func (this *Controller) Die() {
+func (this *Controller) Die(msg ...interface{}) {
+	if len(msg) > 0 {
+		this.Write(msg[0])
+	}
 	panic("__DIE__")
 }
 
 //Stop will exit controller method at once
-func (this *Controller) Stop() {
+func (this *Controller) Stop(msg ...interface{}) {
+	if len(msg) > 0 {
+		this.Write(msg[0])
+	}
 	panic("__STOP__")
 }
 func (this *Controller) SessionStart() (err error) {

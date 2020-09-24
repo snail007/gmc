@@ -13,6 +13,7 @@ import (
 )
 
 type GMCApp struct {
+	afterParse       []func(*gmcconfig.GMCConfig) error
 	beforeRun        []func(*gmcconfig.GMCConfig) error
 	beforeShutdown   []func()
 	isBlock          bool
@@ -67,6 +68,7 @@ func (s *GMCApp) ParseConfig() (err error) {
 	defer func() {
 		if err == nil {
 			s.isParsed = true
+			err = s.callRunE(s.afterParse)
 		}
 	}()
 	//create config file object
@@ -97,10 +99,9 @@ func (s *GMCApp) ParseConfig() (err error) {
 	}
 	return
 }
-func (s *GMCApp) Run() (err error) {
-	//before run hooks
+func (s *GMCApp) callRunE(fns []func(*gmcconfig.GMCConfig) error) (err error) {
 	hasError := false
-	for _, fn := range s.beforeRun {
+	for _, fn := range fns {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
@@ -117,7 +118,11 @@ func (s *GMCApp) Run() (err error) {
 			break
 		}
 	}
-	if hasError {
+	return
+}
+func (s *GMCApp) Run() (err error) {
+	err = s.callRunE(s.beforeRun)
+	if err != nil {
 		return
 	}
 	err = s.run()
@@ -148,6 +153,10 @@ func (s *GMCApp) Stop() {
 	for _, srv := range s.services {
 		srv.Service.Stop()
 	}
+}
+func (s *GMCApp) AfterParse(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
+	s.afterParse = append(s.afterParse, fn)
+	return s
 }
 func (s *GMCApp) BeforeRun(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
 	s.beforeRun = append(s.beforeRun, fn)

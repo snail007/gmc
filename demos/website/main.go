@@ -7,19 +7,25 @@ import (
 )
 
 func main() {
-	//1.create an app to run
+	//1. create an app to run
 	app := gmc.NewAPP()
 
-	//2.set app main config file
+	//2. set app main config file
 	app.SetMainConfigFile("../../app/app.toml")
 
-	//3.parse app config file
+	//3. when config file parsed, then init global database in main config file app.toml, if have.
+	app.AfterParse(func(_ *gmc.Config) (err error) {
+		err = gmc.InitDB(app.Config())
+		return
+	})
+
+	//4. parse app config file
 	err := app.ParseConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	//4.add service to app
+	//5.add service to app
 	app.AddService(gmc.ServiceItem{
 		Service: gmc.NewHTTPServer(), //create a http server
 		AfterInit: func(s *gmc.ServiceItem) (err error) {
@@ -31,7 +37,7 @@ func main() {
 			return
 		},
 	})
-	//4.add more service to app
+	//and add more service to app
 	app.AddService(gmc.ServiceItem{
 		Service: gmc.NewHTTPServer(), //create a http server
 		BeforeInit: func(cfg *gmc.Config) (err error) {
@@ -49,6 +55,6 @@ func main() {
 		},
 	})
 
-	//5.run the app
+	//6.run the app
 	app.Logger().Panic(app.Run())
 }

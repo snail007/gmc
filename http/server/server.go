@@ -311,10 +311,10 @@ func (s *HTTPServer) initStatic() {
 	s.staticDir = s.config.GetString("static.dir")
 	s.staticUrlpath = s.config.GetString("static.urlpath")
 	if s.staticDir != "" && s.staticUrlpath != "" {
-		if !strings.HasSuffix(s.staticUrlpath, "/") {
-			s.staticUrlpath += "/"
+		if strings.HasSuffix(s.staticUrlpath, "/") {
+			s.staticUrlpath = strings.TrimRight(s.staticUrlpath, "/")
 		}
-		s.router.HandlerFunc("GET", s.staticUrlpath, s.serveStatic)
+		s.router.HandlerFunc("GET", s.staticUrlpath+"/*filepath", s.serveStatic)
 	}
 }
 func (s *HTTPServer) initTLSConfig() (err error) {

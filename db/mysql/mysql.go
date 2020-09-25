@@ -11,7 +11,7 @@ import (
 
 	gmcdb "github.com/snail007/gmc/db"
 
-	"github.com/snail007/go-activerecord/utils/makeleaky"
+	"github.com/snail007/gmc/db/utils/makeleaky"
 
 	_ "github.com/go-sql-driver/mysql"
 )

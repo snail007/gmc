@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/snail007/gmc/util/time"
 	"log"
 	"time"
+
+	"github.com/snail007/gmc/util/timeutil"
 )
 
 func main() {
@@ -30,8 +31,8 @@ func main() {
 	//Acquire the time according to the string
 	//isH true-24 hour clock false-12 hour clock
 	//No hours involved. The second field is ignored
-	timeByString1 := timeutil.StrToTime("2020-09-16", false)
-	timeByString2 := timeutil.StrToTime("2020-09-16 10:27:00", true)
+	timeByString1 := timeutil.MustStrToTime("2020-09-16")
+	timeByString2 := timeutil.MustStrToTime("2020-09-16 10:27:00")
 	log.Println("timeByString1", timeByString1)
 	log.Println("timeByString2", timeByString2)
 

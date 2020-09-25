@@ -12,8 +12,8 @@ import (
 
 	gmcdb "github.com/snail007/gmc/db"
 
-	gosqlcipher "github.com/mutecomm/go-sqlcipher"
 	"github.com/snail007/gmc/db/utils/makeleaky"
+	gosqlcipher "github.com/snail007/go-sqlcipher"
 )
 
 type DBGroup struct {

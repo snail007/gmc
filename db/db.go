@@ -2,7 +2,6 @@ package gmcdb
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"time"
@@ -20,7 +19,6 @@ type ResultSet struct {
 }
 
 func NewResultSet(rawRows *[]map[string][]byte) (rs *ResultSet) {
-	fmt.Println(">>>>>>11111")
 	rs = &ResultSet{}
 	if rawRows != nil {
 		rs.rawRows = rawRows

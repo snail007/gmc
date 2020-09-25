@@ -7,8 +7,11 @@ package gmcrouter
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -24,21 +27,43 @@ var (
 )
 
 type HTTPRouter struct {
-	Router
+	*Router
 	handle50x func(val *reflect.Value, err interface{})
+	hr        *HTTPRouter
+	ns        string
 }
 
 func NewHTTPRouter() *HTTPRouter {
 	hr := &HTTPRouter{
-		Router: Router{
+		Router: &Router{
 			RedirectTrailingSlash:  false,
 			RedirectFixedPath:      true,
 			HandleMethodNotAllowed: true,
 			HandleOPTIONS:          true,
 			SaveMatchedRoutePath:   true, //if true this.Args in controller is always not be nil, if false it maybe nil.
 		},
+		ns: "/",
 	}
 	return hr
+}
+
+//Group create a group in namespace ns
+func (s *HTTPRouter) Group(ns string) *HTTPRouter {
+	if !strings.HasSuffix(ns, "/") {
+		ns += "/"
+	}
+	return &HTTPRouter{
+		Router: s.Router,
+		hr:     s,
+		ns:     ns,
+	}
+}
+func (s *HTTPRouter) Namespace() string {
+	parentNS := ""
+	if s.hr != nil {
+		parentNS = s.hr.ns
+	}
+	return strings.TrimRight(parentNS, "/") + s.ns
 }
 
 //SetHandle50x sets handler func to handle exception error
@@ -51,14 +76,61 @@ func (s *HTTPRouter) Controller(urlPath string, obj interface{}) {
 	s.controller(urlPath, obj, "")
 }
 
-//RouteTable returns all routes in router
-// func (s *HTTPRouter) RouteTable() (table map[string]string) {
-// 	table = map[string]string{}
-// 	for k, v := range s.trees {
-// 		table[k] = v.path + v.indices
-// 	}
-// 	return
-// }
+func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
+	path := prefix + n.path
+	if len(n.children) == 0 {
+		(*p)[path] = append((*p)[path], m)
+	} else {
+		for _, v := range n.children {
+			s.visit(v, path, m, p)
+		}
+	}
+}
+
+// PrintRouteTable dump all routes into `w`, if `w` is nil, os.Stdout will be used.
+func (s *HTTPRouter) PrintRouteTable(w io.Writer) {
+	if w == nil {
+		w = os.Stdout
+	}
+	m := s.RouteTable()
+	keys := []string{}
+	for k := range m {
+		keys = append(keys, k)
+	}
+	if len(keys) == 0 {
+		return
+	}
+	sort.Strings(keys)
+	maxmlen := 0
+	maxplen := 0
+	for _, k := range keys {
+		l := len(strings.Join(m[k], ","))
+		if maxmlen < l {
+			maxmlen = l
+		}
+		l = len(k)
+		if maxplen < l {
+			maxplen = l
+		}
+	}
+	t1 := strings.Repeat("-", maxmlen)
+	t2 := strings.Repeat("-", maxplen)
+	fmt.Fprintf(w, "\n:ROUTE TABLE\n| %-"+fmt.Sprintf("%d", maxmlen)+"s | %s\n", "METHOD", "PATH")
+	fmt.Fprintf(w, "| %s | %s\n", t1, t2)
+	for _, k := range keys {
+		fmt.Fprintf(w, "| %-"+fmt.Sprintf("%d", maxmlen)+"s | %s\n", strings.Join(m[k], ","), k)
+	}
+	fmt.Fprintf(w, "| %s | %s\n", t1, t2)
+}
+
+//RouteTable returns all routes in router. KEY is url path, VALUE is http methods.
+func (s *HTTPRouter) RouteTable() (table map[string][]string) {
+	t := &map[string][]string{}
+	for k, v := range s.trees {
+		s.visit(v, "", k, t)
+	}
+	return *t
+}
 
 //ControllerMethod binds a controller's method to router
 func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method string) {
@@ -137,4 +209,34 @@ func (s *HTTPRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
 		invoke(*objv, objMethod)
 	}()
 	return
+}
+func (s *HTTPRouter) path(path string) string {
+	ns := strings.TrimRight(s.Namespace(), "/")
+	return ns + path
+}
+
+// Handle registers a new request handle with the given path and method.
+//
+// For GET, POST, PUT, PATCH and DELETE requests the respective shortcut
+// functions can be used.
+//
+// This function is intended for bulk loading and to allow the usage of less
+// frequently used, non-standardized or custom methods (e.g. for internal
+// communication with a proxy).
+func (s *HTTPRouter) Handle(method, path string, handle Handle) {
+	p := s.path(path)
+	s.Router.Handle(method, p, handle)
+}
+
+// Handler is an adapter which allows the usage of an http.Handler as a
+// request handle.
+// The Params are available in the request context under ParamsKey.
+func (s *HTTPRouter) Handler(method, path string, handler http.Handler) {
+	s.Router.Handler(method, s.path(path), handler)
+}
+
+// HandlerFunc is an adapter which allows the usage of an http.HandlerFunc as a
+// request handle.
+func (s *HTTPRouter) HandlerFunc(method, path string, handler http.HandlerFunc) {
+	s.Router.HandlerFunc(method, s.path(path), handler)
 }

@@ -46,3 +46,63 @@ func TestControllerMethod(t *testing.T) {
 	h, _, _ := r.Lookup("GET", "/method/hello")
 	assert.NotNil(h)
 }
+func TestGroup_1(t *testing.T) {
+	assert := assert.New(t)
+	r := gmcrouter.NewHTTPRouter()
+	r.Controller("/user", new(Controller))
+	g1 := r.Group("/v1")
+	g1.Controller("/user", new(Controller))
+	g11 := g1.Group("/1.0")
+	g11.Controller("/user", new(Controller))
+	g2 := r.Group("/v2")
+	g2.Controller("/user", new(Controller))
+	g3 := r.Group("/img/v3")
+	g3.Controller("/user", new(Controller))
+	want := []string{
+		"/user/method1",
+		"/user/testmethod",
+		"/v1/user/method1",
+		"/v1/user/testmethod",
+		"/v1/1.0/user/method1",
+		"/v1/1.0/user/testmethod",
+		"/v2/user/method1",
+		"/v2/user/testmethod",
+		"/img/v3/user/method1",
+		"/img/v3/user/testmethod",
+	}
+	rt := r.RouteTable()
+	for _, v := range want {
+		assert.NotNil(rt[v])
+	}
+}
+func TestGroup_2(t *testing.T) {
+	assert := assert.New(t)
+	r := gmcrouter.NewHTTPRouter()
+	r.Controller("/user", new(Controller))
+	g1 := r.Group("/v1")
+	g1.Controller("/user", new(Controller))
+	g11 := g1.Group("/1.0")
+	g11.Controller("/user", new(Controller))
+	g2 := r.Group("/v2")
+	g2.Controller("/user", new(Controller))
+	g3 := r.Group("/img/v3")
+	g3.Controller("/user", new(Controller))
+	want := []string{
+		"/user/method1",
+		"/user/testmethod",
+		"/v1/user/method1",
+		"/v1/user/testmethod",
+		"/v1/1.0/user/method1",
+		"/v1/1.0/user/testmethod",
+		"/v2/user/method1",
+		"/v2/user/testmethod",
+		"/img/v3/user/method1",
+		"/img/v3/user/testmethod",
+	}
+	rt := r.RouteTable()
+	for _, v := range want {
+		assert.NotNil(rt[v])
+	}
+	r.PrintRouteTable(nil)
+	t.Fail()
+}

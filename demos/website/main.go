@@ -13,7 +13,7 @@ func main() {
 	//2. set app main config file
 	app.SetMainConfigFile("../../app/app.toml")
 
-	//3. when config file parsed, then init global database in main config file app.toml, if have.
+	//3. when config file parsed, then initialize global database objects in main config file app.toml, if have.
 	app.AfterParse(func(_ *gmc.Config) (err error) {
 		err = gmc.InitDB(app.Config())
 		return

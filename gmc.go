@@ -50,10 +50,13 @@ var (
 	NewRouter           = gmcrouter.NewHTTPRouter()
 	NewHTTPServer       = gmchttpserver.New
 	NewTemplate         = gmctemplate.New
+	NewCookies          = gmccookie.New
+
 	// Map
 	NewMap                = maputil.NewMap
 	NewMapStringString    = maputil.NewMapStringString
 	NewMapStringInterface = maputil.NewMapStringInterface
+
 	//Database
 	InitDB    = gmcdbhelper.RegistGroup
 	DBMySQL   = gmcdbhelper.DBMySQL

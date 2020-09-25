@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -15,6 +16,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -59,7 +61,7 @@ type HTTPServer struct {
 	connCnt      *int64
 	config       *gmcconfig.GMCConfig
 	handler40x   func(w http.ResponseWriter, r *http.Request, tpl *gmctemplate.Template)
-	handler50x   func(c *gmccontroller.Controller, err interface{})
+	handler50x   func(c gmccontroller.IController, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
@@ -104,6 +106,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 	//init http server router
 	s.router = gmcrouter.NewHTTPRouter()
+	s.router.SetHandle50x(s.handle50x)
 	s.addr = s.config.GetString("httpserver.listen")
 
 	//init static files handler, must be after router inited
@@ -140,11 +143,12 @@ func (s *HTTPServer) SetHandler40x(fn func(w http.ResponseWriter, r *http.Reques
 	s.handler40x = fn
 	return s
 }
-func (s *HTTPServer) SetHandler50x(fn func(c *gmccontroller.Controller, err interface{})) *HTTPServer {
+func (s *HTTPServer) SetHandler50x(fn func(c gmccontroller.IController, err interface{})) *HTTPServer {
 	s.handler50x = fn
 	return s
 }
 
+// called in httpserver
 func (s *HTTPServer) handle40x(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
 	if s.handler40x == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -155,13 +159,17 @@ func (s *HTTPServer) handle40x(w http.ResponseWriter, r *http.Request, ps gmcrou
 	return
 }
 
+// called in httprouter
 func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
+	c := objv.Interface().(gmccontroller.IController)
 	if s.handler50x == nil {
-		c := objv.Interface().(*gmccontroller.Controller)
-		c.Response.WriteHeader(http.StatusInternalServerError)
-		c.Write("Internal Server Error")
+		c.Response__().WriteHeader(http.StatusInternalServerError)
+		c.Response__().Header().Set("Content-Type", "text/plain")
+		c.Write("Internal Server Error\n", err, "\n")
+		if s.config.GetBool("httpserver.showerrorstack") {
+			c.Write(string(debug.Stack()))
+		}
 	} else {
-		c := objv.Interface().(*gmccontroller.Controller)
 		s.handler50x(c, err)
 	}
 }
@@ -414,8 +422,18 @@ func (s *HTTPServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
+// PrintRouteTable dump all routes into `w`, if `w` is nil, os.Stdout will be used.
+func (s *HTTPServer) PrintRouteTable(w io.Writer) {
+	s.router.PrintRouteTable(w)
+}
+
 //Start implements service.Services Start
 func (s *HTTPServer) Start() (err error) {
+	defer func() {
+		if err == nil && s.config.GetBool("httpserver.printroute") {
+			s.PrintRouteTable(nil)
+		}
+	}()
 	if s.config.GetBool("httpserver.tlsenable") {
 		return s.ListenTLS()
 	}

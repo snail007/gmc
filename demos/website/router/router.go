@@ -38,6 +38,6 @@ func filiter(w http.ResponseWriter, r *http.Request, ps gmc.RouterParams, server
 		w.Write([]byte("404"))
 		return false
 	}
-	server.Logger().Printf(r.RequestURI)
+	// server.Logger().Printf(r.RequestURI)
 	return true
 }

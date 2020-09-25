@@ -462,6 +462,14 @@ func Test_Service_2(t *testing.T) {
 	assert.Nil(err)
 	s.SetLog(s.logger)
 }
+func Test_PrintRouteTable(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.router.HandlerFunc("GET", "/", func(http.ResponseWriter, *http.Request) {})
+	var b bytes.Buffer
+	s.PrintRouteTable(&b)
+	assert.Containsf(b.String(), "GET", "")
+}
 func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 	resp = w.Result()
 	defer resp.Body.Close()

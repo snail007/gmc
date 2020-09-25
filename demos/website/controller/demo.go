@@ -15,7 +15,9 @@ func (this *Demo) Before__() {
 	if method == "db" {
 		return
 	}
-	this.Write("hello")
+	if method == "hello" {
+		this.Write("hello")
+	}
 }
 func (this *Demo) Hello() {
 	this.Write(" ")
@@ -25,7 +27,9 @@ func (this *Demo) After__() {
 	if method == "db" {
 		return
 	}
-	this.Write("world!")
+	if method == "hello" {
+		this.Write("world!")
+	}
 }
 func (this *Demo) Protected() {
 	this.Write("Protected")
@@ -37,4 +41,23 @@ func (this *Demo) DB() {
 		this.Stop(err)
 	}
 	this.Write(rs.Rows())
+}
+func (this *Demo) SessionSet() {
+	err := this.SessionStart()
+	if err != nil {
+		this.Stop(err)
+	}
+	this.Session.Set("username", "foo")
+	this.Write(this.Session.Get("username"))
+}
+func (this *Demo) SessionGet() {
+	err := this.SessionStart()
+	if err != nil {
+		this.Stop(err)
+	}
+	this.Write(this.Session.Get("username"))
+}
+func (this *Demo) Error500() {
+	a := 0
+	a /= a
 }

@@ -9,7 +9,10 @@ type ResponseWriter struct {
 	statusCode int
 }
 
-func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
+func NewResponseWriter(w http.ResponseWriter) http.ResponseWriter {
+	if _, ok := w.(*ResponseWriter); ok {
+		return w
+	}
 	return &ResponseWriter{
 		ResponseWriter: w,
 		statusCode:     200,

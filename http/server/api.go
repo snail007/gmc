@@ -19,7 +19,7 @@ type APIServer struct {
 	router            *gmcrouter.HTTPRouter
 	logger            *log.Logger
 	before            func(w http.ResponseWriter, r *http.Request) bool
-	after             func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params)
+	after             func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, isPanic bool)
 	handle404         func(w http.ResponseWriter, r *http.Request)
 	handle500         func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, err interface{})
 	isShowErrorStack  bool
@@ -48,11 +48,13 @@ func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if this.before != nil && !this.before(w, r) {
 			return
 		}
+		status := ""
 		if this.after != nil {
-			defer this.after(w, r, args)
+			defer func() {
+				this.after(w, r, args, status != "")
+			}()
 		}
 		err := this.call(func() { h(w, r, args) })
-		status := ""
 		if err != nil {
 			status = fmt.Sprintf("%s", err)
 		}
@@ -84,7 +86,7 @@ func (this *APIServer) Before(handle func(w http.ResponseWriter, r *http.Request
 	this.before = handle
 	return this
 }
-func (this *APIServer) After(handle func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params)) *APIServer {
+func (this *APIServer) After(handle func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, isPanic bool)) *APIServer {
 	this.after = handle
 	return this
 }

@@ -10,6 +10,8 @@ type Demo struct {
 	gmc.Controller
 }
 
+// Before__ -> Foo-Method -> After__ , if panic occur will stop the function link call.
+
 func (this *Demo) Before__() {
 	method := filepath.Base(this.Request.URL.Path)
 	if method == "db" {

@@ -17,7 +17,8 @@ import (
 
 var (
 	shortcutMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
-	skipMethods     = map[string]bool{
+	//helper functions in Controller in the list will exclude in router
+	skipMethods = map[string]bool{
 		"Die":            true,
 		"SessionDestory": true,
 		"SessionStart":   true,
@@ -169,15 +170,16 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 			func(httpMethod, objMethod string) {
 				s.Handle(httpMethod, path, func(w http.ResponseWriter, r *http.Request, ps Params) {
 					objv := reflect.ValueOf(obj)
+					isPanic := false
 					invoke(objv, "MethodCallPre__", w, r, ps)
 					defer invoke(objv, "MethodCallPost__")
-					if beforeIsFound && s.call(&objv, "Before__") {
+					if beforeIsFound && s.call(&objv, "Before__", &isPanic) {
 						return
 					}
-					if s.call(&objv, objMethod) {
+					if !isPanic && s.call(&objv, objMethod, &isPanic) {
 						return
 					}
-					if afterIsFound && s.call(&objv, "After__") {
+					if !isPanic && afterIsFound && s.call(&objv, "After__", &isPanic) {
 						return
 					}
 
@@ -187,20 +189,19 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 	}
 }
 
-func (s *HTTPRouter) call(objv *reflect.Value, objMethod string) (isDIE bool) {
+func (s *HTTPRouter) call(objv *reflect.Value, objMethod string, isPanic *bool) (isDIE bool) {
 	func() {
 		defer func() {
 			e := recover()
 			if e != nil {
 				switch fmt.Sprintf("%s", e) {
 				case "__DIE__":
-					//ignore PostCall__
 					isDIE = true
 				case "__STOP__":
 					//do nothing
 				default:
-					//@todo
 					//exception
+					*isPanic = true
 					if s.handle50x != nil {
 						s.handle50x(objv, e)
 					}

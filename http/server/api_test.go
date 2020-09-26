@@ -49,7 +49,7 @@ func TestAPI(t *testing.T) {
 func TestAfter(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.After(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+	api.After(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, isPanic bool) {
 		gmchttputil.Write(w, "okay")
 		return
 	})
@@ -100,7 +100,7 @@ func TestHandle404_1(t *testing.T) {
 func TestHandle500(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Handle500(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+	api.Handle500(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, err interface{}) {
 		gmchttputil.Write(w, "500")
 	})
 	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {

@@ -19,11 +19,7 @@ func main() {
 	// sets a function called after every request registered in router,
 	// exclude 404 requests.
 	api.After(func(w gmc.W, r gmc.R, ps gmc.P, isPanic bool) {
-		status := "200"
-		if isPanic {
-			status = "500"
-		}
-		api.Logger().Printf("after request %s %s", status, r.RequestURI)
+		api.Logger().Printf("after request %d %s", gmc.StatusCode(w), r.RequestURI)
 		return
 	})
 	// sets a function to handle 404 requests.

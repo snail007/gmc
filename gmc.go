@@ -70,7 +70,8 @@ var (
 	DBSQLite3 = gmcdbhelper.DBSQLite3
 
 	//http util
-	Stop  = gmchttputil.Stop
-	Die   = gmchttputil.Die
-	Write = gmchttputil.Write
+	Stop       = gmchttputil.Stop
+	Die        = gmchttputil.Die
+	Write      = gmchttputil.Write
+	StatusCode = gmchttputil.StatusCode
 )

@@ -32,6 +32,7 @@ import (
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcrouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
+	gmchttputil "github.com/snail007/gmc/util/httputil"
 	"github.com/snail007/gmc/util/logutil"
 )
 
@@ -122,6 +123,7 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Router:       s.router,
 		Config:       s.config,
 	})
+	w = gmchttputil.NewResponseWriter(w)
 	r = r.WithContext(ctx)
 	//before routing
 	if s.beforeRouting != nil && !s.beforeRouting(w, r, s) {

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"runtime/debug"
 
+	gmchttputil "github.com/snail007/gmc/util/httputil"
+
 	"github.com/snail007/gmc/util/logutil"
 
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -43,6 +45,7 @@ func NewAPIServer(address string) *APIServer {
 }
 
 func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w = gmchttputil.NewResponseWriter(w)
 	h, args, _ := this.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
 		if this.before != nil && !this.before(w, r) {

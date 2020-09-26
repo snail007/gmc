@@ -6,13 +6,11 @@
 package gmccontroller
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"reflect"
-	"strings"
 
 	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmchttputil "github.com/snail007/gmc/util/httputil"
 
 	gmccookie "github.com/snail007/gmc/http/cookie"
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -100,18 +98,12 @@ func (this *Controller) MethodCallPost__() {
 
 //Die will prevent to call After__() if have, and MethodCallPost__()
 func (this *Controller) Die(msg ...interface{}) {
-	if len(msg) > 0 {
-		this.Write(msg[0])
-	}
-	panic("__DIE__")
+	gmchttputil.Die(this.Response, msg...)
 }
 
 //Stop will exit controller method at once
 func (this *Controller) Stop(msg ...interface{}) {
-	if len(msg) > 0 {
-		this.Write(msg[0])
-	}
-	panic("__STOP__")
+	gmchttputil.Stop(this.Response, msg...)
 }
 func (this *Controller) SessionStart() (err error) {
 	if this.SessionStore == nil {
@@ -148,48 +140,5 @@ func (this *Controller) SessionDestory() (err error) {
 }
 
 func (this *Controller) Write(data ...interface{}) (err error) {
-	for _, d := range data {
-		if d == nil {
-			continue
-		}
-		switch v := d.(type) {
-		case []byte:
-			this.Response.Write(v)
-		case string:
-			this.Response.Write([]byte(v))
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			this.Response.Write([]byte(fmt.Sprintf("%d", v)))
-		case bool:
-			str := "true"
-			if !v {
-				str = "false"
-			}
-			this.Response.Write([]byte(str))
-		case float32, float64:
-			this.Response.Write([]byte(fmt.Sprintf("%f", v)))
-		case error:
-			this.Response.Write([]byte(v.Error()))
-		default:
-			t := reflect.TypeOf(v)
-			//map, slice
-			jsonType := []string{"[", "map["}
-			found := false
-			vTypeStr := t.String()
-			for _, typ := range jsonType {
-				if strings.HasPrefix(vTypeStr, typ) {
-					found = true
-					var b []byte
-					b, err = json.Marshal(v)
-					if err == nil {
-						this.Response.Write(b)
-					}
-					break
-				}
-			}
-			if !found {
-				this.Response.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))
-			}
-		}
-	}
-	return
+	return gmchttputil.Write(this.Response, data...)
 }

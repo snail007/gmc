@@ -170,6 +170,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 				s.Handle(httpMethod, path, func(w http.ResponseWriter, r *http.Request, ps Params) {
 					objv := reflect.ValueOf(obj)
 					invoke(objv, "MethodCallPre__", w, r, ps)
+					defer invoke(objv, "MethodCallPost__")
 					if beforeIsFound && s.call(&objv, "Before__") {
 						return
 					}
@@ -179,7 +180,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 					if afterIsFound && s.call(&objv, "After__") {
 						return
 					}
-					invoke(objv, "MethodCallPost__")
+
 				})
 			}(httpMethod, objMethod)
 		}
@@ -228,6 +229,14 @@ func (s *HTTPRouter) Handle(method, path string, handle Handle) {
 	s.Router.Handle(method, p, handle)
 }
 
+// HandleAny registers a new request handle with the given path and all http methods,
+// GET, POST, PUT, PATCH, DELETE and OPTIONS
+func (s *HTTPRouter) HandleAny(path string, handle Handle) {
+	for _, method := range shortcutMethods {
+		s.Handle(method, path, handle)
+	}
+}
+
 // Handler is an adapter which allows the usage of an http.Handler as a
 // request handle.
 // The Params are available in the request context under ParamsKey.
@@ -235,8 +244,26 @@ func (s *HTTPRouter) Handler(method, path string, handler http.Handler) {
 	s.Router.Handler(method, s.path(path), handler)
 }
 
+// HandlerAny is an adapter which allows the usage of an http.Handler as a
+// request handle match all http methods,
+// GET, POST, PUT, PATCH, DELETE and OPTIONS
+func (s *HTTPRouter) HandlerAny(path string, handler http.Handler) {
+	for _, method := range shortcutMethods {
+		s.Handler(method, path, handler)
+	}
+}
+
 // HandlerFunc is an adapter which allows the usage of an http.HandlerFunc as a
 // request handle.
 func (s *HTTPRouter) HandlerFunc(method, path string, handler http.HandlerFunc) {
 	s.Router.HandlerFunc(method, s.path(path), handler)
+}
+
+// HandlerFuncAny is an adapter which allows the usage of an http.HandlerFunc as a
+// request handle match all http methods,
+// GET, POST, PUT, PATCH, DELETE and OPTIONS
+func (s *HTTPRouter) HandlerFuncAny(path string, handler http.HandlerFunc) {
+	for _, method := range shortcutMethods {
+		s.HandlerFunc(method, path, handler)
+	}
 }

@@ -1,6 +1,10 @@
 package gmc
 
 import (
+	"net/http"
+
+	gmchttputil "github.com/snail007/gmc/util/httputil"
+
 	gmcapp "github.com/snail007/gmc/app"
 	gmccache "github.com/snail007/gmc/cache"
 	gmccacheredis "github.com/snail007/gmc/cache/redis"
@@ -30,7 +34,7 @@ type (
 	Cookie             = gmccookie.Cookies
 	CookieOptions      = gmccookie.Options
 	Router             = gmcrouter.HTTPRouter
-	RouterParams       = gmcrouter.Params
+	P                  = gmcrouter.Params
 	HTTPServer         = gmchttpserver.HTTPServer
 	Session            = gmcsession.Session
 	SessionStore       = gmcsession.Store
@@ -39,6 +43,8 @@ type (
 	Map                = maputil.Map
 	MapStringString    = maputil.MapStringString
 	MapStringInterface = maputil.MapStringInterface
+	W                  = http.ResponseWriter
+	R                  = *http.Request
 )
 
 var (
@@ -49,6 +55,7 @@ var (
 	NewResultSet        = gmcdb.NewResultSet
 	NewRouter           = gmcrouter.NewHTTPRouter()
 	NewHTTPServer       = gmchttpserver.New
+	NewAPIServer        = gmchttpserver.NewAPIServer
 	NewTemplate         = gmctemplate.New
 	NewCookies          = gmccookie.New
 
@@ -61,4 +68,9 @@ var (
 	InitDB    = gmcdbhelper.RegistGroup
 	DBMySQL   = gmcdbhelper.DBMySQL
 	DBSQLite3 = gmcdbhelper.DBSQLite3
+
+	//http util
+	Stop  = gmchttputil.Stop
+	Die   = gmchttputil.Die
+	Write = gmchttputil.Write
 )

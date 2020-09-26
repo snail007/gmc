@@ -104,5 +104,5 @@ func TestGroup_2(t *testing.T) {
 		assert.NotNil(rt[v])
 	}
 	r.PrintRouteTable(nil)
-	t.Fail()
+	// t.Fail()
 }

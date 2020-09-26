@@ -50,7 +50,7 @@ func TestRouting(t *testing.T) {
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("routing"))
 	})
-	w, r := mockRequest(s, "/routing")
+	w, r := mockRequest("/routing")
 	s.ServeHTTP(w, r)
 	str, _ := result(w)
 	assert.Equal("error", str)
@@ -66,7 +66,7 @@ func TestRouting_1(t *testing.T) {
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("routing"))
 	})
-	w, r := mockRequest(s, "/routing")
+	w, r := mockRequest("/routing")
 	s.ServeHTTP(w, r)
 	str, _ := result(w)
 	assert.Equal("error", str)
@@ -99,7 +99,7 @@ func Test_handle50x_1(t *testing.T) {
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := New()
 	s.Init(gmcconfig.New())
-	s.SetHandler50x(func(c *gmccontroller.Controller, err interface{}) {
+	s.SetHandler50x(func(c gmccontroller.IController, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
 	s.handle50x(&objrf, fmt.Errorf("aaa"))
@@ -333,7 +333,7 @@ func Test_handler40x(t *testing.T) {
 	s.SetHandler40x(func(w http.ResponseWriter, r *http.Request, tpl *gmctemplate.Template) {
 		w.Write([]byte("404"))
 	})
-	w, r := mockRequest(s, "/foo")
+	w, r := mockRequest("/foo")
 	s.handle40x(w, r, gmcrouter.Params{})
 	str, _ := result(w)
 	assert.Equal("404", str)
@@ -359,7 +359,7 @@ func Test_Controller(t *testing.T) {
 	s.router.Controller("/user/", new(User))
 	h, _, _ := s.router.Lookup("GET", "/user/url")
 	assert.NotNil(h)
-	w, r := mockRequest(s, "/user/url")
+	w, r := mockRequest("/user/url")
 	s.ServeHTTP(w, r)
 	str, _ := result(w)
 	assert.Equal("/user/url", str)
@@ -370,7 +370,7 @@ func Test_Controller_Args(t *testing.T) {
 	s.router.ControllerMethod("/user/:args", new(User), "Ps")
 	h, _, _ := s.router.Lookup("GET", "/user/hello")
 	assert.NotNil(h)
-	w, r := mockRequest(s, "/user/hello")
+	w, r := mockRequest("/user/hello")
 	s.ServeHTTP(w, r)
 	str, _ := result(w)
 	assert.Equal("hello/user/:args", str)
@@ -383,13 +383,15 @@ func Test_SetBindata(t *testing.T) {
 	})
 	assert.NotNil(bindata["js/juqery.js"])
 	s := mockHTTPServer()
-	w, r := mockRequest(s, "/static/js/juqery.js")
+	w, r := mockRequest("/static/js/juqery.js")
 	r.Header.Set("Accept-Encoding", "gzip")
-	s.router.HandlerFunc("GET", "/static/", s.serveStatic)
+	s.initStatic()
 	s.serveStatic(w, r)
 	resp := w.Result()
-	b, _ := ioutil.ReadAll(resp.Body)
-	gz, _ := gzip.NewReader(bytes.NewReader(b))
+	b, e := ioutil.ReadAll(resp.Body)
+	assert.Nil(e)
+	gz, e := gzip.NewReader(bytes.NewReader(b))
+	assert.Nil(e)
 	buf := make([]byte, 128)
 	n, _ := gz.Read(buf)
 	assert.Equal("{}", string(buf[:n]))
@@ -400,7 +402,7 @@ func Test_SetBindata_1(t *testing.T) {
 	cfg := mockConfig()
 	cfg.Set("static.urlpath", "/static")
 	s := mockHTTPServer(cfg)
-	w, r := mockRequest(s, "/static/js/juqery.js")
+	w, r := mockRequest("/static/js/juqery.js")
 	r.Header.Set("Accept-Encoding", "gzip")
 	s.serveStatic(w, r)
 	resp := w.Result()
@@ -415,7 +417,7 @@ func Test_SetBindata_2(t *testing.T) {
 	})
 	assert.NotNil(bindata["js/juqery.js"])
 	s := mockHTTPServer()
-	w, r := mockRequest(s, "/static/js/juqery.js")
+	w, r := mockRequest("/static/js/juqery.js")
 	s.serveStatic(w, r)
 	resp := w.Result()
 	b, _ := ioutil.ReadAll(resp.Body)
@@ -436,7 +438,7 @@ func Test_SetBindata_4(t *testing.T) {
 	cfg.Set("static.dir", "tests")
 	cfg.Set("static.urlpath", "/static")
 	s := mockHTTPServer(cfg)
-	w, r := mockRequest(s, "/static/d.txt")
+	w, r := mockRequest("/static/d.txt")
 	r.Header.Set("Accept-Encoding", "gzip")
 	s.serveStatic(w, r)
 	resp := w.Result()
@@ -493,12 +495,19 @@ func mockController(obj interface{}, s *HTTPServer, w http.ResponseWriter, r *ht
 	objv.Config = s.config
 	return objv
 }
-func mockRequest(s *HTTPServer, uri string) (w *httptest.ResponseRecorder, r *http.Request) {
+func mockRequest(uri string) (w *httptest.ResponseRecorder, r *http.Request) {
 	w = httptest.NewRecorder()
 	r = httptest.NewRequest("GET", "http://example.com"+uri, nil)
 	return
 }
-
+func mockResponse(w *httptest.ResponseRecorder) (data string, resp *http.Response, err error) {
+	resp = w.Result()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err == nil {
+		data = string(b)
+	}
+	return
+}
 func mockHTTPServer(cfg ...*gmcconfig.GMCConfig) *HTTPServer {
 	c := mockConfig()
 	if len(cfg) > 0 {

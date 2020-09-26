@@ -129,7 +129,7 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h, args, _ := s.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
-		// routing filiter
+		// routing filter
 		if s.routingFiliter != nil && !s.routingFiliter(w, r, args, s) {
 			return
 		}
@@ -165,9 +165,9 @@ func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
 	if s.handler50x == nil {
 		c.Response__().WriteHeader(http.StatusInternalServerError)
 		c.Response__().Header().Set("Content-Type", "text/plain")
-		c.Write("Internal Server Error\n", err, "\n")
-		if s.config.GetBool("httpserver.showerrorstack") {
-			c.Write(string(debug.Stack()))
+		c.Write("Internal Server Error")
+		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
+			c.Write("\n", err, "\n", string(debug.Stack()))
 		}
 	} else {
 		s.handler50x(c, err)
@@ -315,6 +315,7 @@ func (s *HTTPServer) initStatic() {
 			s.staticUrlpath = strings.TrimRight(s.staticUrlpath, "/")
 		}
 		s.router.HandlerFunc("GET", s.staticUrlpath+"/*filepath", s.serveStatic)
+		s.staticUrlpath += "/"
 	}
 }
 func (s *HTTPServer) initTLSConfig() (err error) {

@@ -23,7 +23,7 @@ type IController interface {
 	Response__() http.ResponseWriter
 	Request__() *http.Request
 	Args__() gmcrouter.Params
-	Write(data ...interface{}) (err error)
+	Write(data ...interface{}) (n int, err error)
 	Session__() *gmcsession.Session
 	Tpl__() *gmctemplate.Template
 	SessionStore__() gmcsession.Store
@@ -139,6 +139,6 @@ func (this *Controller) SessionDestory() (err error) {
 	return
 }
 
-func (this *Controller) Write(data ...interface{}) (err error) {
+func (this *Controller) Write(data ...interface{}) (n int, err error) {
 	return gmchttputil.Write(this.Response, data...)
 }

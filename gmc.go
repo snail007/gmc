@@ -34,8 +34,8 @@ type (
 	Cookie             = gmccookie.Cookies
 	CookieOptions      = gmccookie.Options
 	Router             = gmcrouter.HTTPRouter
-	P                  = gmcrouter.Params
 	HTTPServer         = gmchttpserver.HTTPServer
+	APIServer          = gmchttpserver.APIServer
 	Session            = gmcsession.Session
 	SessionStore       = gmcsession.Store
 	Template           = gmctemplate.Template
@@ -45,6 +45,7 @@ type (
 	MapStringInterface = maputil.MapStringInterface
 	W                  = http.ResponseWriter
 	R                  = *http.Request
+	C                  = *gmcrouter.Ctx
 )
 
 var (

@@ -1,7 +1,6 @@
 package gmchttpserver
 
 import (
-	"net/http"
 	"testing"
 
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -19,12 +18,12 @@ func TestNewAPIServer(t *testing.T) {
 func TestBefore(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Before(func(w http.ResponseWriter, r *http.Request) bool {
-		gmchttputil.Write(w, "okay")
+	api.Before(func(c *gmcrouter.Ctx) bool {
+		c.Write("okay")
 		return false
 	})
-	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
-		gmchttputil.Write(w, "a")
+	api.API("/hello", func(c *gmcrouter.Ctx) {
+		c.Write("a")
 	})
 	w, r := mockRequest("/hello")
 	api.ServeHTTP(w, r)
@@ -36,8 +35,8 @@ func TestBefore(t *testing.T) {
 func TestAPI(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
-		gmchttputil.Write(w, "a")
+	api.API("/hello", func(c *gmcrouter.Ctx) {
+		c.Write("a")
 	})
 	w, r := mockRequest("/hello")
 	api.ServeHTTP(w, r)
@@ -49,12 +48,12 @@ func TestAPI(t *testing.T) {
 func TestAfter(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.After(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, isPanic bool) {
-		gmchttputil.Write(w, "okay")
+	api.After(func(c *gmcrouter.Ctx, isPanic bool) {
+		c.Write("okay")
 		return
 	})
-	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
-		gmchttputil.Write(w, "a")
+	api.API("/hello", func(c *gmcrouter.Ctx) {
+		c.Write("a")
 	})
 	w, r := mockRequest("/hello")
 	api.ServeHTTP(w, r)
@@ -65,10 +64,10 @@ func TestAfter(t *testing.T) {
 func TestStop(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
-		gmchttputil.Write(w, "a")
-		gmchttputil.Stop(w, "c")
-		gmchttputil.Write(w, "b")
+	api.API("/hello", func(c *gmcrouter.Ctx) {
+		c.Write("a")
+		gmchttputil.Stop(c.Response, "c")
+		c.Write("b")
 	})
 	w, r := mockRequest("/hello")
 	api.ServeHTTP(w, r)
@@ -79,8 +78,8 @@ func TestStop(t *testing.T) {
 func TestHandle404(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Handle404(func(w http.ResponseWriter, r *http.Request) {
-		gmchttputil.Write(w, "404")
+	api.Handle404(func(c *gmcrouter.Ctx) {
+		c.Write("404")
 	})
 	w, r := mockRequest("/hello")
 	api.ServeHTTP(w, r)
@@ -100,10 +99,10 @@ func TestHandle404_1(t *testing.T) {
 func TestHandle500(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Handle500(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, err interface{}) {
-		gmchttputil.Write(w, "500")
+	api.Handle500(func(c *gmcrouter.Ctx, err interface{}) {
+		c.Write("500")
 	})
-	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+	api.API("/hello", func(c *gmcrouter.Ctx) {
 		a := 0
 		a /= a
 	})
@@ -116,7 +115,7 @@ func TestHandle500(t *testing.T) {
 func TestHandle500_1(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":").ShowErrorStack(false)
-	api.API("/hello", func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+	api.API("/hello", func(c *gmcrouter.Ctx) {
 		a := 0
 		a /= a
 	})

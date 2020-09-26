@@ -10,37 +10,37 @@ import (
 
 func main() {
 	api := gmc.NewAPIServer(":8030")
-	// sets a filter to filter all request registered in router,
+	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
-	api.Before(func(w gmc.W, r gmc.R) bool {
-		api.Logger().Printf("before request %s", r.RequestURI)
-		return true
+	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isNext, isStop bool) {
+		s.Logger().Printf("before request %s", c.Request.RequestURI)
+		return true, false
 	})
-	// sets a function called after every request registered in router,
+	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
-	api.After(func(w gmc.W, r gmc.R, ps gmc.P, isPanic bool) {
-		api.Logger().Printf("after request %d %s", gmc.StatusCode(w), r.RequestURI)
-		return
+	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isNext, isStop bool) {
+		s.Logger().Printf("after request %d %s", c.StatusCode(), c.Request.RequestURI)
+		return true, false
 	})
 	// sets a function to handle 404 requests.
-	api.Handle404(func(w gmc.W, r gmc.R) {
-		gmc.Write(w, "404")
+	api.Handle404(func(c gmc.C) {
+		c.Write("404")
 	})
 	// sets a function to handle panic error.
-	api.Handle500(func(w gmc.W, r gmc.R, ps gmc.P, err interface{}) {
-		w.WriteHeader(http.StatusInternalServerError)
-		gmc.Write(w, "panic error : ", err)
+	api.Handle500(func(c gmc.C, err interface{}) {
+		c.WriteHeader(http.StatusInternalServerError)
+		c.Write("panic error : ", err)
 	})
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly
-	api.API("/hello", func(w gmc.W, r gmc.R, ps gmc.P) {
-		api.Logger().Printf("request %s", r.RequestURI)
-		gmc.Write(w, "hello world!")
-	}).API("/hi", func(w gmc.W, r gmc.R, ps gmc.P) {
-		gmc.Write(w, "hi!")
+	api.API("/hello", func(c gmc.C) {
+		api.Logger().Printf("request %s", c.Request.RequestURI)
+		c.Write("hello world!")
+	}).API("/hi", func(c gmc.C) {
+		c.Write("hi!")
 	})
 	// trigger a panic error
-	api.API("/error", func(w gmc.W, r gmc.R, ps gmc.P) {
+	api.API("/error", func(c gmc.C) {
 		a := 0
 		a /= a
 	})

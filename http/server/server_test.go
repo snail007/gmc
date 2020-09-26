@@ -43,8 +43,8 @@ func TestNew(t *testing.T) {
 func TestRouting(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.BeforeRouting(func(w http.ResponseWriter, r *http.Request, tpl *HTTPServer) (isContinue bool) {
-		w.Write([]byte("error"))
+	s.BeforeRouting(func(ctx *gmcrouter.Ctx, tpl *HTTPServer) (isContinue bool) {
+		ctx.Response.Write([]byte("error"))
 		return false
 	})
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
@@ -59,8 +59,8 @@ func TestRouting(t *testing.T) {
 func TestRouting_1(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.RoutingFiliter(func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, server *HTTPServer) (isContinue bool) {
-		w.Write([]byte("error"))
+	s.RoutingFiliter(func(ctx *gmcrouter.Ctx, server *HTTPServer) (isContinue bool) {
+		ctx.Response.Write([]byte("error"))
 		return false
 	})
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
@@ -330,11 +330,11 @@ func TestListen_2(t *testing.T) {
 func Test_handler40x(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.SetHandler40x(func(w http.ResponseWriter, r *http.Request, tpl *gmctemplate.Template) {
-		w.Write([]byte("404"))
+	s.SetHandler40x(func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template) {
+		ctx.Response.Write([]byte("404"))
 	})
 	w, r := mockRequest("/foo")
-	s.handle40x(w, r, gmcrouter.Params{})
+	s.handle40x(gmcrouter.NewCtx(w, r, nil))
 	str, _ := result(w)
 	assert.Equal("404", str)
 }

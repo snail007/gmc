@@ -61,18 +61,25 @@ type HTTPServer struct {
 	server       *http.Server
 	connCnt      *int64
 	config       *gmcconfig.GMCConfig
-	handler40x   func(w http.ResponseWriter, r *http.Request, tpl *gmctemplate.Template)
+	handler40x   func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)
 	handler50x   func(c gmccontroller.IController, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
-	beforeRouting        func(w http.ResponseWriter, r *http.Request, server *HTTPServer) (isContinue bool)
-	routingFiliter       func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, server *HTTPServer) (isContinue bool)
+	middleware0          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
+	middleware1          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
+	middleware2          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
+	middleware3          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
 }
 
 func New() *HTTPServer {
-	return &HTTPServer{}
+	return &HTTPServer{
+		middleware0: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
+		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
+		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
+		middleware3: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
+	}
 }
 
 //Init implements service.Services Init
@@ -116,32 +123,49 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 }
 
 func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	ctx = context.WithValue(ctx, ctxvalue.CtxValueKey, ctxvalue.CtxValue{
+	rctx := r.Context()
+	rctx = context.WithValue(rctx, ctxvalue.CtxValueKey, ctxvalue.CtxValue{
 		Tpl:          s.tpl,
 		SessionStore: s.sessionStore,
 		Router:       s.router,
 		Config:       s.config,
 	})
 	w = gmchttputil.NewResponseWriter(w)
-	r = r.WithContext(ctx)
-	//before routing
-	if s.beforeRouting != nil && !s.beforeRouting(w, r, s) {
+	r = r.WithContext(rctx)
+	c0 := gmcrouter.NewCtx(w, r)
+	//middleware0
+	if s.callMiddleware(c0, s.middleware0) {
 		return
 	}
-	h, args, _ := s.router.Lookup(r.Method, r.URL.Path)
-	if h != nil {
-		// routing filter
-		if s.routingFiliter != nil && !s.routingFiliter(w, r, args, s) {
+	defer func() {
+		// middleware3
+		if s.callMiddleware(c0, s.middleware3) {
 			return
 		}
+	}()
+
+	h, args, _ := s.router.Lookup(r.Method, r.URL.Path)
+	if h != nil {
+		c := gmcrouter.NewCtx(w, r, args)
+		c0 = c
+		// middleware1
+		if s.callMiddleware(c, s.middleware1) {
+			return
+		}
+
 		h(w, r, args)
+
+		// middleware2
+		if s.callMiddleware(c, s.middleware2) {
+			return
+		}
 	} else {
 		//404
-		s.handle40x(w, r, args)
+		s.handle40x(gmcrouter.NewCtx(w, r))
 	}
+
 }
-func (s *HTTPServer) SetHandler40x(fn func(w http.ResponseWriter, r *http.Request, tpl *gmctemplate.Template)) *HTTPServer {
+func (s *HTTPServer) SetHandler40x(fn func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)) *HTTPServer {
 	s.handler40x = fn
 	return s
 }
@@ -151,12 +175,12 @@ func (s *HTTPServer) SetHandler50x(fn func(c gmccontroller.IController, err inte
 }
 
 // called in httpserver
-func (s *HTTPServer) handle40x(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+func (s *HTTPServer) handle40x(ctx *gmcrouter.Ctx) {
 	if s.handler40x == nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Page not found"))
+		ctx.Response.WriteHeader(http.StatusNotFound)
+		ctx.Response.Write([]byte("Page not found"))
 	} else {
-		s.handler40x(w, r, s.tpl)
+		s.handler40x(ctx, s.tpl)
 	}
 	return
 }
@@ -227,12 +251,20 @@ func (s *HTTPServer) SetSessionStore(st gmcsession.Store) *HTTPServer {
 func (s *HTTPServer) SessionStore() gmcsession.Store {
 	return s.sessionStore
 }
-func (s *HTTPServer) BeforeRouting(fn func(w http.ResponseWriter, r *http.Request, server *HTTPServer) (isContinue bool)) *HTTPServer {
-	s.beforeRouting = fn
+func (s *HTTPServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+	s.middleware0 = append(s.middleware0, m)
 	return s
 }
-func (s *HTTPServer) RoutingFiliter(fn func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params, server *HTTPServer) (isContinue bool)) *HTTPServer {
-	s.routingFiliter = fn
+func (s *HTTPServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+	s.middleware1 = append(s.middleware1, m)
+	return s
+}
+func (s *HTTPServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+	s.middleware2 = append(s.middleware2, m)
+	return s
+}
+func (s *HTTPServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+	s.middleware3 = append(s.middleware3, m)
 	return s
 }
 
@@ -458,5 +490,27 @@ func (s *HTTPServer) GracefulStop() {
 //SetLog implements service.Services SetLog
 func (s *HTTPServer) SetLog(l *log.Logger) {
 	s.logger = l
+	return
+}
+func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) (isStop bool) {
+	for _, fn := range middleware {
+		var isNext bool
+		func() {
+			defer func() {
+				if e := recover(); e != nil {
+					s.logger.Printf("middleware pani error : %s", e)
+					isNext = true
+					isStop = false
+				}
+			}()
+			isNext, isStop = fn(ctx, s)
+		}()
+		if isStop {
+			return
+		}
+		if !isNext {
+			break
+		}
+	}
 	return
 }

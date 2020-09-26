@@ -25,16 +25,16 @@ func InitRouter(s *gmc.HTTPServer) {
 	// indicates router initialized
 	s.Logger().Printf("router inited.")
 }
-func filterAll(w gmc.W, r gmc.R, server *gmc.HTTPServer) bool {
-	server.Logger().Printf(r.RequestURI)
+func filterAll(c gmc.C, server *gmc.HTTPServer) bool {
+	server.Logger().Printf(c.Request.RequestURI)
 	return true
 }
-func filter(w gmc.W, r gmc.R, ps gmc.P, server *gmc.HTTPServer) bool {
-	path := strings.TrimRight(r.URL.Path, "/\\")
+func filter(c gmc.C, server *gmc.HTTPServer) bool {
+	path := strings.TrimRight(c.Request.URL.Path, "/\\")
 
 	// we want to prevent user to access method `controller.Demo.Protected`
 	if strings.HasSuffix(path, "protected") {
-		w.Write([]byte("404"))
+		c.Write([]byte("404"))
 		return false
 	}
 	// server.Logger().Printf(r.RequestURI)

@@ -16,28 +16,28 @@ func Stop(w io.Writer, data ...interface{}) {
 	Write(w, data...)
 	panic("__STOP__")
 }
-func Write(w io.Writer, data ...interface{}) (err error) {
+func Write(w io.Writer, data ...interface{}) (n int, err error) {
 	for _, d := range data {
 		if d == nil {
 			continue
 		}
 		switch v := d.(type) {
 		case []byte:
-			w.Write(v)
+			n, err = w.Write(v)
 		case string:
-			w.Write([]byte(v))
+			n, err = w.Write([]byte(v))
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			w.Write([]byte(fmt.Sprintf("%d", v)))
+			n, err = w.Write([]byte(fmt.Sprintf("%d", v)))
 		case bool:
 			str := "true"
 			if !v {
 				str = "false"
 			}
-			w.Write([]byte(str))
+			n, err = w.Write([]byte(str))
 		case float32, float64:
-			w.Write([]byte(fmt.Sprintf("%f", v)))
+			n, err = w.Write([]byte(fmt.Sprintf("%f", v)))
 		case error:
-			w.Write([]byte(v.Error()))
+			n, err = w.Write([]byte(v.Error()))
 		default:
 			t := reflect.TypeOf(v)
 			//map, slice
@@ -50,14 +50,17 @@ func Write(w io.Writer, data ...interface{}) (err error) {
 					var b []byte
 					b, err = json.Marshal(v)
 					if err == nil {
-						w.Write(b)
+						n, err = w.Write(b)
 					}
 					break
 				}
 			}
 			if !found {
-				w.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))
+				n, err = w.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))
 			}
+		}
+		if err != nil {
+			return
 		}
 	}
 	return

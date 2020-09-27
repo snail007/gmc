@@ -2,6 +2,7 @@ package gmcservice
 
 import (
 	"log"
+	"net"
 
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 )
@@ -12,4 +13,6 @@ type Service interface {
 	Stop()
 	GracefulStop()
 	SetLog(*log.Logger)
+	InjectListener(net.Listener)
+	Listener() net.Listener
 }

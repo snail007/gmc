@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -34,8 +35,10 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 				str = "false"
 			}
 			n, err = w.Write([]byte(str))
-		case float32, float64:
-			n, err = w.Write([]byte(fmt.Sprintf("%f", v)))
+		case float32:
+			n, err = w.Write([]byte(strconv.FormatFloat(float64(v), 'f', -1, 64)))
+		case float64:
+			n, err = w.Write([]byte(strconv.FormatFloat(v, 'f', -1, 64)))
 		case error:
 			n, err = w.Write([]byte(v.Error()))
 		default:

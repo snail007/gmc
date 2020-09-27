@@ -59,7 +59,12 @@ func (this *Demo) SessionGet() {
 	}
 	this.Write(this.Session.Get("username"))
 }
+
 func (this *Demo) Error500() {
 	a := 0
 	a /= a
+}
+
+func (this *Demo) Version() {
+	this.Write("v1")
 }

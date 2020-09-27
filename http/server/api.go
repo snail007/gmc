@@ -1,13 +1,18 @@
 package gmchttpserver
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"runtime/debug"
+	"strings"
+	"time"
 
+	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmchttputil "github.com/snail007/gmc/util/httputil"
 
 	"github.com/snail007/gmc/util/logutil"
@@ -16,6 +21,7 @@ import (
 )
 
 type APIServer struct {
+	listener          net.Listener
 	server            *http.Server
 	address           string
 	router            *gmcrouter.HTTPRouter
@@ -28,6 +34,7 @@ type APIServer struct {
 	middleware1       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
 	middleware2       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
 	middleware3       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
+	isShutdown        bool
 }
 
 func NewAPIServer(address string) *APIServer {
@@ -140,23 +147,44 @@ func (this *APIServer) API(path string, handle func(ctx *gmcrouter.Ctx)) *APISer
 	})
 	return this
 }
+func (this *APIServer) Group(path string) *APIServer {
+	newAPI := *this
+	newAPI.router = this.router.Group(path)
+	return &newAPI
+}
+
+// PrintRouteTable dump all routes into `w`, if `w` is nil, os.Stdout will be used.
+func (this *APIServer) PrintRouteTable(w io.Writer) {
+	this.router.PrintRouteTable(w)
+}
 func (this *APIServer) Run() (err error) {
-	l, err := net.Listen("tcp", this.address)
-	if err != nil {
-		return
+	if this.listener == nil {
+		this.listener, err = net.Listen("tcp", this.address)
+		if err != nil {
+			return
+		}
 	}
-	this.address = l.Addr().String()
+	this.address = this.listener.Addr().String()
 	go func() {
 		var err error
 		if this.certFile != "" && this.keyFile != "" {
 			this.logger.Printf("api server on https://%s", this.address)
-			err = this.server.ServeTLS(l, this.certFile, this.keyFile)
+			err = this.server.ServeTLS(this.listener, this.certFile, this.keyFile)
 		} else {
 			this.logger.Printf("api server on http://%s", this.address)
-			err = this.server.Serve(l)
+			err = this.server.Serve(this.listener)
 		}
 		if err != nil {
-			this.logger.Printf("api server exited unexpectedly on %s, error : %s", this.address, err)
+			if strings.Contains(err.Error(), "closed") {
+				if this.isShutdown {
+					this.logger.Printf("api server graceful shutdown on %s", this.address)
+				} else {
+					this.logger.Printf("api server closed on %s", this.address)
+					this.server.Close()
+				}
+			} else {
+				this.logger.Printf("api server exited unexpectedly on %s, error : %s", this.address, err)
+			}
 		}
 	}()
 	return
@@ -209,4 +237,47 @@ func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gm
 		}
 	}
 	return
+}
+
+//Init implements service.Services Init
+func (s *APIServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
+	return
+}
+
+//Start implements service.Services Start
+func (this *APIServer) Start() (err error) {
+	this.Run()
+	return
+}
+
+//Stop implements service.Services Stop
+func (this *APIServer) Stop() {
+	this.server.Close()
+}
+
+//GracefulStop implements service.Services GracefulStop
+func (this *APIServer) GracefulStop() {
+	if this.isShutdown {
+		return
+	}
+	this.isShutdown = true
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	this.server.Shutdown(ctx)
+	return
+}
+
+//SetLog implements service.Services SetLog
+func (this *APIServer) SetLog(l *log.Logger) {
+	this.logger = l
+}
+
+//InjectListener implements service.Services InjectListener
+func (this *APIServer) InjectListener(l net.Listener) {
+	this.listener = l
+}
+
+//Listener implements service.Services Listener
+func (this *APIServer) Listener() net.Listener {
+	return this.listener
 }

@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/snail007/gmc/util/timeutil"
 
 	"github.com/snail007/gmc"
-	gmchook "github.com/snail007/gmc/process/hook"
 )
 
 func main() {
@@ -47,25 +45,29 @@ func main() {
 		a := 0
 		a /= a
 	})
+	api.API("/version", func(c gmc.C) {
+		c.Write(1.1)
+	})
 	// routing by group is supported
 	group1 := api.Group("/v1")
 	group1.API("/time", func(c gmc.C) {
 		c.Write(timeutil.TimeToStr(time.Now()))
 	})
-	api.PrintRouteTable(nil)
-	// start the api server
-	err := api.Run()
+
+	app := gmc.NewAPP().SetNoneMainConfigFile(true)
+
+	err := app.ParseConfig()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(`
-please visit:
-http://127.0.0.1:8030/none
-http://127.0.0.1:8030/hello
-http://127.0.0.1:8030/error
-http://127.0.0.1:8030/hi
-http://127.0.0.1:8030/v1/time
-	`)
-	// block main routine
-	gmchook.WaitShutdown()
+
+	app.AddService(gmc.ServiceItem{
+		Service: api,
+		BeforeInit: func(cfg *gmc.Config) (err error) {
+			api.PrintRouteTable(nil)
+			return
+		},
+	})
+
+	app.Logger().Panic(app.Run())
 }

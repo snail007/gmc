@@ -43,9 +43,9 @@ func TestNew(t *testing.T) {
 func TestRouting(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.BeforeRouting(func(ctx *gmcrouter.Ctx, tpl *HTTPServer) (isContinue bool) {
+	s.AddMiddleware0(func(ctx *gmcrouter.Ctx, tpl *HTTPServer) (isStop bool) {
 		ctx.Response.Write([]byte("error"))
-		return false
+		return true
 	})
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("routing"))
@@ -59,9 +59,9 @@ func TestRouting(t *testing.T) {
 func TestRouting_1(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.RoutingFiliter(func(ctx *gmcrouter.Ctx, server *HTTPServer) (isContinue bool) {
+	s.AddMiddleware1(func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool) {
 		ctx.Response.Write([]byte("error"))
-		return false
+		return true
 	})
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("routing"))

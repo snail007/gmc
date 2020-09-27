@@ -3,6 +3,8 @@ package gmcapp
 import (
 	"fmt"
 	"log"
+	"net"
+	"os"
 
 	gmchook "github.com/snail007/gmc/process/hook"
 
@@ -25,6 +27,7 @@ type GMCApp struct {
 	mainConfigFile   string
 	mainConfig       *gmcconfig.GMCConfig
 	afterServiceInit []func(app *GMCApp, srv interface{}) error
+	isNoneMainConfig bool
 }
 type ServiceItem struct {
 	BeforeInit   func(srv *gmcconfig.GMCConfig) (err error)
@@ -45,6 +48,10 @@ func New() *GMCApp {
 
 func (s *GMCApp) SetMainConfigFile(file string) *GMCApp {
 	s.mainConfigFile = file
+	return s
+}
+func (s *GMCApp) SetNoneMainConfigFile(n bool) *GMCApp {
+	s.isNoneMainConfig = n
 	return s
 }
 func (s *GMCApp) AddExtraConfigFile(idname, file string) *GMCApp {
@@ -83,11 +90,13 @@ func (s *GMCApp) ParseConfig() (err error) {
 	} else {
 		s.mainConfig.SetConfigFile(s.mainConfigFile)
 	}
-	err = s.mainConfig.ReadInConfig()
-	if err != nil {
-		return
+	if !s.isNoneMainConfig {
+		err = s.mainConfig.ReadInConfig()
+		if err != nil {
+			return
+		}
+		s.mainConfigFile = s.mainConfig.ConfigFileUsed()
 	}
-	s.mainConfigFile = s.mainConfig.ConfigFileUsed()
 	for idname, cfgfile := range s.extraConfigfiles {
 		cfg := gmcconfig.New()
 		cfg.SetConfigFile(cfgfile)
@@ -129,6 +138,8 @@ func (s *GMCApp) Run() (err error) {
 	if err != nil {
 		return
 	}
+	s.reloadSignalMonitor()
+	s.logger.Printf("gmc app start done.")
 	gmchook.RegistShutdown(func() {
 		s.Stop()
 	})
@@ -181,7 +192,8 @@ func (s *GMCApp) Logger() *log.Logger {
 
 // run all services
 func (s *GMCApp) run() (err error) {
-	for _, srvI := range s.services {
+	isReload := os.Getenv("GMC_REALOD") == "yes"
+	for i, srvI := range s.services {
 		srv := srvI.Service
 		var cfg *gmcconfig.GMCConfig
 		if srvI.ConfigIDname != "" {
@@ -200,6 +212,17 @@ func (s *GMCApp) run() (err error) {
 		err = srv.Init(cfg)
 		if err != nil {
 			return
+		}
+		//reload checking
+		if isReload {
+			f := os.NewFile(uintptr(i)+3, "")
+			listener, e := net.FileListener(f)
+			if e != nil {
+				err = fmt.Errorf("reload fail, %s", e)
+				return
+			}
+			srv.InjectListener(listener)
+			// s.logger.Println("InjectListener", i)
 		}
 		//AfterInit
 		if srvI.AfterInit != nil {

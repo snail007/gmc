@@ -18,9 +18,9 @@ func TestNewAPIServer(t *testing.T) {
 func TestBefore(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Before(func(c *gmcrouter.Ctx) bool {
+	api.AddMiddleware0(func(c *gmcrouter.Ctx, s *APIServer) bool {
 		c.Write("okay")
-		return false
+		return true
 	})
 	api.API("/hello", func(c *gmcrouter.Ctx) {
 		c.Write("a")
@@ -48,9 +48,9 @@ func TestAPI(t *testing.T) {
 func TestAfter(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.After(func(c *gmcrouter.Ctx, isPanic bool) {
+	api.AddMiddleware2(func(c *gmcrouter.Ctx, s *APIServer) bool {
 		c.Write("okay")
-		return
+		return false
 	})
 	api.API("/hello", func(c *gmcrouter.Ctx) {
 		c.Write("a")

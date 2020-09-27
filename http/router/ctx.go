@@ -29,9 +29,16 @@ func NewCtx(w http.ResponseWriter, r *http.Request, ps ...Params) *Ctx {
 func (this *Ctx) Write(data ...interface{}) (n int, err error) {
 	return gmchttputil.Write(this.Response, data...)
 }
+
 func (this *Ctx) WriteHeader(statusCode int) {
 	this.Response.WriteHeader(statusCode)
 }
+
 func (this *Ctx) StatusCode() int {
 	return gmchttputil.StatusCode(this.Response)
+}
+
+//WriteCount acquires outgoing bytes count by writer
+func (this *Ctx) WriteCount() int64 {
+	return gmchttputil.WriteCount(this.Response)
 }

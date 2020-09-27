@@ -6,7 +6,8 @@ import (
 
 type ResponseWriter struct {
 	http.ResponseWriter
-	statusCode int
+	statusCode   int
+	writeByteCnt int64
 }
 
 func NewResponseWriter(w http.ResponseWriter) http.ResponseWriter {
@@ -22,7 +23,18 @@ func (this *ResponseWriter) WriteHeader(status int) {
 	this.statusCode = status
 	this.ResponseWriter.WriteHeader(status)
 }
+func (this *ResponseWriter) Write(b []byte) (n int, err error) {
+	n, err = this.ResponseWriter.Write(b)
+	if n > 0 {
+		this.writeByteCnt += int64(n)
+	}
+	return
+}
 
+//WriteCount acquires outgoing bytes count by writer
+func (this *ResponseWriter) WriteCount() int64 {
+	return this.writeByteCnt
+}
 func (this *ResponseWriter) StatusCode() int {
 	return this.statusCode
 }
@@ -32,4 +44,10 @@ func StatusCode(w http.ResponseWriter) (code int) {
 		code = v.statusCode
 	}
 	return
+}
+func WriteCount(w http.ResponseWriter) int64 {
+	if v, ok := w.(*ResponseWriter); ok {
+		return v.writeByteCnt
+	}
+	return 0
 }

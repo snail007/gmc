@@ -71,6 +71,7 @@ type HTTPServer struct {
 	middleware1          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
 	middleware2          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
 	middleware3          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
+	isShutdown           bool
 }
 
 func New() *HTTPServer {
@@ -218,6 +219,11 @@ func (s *HTTPServer) Close() *HTTPServer {
 func (s *HTTPServer) Listener() net.Listener {
 	return s.listener
 }
+
+//InjectListener implements service.Services InjectListener
+func (s *HTTPServer) InjectListener(l net.Listener) {
+	s.listener = l
+}
 func (s *HTTPServer) Server() *http.Server {
 	return s.server
 }
@@ -274,9 +280,11 @@ func (s *HTTPServer) bind(addr string) *HTTPServer {
 	return s
 }
 func (s *HTTPServer) createListener() (err error) {
-	s.listener, err = net.Listen("tcp", s.addr)
-	if err == nil {
-		s.addr = s.listener.Addr().String()
+	if s.listener == nil {
+		s.listener, err = net.Listen("tcp", s.addr)
+		if err == nil {
+			s.addr = s.listener.Addr().String()
+		}
 	}
 	return
 }
@@ -290,8 +298,12 @@ func (s *HTTPServer) Listen() (err error) {
 			err := s.server.Serve(s.listener)
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
-					s.logger.Printf("http server closed on %s", s.addr)
-					s.server.Close()
+					if s.isShutdown {
+						s.logger.Printf("http server graceful shutdown on %s", s.addr)
+					} else {
+						s.logger.Printf("http server closed on %s", s.addr)
+						s.server.Close()
+					}
 					break
 				} else {
 					s.logger.Printf("http server Serve fail on %s , error : %s", s.addr, err)
@@ -315,8 +327,12 @@ func (s *HTTPServer) ListenTLS() (err error) {
 				s.config.GetString("httpserver.tlskey"))
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
-					s.logger.Printf("https server closed.")
-					s.server.Close()
+					if s.isShutdown {
+						s.logger.Printf("https server graceful shutdown on %s", s.addr)
+					} else {
+						s.logger.Printf("https server closed on %s", s.addr)
+						s.server.Close()
+					}
 					break
 				} else {
 					s.logger.Printf("http server ServeTLS fail , error : %s", err)
@@ -483,7 +499,13 @@ func (s *HTTPServer) Stop() {
 
 //GracefulStop implements service.Services GracefulStop
 func (s *HTTPServer) GracefulStop() {
-	s.Close()
+	if s.isShutdown {
+		return
+	}
+	s.isShutdown = true
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	s.server.Shutdown(ctx)
 	return
 }
 

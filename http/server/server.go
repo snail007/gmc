@@ -67,18 +67,18 @@ type HTTPServer struct {
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
-	middleware0          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
-	middleware1          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
-	middleware2          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
-	middleware3          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)
+	middleware0          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
+	middleware1          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
+	middleware2          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
+	middleware3          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
 }
 
 func New() *HTTPServer {
 	return &HTTPServer{
-		middleware0: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
-		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
-		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
-		middleware3: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool){},
+		middleware0: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
+		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
+		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
+		middleware3: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 	}
 }
 
@@ -133,16 +133,16 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w = gmchttputil.NewResponseWriter(w)
 	r = r.WithContext(rctx)
 	c0 := gmcrouter.NewCtx(w, r)
+
+	defer func() {
+		// middleware3
+		s.callMiddleware(c0, s.middleware3)
+	}()
+
 	//middleware0
 	if s.callMiddleware(c0, s.middleware0) {
 		return
 	}
-	defer func() {
-		// middleware3
-		if s.callMiddleware(c0, s.middleware3) {
-			return
-		}
-	}()
 
 	h, args, _ := s.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
@@ -251,19 +251,19 @@ func (s *HTTPServer) SetSessionStore(st gmcsession.Store) *HTTPServer {
 func (s *HTTPServer) SessionStore() gmcsession.Store {
 	return s.sessionStore
 }
-func (s *HTTPServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware0 = append(s.middleware0, m)
 	return s
 }
-func (s *HTTPServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware1 = append(s.middleware1, m)
 	return s
 }
-func (s *HTTPServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware2 = append(s.middleware2, m)
 	return s
 }
-func (s *HTTPServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware3 = append(s.middleware3, m)
 	return s
 }
@@ -492,7 +492,7 @@ func (s *HTTPServer) SetLog(l *log.Logger) {
 	s.logger = l
 	return
 }
-func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isNext, isStop bool)) (isStop bool) {
+func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		var isNext bool
 		func() {
@@ -503,7 +503,7 @@ func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *g
 					isStop = false
 				}
 			}()
-			isNext, isStop = fn(ctx, s)
+			isStop = fn(ctx, s)
 		}()
 		if isStop {
 			return

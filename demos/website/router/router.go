@@ -10,10 +10,10 @@ import (
 
 func InitRouter(s *gmc.HTTPServer) {
 	// sets pre routing handler, it be called with any request.
-	s.BeforeRouting(filterAll)
+	s.AddMiddleware0(filterAll)
 
 	// sets post routing handler, it be called only when url's path be found in router.
-	s.RoutingFiliter(filter)
+	s.AddMiddleware1(filter)
 
 	// acquire router object
 	r := s.Router()
@@ -27,7 +27,7 @@ func InitRouter(s *gmc.HTTPServer) {
 }
 func filterAll(c gmc.C, server *gmc.HTTPServer) bool {
 	server.Logger().Printf(c.Request.RequestURI)
-	return true
+	return false
 }
 func filter(c gmc.C, server *gmc.HTTPServer) bool {
 	path := strings.TrimRight(c.Request.URL.Path, "/\\")
@@ -35,8 +35,8 @@ func filter(c gmc.C, server *gmc.HTTPServer) bool {
 	// we want to prevent user to access method `controller.Demo.Protected`
 	if strings.HasSuffix(path, "protected") {
 		c.Write([]byte("404"))
-		return false
+		return true
 	}
 	// server.Logger().Printf(r.RequestURI)
-	return true
+	return false
 }

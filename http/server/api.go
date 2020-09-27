@@ -24,10 +24,10 @@ type APIServer struct {
 	handle500         func(ctx *gmcrouter.Ctx, err interface{})
 	isShowErrorStack  bool
 	certFile, keyFile string
-	middleware0       []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)
-	middleware1       []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)
-	middleware2       []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)
-	middleware3       []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)
+	middleware0       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
+	middleware1       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
+	middleware2       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
+	middleware3       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
 }
 
 func NewAPIServer(address string) *APIServer {
@@ -39,10 +39,10 @@ func NewAPIServer(address string) *APIServer {
 		logger:           logutil.New(""),
 		router:           gmcrouter.NewHTTPRouter(),
 		isShowErrorStack: true,
-		middleware0:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool){},
-		middleware1:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool){},
-		middleware2:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool){},
-		middleware3:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool){},
+		middleware0:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
+		middleware1:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
+		middleware2:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
+		middleware3:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
 	}
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
@@ -53,16 +53,14 @@ func NewAPIServer(address string) *APIServer {
 func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w = gmchttputil.NewResponseWriter(w)
 	c0 := gmcrouter.NewCtx(w, r)
+	defer func() {
+		// middleware3
+		this.callMiddleware(c0, this.middleware3)
+	}()
 	//middleware0
 	if this.callMiddleware(c0, this.middleware0) {
 		return
 	}
-	defer func() {
-		// middleware3
-		if this.callMiddleware(c0, this.middleware3) {
-			return
-		}
-	}()
 
 	h, args, _ := this.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
@@ -108,19 +106,19 @@ func (this *APIServer) SetLogger(l *log.Logger) *APIServer {
 func (this *APIServer) Logger() *log.Logger {
 	return this.logger
 }
-func (this *APIServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware0 = append(this.middleware0, m)
 	return this
 }
-func (this *APIServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware1 = append(this.middleware1, m)
 	return this
 }
-func (this *APIServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware2 = append(this.middleware2, m)
 	return this
 }
-func (this *APIServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware3 = append(this.middleware3, m)
 	return this
 }
@@ -195,24 +193,19 @@ func (s *APIServer) call(fn func()) (err interface{}) {
 	}()
 	return
 }
-func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *APIServer) (isNext, isStop bool)) (isStop bool) {
+func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
-		var isNext bool
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
 					s.logger.Printf("middleware pani error : %s", e)
-					isNext = true
 					isStop = false
 				}
 			}()
-			isNext, isStop = fn(ctx, s)
+			isStop = fn(ctx, s)
 		}()
 		if isStop {
 			return
-		}
-		if !isNext {
-			break
 		}
 	}
 	return

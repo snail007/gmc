@@ -12,15 +12,15 @@ func main() {
 	api := gmc.NewAPIServer(":8030")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isNext, isStop bool) {
+	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
 		s.Logger().Printf("before request %s", c.Request.RequestURI)
-		return true, false
+		return false
 	})
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isNext, isStop bool) {
+	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
 		s.Logger().Printf("after request %d %s", c.StatusCode(), c.Request.RequestURI)
-		return true, false
+		return false
 	})
 	// sets a function to handle 404 requests.
 	api.Handle404(func(c gmc.C) {

@@ -114,12 +114,12 @@ func (s *HTTPRouter) PrintRouteTable(w io.Writer) {
 			maxplen = l
 		}
 	}
-	t1 := strings.Repeat("-", maxmlen)
-	t2 := strings.Repeat("-", maxplen)
-	fmt.Fprintf(w, "\n:ROUTE TABLE\n| %-"+fmt.Sprintf("%d", maxmlen)+"s | %s\n", "METHOD", "PATH")
+	t1 := strings.Repeat("-", maxplen)
+	t2 := strings.Repeat("-", maxmlen)
+	fmt.Fprintf(w, "\n:ROUTE TABLE\n| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", "PATH", "METHOD")
 	fmt.Fprintf(w, "| %s | %s\n", t1, t2)
 	for _, k := range keys {
-		fmt.Fprintf(w, "| %-"+fmt.Sprintf("%d", maxmlen)+"s | %s\n", strings.Join(m[k], ","), k)
+		fmt.Fprintf(w, "| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", k, strings.Join(m[k], ","))
 	}
 	fmt.Fprintf(w, "| %s | %s\n", t1, t2)
 }

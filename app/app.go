@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 
 	gmchook "github.com/snail007/gmc/process/hook"
 
@@ -40,7 +41,7 @@ func New() *GMCApp {
 	return &GMCApp{
 		isBlock:          true,
 		services:         []ServiceItem{},
-		logger:           logutil.New("[gmc]"),
+		logger:           logutil.New(""),
 		extraConfig:      map[string]*gmcconfig.GMCConfig{},
 		extraConfigfiles: map[string]string{},
 	}
@@ -193,6 +194,11 @@ func (s *GMCApp) Logger() *log.Logger {
 // run all services
 func (s *GMCApp) run() (err error) {
 	isReload := os.Getenv("GMC_REALOD") == "yes"
+	skip := map[string]bool{}
+	for _, v := range strings.Split(os.Getenv("GMC_REALOD_SKIP"), ",") {
+		skip[v] = true
+	}
+
 	for i, srvI := range s.services {
 		srv := srvI.Service
 		var cfg *gmcconfig.GMCConfig
@@ -214,9 +220,8 @@ func (s *GMCApp) run() (err error) {
 			return
 		}
 		//reload checking
-		if isReload {
-			f := os.NewFile(uintptr(i)+3, "")
-			listener, e := net.FileListener(f)
+		if isReload && !skip[fmt.Sprintf("%d", i)] {
+			listener, e := net.FileListener(os.NewFile(uintptr(i)+3, ""))
 			if e != nil {
 				err = fmt.Errorf("reload fail, %s", e)
 				return

@@ -3,10 +3,12 @@
 package gmcapp
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 )
@@ -24,7 +26,8 @@ func (s *GMCApp) reloadSignalMonitor() {
 
 func (s *GMCApp) reload() {
 	files := []*os.File{}
-	for _, srvI := range s.services {
+	skip := []string{"-1"}
+	for i, srvI := range s.services {
 		srv := srvI.Service
 		l := srv.Listener()
 		if l != nil {
@@ -35,13 +38,14 @@ func (s *GMCApp) reload() {
 			}
 			files = append(files, f)
 		} else {
+			skip = append(skip, fmt.Sprintf("%d", i))
 			files = append(files, nil)
 		}
 	}
 
 	cmd := exec.Cmd{}
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "GMC_REALOD=yes")
+	cmd.Env = append(cmd.Env, "GMC_REALOD=yes", "GMC_REALOD_SKIP="+strings.Join(skip, ","))
 	if len(os.Args) > 1 {
 		cmd.Args = os.Args[1:]
 	}

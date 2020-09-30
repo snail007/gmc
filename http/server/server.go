@@ -99,10 +99,14 @@ func (s *HTTPServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
 	return
 }
 func (s *HTTPServer) initBaseObjets() (err error) {
+	//init template
 	s.tpl, err = gmctemplate.New(s.config.GetString("template.dir"))
 	if err != nil {
 		return
 	}
+	s.tpl.Delims(s.config.GetString("template.delimiterleft"),
+		s.config.GetString("template.delimiterright")).
+		Extension(s.config.GetString("template.ext"))
 	//init session store
 	err = s.initSessionStore()
 	if err != nil {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"path/filepath"
+	"time"
 
 	"github.com/snail007/gmc"
 )
@@ -67,4 +68,9 @@ func (this *Demo) Error500() {
 
 func (this *Demo) Version() {
 	this.Write("v1")
+}
+func (this *Demo) Cache() {
+	gmc.Reids().Set("test", "aaa", time.Second)
+	v, _ := gmc.Reids().Get("test")
+	this.Write(v.([]byte))
 }

@@ -1,3 +1,10 @@
+############################################################
+# http server configuration 
+############################################################
+# 1.support of tls and optional client auth.
+# 2.showerrorstack if on, when a panic error occurred
+# call stack and error message will display on the browser 
+############################################################
 [httpserver]
 listen=":7080"
 tlsenable=false
@@ -8,23 +15,44 @@ tlsclientsca="./conf/clintsca.crt"
 printroute=true
 showerrorstack=true
 
+############################################################
+# http server static files configuration 
+############################################################
+# 1.dir is a local filesystem path
+# 2.urlpath is static dir url path
+############################################################
 [static]
 dir="static"
 urlpath="/static/"
 
+#############################################################
+# http server template configuration 
+#############################################################
+# 1.dir is a local template folder path
+# 2.ext is extension of template file 
+# 3.left and right delimiters to the specified strings, 
+# to be used in subsequent calls to Parse
+#############################################################
 [template]
 dir="views"
+ext=".html"
+delimiterleft="{{"
+delimiterright="}}"
 
+########################################################
+# session configuration 
+########################################################
+# store can be "file", "memory", "redis" 
+# {tmp} is a placeholder of system temp directory 
+########################################################
 [session]
 # turn on/off session
 enable=true
-# maybe "file", "memory", "redis" 
 store="memory"
 cookiename="gmcsid"
 ttl=3600
 
 [session.file]
-# {tmp} is a placeholder of system temp directory 
 dir="{tmp}/.gmcsessions"
 gctime=300
 prefix=".gmcsession_"
@@ -45,21 +73,40 @@ idletimeout=300
 maxconnlifetime=3600
 wait=true
 
+########################################################
+# cache configuration
+########################################################
+# redis supported
+# support of mutiple redis server 
+# notic: each config section must have an unique id 
+########################################################
 [cache]
-# maybe "redis" 
-[cache.redis]
-debug=false
+[[cache.redis]]
+debug=true
+enable=true
+id="default"
 address="127.0.0.1:6379"
 prefix=""
 password=""
+# seconds
 timeout=10
 dbnum=0
 maxidle=10
 maxactive=30
+# seconds
 idletimeout=300
+# seconds
 maxconnlifetime=3600
 wait=true
 
+########################################################
+# database configuration
+########################################################
+# mysql,sqlite3 are both supported
+# support of mutiple mysql server 
+# support of mutiple sqlite3 database
+# notic: each config section must have an unique id 
+########################################################
 [database]
 [[database.mysql]]
 enable=true

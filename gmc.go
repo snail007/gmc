@@ -6,7 +6,7 @@ import (
 	gmchttputil "github.com/snail007/gmc/util/httputil"
 
 	gmcapp "github.com/snail007/gmc/app"
-	gmccache "github.com/snail007/gmc/cache"
+	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmccacheredis "github.com/snail007/gmc/cache/redis"
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcdb "github.com/snail007/gmc/db"
@@ -24,9 +24,6 @@ import (
 type (
 	APP                = gmcapp.GMCApp
 	ServiceItem        = gmcapp.ServiceItem
-	Cache              = gmccache.Cache
-	CacheRedis         = gmccacheredis.RedisCache
-	CacheRedisConfig   = gmccacheredis.RedisCacheConfig
 	Config             = gmcconfig.GMCConfig
 	ResultSet          = gmcdb.ResultSet
 	DbCache            = gmcdb.Cache
@@ -69,6 +66,10 @@ var (
 	InitDB    = gmcdbhelper.RegistGroup
 	DBMySQL   = gmcdbhelper.DBMySQL
 	DBSQLite3 = gmcdbhelper.DBSQLite3
+
+	//Cache
+	InitCache = gmccachehelper.RegistGroup
+	Reids     = gmccachehelper.Redis
 
 	//http util
 	Stop       = gmchttputil.Stop

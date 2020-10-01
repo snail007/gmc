@@ -239,23 +239,23 @@ func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gm
 	return
 }
 
-//Init implements service.Services Init
+//Init implements service.Service Init
 func (s *APIServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
 	return
 }
 
-//Start implements service.Services Start
+//Start implements service.Service Start
 func (this *APIServer) Start() (err error) {
 	this.Run()
 	return
 }
 
-//Stop implements service.Services Stop
+//Stop implements service.Service Stop
 func (this *APIServer) Stop() {
 	this.server.Close()
 }
 
-//GracefulStop implements service.Services GracefulStop
+//GracefulStop implements service.Service GracefulStop
 func (this *APIServer) GracefulStop() {
 	if this.isShutdown {
 		return
@@ -267,17 +267,21 @@ func (this *APIServer) GracefulStop() {
 	return
 }
 
-//SetLog implements service.Services SetLog
+//SetLog implements service.Service SetLog
 func (this *APIServer) SetLog(l *log.Logger) {
 	this.logger = l
 }
 
-//InjectListener implements service.Services InjectListener
-func (this *APIServer) InjectListener(l net.Listener) {
-	this.listener = l
+//InjectListeners implements service.Service InjectListeners
+func (this *APIServer) InjectListeners(l []net.Listener) {
+	this.listener = l[0]
 }
 
-//Listener implements service.Services Listener
+//Listener implements service.Service Listener
+func (this *APIServer) Listeners() []net.Listener {
+	return []net.Listener{this.listener}
+}
+
 func (this *APIServer) Listener() net.Listener {
 	return this.listener
 }

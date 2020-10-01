@@ -3,12 +3,11 @@
 package gmcapp
 
 import (
-	"fmt"
+	"encoding/json"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 )
@@ -26,26 +25,29 @@ func (s *GMCApp) reloadSignalMonitor() {
 
 func (s *GMCApp) reload() {
 	files := []*os.File{}
-	skip := []string{"-1"}
+	fdMap := map[int]map[int]bool{}
+	k := 0
 	for i, srvI := range s.services {
 		srv := srvI.Service
-		l := srv.Listener()
-		if l != nil {
+		if _, ok := fdMap[i]; !ok {
+			fdMap[i] = map[int]bool{}
+		}
+		for _, l := range srv.Listeners() {
 			f, e := l.(*net.TCPListener).File()
 			if e != nil {
 				s.logger.Printf("reload fail, %s", e)
 				return
 			}
 			files = append(files, f)
-		} else {
-			skip = append(skip, fmt.Sprintf("%d", i))
-			files = append(files, nil)
+			fdMap[i][k] = true
+			k++
 		}
 	}
-
+	// fmt.Println(fdMap, len(files))
+	data, _ := json.Marshal(fdMap)
 	cmd := exec.Cmd{}
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "GMC_REALOD=yes", "GMC_REALOD_SKIP="+strings.Join(skip, ","))
+	cmd.Env = append(cmd.Env, "GMC_REALOD=yes", "GMC_REALOD_DATA="+string(data))
 	if len(os.Args) > 1 {
 		cmd.Args = os.Args[1:]
 	}

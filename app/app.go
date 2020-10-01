@@ -1,11 +1,11 @@
 package gmcapp
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"strings"
 
 	gmchook "github.com/snail007/gmc/process/hook"
 
@@ -51,12 +51,20 @@ func (s *GMCApp) SetMainConfigFile(file string) *GMCApp {
 	s.mainConfigFile = file
 	return s
 }
+func (s *GMCApp) SetMainConfig(cfg *gmcconfig.GMCConfig) *GMCApp {
+	s.mainConfig = cfg
+	return s
+}
 func (s *GMCApp) SetNoneMainConfigFile(n bool) *GMCApp {
 	s.isNoneMainConfig = n
 	return s
 }
 func (s *GMCApp) AddExtraConfigFile(idname, file string) *GMCApp {
 	s.extraConfigfiles[idname] = file
+	return s
+}
+func (s *GMCApp) AddExtraConfig(idname string, cfg *gmcconfig.GMCConfig) *GMCApp {
+	s.extraConfig[idname] = cfg
 	return s
 }
 
@@ -194,11 +202,9 @@ func (s *GMCApp) Logger() *log.Logger {
 // run all services
 func (s *GMCApp) run() (err error) {
 	isReload := os.Getenv("GMC_REALOD") == "yes"
-	skip := map[string]bool{}
-	for _, v := range strings.Split(os.Getenv("GMC_REALOD_SKIP"), ",") {
-		skip[v] = true
-	}
-
+	data := os.Getenv("GMC_REALOD_DATA")
+	fdMap := map[int]map[int]bool{}
+	json.Unmarshal([]byte(data), &fdMap)
 	for i, srvI := range s.services {
 		srv := srvI.Service
 		var cfg *gmcconfig.GMCConfig
@@ -220,15 +226,20 @@ func (s *GMCApp) run() (err error) {
 			return
 		}
 		//reload checking
-		if isReload && !skip[fmt.Sprintf("%d", i)] {
-			listener, e := net.FileListener(os.NewFile(uintptr(i)+3, ""))
-			if e != nil {
-				err = fmt.Errorf("reload fail, %s", e)
-				return
+		if isReload && len(fdMap[i]) > 0 {
+			// fmt.Println(fdMap)
+			listeners := []net.Listener{}
+			for k := range fdMap[i] {
+				listener, e := net.FileListener(os.NewFile(uintptr(k)+3, ""))
+				if e != nil {
+					err = fmt.Errorf("reload fail, %s", e)
+					return
+				}
+				listeners = append(listeners, listener)
 			}
-			srv.InjectListener(listener)
-			// s.logger.Println("InjectListener", i)
+			srv.InjectListeners(listeners)
 		}
+
 		//AfterInit
 		if srvI.AfterInit != nil {
 			err = srvI.AfterInit(&srvI)

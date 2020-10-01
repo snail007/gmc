@@ -83,7 +83,7 @@ func New() *HTTPServer {
 	}
 }
 
-//Init implements service.Services Init
+//Init implements service.Service Init
 func (s *HTTPServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
 	connCnt := int64(0)
 	s.server = &http.Server{}
@@ -224,9 +224,14 @@ func (s *HTTPServer) Listener() net.Listener {
 	return s.listener
 }
 
-//InjectListener implements service.Services InjectListener
-func (s *HTTPServer) InjectListener(l net.Listener) {
-	s.listener = l
+//Listeners implements service.Service Listeners
+func (s *HTTPServer) Listeners() []net.Listener {
+	return []net.Listener{s.listener}
+}
+
+//InjectListeners implements service.Service InjectListeners
+func (s *HTTPServer) InjectListeners(l []net.Listener) {
+	s.listener = l[0]
 }
 func (s *HTTPServer) Server() *http.Server {
 	return s.server
@@ -482,7 +487,7 @@ func (s *HTTPServer) PrintRouteTable(w io.Writer) {
 	s.router.PrintRouteTable(w)
 }
 
-//Start implements service.Services Start
+//Start implements service.Service Start
 func (s *HTTPServer) Start() (err error) {
 	defer func() {
 		if err == nil && s.config.GetBool("httpserver.printroute") {
@@ -495,13 +500,13 @@ func (s *HTTPServer) Start() (err error) {
 	return s.Listen()
 }
 
-//Stop implements service.Services Stop
+//Stop implements service.Service Stop
 func (s *HTTPServer) Stop() {
 	s.Close()
 	return
 }
 
-//GracefulStop implements service.Services GracefulStop
+//GracefulStop implements service.Service GracefulStop
 func (s *HTTPServer) GracefulStop() {
 	if s.isShutdown {
 		return
@@ -513,7 +518,7 @@ func (s *HTTPServer) GracefulStop() {
 	return
 }
 
-//SetLog implements service.Services SetLog
+//SetLog implements service.Service SetLog
 func (s *HTTPServer) SetLog(l *log.Logger) {
 	s.logger = l
 	return

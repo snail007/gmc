@@ -13,6 +13,6 @@ type Service interface {
 	Stop()
 	GracefulStop()
 	SetLog(*log.Logger)
-	InjectListener(net.Listener)
-	Listener() net.Listener
+	InjectListeners([]net.Listener)
+	Listeners() []net.Listener
 }

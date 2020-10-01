@@ -38,17 +38,11 @@ func TestRun_1(t *testing.T) {
 	app := New().Block(false)
 	app.AddExtraConfigFile("007", "app.toml")
 	assert.Nil(app.ParseConfig())
-	server := httpserver.New()
 	app.AddService(ServiceItem{
-		Service: server,
-		AfterInit: func(srv *ServiceItem) (err error) {
-			s := srv.Service.(*httpserver.HTTPServer)
-			assert.Equal(s, server)
-			return
-		},
+		Service: httpserver.New(),
 	})
 	app.AddService(ServiceItem{
-		Service:      server,
+		Service:      httpserver.New(),
 		ConfigIDname: "007",
 	})
 	err := app.Run()

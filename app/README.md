@@ -38,13 +38,13 @@ type Service interface {
 	Stop()
 	GracefulStop()
 	SetLog(*log.Logger)
-	InjectListener(net.Listener)
+	InjectListeners(net.Listener)
 	Listener() net.Listener
 }
 ```
 ### INTRO
 
-1.When hot reload.,call stack: `Init()->InjectListener()->Start()`, so you should using InjectListener's net.Listener in Start().  
+1.When hot reload.,call stack: `Init()->InjectListeners()->Start()`, so you should using InjectListeners's net.Listener in Start().  
 
 2.When hot reload requested, `Listener()` will be called, to obtain the net.Listener FD pass to sub process.  
 

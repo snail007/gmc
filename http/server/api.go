@@ -8,13 +8,12 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"runtime/debug"
 	"strings"
 	"time"
 
 	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcerr "github.com/snail007/gmc/error"
 	gmchttputil "github.com/snail007/gmc/util/httputil"
-
 	"github.com/snail007/gmc/util/logutil"
 
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -204,7 +203,7 @@ func (this *APIServer) handler500(ctx *gmcrouter.Ctx, err interface{}) *APIServe
 		ctx.Response.Header().Set("Content-Type", "text/plain")
 		msg := fmt.Sprintf("Internal Server Error")
 		if err != nil && this.isShowErrorStack {
-			msg += fmt.Sprintf("\n%s\n", err) + string(debug.Stack())
+			msg += "\n" + gmcerr.Stack(err)
 		}
 		ctx.Write([]byte(msg))
 	} else {
@@ -215,7 +214,7 @@ func (this *APIServer) handler500(ctx *gmcrouter.Ctx, err interface{}) *APIServe
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
 		defer func() {
-			err = recover()
+			err = gmcerr.Wrap(recover())
 		}()
 		fn()
 	}()
@@ -226,7 +225,7 @@ func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gm
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("middleware pani error : %s", e)
+					s.logger.Printf("middleware pani error : %s", gmcerr.Stack(e))
 					isStop = false
 				}
 			}()

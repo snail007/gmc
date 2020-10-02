@@ -15,6 +15,7 @@ import (
 var (
 	groupRedis = map[string]gmccache.Cache{}
 	logger     = logutil.New("")
+	cfg        *gmcconfig.GMCConfig
 )
 
 func SetLogger(l *log.Logger) {
@@ -22,8 +23,12 @@ func SetLogger(l *log.Logger) {
 }
 
 //RegistGroup parse app.toml database configuration, `cfg` is GMCConfig object of app.toml
-func RegistGroup(cfg *gmcconfig.GMCConfig) (err error) {
+func Init(cfg0 *gmcconfig.GMCConfig) (err error) {
+	cfg = cfg0
 	for k, v := range cfg.Sub("cache").AllSettings() {
+		if _, ok := v.([]interface{}); !ok {
+			continue
+		}
 		for _, vv := range v.([]interface{}) {
 			vvv := vv.(map[string]interface{})
 			if !castutil.ToBool(vvv["enable"]) {
@@ -53,6 +58,14 @@ func RegistGroup(cfg *gmcconfig.GMCConfig) (err error) {
 		}
 	}
 	return
+}
+
+func Cache() gmccache.Cache {
+	switch cfg.GetString("cache.default") {
+	case "redis":
+		return Redis()
+	}
+	return nil
 }
 
 //Redis acquires a redis cache object associated the id, id default is : `default`

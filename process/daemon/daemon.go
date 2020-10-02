@@ -11,9 +11,10 @@ import (
 	logger "log"
 	"os"
 	"os/exec"
-	"runtime/debug"
 	"strings"
 	"time"
+
+	gmcerr "github.com/snail007/gmc/error"
 )
 
 var (
@@ -33,7 +34,7 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-//start daemon or forever or flog
+//Start daemon or forever or flog
 func Start() (err error) {
 
 	args := []string{}
@@ -111,7 +112,7 @@ func Start() (err error) {
 		go func() {
 			defer func() {
 				if e := recover(); e != nil {
-					fmt.Fprintf(w, "crashed, err: %s\nstack:%s", e, string(debug.Stack()))
+					fmt.Fprintf(w, "crashed, err: %s", gmcerr.Stack(e))
 				}
 			}()
 			for {
@@ -139,7 +140,7 @@ func Start() (err error) {
 				go func() {
 					defer func() {
 						if e := recover(); e != nil {
-							fmt.Fprintf(w, "crashed, err: %s\nstack:%s", e, string(debug.Stack()))
+							fmt.Fprintf(w, "crashed, err: %s", gmcerr.Stack(e))
 						}
 					}()
 					for scanner.Scan() {
@@ -149,7 +150,7 @@ func Start() (err error) {
 				go func() {
 					defer func() {
 						if e := recover(); e != nil {
-							fmt.Fprintf(w, "crashed, err: %s\nstack:%s", e, string(debug.Stack()))
+							fmt.Fprintf(w, "crashed, err: %s", gmcerr.Stack(e))
 						}
 					}()
 					for scannerStdErr.Scan() {
@@ -175,7 +176,7 @@ func Start() (err error) {
 	return
 }
 
-//clean process, should be call before program exit.
+//Clean process, should be call before program exit.
 func Clean() {
 	if cmd != nil && cmd.ProcessState == nil {
 		l("clean process %d", cmd.Process.Pid)
@@ -184,7 +185,7 @@ func Clean() {
 	}
 }
 
-//check if program can be run
+//CanRun check if program can be run
 func CanRun() bool {
 	return !isDaemon && !isForever && flog == ""
 }

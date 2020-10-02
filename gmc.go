@@ -11,6 +11,7 @@ import (
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcdb "github.com/snail007/gmc/db"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
+	gmcerr "github.com/snail007/gmc/error"
 	gmccontroller "github.com/snail007/gmc/http/controller"
 	gmccookie "github.com/snail007/gmc/http/cookie"
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -22,27 +23,33 @@ import (
 )
 
 type (
-	APP                = gmcapp.GMCApp
-	ServiceItem        = gmcapp.ServiceItem
-	Config             = gmcconfig.GMCConfig
-	ResultSet          = gmcdb.ResultSet
-	DbCache            = gmcdb.Cache
-	Controller         = gmccontroller.Controller
-	Cookie             = gmccookie.Cookies
-	CookieOptions      = gmccookie.Options
-	Router             = gmcrouter.HTTPRouter
-	HTTPServer         = gmchttpserver.HTTPServer
-	APIServer          = gmchttpserver.APIServer
-	Session            = gmcsession.Session
-	SessionStore       = gmcsession.Store
-	Template           = gmctemplate.Template
-	Service            = gmcservice.Service
+	// app
+	APP         = gmcapp.GMCApp
+	ServiceItem = gmcapp.ServiceItem
+	Service     = gmcservice.Service
+	Config      = gmcconfig.GMCConfig
+	// database
+	ResultSet = gmcdb.ResultSet
+	DbCache   = gmcdb.Cache
+	// http server
+	Controller    = gmccontroller.Controller
+	Cookie        = gmccookie.Cookies
+	CookieOptions = gmccookie.Options
+	Router        = gmcrouter.HTTPRouter
+	HTTPServer    = gmchttpserver.HTTPServer
+	APIServer     = gmchttpserver.APIServer
+	Session       = gmcsession.Session
+	SessionStore  = gmcsession.Store
+	Template      = gmctemplate.Template
+	W             = http.ResponseWriter
+	R             = *http.Request
+	C             = *gmcrouter.Ctx
+	// data
 	Map                = maputil.Map
 	MapStringString    = maputil.MapStringString
 	MapStringInterface = maputil.MapStringInterface
-	W                  = http.ResponseWriter
-	R                  = *http.Request
-	C                  = *gmcrouter.Ctx
+	// error
+	Error = gmcerr.Error
 )
 
 var (
@@ -63,17 +70,23 @@ var (
 	NewMapStringInterface = maputil.NewMapStringInterface
 
 	//Database
-	InitDB    = gmcdbhelper.RegistGroup
+	InitDB    = gmcdbhelper.Init
 	DBMySQL   = gmcdbhelper.DBMySQL
 	DBSQLite3 = gmcdbhelper.DBSQLite3
 
 	//Cache
-	InitCache = gmccachehelper.RegistGroup
+	InitCache = gmccachehelper.Init
 	Reids     = gmccachehelper.Redis
+	Cache     = gmccachehelper.Cache
 
 	//http util
 	Stop       = gmchttputil.Stop
 	Die        = gmchttputil.Die
 	Write      = gmchttputil.Write
 	StatusCode = gmchttputil.StatusCode
+
+	// Errors
+	StackE = gmcerr.Stack
+	Errorf = gmcerr.Errorf
+	WrapE  = gmcerr.Wrap
 )

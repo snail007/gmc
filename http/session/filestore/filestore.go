@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	gmcerr "github.com/snail007/gmc/error"
 	gmcsession "github.com/snail007/gmc/http/session"
 	"github.com/snail007/gmc/util/fileutil"
 )
@@ -129,7 +130,7 @@ func (s *FileStore) gc() {
 	defer func() {
 		e := recover()
 		if e != nil {
-			fmt.Printf("filestore gc error: %s", e)
+			fmt.Printf("filestore gc error: %s", gmcerr.Stack(e))
 		}
 	}()
 	var files []string

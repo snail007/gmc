@@ -1,10 +1,11 @@
 package gmcdb
 
 import (
-	"errors"
 	"reflect"
 	"strconv"
 	"time"
+
+	gmcerr "github.com/snail007/gmc/error"
 )
 
 type Cache interface {
@@ -98,7 +99,7 @@ func (rs *ResultSet) Struct(strucT interface{}) (Struct interface{}, err error) 
 	if rs.Len() > 0 {
 		return rs.mapToStruct(rs.Row(), strucT)
 	}
-	return nil, errors.New("rs is empty")
+	return nil, gmcerr.New("rs is empty")
 }
 func (rs *ResultSet) Values(column string) (values []string) {
 	values = []string{}
@@ -124,7 +125,7 @@ func (rs *ResultSet) Value(column string) (value string) {
 func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) (struCt interface{}, err error) {
 	rv := reflect.New(reflect.TypeOf(Struct)).Elem()
 	if reflect.TypeOf(Struct).Kind() != reflect.Struct {
-		return nil, errors.New("v must be struct")
+		return nil, gmcerr.New("v must be struct")
 	}
 	fieldType := rv.Type()
 	for i, fieldCount := 0, rv.NumField(); i < fieldCount; i++ {

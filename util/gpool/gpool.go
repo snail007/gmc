@@ -12,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gmcerr "github.com/snail007/gmc/error"
 )
 
 type GPool struct {
@@ -46,7 +48,7 @@ func (s *GPool) init() {
 	go func() {
 		defer func() {
 			if e := recover(); e != nil {
-				s.log("GPool stopped unexceptedly, err: %s", e)
+				s.log("GPool stopped unexceptedly, err: %s", gmcerr.Stack(e))
 			}
 		}()
 		//start the workerCnt workers
@@ -54,7 +56,7 @@ func (s *GPool) init() {
 			go func(i int) {
 				defer func() {
 					if e := recover(); e != nil {
-						s.log("GPool: a worker stopped unexceptedly, err: %s", e)
+						s.log("GPool: a worker stopped unexceptedly, err: %s", gmcerr.Stack(e))
 					}
 				}()
 				// s.log("GPool: worker[%d] started ...", i)
@@ -88,7 +90,7 @@ func (s *GPool) init() {
 func (s *GPool) run(fn func()) {
 	defer func() {
 		if e := recover(); e != nil {
-			s.log("GPool: a task stopped unexceptedly, err: %s", e)
+			s.log("GPool: a task stopped unexceptedly, err: %s", gmcerr.Stack(e))
 		}
 	}()
 	fn()

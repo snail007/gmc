@@ -11,25 +11,20 @@ func main() {
 	app := gmc.NewAPP()
 
 	//2. set app main config file
-	app.SetMainConfigFile("../../app/app.toml")
+	app.SetConfigFile("../../app/app.toml")
 
-	//3. when config file parsed, then initialize global database and cache objects in main config file app.toml, if have.
-	app.AfterParse(func(_ *gmc.Config) (err error) {
-		err = gmc.InitDB(app.Config())
+	//3. when config file parsed success, we initialize database and cache only once.
+	app.OnRunOnce(func(cfg *gmc.Config) (err error) {
+		err = gmc.InitDB(cfg)
 		return
 	})
-	app.AfterParse(func(_ *gmc.Config) (err error) {
-		err = gmc.InitCache(app.Config())
+	app.OnRunOnce(func(cfg *gmc.Config) (err error) {
+		err = gmc.InitCache(cfg)
 		return
 	})
 
-	//4. parse app config file
-	err := app.ParseConfig()
-	if err != nil {
-		panic(err)
-	}
-
-	//5.add service to app
+	//4.add a service to app
+	// and you can call AddService more to add service to app
 	app.AddService(gmc.ServiceItem{
 		Service: gmc.NewHTTPServer(), //create a http server
 		AfterInit: func(s *gmc.ServiceItem) (err error) {
@@ -41,24 +36,8 @@ func main() {
 			return
 		},
 	})
-	//and add more service to app
-	app.AddService(gmc.ServiceItem{
-		Service: gmc.NewHTTPServer(), //create a http server
-		BeforeInit: func(cfg *gmc.Config) (err error) {
-			//change port listen on
-			cfg.Set("httpserver.listen", ":")
-			return
-		},
-		AfterInit: func(s *gmc.ServiceItem) (err error) {
-			server := s.Service.(*gmc.HTTPServer)
-			//1.do something after http server inited
-			initialize.Initialize(server)
-			//2.configuration your routers
-			router.InitRouter(server)
-			return
-		},
-	})
 
-	//6.run the app
-	app.Logger().Panic(app.Run())
+	//5.run the app
+	app.Logger().Panic(gmc.StackE(app.Run()))
+
 }

@@ -57,7 +57,7 @@ func main() {
 	cfg := gmc.NewConfig()
 	cfg.Set("listen", ":")
 	app := gmc.NewAPP()
-	app.AddExtraConfig("mycfg", cfg)
+	app.AttachConfig("mycfg", cfg)
 	app.AddService(gmc.ServiceItem{
 		Service:      NewMyService(),
 		ConfigIDname: "mycfg",

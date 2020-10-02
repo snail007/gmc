@@ -17,29 +17,28 @@ func TestRegistMysql(t *testing.T) {
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
-	err = RegistGroup(cfg)
+	err = Init(cfg)
 	assert.Nil(err)
 	assert.EqualValues(1, DBMySQL().Stats().OpenConnections)
-	groupMySQL.DB().ConnPool.Close()
-
 }
 
-// func TestRegistMysql_1(t *testing.T) {
-// 	assert := assert.New(t)
-// 	cfg := gmcconfig.New()
-// 	cfg.SetConfigFile("../../app/app.toml")
-// 	err := cfg.ReadInConfig()
-// 	assert.Nil(err)
-// 	err = RegistGroup(cfg)
-// 	assert.Nil(err)
-// 	db := DBMySQL()
-// 	assert.NotNil(db)
-// 	ar := db.AR().From("test")
-// 	rs, err := db.Query(ar)
-// 	assert.Nil(err)
-// 	fmt.Println(rs.Rows(), err)
-// 	t.Fail()
-// }
+func TestRegistMysql_1(t *testing.T) {
+	assert := assert.New(t)
+	cfg := gmcconfig.New()
+	cfg.SetConfigFile("../../app/app.toml")
+	err := cfg.ReadInConfig()
+	assert.Nil(err)
+	err = Init(cfg)
+	assert.Nil(err)
+	db := DBMySQL()
+	assert.NotNil(db)
+	ar := db.AR().From("test")
+	_, err = db.Query(ar)
+	assert.Nil(err)
+	// fmt.Println(rs.Rows(), err)
+	// t.Fail()
+	//groupMySQL.DB().ConnPool.Close()
+}
 func TestRegistSQLite3(t *testing.T) {
 	os.Remove("test.db")
 	assert := assert.New(t)

@@ -8,9 +8,11 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/mdempsky/gocode v0.0.0-20200405233807-4acdcbdea79d // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/snail007/go-sqlcipher v0.0.0-20200925102221-14c524d566ca
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.5.0
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd // indirect
+	golang.org/x/tools/gopls v0.5.0 // indirect
 )

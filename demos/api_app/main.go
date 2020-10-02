@@ -54,12 +54,7 @@ func main() {
 		c.Write(timeutil.TimeToStr(time.Now()))
 	})
 
-	app := gmc.NewAPP().SetNoneMainConfigFile(true)
-
-	err := app.ParseConfig()
-	if err != nil {
-		panic(err)
-	}
+	app := gmc.NewAPP()
 
 	app.AddService(gmc.ServiceItem{
 		Service: api,
@@ -69,5 +64,5 @@ func main() {
 		},
 	})
 
-	app.Logger().Panic(app.Run())
+	app.Logger().Panic(gmc.StackE(app.Run()))
 }

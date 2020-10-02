@@ -1,7 +1,6 @@
 package gmccacheredis
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	gmccache "github.com/snail007/gmc/cache"
+	gmcerr "github.com/snail007/gmc/error"
 )
 
 type RedisCacheConfig struct {
@@ -190,7 +190,7 @@ func (c *RedisCache) key(key string) string {
 // actually do the redis cmds, args[0] must be the key name.
 func (c *RedisCache) exec(commandName string, args ...interface{}) (reply interface{}, err error) {
 	if len(args) < 1 {
-		return nil, errors.New("missing required arguments")
+		return nil, gmcerr.New("missing required arguments")
 	}
 
 	conn := c.pool.Get()

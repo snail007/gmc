@@ -13,8 +13,11 @@ var (
 )
 
 //RegistGroup parse app.toml database configuration, `cfg` is GMCConfig object of app.toml
-func RegistGroup(cfg *gmcconfig.GMCConfig) (err error) {
+func Init(cfg *gmcconfig.GMCConfig) (err error) {
 	for k, v := range cfg.Sub("database").AllSettings() {
+		if _, ok := v.([]interface{}); !ok {
+			continue
+		}
 		for _, vv := range v.([]interface{}) {
 			vvv := vv.(map[string]interface{})
 			if !castutil.ToBool(vvv["enable"]) {

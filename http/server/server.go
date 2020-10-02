@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,11 +15,11 @@ import (
 	"net/http"
 	"path/filepath"
 	"reflect"
-	"runtime/debug"
 	"strings"
 	"sync/atomic"
 	"time"
 
+	gmcerr "github.com/snail007/gmc/error"
 	gmcsession "github.com/snail007/gmc/http/session"
 	gmcfilestore "github.com/snail007/gmc/http/session/filestore"
 	gmcmemorystore "github.com/snail007/gmc/http/session/memorystore"
@@ -198,7 +197,7 @@ func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
 		c.Response__().Header().Set("Content-Type", "text/plain")
 		c.Write("Internal Server Error")
 		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
-			c.Write("\n", err, "\n", string(debug.Stack()))
+			c.Write("\n" + gmcerr.Stack(err))
 		}
 	} else {
 		s.handler50x(c, err)
@@ -390,7 +389,7 @@ func (s *HTTPServer) initTLSConfig() (err error) {
 		}
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
-			err = errors.New("failed to parse tls clients root certificate")
+			err = gmcerr.New("failed to parse tls clients root certificate")
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -529,7 +528,7 @@ func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *g
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("middleware pani error : %s", e)
+					s.logger.Printf("middleware pani error : %s", gmcerr.Stack(e))
 					isNext = true
 					isStop = false
 				}

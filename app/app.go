@@ -7,28 +7,28 @@ import (
 	"net"
 	"os"
 
-	gmchook "github.com/snail007/gmc/process/hook"
-
-	gmcservice "github.com/snail007/gmc/service"
-
 	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcerr "github.com/snail007/gmc/error"
+	gmchook "github.com/snail007/gmc/process/hook"
+	gmcservice "github.com/snail007/gmc/service"
 	"github.com/snail007/gmc/util/logutil"
 )
 
+var (
+	onRunOnceFlag = false
+)
+
 type GMCApp struct {
-	afterParse       []func(*gmcconfig.GMCConfig) error
-	beforeRun        []func(*gmcconfig.GMCConfig) error
-	beforeShutdown   []func()
-	isBlock          bool
-	isParsed         bool
-	extraConfig      map[string]*gmcconfig.GMCConfig
-	extraConfigfiles map[string]string
-	services         []ServiceItem
-	logger           *log.Logger
-	mainConfigFile   string
-	mainConfig       *gmcconfig.GMCConfig
-	afterServiceInit []func(app *GMCApp, srv interface{}) error
-	isNoneMainConfig bool
+	onRunOnce         []func(*gmcconfig.GMCConfig) error
+	onRun             []func(*gmcconfig.GMCConfig) error
+	onShutdown        []func()
+	isBlock           bool
+	attachConfig      map[string]*gmcconfig.GMCConfig
+	attachConfigfiles map[string]string
+	services          []ServiceItem
+	logger            *log.Logger
+	configFile        string
+	config            *gmcconfig.GMCConfig
 }
 type ServiceItem struct {
 	BeforeInit   func(srv *gmcconfig.GMCConfig) (err error)
@@ -39,81 +39,67 @@ type ServiceItem struct {
 
 func New() *GMCApp {
 	return &GMCApp{
-		isBlock:          true,
-		services:         []ServiceItem{},
-		logger:           logutil.New(""),
-		extraConfig:      map[string]*gmcconfig.GMCConfig{},
-		extraConfigfiles: map[string]string{},
+		isBlock:           true,
+		onRunOnce:         []func(*gmcconfig.GMCConfig) error{},
+		onRun:             []func(*gmcconfig.GMCConfig) error{},
+		onShutdown:        []func(){},
+		services:          []ServiceItem{},
+		logger:            logutil.New(""),
+		attachConfig:      map[string]*gmcconfig.GMCConfig{},
+		attachConfigfiles: map[string]string{},
 	}
 }
 
-func (s *GMCApp) SetMainConfigFile(file string) *GMCApp {
-	s.mainConfigFile = file
+func (s *GMCApp) SetConfigFile(file string) *GMCApp {
+	s.configFile = file
 	return s
 }
-func (s *GMCApp) SetMainConfig(cfg *gmcconfig.GMCConfig) *GMCApp {
-	s.mainConfig = cfg
+func (s *GMCApp) SetConfig(cfg *gmcconfig.GMCConfig) *GMCApp {
+	s.config = cfg
 	return s
 }
-func (s *GMCApp) SetNoneMainConfigFile(n bool) *GMCApp {
-	s.isNoneMainConfig = n
+func (s *GMCApp) AttachConfigFile(idname, file string) *GMCApp {
+	s.attachConfigfiles[idname] = file
 	return s
 }
-func (s *GMCApp) AddExtraConfigFile(idname, file string) *GMCApp {
-	s.extraConfigfiles[idname] = file
-	return s
-}
-func (s *GMCApp) AddExtraConfig(idname string, cfg *gmcconfig.GMCConfig) *GMCApp {
-	s.extraConfig[idname] = cfg
+func (s *GMCApp) AttachConfig(idname string, cfg *gmcconfig.GMCConfig) *GMCApp {
+	s.attachConfig[idname] = cfg
 	return s
 }
 
-//Config acquires the main or extra config object.
-//if `idanem` is empty , it return main  config object,
-//other return extra config object of `idname`.
+//Config acquires the  or attach config object.
+//if `idanem` is empty , it return   config object,
+//other return attach config object of `idname`.
 func (s *GMCApp) Config(idname ...string) *gmcconfig.GMCConfig {
 	if len(idname) > 0 {
-		return s.extraConfig[idname[0]]
+		return s.attachConfig[idname[0]]
 	}
-	return s.mainConfig
+	return s.config
 }
-func (s *GMCApp) ParseConfig() (err error) {
-	if s.isParsed {
-		return
+func (s *GMCApp) parseConfigFile() (err error) {
+	parse := false
+	if s.configFile != "" {
+		s.config.SetConfigFile(s.configFile)
+		parse = true
+
+	} else if s.config != nil && s.config.ConfigFileUsed() == "" {
+		parse = true
 	}
-	defer func() {
-		if err == nil {
-			s.isParsed = true
-			err = s.callRunE(s.afterParse)
-		}
-	}()
-	//create config file object
-	s.mainConfig = gmcconfig.New()
-	if s.mainConfigFile == "" {
-		s.mainConfig.SetConfigName("app")
-		s.mainConfig.AddConfigPath(".")
-		s.mainConfig.AddConfigPath("config")
-		s.mainConfig.AddConfigPath("conf")
-		//for testing
-		// s.config.AddConfigPath("../app")
-	} else {
-		s.mainConfig.SetConfigFile(s.mainConfigFile)
-	}
-	if !s.isNoneMainConfig {
-		err = s.mainConfig.ReadInConfig()
+	if parse {
+		err = s.config.ReadInConfig()
 		if err != nil {
 			return
 		}
-		s.mainConfigFile = s.mainConfig.ConfigFileUsed()
+		s.configFile = s.config.ConfigFileUsed()
 	}
-	for idname, cfgfile := range s.extraConfigfiles {
+	for idname, cfgfile := range s.attachConfigfiles {
 		cfg := gmcconfig.New()
 		cfg.SetConfigFile(cfgfile)
 		err = cfg.ReadInConfig()
 		if err != nil {
 			return
 		}
-		s.extraConfig[idname] = cfg
+		s.attachConfig[idname] = cfg
 	}
 	return
 }
@@ -124,10 +110,10 @@ func (s *GMCApp) callRunE(fns []func(*gmcconfig.GMCConfig) error) (err error) {
 			defer func() {
 				if e := recover(); e != nil {
 					hasError = true
-					err = fmt.Errorf("%s", e)
+					err = gmcerr.Wrap(e)
 				}
 			}()
-			err = fn(s.mainConfig)
+			err = fn(s.config)
 			if err != nil {
 				hasError = true
 			}
@@ -139,7 +125,20 @@ func (s *GMCApp) callRunE(fns []func(*gmcconfig.GMCConfig) error) (err error) {
 	return
 }
 func (s *GMCApp) Run() (err error) {
-	err = s.callRunE(s.beforeRun)
+	err = s.parseConfigFile()
+	if err != nil {
+		return
+	}
+	// on run once
+	if !onRunOnceFlag {
+		onRunOnceFlag = true
+		err = s.callRunE(s.onRunOnce)
+		if err != nil {
+			return
+		}
+	}
+	// on run
+	err = s.callRunE(s.onRun)
 	if err != nil {
 		return
 	}
@@ -160,11 +159,11 @@ func (s *GMCApp) Run() (err error) {
 	return
 }
 func (s *GMCApp) Stop() {
-	for _, fn := range s.beforeShutdown {
+	for _, fn := range s.onShutdown {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("run beforeShutdown hook fail, error : %s", e)
+					s.logger.Printf("run beforeShutdown hook fail, error : %s", gmcerr.Stack(e))
 				}
 			}()
 			fn()
@@ -174,16 +173,16 @@ func (s *GMCApp) Stop() {
 		srv.Service.Stop()
 	}
 }
-func (s *GMCApp) AfterParse(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
-	s.afterParse = append(s.afterParse, fn)
+func (s *GMCApp) OnRunOnce(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
+	s.onRunOnce = append(s.onRunOnce, fn)
 	return s
 }
-func (s *GMCApp) BeforeRun(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
-	s.beforeRun = append(s.beforeRun, fn)
+func (s *GMCApp) OnRun(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
+	s.onRun = append(s.onRun, fn)
 	return s
 }
-func (s *GMCApp) BeforeShutdown(fn func()) *GMCApp {
-	s.beforeShutdown = append(s.beforeShutdown, fn)
+func (s *GMCApp) OnShutdown(fn func()) *GMCApp {
+	s.onShutdown = append(s.onShutdown, fn)
 	return s
 }
 func (s *GMCApp) Block(isBlockRun bool) *GMCApp {
@@ -209,9 +208,9 @@ func (s *GMCApp) run() (err error) {
 		srv := srvI.Service
 		var cfg *gmcconfig.GMCConfig
 		if srvI.ConfigIDname != "" {
-			cfg = s.extraConfig[srvI.ConfigIDname]
+			cfg = s.attachConfig[srvI.ConfigIDname]
 		} else {
-			cfg = s.mainConfig
+			cfg = s.config
 		}
 		//BeforeInit
 		if srvI.BeforeInit != nil {

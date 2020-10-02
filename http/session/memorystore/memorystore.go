@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	gmcerr "github.com/snail007/gmc/error"
 	gmcsession "github.com/snail007/gmc/http/session"
 )
 
@@ -74,7 +75,7 @@ func (s *MemoryStore) gc() {
 	defer func() {
 		e := recover()
 		if e != nil {
-			fmt.Printf("memorystore gc error: %s", e)
+			fmt.Printf("memorystore gc error: %s", gmcerr.Stack(e))
 		}
 	}()
 	first := true

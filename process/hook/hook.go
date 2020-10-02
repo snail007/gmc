@@ -10,8 +10,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime/debug"
 	"syscall"
+
+	gmcerr "github.com/snail007/gmc/error"
 )
 
 var (
@@ -25,7 +26,7 @@ func RegistShutdown(fn func()) {
 func WaitShutdown() {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf("shutdown hook manager crashed, err: %s\nstack:\n%s", e, string(debug.Stack()))
+			fmt.Printf("shutdown hook manager crashed, err: %s", gmcerr.Stack(e))
 		}
 	}()
 	signalChan := make(chan os.Signal, 1)
@@ -50,7 +51,7 @@ func runHooks() {
 	caller := func(fn func()) {
 		defer func() {
 			if e := recover(); e != nil {
-				fmt.Printf("shutdown hook crashed, err: %s\nstack:\n%s", e, string(debug.Stack()))
+				fmt.Printf("shutdown hook crashed, err: %s", gmcerr.Stack(e))
 			}
 		}()
 		fn()

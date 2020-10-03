@@ -12,9 +12,9 @@ import (
 	"reflect"
 	"testing"
 
-	gmcservice "github.com/snail007/gmc/service"
+	gmcconfig "github.com/snail007/gmc/config"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcservice "github.com/snail007/gmc/service"
 
 	gmccontroller "github.com/snail007/gmc/http/controller"
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -479,7 +479,7 @@ func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 	str = string(body)
 	return
 }
-func mockConfig() *gmcconfig.GMCConfig {
+func mockConfig() *gmcconfig.Config {
 	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	cfg.ReadInConfig()
@@ -508,7 +508,7 @@ func mockResponse(w *httptest.ResponseRecorder) (data string, resp *http.Respons
 	}
 	return
 }
-func mockHTTPServer(cfg ...*gmcconfig.GMCConfig) *HTTPServer {
+func mockHTTPServer(cfg ...*gmcconfig.Config) *HTTPServer {
 	c := mockConfig()
 	if len(cfg) > 0 {
 		c = cfg[0]

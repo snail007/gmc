@@ -1,11 +1,14 @@
 package gmc
 
 import (
+	gmcmysql "github.com/snail007/gmc/db/mysql"
+	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	"net/http"
+
+	gmcconfig "github.com/snail007/gmc/config"
 
 	gmcapp "github.com/snail007/gmc/app"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
-	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcdb "github.com/snail007/gmc/db"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmcerr "github.com/snail007/gmc/error"
@@ -24,10 +27,13 @@ type (
 	APP         = gmcapp.GMCApp
 	ServiceItem = gmcapp.ServiceItem
 	Service     = gmcservice.Service
-	Config      = gmcconfig.GMCConfig
+	Config      = gmcconfig.Config
 	// database
 	ResultSet = gmcdb.ResultSet
-	DbCache   = gmcdb.Cache
+	DBCache   = gmcdb.Cache
+	MySQL     = gmcmysql.DB
+	SQLite3   = gmcsqlite3.DB
+
 	// http server
 	Controller    = gmccontroller.Controller
 	Cookie        = gmccookie.Cookies
@@ -50,19 +56,20 @@ type (
 )
 
 var (
-	NewAPP              = gmcapp.New
-	NewConfig           = gmcconfig.New
-	NewRouter           = gmcrouter.NewHTTPRouter()
-	NewHTTPServer       = gmchttpserver.New
-	NewAPIServer        = gmchttpserver.NewAPIServer
+	NewAPP        = gmcapp.New
+	NewConfig     = gmcconfig.New
+	NewRouter     = gmcrouter.NewHTTPRouter()
+	NewHTTPServer = gmchttpserver.New
+	NewAPIServer  = gmchttpserver.NewAPIServer
 
 	// Map
-	NewMap                = maputil.NewMap
+	NewMap = maputil.NewMap
 
 	//Database
-	InitDB    = gmcdbhelper.Init
-	DBMySQL   = gmcdbhelper.DBMySQL
+	InitDB   = gmcdbhelper.Init
+	DBMySQL  = gmcdbhelper.DBMySQL
 	DBSQLite = gmcdbhelper.DBSQLite3
+	DB       = gmcdbhelper.DB
 
 	//Cache
 	InitCache = gmccachehelper.Init

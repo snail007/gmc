@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
+
 	gmcerr "github.com/snail007/gmc/error"
 	gmchttputil "github.com/snail007/gmc/util/httputil"
 	"github.com/snail007/gmc/util/logutil"
@@ -241,7 +242,7 @@ func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gm
 }
 
 //Init implements service.Service Init
-func (s *APIServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
+func (s *APIServer) Init(cfg *gmcconfig.Config) (err error) {
 	return
 }
 

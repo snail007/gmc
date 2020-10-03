@@ -1,7 +1,7 @@
 package ctxvalue
 
 import (
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmcsession "github.com/snail007/gmc/http/session"
 	gmctemplate "github.com/snail007/gmc/http/template"
@@ -11,8 +11,8 @@ type CtxValue struct {
 	Tpl          *gmctemplate.Template
 	SessionStore gmcsession.Store
 	Router       *gmcrouter.HTTPRouter
-	Config       *gmcconfig.GMCConfig
-	AppConfig    *gmcconfig.GMCConfig
+	Config       *gmcconfig.Config
+	AppConfig    *gmcconfig.Config
 }
 type (
 	ctxValueKey struct{}

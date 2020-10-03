@@ -4,12 +4,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-type GMCConfig struct {
+type Config struct {
 	*viper.Viper
 }
 
-func New() *GMCConfig {
-	return &GMCConfig{
+func New() *Config {
+	return &Config{
 		Viper: viper.New(),
 	}
 }

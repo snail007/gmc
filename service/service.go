@@ -4,12 +4,12 @@ import (
 	"log"
 	"net"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
 )
 
 type Service interface {
 	// init servcie
-	Init(cfg *gmcconfig.GMCConfig) error
+	Init(cfg *gmcconfig.Config) error
 	//nonblocking, called After Init -> InjectListeners (when reload) -> Start
 	Start() error
 	Stop()

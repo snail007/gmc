@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	gmcconfig "github.com/snail007/gmc/config"
 	gmcerr "github.com/snail007/gmc/error"
 	gmcsession "github.com/snail007/gmc/http/session"
 	gmcfilestore "github.com/snail007/gmc/http/session/filestore"
@@ -28,7 +29,6 @@ import (
 
 	gmccontroller "github.com/snail007/gmc/http/controller"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcrouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
 	gmchttputil "github.com/snail007/gmc/util/httputil"
@@ -59,7 +59,7 @@ type HTTPServer struct {
 	listener     net.Listener
 	server       *http.Server
 	connCnt      *int64
-	config       *gmcconfig.GMCConfig
+	config       *gmcconfig.Config
 	handler40x   func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)
 	handler50x   func(c gmccontroller.IController, err interface{})
 	//just for testing
@@ -83,7 +83,7 @@ func New() *HTTPServer {
 }
 
 //Init implements service.Service Init
-func (s *HTTPServer) Init(cfg *gmcconfig.GMCConfig) (err error) {
+func (s *HTTPServer) Init(cfg *gmcconfig.Config) (err error) {
 	connCnt := int64(0)
 	s.server = &http.Server{}
 	s.logger = logutil.New("")
@@ -204,11 +204,11 @@ func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
 	}
 }
 
-func (s *HTTPServer) SetConfig(c *gmcconfig.GMCConfig) *HTTPServer {
+func (s *HTTPServer) SetConfig(c *gmcconfig.Config) *HTTPServer {
 	s.config = c
 	return s
 }
-func (s *HTTPServer) Config() *gmcconfig.GMCConfig {
+func (s *HTTPServer) Config() *gmcconfig.Config {
 	return s.config
 }
 

@@ -9,7 +9,8 @@ import (
 	"fmt"
 	"net/http"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
+
 	gmchttputil "github.com/snail007/gmc/util/httputil"
 
 	gmccookie "github.com/snail007/gmc/http/cookie"
@@ -28,7 +29,7 @@ type IController interface {
 	Tpl__() *gmctemplate.Template
 	SessionStore__() gmcsession.Store
 	Router__() *gmcrouter.HTTPRouter
-	Config__() *gmcconfig.GMCConfig
+	Config__() *gmcconfig.Config
 	Cookie__() *gmccookie.Cookies
 }
 type Controller struct {
@@ -39,7 +40,7 @@ type Controller struct {
 	Tpl          *gmctemplate.Template
 	SessionStore gmcsession.Store
 	Router       *gmcrouter.HTTPRouter
-	Config       *gmcconfig.GMCConfig
+	Config       *gmcconfig.Config
 	Cookie       *gmccookie.Cookies
 }
 
@@ -65,7 +66,7 @@ func (this *Controller) SessionStore__() gmcsession.Store {
 func (this *Controller) Router__() *gmcrouter.HTTPRouter {
 	return this.Router
 }
-func (this *Controller) Config__() *gmcconfig.GMCConfig {
+func (this *Controller) Config__() *gmcconfig.Config {
 	return this.Config
 }
 func (this *Controller) Cookie__() *gmccookie.Cookies {

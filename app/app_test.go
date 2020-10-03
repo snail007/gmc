@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
 
 	httpserver "github.com/snail007/gmc/http/server"
 
@@ -116,7 +116,7 @@ func TestBeforeRun(t *testing.T) {
 	//run gmc app
 	app := New()
 	assert.Nil(app.ParseConfig())
-	app.BeforeRun(func(*gmcconfig.GMCConfig) error {
+	app.BeforeRun(func(*gmcconfig.Config) error {
 		return fmt.Errorf("stop")
 	})
 	err := app.Run()
@@ -125,7 +125,7 @@ func TestBeforeRun(t *testing.T) {
 func TestBeforeRun_1(t *testing.T) {
 	// assert := assert.New(t)
 	app := New().Block(false)
-	app.BeforeRun(func(*gmcconfig.GMCConfig) (err error) {
+	app.BeforeRun(func(*gmcconfig.Config) (err error) {
 		a := 0
 		_ = a / a
 		return
@@ -135,7 +135,7 @@ func TestBeforeRun_1(t *testing.T) {
 func TestBeforeRun_2(t *testing.T) {
 	// assert := assert.New(t)
 	app := New().Block(false)
-	app.BeforeRun(func(*gmcconfig.GMCConfig) (err error) {
+	app.BeforeRun(func(*gmcconfig.Config) (err error) {
 		return fmt.Errorf(".")
 	})
 	app.Run()

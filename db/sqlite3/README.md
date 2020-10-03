@@ -1,27 +1,50 @@
-# GMC MySQL Driver
-GMC MySQL Driver is designed chained style, to build your database CURD in easy way.
+# GMC SQLITE3 Driver
+GMC SQLITE3 Driver is designed chained style, to build your database CURD in easy way.
 
-## Connect to MYSQL
+## OPEN SQLITE3 DATABASE
 
 ```go
 // all of db config are :
-// Charset:                  "utf8",
-// Collate:                  "utf8_general_ci",
-// Database:                 "test",
-// Host:                     "127.0.0.1",
-// Port:                     3306,
-// Username:                 "root",
-// Password:                 "",
-// TablePrefix:              "",
-// TablePrefixSqlIdentifier: "",
-// Timeout:                  3000, //ms
-// SetMaxOpenConns:          500,
-// SetMaxIdleConns:          50,
-var dbCfg = mysql.NewDBConfig()
-dbCfg.Host = "127.0.0.1"
-dbCfg.Username = "root"
-dbCfg.Password = "123"
-db, err := mysql.NewDB(dbCfg)
+// Database                 string
+// TablePrefix              string
+// TablePrefixSqlIdentifier string
+// SyncMode                 int
+// OpenMode                 string
+// CacheMode                string
+// Password                 string
+
+var dbCfg = gmcsqlite3.NewDBConfig()
+dbCfg.Database = "test.db"
+db, err := gmcsqlite3.NewDB(dbCfg)
+if err != nil {
+        fmt.Printf("ERR:%s", err)
+        return
+}
+```
+
+## CREATE & OPEN SQLITE3 DATABASE
+OpenMode is OPEN_MODE_READ_WRITE_CREATE, database will be created if it not exists.
+
+```go
+var dbCfg = sqlite3.NewDBConfig()
+dbCfg.OpenMode = gmcsqlite3.OPEN_MODE_READ_WRITE_CREATE
+dbCfg.Database = "test.db"
+db, err := gmcsqlite3.NewDB(dbCfg)
+if err != nil {
+        fmt.Printf("ERR:%s", err)
+        return
+}
+```
+
+## CREATE & OPEN ENCRYPTED SQLITE3 DATABASE
+If Password is set, database will be created and encrypted if it not exists.
+
+```go
+var dbCfg = sqlite3.NewDBConfig()
+dbCfg.OpenMode = gmcsqlite3.OPEN_MODE_READ_WRITE_CREATE
+dbCfg.Database = "test.db"
+dbCfg.Password = "pass123"
+db, err := gmcsqlite3.NewDB(dbCfg)
 if err != nil {
         fmt.Printf("ERR:%s", err)
         return
@@ -29,14 +52,13 @@ if err != nil {
 ```
 
 ## Using DB GROUP
-
 you can connect to multiple database source in one db group.
 
 ```go
-group := mysql.NewDBGroup("default")
-group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "blog_db", "root", "admin"))
-group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "www_db", "root", "admin"))
+group := gmcsqlite3.NewDBGroup("default")
+group.Regist("default", gmcsqlite3.NewDBConfigWith("test1.db", "", gmcsqlite3.OPEN_MODE_READ_WRITE, gmcsqlite3.CACHE_MODE_SHARED,gmcsqlite3.SYNC_MODE_OFF))
+group.Regist("blog", gmcsqlite3.NewDBConfigWith("test2.db", "", gmcsqlite3.OPEN_MODE_READ_WRITE, gmcsqlite3.CACHE_MODE_SHARED, gmcsqlite3.SYNC_MODE_OFF))
+group.Regist("www", gmcsqlite3.NewDBConfigWith("test3.db", "", gmcsqlite3.OPEN_MODE_READ_WRITE,gmcsqlite3.CACHE_MODE_SHARED, gmcsqlite3.SYNC_MODE_OFF))
 
 //group.DB() equal to group.DB("default")
 db := group.DB("www")
@@ -132,7 +154,7 @@ ResultSet.RowsAffected
 ```
 
 ## ActiveRecord
-db.AR() return a new *gmcmysql.ActiveRecord,you can use it to build you sql.
+db.AR() return a new *gmcsqlite3.ActiveRecord,you can use it to build you sql.
 
 ## INSERT & INSERT BATCH
 insert example:
@@ -329,7 +351,7 @@ when execute sql,{__PREFIX__} will be replaced with "user_"
 ```
 
 ## Cache QUERY
-gmc mysql driver can caching your query automatically.
+gmc sqlite3 driver can caching your query automatically.
 
 you must to set a cache handler to store data.
 
@@ -356,8 +378,8 @@ func (c *MyCache) Get(key string) (data []byte, err error) {
     return nil, errors.New("key not found or expired")
 }
 func main() {
-    g := mysql.NewDBGroupCache("default", &MyCache{})
-    g.Regist("default", mysql.NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    g := gmcsqlite3.NewDBGroupCache("default", &MyCache{})
+    g.Regist("default", gmcsqlite3.NewDBConfigWith("test.db",  "", gmcsqlite3.OPEN_MODE_READ_WRITE, gmcsqlite3.CACHE_MODE_SHARED,gmcsqlite3.SYNC_MODE_OFF))
     // turn on cache on the query by call Cache()    
     fmt.Println(g.DB().Query(g.DB().AR().Cache("testkey", 30).From("test")))
     // get query data from cache directly
@@ -374,6 +396,6 @@ output like:
 map[pid:1 id:a1 name:a1111 gid:11]
 ```
 
-## MORE ABOUT USING
+## MORE ABOUT ActiveRecord
 
-More using of the driver , please refer to the `mysql_test.go`.
+More using of ActiveRecord , please refer to the `mysql_test.go`.

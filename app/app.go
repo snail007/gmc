@@ -7,7 +7,8 @@ import (
 	"net"
 	"os"
 
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
+
 	gmcerr "github.com/snail007/gmc/error"
 	gmchook "github.com/snail007/gmc/process/hook"
 	gmcservice "github.com/snail007/gmc/service"
@@ -19,19 +20,19 @@ var (
 )
 
 type GMCApp struct {
-	onRunOnce         []func(*gmcconfig.GMCConfig) error
-	onRun             []func(*gmcconfig.GMCConfig) error
+	onRunOnce         []func(config *gmcconfig.Config) error
+	onRun             []func(*gmcconfig.Config) error
 	onShutdown        []func()
 	isBlock           bool
-	attachConfig      map[string]*gmcconfig.GMCConfig
+	attachConfig      map[string]*gmcconfig.Config
 	attachConfigfiles map[string]string
 	services          []ServiceItem
 	logger            *log.Logger
 	configFile        string
-	config            *gmcconfig.GMCConfig
+	config            *gmcconfig.Config
 }
 type ServiceItem struct {
-	BeforeInit   func(srv *gmcconfig.GMCConfig) (err error)
+	BeforeInit   func(srv *gmcconfig.Config) (err error)
 	AfterInit    func(srv *ServiceItem) (err error)
 	Service      gmcservice.Service
 	ConfigIDname string
@@ -40,12 +41,12 @@ type ServiceItem struct {
 func New() *GMCApp {
 	return &GMCApp{
 		isBlock:           true,
-		onRunOnce:         []func(*gmcconfig.GMCConfig) error{},
-		onRun:             []func(*gmcconfig.GMCConfig) error{},
+		onRunOnce:         []func(*gmcconfig.Config) error{},
+		onRun:             []func(*gmcconfig.Config) error{},
 		onShutdown:        []func(){},
 		services:          []ServiceItem{},
 		logger:            logutil.New(""),
-		attachConfig:      map[string]*gmcconfig.GMCConfig{},
+		attachConfig:      map[string]*gmcconfig.Config{},
 		attachConfigfiles: map[string]string{},
 	}
 }
@@ -54,7 +55,7 @@ func (s *GMCApp) SetConfigFile(file string) *GMCApp {
 	s.configFile = file
 	return s
 }
-func (s *GMCApp) SetConfig(cfg *gmcconfig.GMCConfig) *GMCApp {
+func (s *GMCApp) SetConfig(cfg *gmcconfig.Config) *GMCApp {
 	s.config = cfg
 	return s
 }
@@ -62,7 +63,7 @@ func (s *GMCApp) AttachConfigFile(idname, file string) *GMCApp {
 	s.attachConfigfiles[idname] = file
 	return s
 }
-func (s *GMCApp) AttachConfig(idname string, cfg *gmcconfig.GMCConfig) *GMCApp {
+func (s *GMCApp) AttachConfig(idname string, cfg *gmcconfig.Config) *GMCApp {
 	s.attachConfig[idname] = cfg
 	return s
 }
@@ -70,7 +71,7 @@ func (s *GMCApp) AttachConfig(idname string, cfg *gmcconfig.GMCConfig) *GMCApp {
 //Config acquires the  or attach config object.
 //if `idanem` is empty , it return   config object,
 //other return attach config object of `idname`.
-func (s *GMCApp) Config(idname ...string) *gmcconfig.GMCConfig {
+func (s *GMCApp) Config(idname ...string) *gmcconfig.Config {
 	if len(idname) > 0 {
 		return s.attachConfig[idname[0]]
 	}
@@ -79,6 +80,9 @@ func (s *GMCApp) Config(idname ...string) *gmcconfig.GMCConfig {
 func (s *GMCApp) parseConfigFile() (err error) {
 	parse := false
 	if s.configFile != "" {
+		if s.config == nil {
+			s.config = gmcconfig.New()
+		}
 		s.config.SetConfigFile(s.configFile)
 		parse = true
 
@@ -103,7 +107,7 @@ func (s *GMCApp) parseConfigFile() (err error) {
 	}
 	return
 }
-func (s *GMCApp) callRunE(fns []func(*gmcconfig.GMCConfig) error) (err error) {
+func (s *GMCApp) callRunE(fns []func(*gmcconfig.Config) error) (err error) {
 	hasError := false
 	for _, fn := range fns {
 		func() {
@@ -173,11 +177,11 @@ func (s *GMCApp) Stop() {
 		srv.Service.Stop()
 	}
 }
-func (s *GMCApp) OnRunOnce(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
+func (s *GMCApp) OnRunOnce(fn func(*gmcconfig.Config) (err error)) *GMCApp {
 	s.onRunOnce = append(s.onRunOnce, fn)
 	return s
 }
-func (s *GMCApp) OnRun(fn func(*gmcconfig.GMCConfig) (err error)) *GMCApp {
+func (s *GMCApp) OnRun(fn func(*gmcconfig.Config) (err error)) *GMCApp {
 	s.onRun = append(s.onRun, fn)
 	return s
 }
@@ -206,7 +210,7 @@ func (s *GMCApp) run() (err error) {
 	json.Unmarshal([]byte(data), &fdMap)
 	for i, srvI := range s.services {
 		srv := srvI.Service
-		var cfg *gmcconfig.GMCConfig
+		var cfg *gmcconfig.Config
 		if srvI.ConfigIDname != "" {
 			cfg = s.attachConfig[srvI.ConfigIDname]
 		} else {

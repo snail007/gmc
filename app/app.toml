@@ -109,6 +109,7 @@ wait=true
 # notic: each config section must have an unique id 
 ########################################################
 [database]
+default="mysql"
 [[database.mysql]]
 enable=true
 id="default"

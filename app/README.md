@@ -33,7 +33,7 @@ app.Logger().Panic(app.Run())
 
 ```golang
 type Service interface {
-	Init(cfg *gmcconfig.GMCConfig) error
+	Init(cfg *gmcconfig.Config) error
 	Start() error
 	Stop()
 	GracefulStop()

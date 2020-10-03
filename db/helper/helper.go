@@ -1,7 +1,7 @@
 package gmcdbhelper
 
 import (
-	gmcconfig "github.com/snail007/gmc/config/gmc"
+	gmcconfig "github.com/snail007/gmc/config"
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	"github.com/snail007/gmc/util/castutil"
@@ -10,10 +10,12 @@ import (
 var (
 	groupMySQL   = *gmcmysql.NewDBGroup("default")
 	groupSQLite3 = *gmcsqlite3.NewDBGroup("default")
+	cfg        *gmcconfig.Config
 )
 
-//RegistGroup parse app.toml database configuration, `cfg` is GMCConfig object of app.toml
-func Init(cfg *gmcconfig.GMCConfig) (err error) {
+//RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
+func Init(cfg0 *gmcconfig.Config) (err error) {
+	cfg=cfg0
 	for k, v := range cfg.Sub("database").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {
 			continue
@@ -69,6 +71,16 @@ func Init(cfg *gmcconfig.GMCConfig) (err error) {
 		}
 	}
 	return
+}
+
+func DB(id ...string) interface{} {
+	switch cfg.GetString("database.default") {
+	case "mysql":
+		return DBMySQL(id...)
+	case "sqlite3":
+		return DBSQLite3(id...)
+	}
+	return nil
 }
 
 //DBMySQL acquires a mysql db object associated the id, id default is : `default`

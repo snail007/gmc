@@ -4,26 +4,27 @@ import (
 	"log"
 	"time"
 
+	gmcconfig "github.com/snail007/gmc/config"
+
 	"github.com/snail007/gmc/util/logutil"
 
 	gmccache "github.com/snail007/gmc/cache"
 	gmccacheredis "github.com/snail007/gmc/cache/redis"
-	gmcconfig "github.com/snail007/gmc/config/gmc"
 	"github.com/snail007/gmc/util/castutil"
 )
 
 var (
 	groupRedis = map[string]gmccache.Cache{}
 	logger     = logutil.New("")
-	cfg        *gmcconfig.GMCConfig
+	cfg        *gmcconfig.Config
 )
 
 func SetLogger(l *log.Logger) {
 	logger = l
 }
 
-//RegistGroup parse app.toml database configuration, `cfg` is GMCConfig object of app.toml
-func Init(cfg0 *gmcconfig.GMCConfig) (err error) {
+//RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
+func Init(cfg0 *gmcconfig.Config) (err error) {
 	cfg = cfg0
 	for k, v := range cfg.Sub("cache").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {
@@ -60,10 +61,10 @@ func Init(cfg0 *gmcconfig.GMCConfig) (err error) {
 	return
 }
 
-func Cache() gmccache.Cache {
+func Cache(id ...string) gmccache.Cache {
 	switch cfg.GetString("cache.default") {
 	case "redis":
-		return Redis()
+		return Redis(id...)
 	}
 	return nil
 }

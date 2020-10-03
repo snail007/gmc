@@ -6,26 +6,19 @@ A GMC APP boot your net/any service with hot reload , and auto manange many serv
 
 ## HOT RELOAD APP CODE
 
-If your service use none gmc.Config, just call `SetNoneMainConfigFile(true)`.
-
 ```golang
 // api is a object implements gmc.Service interface.
 api:=fooService
 
 // create a app, and set no real config file to parse.
-app := gmc.NewAPP().SetNoneMainConfigFile(true)
+app := gmc.NewAPP()
 
-// parse init something
-err := app.ParseConfig()
-if err != nil {
-    panic(err)
-}
 // add your service to app
 app.AddService(gmc.ServiceItem{
     Service: api,
 })
 
-app.Logger().Panic(app.Run())
+panic(gmc.Stack(app.Run()))
     
 ```
 
@@ -44,9 +37,9 @@ type Service interface {
 ```
 ### INTRO
 
-1.When hot reload.,call stack: `Init()->InjectListeners()->Start()`, so you should using InjectListeners's net.Listener in Start().  
+1.When hot reload.,call stack: `InjectListeners()->Init()->Start()`, so you should using InjectListeners's net.Listener in Start().  
 
-2.When hot reload requested, `Listener()` will be called, to obtain the net.Listener FD pass to sub process.  
+2.When hot reload requested, `Listeners()` will be called, to obtain the net.Listener FD pass to sub process.  
 
 `GracefulStop()` will be called to stop your service.  
 

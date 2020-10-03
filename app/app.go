@@ -223,11 +223,7 @@ func (s *GMCApp) run() (err error) {
 				return
 			}
 		}
-		//init service
-		err = srv.Init(cfg)
-		if err != nil {
-			return
-		}
+
 		//reload checking
 		if isReload && len(fdMap[i]) > 0 {
 			// fmt.Println(fdMap)
@@ -241,6 +237,12 @@ func (s *GMCApp) run() (err error) {
 				listeners = append(listeners, listener)
 			}
 			srv.InjectListeners(listeners)
+		}
+
+		//init service
+		err = srv.Init(cfg)
+		if err != nil {
+			return
 		}
 
 		//AfterInit

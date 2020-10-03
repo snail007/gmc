@@ -3,11 +3,8 @@ package gmc
 import (
 	"net/http"
 
-	gmchttputil "github.com/snail007/gmc/util/httputil"
-
 	gmcapp "github.com/snail007/gmc/app"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
-	gmccacheredis "github.com/snail007/gmc/cache/redis"
 	gmcconfig "github.com/snail007/gmc/config/gmc"
 	gmcdb "github.com/snail007/gmc/db"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
@@ -53,37 +50,24 @@ type (
 )
 
 var (
-	NewCacheRedisConfig = gmccacheredis.NewRedisCacheConfig
 	NewAPP              = gmcapp.New
-	NewCacheRedis       = gmccacheredis.New
 	NewConfig           = gmcconfig.New
-	NewResultSet        = gmcdb.NewResultSet
 	NewRouter           = gmcrouter.NewHTTPRouter()
 	NewHTTPServer       = gmchttpserver.New
 	NewAPIServer        = gmchttpserver.NewAPIServer
-	NewTemplate         = gmctemplate.New
-	NewCookies          = gmccookie.New
 
 	// Map
 	NewMap                = maputil.NewMap
-	NewMapStringString    = maputil.NewMapStringString
-	NewMapStringInterface = maputil.NewMapStringInterface
 
 	//Database
 	InitDB    = gmcdbhelper.Init
 	DBMySQL   = gmcdbhelper.DBMySQL
-	DBSQLite3 = gmcdbhelper.DBSQLite3
+	DBSQLite = gmcdbhelper.DBSQLite3
 
 	//Cache
 	InitCache = gmccachehelper.Init
 	Reids     = gmccachehelper.Redis
 	Cache     = gmccachehelper.Cache
-
-	//http util
-	Stop       = gmchttputil.Stop
-	Die        = gmchttputil.Die
-	Write      = gmchttputil.Write
-	StatusCode = gmchttputil.StatusCode
 
 	// Errors
 	StackE = gmcerr.Stack

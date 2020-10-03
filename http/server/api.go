@@ -81,14 +81,13 @@ func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err := this.call(func() { h(w, r, args) })
 		if err != nil {
 			status = fmt.Sprintf("%s", err)
+			switch status {
+			case "__STOP__", "":
+			default:
+				//exception
+				this.handler500(gmcrouter.NewCtx(w, r, args), err)
+			}
 		}
-		switch status {
-		case "__STOP__", "":
-		default:
-			//exception
-			this.handler500(gmcrouter.NewCtx(w, r, args), err)
-		}
-
 		// middleware2
 		if this.callMiddleware(c, this.middleware2) {
 			return
@@ -214,7 +213,10 @@ func (this *APIServer) handler500(ctx *gmcrouter.Ctx, err interface{}) *APIServe
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
 		defer func() {
-			err = gmcerr.Wrap(recover())
+			e := recover()
+			if e != nil {
+				err = gmcerr.Wrap(e)
+			}
 		}()
 		fn()
 	}()

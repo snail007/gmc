@@ -53,8 +53,8 @@ func (s *MemCache) Get(key string) (string, error) {
 	}
 	return "", gmccache.KEY_NOT_EXISTS
 }
-func (s *MemCache) Set(key string, value interface{}, ttl time.Duration) error {
-	s.c.Set(key, castutil.ToString(value), ttl)
+func (s *MemCache) Set(key string, value string, ttl time.Duration) error {
+	s.c.Set(key, value, ttl)
 	return nil
 }
 func (s *MemCache) Del(key string) error {
@@ -97,16 +97,16 @@ func (s *MemCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := s.Get(key)
-		if e != nil {
+		if e != nil && !gmccache.IsNotExits(e) {
 			return nil, e
 		}
 		d[key] = castutil.ToString(v)
 	}
 	return d, nil
 }
-func (s *MemCache) SetMulti(values map[string]interface{}, ttl time.Duration) (err error) {
+func (s *MemCache) SetMulti(values map[string]string, ttl time.Duration) (err error) {
 	for k, v := range values {
-		s.c.Set(k,castutil.ToString(v), ttl)
+		s.c.Set(k, v, ttl)
 	}
 	return nil
 }

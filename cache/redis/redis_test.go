@@ -70,7 +70,7 @@ func TestIncr(t *testing.T) {
 	cfg.Debug = true
 	rd := New(cfg)
 	// Set
-	err := rd.Set("k3", 1, time.Minute)
+	err := rd.Set("k3", "1", time.Minute)
 	assert.Nil(err)
 	// incr
 	data, err := rd.Incr("k3")
@@ -100,9 +100,9 @@ func Test_Multi(t *testing.T) {
 	cfg.Debug = true
 	rd := New(cfg)
 	//SetMulti
-	err := rd.SetMulti(map[string]interface{}{
-		"k1": 111,
-		"k2": 222,
+	err := rd.SetMulti(map[string]string{
+		"k1": "111",
+		"k2": "222",
 	}, time.Minute)
 	assert.Nil(err)
 

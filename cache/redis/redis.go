@@ -82,9 +82,9 @@ func (c *RedisCache) Get(key string) (val string, err error) {
 }
 
 // Set value by key
-func (c *RedisCache) Set(key string, val interface{}, ttl time.Duration) (err error) {
+func (c *RedisCache) Set(key string, val string, ttl time.Duration) (err error) {
 	c.connect()
-	_, err = c.exec("SetEx", c.key(key), int64(ttl/time.Second), castutil.ToString(val))
+	_, err = c.exec("SetEx", c.key(key), int64(ttl/time.Second), val)
 	return
 }
 
@@ -160,7 +160,7 @@ func (c *RedisCache) GetMulti(keys []string) (map[string]string, error) {
 }
 
 // SetMulti values
-func (c *RedisCache) SetMulti(values map[string]interface{}, ttl time.Duration) (err error) {
+func (c *RedisCache) SetMulti(values map[string]string, ttl time.Duration) (err error) {
 	c.connect()
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -171,7 +171,7 @@ func (c *RedisCache) SetMulti(values map[string]interface{}, ttl time.Duration) 
 
 	for key, val := range values {
 		// bs, _ := cache.Marshal(val)
-		conn.Send("SetEx", c.key(key), ttlSec, castutil.ToString(val))
+		conn.Send("SetEx", c.key(key), ttlSec,val)
 	}
 
 	// do exec

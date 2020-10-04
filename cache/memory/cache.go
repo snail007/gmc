@@ -194,7 +194,7 @@ func (c *cache) Increment(k string, n int64) error {
 	}
 	switch v.Object.(type) {
 	case string:
-		v.Object = castutil.ToString(castutil.ToInt64(v.Object.(string)) + int64(n))
+		v.Object = castutil.ToInt64(v.Object.(string)) + int64(n)
 	case int:
 		v.Object = v.Object.(int) + int(n)
 	case int8:
@@ -558,7 +558,7 @@ func (c *cache) Decrement(k string, n int64) error {
 	}
 	switch v.Object.(type) {
 	case string:
-		v.Object = castutil.ToString(castutil.ToInt64(v.Object.(string)) - int64(n))
+		v.Object = castutil.ToInt64(v.Object.(string)) - int64(n)
 	case int:
 		v.Object = v.Object.(int) - int(n)
 	case int8:

@@ -15,13 +15,13 @@ type Cache interface {
 	// Get gets cached value by given key.
 	Get(key string) (string, error)
 	// Put puts value into cache with key and expire time.
-	Set(key string, value interface{}, ttl time.Duration) error
+	Set(key string, value string, ttl time.Duration) error
 	// Delete deletes cached value by given key.
 	Del(key string) error
 	// GetMulti gets multiple keys's values at once.
 	GetMulti(keys []string) (map[string]string, error)
 	// SetMulti sets multiple keys's values at once.
-	SetMulti(values map[string]interface{}, ttl time.Duration) (err error)
+	SetMulti(values map[string]string, ttl time.Duration) (err error)
 	// DelMulti deletes multiple keys's values at once.
 	DelMulti(keys []string) (err error)
 	// Incr increases cached int-type value by given key as a counter.

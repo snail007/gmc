@@ -1,8 +1,9 @@
-package gmccachemem_test
+package gmccachefile_test
 
 import (
+	"fmt"
 	gmccache "github.com/snail007/gmc/cache"
-	gmccachemem "github.com/snail007/gmc/cache/memory"
+	gmccachefile "github.com/snail007/gmc/cache/file"
 	assert "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -14,6 +15,7 @@ var c gmccache.Cache
 func TestMemCache_Get(t *testing.T) {
 	assert := assert.New(t)
 	_, err := c.Get("test")
+	fmt.Println(err)
 	assert.True(gmccache.IsNotExits(err))
 }
 func TestMemCache_Set(t *testing.T) {
@@ -26,15 +28,15 @@ func TestMemCache_Set(t *testing.T) {
 }
 func TestMemCache_Expire(t *testing.T) {
 	assert := assert.New(t)
-	err := c.Set("test", "aaa", time.Millisecond*500)
+	err := c.Set("test", "aaa", time.Second)
 	assert.Nil(err)
-	time.Sleep(time.Second)
+	time.Sleep(time.Second*2)
 	_, err = c.Get("test")
 	assert.True(gmccache.IsNotExits(err))
 }
 func TestMemCache_Delete(t *testing.T) {
 	assert := assert.New(t)
-	err := c.Set("test", "aaa", time.Millisecond*500)
+	err := c.Set("test", "aaa", time.Second)
 	assert.Nil(err)
 	c.Del("test")
 	_, err = c.Get("test")
@@ -42,14 +44,14 @@ func TestMemCache_Delete(t *testing.T) {
 }
 func TestMemCache_Has(t *testing.T) {
 	assert := assert.New(t)
-	err := c.Set("test", "aaa", time.Millisecond*500)
+	err := c.Set("test", "aaa", time.Second)
 	assert.Nil(err)
 	assert.True(c.Has("test"))
 }
 
 func TestMemCache_Clean(t *testing.T) {
 	assert := assert.New(t)
-	err := c.Set("test", "aaa", time.Millisecond*500)
+	err := c.Set("test", "aaa", time.Second)
 	assert.Nil(err)
 	c.Clear()
 	_, err = c.Get("test")
@@ -57,7 +59,7 @@ func TestMemCache_Clean(t *testing.T) {
 }
 func TestMemCache_String(t *testing.T) {
 	assert := assert.New(t)
-	assert.Equal("gmc memory cache: 1",c.String())
+	assert.Contains(c.String(),"gmc file cache, gc: 1s, dir: ")
 }
 func TestIncr(t *testing.T) {
 	assert := assert.New(t)
@@ -98,9 +100,9 @@ func Test_Multi(t *testing.T) {
 		"k2": "222",
 	}, time.Minute)
 	assert.Nil(err)
-
 	//GetMulti
 	data0, err := c.GetMulti([]string{"k1", "k2"})
+	assert.Nil(err)
 	assert.Equal("111", data0["k1"])
 	assert.Equal("222", data0["k2"])
 
@@ -118,8 +120,12 @@ func Test_Multi(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	cfg := gmccachemem.NewMemCacheConfig()
-	c = gmccachemem.NewMemCache(cfg)
+	cfg := gmccachefile.NewFileCacheConfig()
+	var e error
+	c,e = gmccachefile.NewFileCache(cfg)
+	if e!=nil{
+		panic(e)
+	}
 	code := m.Run()
 	os.Exit(code)
 }

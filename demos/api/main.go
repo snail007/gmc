@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	api := gmc.NewAPIServer(":8030")
+	api := gmc.New.APIServer(":8030")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
@@ -32,7 +32,7 @@ func main() {
 	// sets a function to handle panic error.
 	api.Handle500(func(c gmc.C, err interface{}) {
 		c.WriteHeader(http.StatusInternalServerError)
-		c.Write("panic error : ", err)
+		c.Write("panic error : ", gmc.StackE(err))
 	})
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly

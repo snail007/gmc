@@ -5,19 +5,20 @@ import (
 )
 
 func main() {
-	cfg := gmc.NewConfig()
-	cfg.SetConfigFile("../../app.toml")
+	cfg := gmc.New.Config()
+	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 	// Init only using [database] section in app.toml
-	gmc.InitDB(cfg)
+	gmc.DB.Init(cfg)
 
 	// database default is mysql in app.toml
 	// so gmc.DB() equal to  gmc.DBMySQL()
 	// we can connect to multiple cache drivers at same time, id is the unique name of driver
 	// gmc.DB(id) to load `id` named default driver.
-	db := gmc.DB().(*gmc.MySQL)
+	db := gmc.DB.DB().(*gmc.MySQL)
 	//do something with db
+	db.AR()
 }

@@ -82,6 +82,7 @@ wait=true
 ########################################################
 [cache]
 default="redis"
+
 [[cache.redis]]
 debug=true
 enable=true
@@ -99,6 +100,12 @@ idletimeout=300
 # seconds
 maxconnlifetime=3600
 wait=true
+
+[[cache.memory]]
+enable=false
+id="default"
+# seconds
+cleanupinterval=30
 
 ########################################################
 # database configuration

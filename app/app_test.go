@@ -12,23 +12,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseConfig(t *testing.T) {
+func TestparseConfigFile(t *testing.T) {
 	assert := assert.New(t)
 	app := New()
-	assert.Nil(app.ParseConfig())
+	assert.Nil(app.parseConfigFile())
 }
 func TestRun(t *testing.T) {
 	assert := assert.New(t)
-	app := New().Block(false)
-	assert.Nil(app.ParseConfig())
-	app.Config().Set("httpserver.listen", ":")
-	server := httpserver.New()
-	app.AddService(ServiceItem{
-		Service: server,
-	})
+	app := New().
+		Block(false).
+		SetConfigFile("app.toml").
+		AddService(ServiceItem{
+			Service: httpserver.New(),
+			BeforeInit: func(config *gmcconfig.Config) (err error) {
+				config.Set("httpserver.listen", ":")
+				return
+			},
+		})
 	err := app.Run()
 	assert.Nil(err)
-	app.BeforeShutdown(func() {})
+	app.OnShutdown(func() {})
 	app.Stop()
 	time.Sleep(time.Second)
 }
@@ -36,28 +39,31 @@ func TestRun(t *testing.T) {
 func TestRun_1(t *testing.T) {
 	assert := assert.New(t)
 	app := New().Block(false)
-	app.AddExtraConfigFile("007", "app.toml")
-	assert.Nil(app.ParseConfig())
+	app.SetConfigFile("app.toml")
+	app.AttachConfigFile("007", "app.toml")
 	app.AddService(ServiceItem{
 		Service: httpserver.New(),
 	})
 	app.AddService(ServiceItem{
-		Service:      httpserver.New(),
-		ConfigIDname: "007",
+		Service:  httpserver.New(),
+		ConfigID: "007",
 	})
 	err := app.Run()
 	assert.NotNil(err)
-	assert.NotEqual(app.Config(), app.Config("007"))
+	assert.NotSame(app.Config(), app.Config("007"))
 	app.Stop()
 }
 func TestRun_2(t *testing.T) {
 	assert := assert.New(t)
 	app := New().Block(false)
-	assert.Nil(app.ParseConfig())
-	app.Config().Set("session.store", "none")
+	app.SetConfigFile("app.toml")
 	server := httpserver.New()
 	app.AddService(ServiceItem{
 		Service: server,
+		BeforeInit: func(config *gmcconfig.Config) (err error) {
+			config.Set("session.store", "none")
+			return
+		},
 	})
 	err := app.Run()
 	assert.NotNil(err)
@@ -67,7 +73,7 @@ func TestRun_2(t *testing.T) {
 func TestRun_3(t *testing.T) {
 	assert := assert.New(t)
 	app := New().Block(false)
-	assert.Nil(app.ParseConfig())
+	app.SetConfigFile("app.toml")
 	app.AddService(ServiceItem{
 		Service: httpserver.New(),
 		AfterInit: func(srv *ServiceItem) (err error) {
@@ -83,23 +89,24 @@ func TestRun_3(t *testing.T) {
 func TestSetConfig(t *testing.T) {
 	// assert := assert.New(t)
 	app := New().Block(false)
-	app.SetMainConfigFile("app.toml")
-	app.ParseConfig()
-	app.ParseConfig()
-	app.SetMainConfigFile("none.toml")
-	app.ParseConfig()
+	app.SetConfigFile("app.toml")
+	app.parseConfigFile()
+	app.parseConfigFile()
+	app.SetConfigFile("none.toml")
+	app.parseConfigFile()
 }
 func TestSetConfig_2(t *testing.T) {
 	// assert := assert.New(t)
 	app := New().Block(false)
-	app.SetMainConfigFile("none.toml")
-	app.ParseConfig()
+	app.SetConfigFile("none.toml")
+	app.parseConfigFile()
 }
 func TestSetExtraConfig(t *testing.T) {
 	assert := assert.New(t)
 	app := New().Block(false)
-	app.AddExtraConfigFile("extra01", "extra.toml")
-	err := app.ParseConfig()
+	app.SetConfigFile("app.toml")
+	app.AttachConfigFile("extra01", "extra.toml")
+	err := app.parseConfigFile()
 	assert.Nil(err)
 	assert.NotEmpty(app.Config().GetString("httpserver.listen"))
 	assert.NotNil(app.Config("extra01"))
@@ -107,16 +114,16 @@ func TestSetExtraConfig(t *testing.T) {
 func TestSetExtraConfig_1(t *testing.T) {
 	assert := assert.New(t)
 	app := New().Block(false)
-	app.AddExtraConfigFile("001", "none.toml")
-	err := app.ParseConfig()
+	app.AttachConfigFile("001", "none.toml")
+	err := app.parseConfigFile()
 	assert.NotNil(err)
 }
 func TestBeforeRun(t *testing.T) {
 	assert := assert.New(t)
 	//run gmc app
 	app := New()
-	assert.Nil(app.ParseConfig())
-	app.BeforeRun(func(*gmcconfig.Config) error {
+	assert.Nil(app.parseConfigFile())
+	app.OnRun(func(*gmcconfig.Config) error {
 		return fmt.Errorf("stop")
 	})
 	err := app.Run()
@@ -125,7 +132,7 @@ func TestBeforeRun(t *testing.T) {
 func TestBeforeRun_1(t *testing.T) {
 	// assert := assert.New(t)
 	app := New().Block(false)
-	app.BeforeRun(func(*gmcconfig.Config) (err error) {
+	app.OnRun(func(*gmcconfig.Config) (err error) {
 		a := 0
 		_ = a / a
 		return
@@ -135,7 +142,7 @@ func TestBeforeRun_1(t *testing.T) {
 func TestBeforeRun_2(t *testing.T) {
 	// assert := assert.New(t)
 	app := New().Block(false)
-	app.BeforeRun(func(*gmcconfig.Config) (err error) {
+	app.OnRun(func(*gmcconfig.Config) (err error) {
 		return fmt.Errorf(".")
 	})
 	app.Run()
@@ -144,8 +151,8 @@ func TestBeforeShutdown(t *testing.T) {
 	assert := assert.New(t)
 	//run gmc app
 	app := New().Block(false)
-	assert.Nil(app.ParseConfig())
-	app.BeforeShutdown(func() {
+	assert.Nil(app.parseConfigFile())
+	app.OnShutdown(func() {
 		a := 0
 		_ = a / a
 		return

@@ -8,25 +8,25 @@ import (
 
 func main() {
 	//1. create an app to run
-	app := gmc.NewAPP()
+	app := gmc.New.App()
 
 	//2. set app main config file
 	app.SetConfigFile("../../app/app.toml")
 
 	//3. when config file parsed success, we initialize database and cache only once.
-	app.OnRunOnce(func(cfg *gmc.Config) (err error) {
-		err = gmc.InitDB(cfg)
+	app.OnRun(func(cfg *gmc.Config) (err error) {
+		err = gmc.DB.Init(cfg)
 		return
 	})
-	app.OnRunOnce(func(cfg *gmc.Config) (err error) {
-		err = gmc.InitCache(cfg)
+	app.OnRun(func(cfg *gmc.Config) (err error) {
+		err = gmc.Cache.Init(cfg)
 		return
 	})
 
 	//4.add a service to app
 	// and you can call AddService more to add service to app
 	app.AddService(gmc.ServiceItem{
-		Service: gmc.NewHTTPServer(), //create a http server
+		Service: gmc.New.HTTPServer(), //create a http server
 		AfterInit: func(s *gmc.ServiceItem) (err error) {
 			server := s.Service.(*gmc.HTTPServer)
 			//1.do something after http server inited

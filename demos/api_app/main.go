@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-	api := gmc.NewAPIServer(":8030")
+	api := gmc.New.APIServer(":8030")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
@@ -54,7 +55,16 @@ func main() {
 		c.Write(timeutil.TimeToStr(time.Now()))
 	})
 
-	app := gmc.NewAPP()
+	fmt.Println(`
+please visit:
+http://127.0.0.1:8030/none
+http://127.0.0.1:8030/hello
+http://127.0.0.1:8030/error
+http://127.0.0.1:8030/hi
+http://127.0.0.1:8030/v1/time
+	`)
+
+	app := gmc.New.App()
 
 	app.AddService(gmc.ServiceItem{
 		Service: api,

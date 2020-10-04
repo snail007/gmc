@@ -38,7 +38,7 @@ func (this *Demo) Protected() {
 	this.Write("Protected")
 }
 func (this *Demo) DB() {
-	db := gmc.DBMySQL()
+	db := gmc.DB.MySQL()
 	rs, err := db.QuerySQL("select * from test")
 	if err != nil {
 		this.Stop(err)
@@ -70,7 +70,7 @@ func (this *Demo) Version() {
 	this.Write("v1")
 }
 func (this *Demo) Cache() {
-	gmc.Reids().Set("test", "aaa", time.Second)
-	v, _ := gmc.Reids().Get("test")
-	this.Write(v.([]byte))
+	gmc.Cache.Redis().Set("test", "aaa", time.Second)
+	v, _ := gmc.Cache.Redis().Get("test")
+	this.Write(v)
 }

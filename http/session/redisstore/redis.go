@@ -17,7 +17,7 @@ import (
 
 type RedisStoreConfig struct {
 	TTL      int64 //seconds
-	RedisCfg gmcredis.RedisCacheConfig
+	RedisCfg *gmcredis.RedisCacheConfig
 	Logger   *log.Logger
 }
 
@@ -47,12 +47,11 @@ func New(config interface{}) (st gmcsession.Store, err error) {
 
 func (s *RedisStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
 	v, e := s.cache.Get(sessionID)
-	if v == nil || e != nil {
+	if v == "" || e != nil {
 		return
 	}
-	str := string(v.([]byte))
 	sess = gmcsession.NewSession()
-	err := sess.Unserialize(string(str))
+	err := sess.Unserialize(v)
 	if err != nil {
 		sess = nil
 		s.cfg.Logger.Printf("redisstore unserialize error: %s", err)

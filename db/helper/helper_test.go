@@ -1,7 +1,7 @@
 package gmcdbhelper
 
 import (
-	"github.com/snail007/gmc/config"
+	gmcconfig "github.com/snail007/gmc/config"
 	"os"
 	"testing"
 
@@ -12,7 +12,7 @@ import (
 
 func TestRegistMysql(t *testing.T) {
 	assert := assert.New(t)
-	cfg := config.New()
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
@@ -23,7 +23,7 @@ func TestRegistMysql(t *testing.T) {
 
 func TestRegistMysql_1(t *testing.T) {
 	assert := assert.New(t)
-	cfg := config.New()
+	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)

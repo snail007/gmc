@@ -13,3 +13,15 @@ func New() *Config {
 		Viper: viper.New(),
 	}
 }
+func NewFile(file string) (c *Config ,err error){
+	cfg:=viper.New()
+	cfg.SetConfigFile(file)
+	err=cfg.ReadInConfig()
+	if err!=nil{
+		return
+	}
+	c= &Config{
+		Viper: cfg,
+	}
+	return
+}

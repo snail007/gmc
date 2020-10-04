@@ -26,13 +26,13 @@ panic(gmc.Stack(app.Run()))
 
 ```golang
 type Service interface {
-	Init(cfg *gmcconfig.Config) error
+	Init(cfg *gmc.Config) error
 	Start() error
 	Stop()
 	GracefulStop()
 	SetLog(*log.Logger)
-	InjectListeners(net.Listener)
-	Listener() net.Listener
+	InjectListeners([]net.Listener)
+	Listeners() []net.Listener
 }
 ```
 ### INTRO

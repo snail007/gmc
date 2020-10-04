@@ -32,27 +32,8 @@ func TestNew(t *testing.T) {
 	err = rd.Del("k3")
 	assert.Nil(err)
 	data, err = redis.String(rd.Get("k3"))
-	assert.NotNil(err)
+	assert.Equal("redigo: nil returned",err.Error())
 	assert.Equal("", data)
-
-	//SetMulti
-	err = rd.SetMulti(map[string]interface{}{
-		"k1": 111,
-		"k2": 222,
-	}, time.Minute)
-	assert.Nil(err)
-
-	//GetMulti
-	data0, err := rd.GetMulti([]string{"k1", "k2"})
-	assert.Equal("111", string(data0["k1"].([]byte)))
-	assert.Equal("222", string(data0["k2"].([]byte)))
-
-	//DelMulti
-	err = rd.DelMulti([]string{"k1", "k2"})
-	assert.Nil(err)
-	_data, err := rd.GetMulti([]string{"k1", "k2"})
-	assert.Nil(_data["k1"])
-	assert.Nil(_data["k2"])
 
 	//Clear
 	rd.Set("k3", "aaa", time.Minute)
@@ -81,6 +62,66 @@ func TestNew_2(t *testing.T) {
 	data, err := redis.String(rd.Get("k3"))
 	assert.Nil(err)
 	assert.Equal("aaa", data)
+}
+func TestIncr(t *testing.T) {
+	assert := assert.New(t)
+	cfg := NewRedisCacheConfig()
+	cfg.Addr = "127.0.0.1:6379"
+	cfg.Debug = true
+	rd := New(cfg)
+	// Set
+	err := rd.Set("k3", 1, time.Minute)
+	assert.Nil(err)
+	// incr
+	data, err := rd.Incr("k3")
+	assert.EqualValues(2,data)
+	assert.Nil(err)
+	// decr
+	data, err = rd.Decr("k3")
+	assert.EqualValues(1,data)
+	assert.Nil(err)
+	// incr N
+	data, err = rd.IncrN("k3",3)
+	assert.EqualValues(4,data)
+	assert.Nil(err)
+	// decr N
+	data, err = rd.DecrN("k3",3)
+	assert.EqualValues(1,data)
+	assert.Nil(err)
+	//Get
+	d, err := rd.Get("k3")
+	assert.Nil(err)
+	assert.Equal("1", d)
+}
+func Test_Multi(t *testing.T) {
+	assert := assert.New(t)
+	cfg := NewRedisCacheConfig()
+	cfg.Addr = "127.0.0.1:6379"
+	cfg.Debug = true
+	rd := New(cfg)
+	//SetMulti
+	err := rd.SetMulti(map[string]interface{}{
+		"k1": 111,
+		"k2": 222,
+	}, time.Minute)
+	assert.Nil(err)
+
+	//GetMulti
+	data0, err := rd.GetMulti([]string{"k1", "k2"})
+	assert.Equal("111", data0["k1"])
+	assert.Equal("222", data0["k2"])
+
+	//DelMulti
+	err = rd.DelMulti([]string{"k1", "k2"})
+	assert.Nil(err)
+
+	_data, err := rd.GetMulti([]string{"k1", "k2"})
+
+	_,ok:=_data["k1"]
+	assert.False(ok)
+	_,ok=_data["k2"]
+	assert.False(ok)
+
 }
 func TestMain(m *testing.M) {
 	var err error

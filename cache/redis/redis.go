@@ -2,6 +2,7 @@ package gmccacheredis
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/util/castutil"
 	"log"
 	"os"
 	"sync"
@@ -27,8 +28,8 @@ type RedisCacheConfig struct {
 	Timeout         time.Duration
 }
 
-func NewRedisCacheConfig() RedisCacheConfig {
-	return RedisCacheConfig{
+func NewRedisCacheConfig() *RedisCacheConfig {
+	return &RedisCacheConfig{
 		Debug:           false,
 		Prefix:          "",
 		Logger:          log.New(os.Stderr, "", log.LstdFlags),
@@ -44,7 +45,7 @@ func NewRedisCacheConfig() RedisCacheConfig {
 }
 
 type RedisCache struct {
-	cfg         RedisCacheConfig
+	cfg         *RedisCacheConfig
 	pool        *redis.Pool
 	connected   bool
 	connectLock *sync.Mutex
@@ -52,7 +53,7 @@ type RedisCache struct {
 
 // New redis cache
 func New(cfg interface{}) gmccache.Cache {
-	cfg0 := cfg.(RedisCacheConfig)
+	cfg0 := cfg.(*RedisCacheConfig)
 	rc := &RedisCache{
 		cfg:         cfg0,
 		connectLock: &sync.Mutex{},
@@ -74,16 +75,16 @@ func (c *RedisCache) connect() {
 }
 
 // Get value by key
-func (c *RedisCache) Get(key string) (val interface{}, err error) {
+func (c *RedisCache) Get(key string) (val string, err error) {
 	c.connect()
-	val, err = c.exec("Get", c.key(key))
+	val, err = redis.String(c.exec("Get", c.key(key)))
 	return
 }
 
 // Set value by key
 func (c *RedisCache) Set(key string, val interface{}, ttl time.Duration) (err error) {
 	c.connect()
-	_, err = c.exec("SetEx", c.key(key), int64(ttl/time.Second), val)
+	_, err = c.exec("SetEx", c.key(key), int64(ttl/time.Second), castutil.ToString(val))
 	return
 }
 
@@ -91,6 +92,36 @@ func (c *RedisCache) Set(key string, val interface{}, ttl time.Duration) (err er
 func (c *RedisCache) Del(key string) (err error) {
 	c.connect()
 	_, err = c.exec("Del", c.key(key))
+	return
+}
+
+// Incr value by key
+func (c *RedisCache) Incr(key string) (val int64, err error) {
+	c.connect()
+	val, err =redis.Int64( c.exec("Incr", c.key(key)))
+
+	return
+}
+
+// Decr value by key
+func (c *RedisCache) Decr(key string) (val int64, err error) {
+	c.connect()
+	val, err = redis.Int64(c.exec("Decr", c.key(key)))
+	return
+}
+
+// Incr value N by key
+func (c *RedisCache) IncrN(key string,n int64) (val int64, err error) {
+	c.connect()
+	val, err =redis.Int64( c.exec("IncrBy", c.key(key),n))
+
+	return
+}
+
+// Decr value N by key
+func (c *RedisCache) DecrN(key string,n int64) (val int64, err error) {
+	c.connect()
+	val, err = redis.Int64(c.exec("DecrBy", c.key(key),n))
 	return
 }
 
@@ -103,7 +134,7 @@ func (c *RedisCache) Has(key string) (bool, error) {
 }
 
 // GetMulti values by keys
-func (c *RedisCache) GetMulti(keys []string) (map[string]interface{}, error) {
+func (c *RedisCache) GetMulti(keys []string) (map[string]string, error) {
 	c.connect()
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -117,10 +148,12 @@ func (c *RedisCache) GetMulti(keys []string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	values := make(map[string]interface{}, len(keys))
+	values := make(map[string]string, len(keys))
 	for i, val := range list {
-		values[keys[i]] = val
+		if val==nil{
+			continue
+		}
+		values[keys[i]] = castutil.ToString(val)
 	}
 
 	return values, nil
@@ -138,7 +171,7 @@ func (c *RedisCache) SetMulti(values map[string]interface{}, ttl time.Duration) 
 
 	for key, val := range values {
 		// bs, _ := cache.Marshal(val)
-		conn.Send("SetEx", c.key(key), ttlSec, val)
+		conn.Send("SetEx", c.key(key), ttlSec, castutil.ToString(val))
 	}
 
 	// do exec

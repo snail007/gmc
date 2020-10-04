@@ -54,13 +54,13 @@ func (s *MyService) Listeners() []net.Listener {
 }
 
 func main() {
-	cfg := gmc.NewConfig()
+	cfg := gmc.New.Config()
 	cfg.Set("listen", ":")
-	app := gmc.NewAPP()
+	app := gmc.New.App()
 	app.AttachConfig("mycfg", cfg)
 	app.AddService(gmc.ServiceItem{
 		Service:      NewMyService(),
-		ConfigIDname: "mycfg",
+		ConfigID: "mycfg",
 	})
 	app.Logger().Panic(app.Run())
 }

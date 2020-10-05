@@ -2,6 +2,7 @@ package gmccachehelper
 
 import (
 	"fmt"
+	gmccachefile "github.com/snail007/gmc/cache/file"
 	gmccachemem "github.com/snail007/gmc/cache/memory"
 	gmcerr "github.com/snail007/gmc/error"
 	"log"
@@ -20,6 +21,7 @@ var (
 	myCache     = map[string]gmccache.Cache{}
 	groupRedis  = map[string]gmccache.Cache{}
 	groupMemory = map[string]gmccache.Cache{}
+	groupFile   = map[string]gmccache.Cache{}
 	logger      = logutil.New("")
 	cfg         *gmcconfig.Config
 )
@@ -61,13 +63,20 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 				}
 				groupRedis[id] = gmccacheredis.New(cfg)
 			} else if k == "memory" {
-				if _, ok := groupMemory[id]; ok {
-					return
-				}
 				cfg := &gmccachemem.MemCacheConfig{
-					CleanupInterval:   time.Duration(castutil.ToInt(vvv["cleanupinterval"])) * time.Second,
+					CleanupInterval: time.Duration(castutil.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
 				groupMemory[id] = gmccachemem.NewMemCache(cfg)
+			} else if k == "file" {
+				cfg := &gmccachefile.FileCacheConfig{
+					Dir:             castutil.ToString(vvv["dir"]),
+					CleanupInterval: time.Duration(castutil.ToInt(vvv["cleanupinterval"])) * time.Second,
+				}
+
+				groupFile[id],err = gmccachefile.NewFileCache(cfg)
+				if err!=nil{
+					return
+				}
 			}
 		}
 	}
@@ -80,6 +89,8 @@ func Cache(id ...string) gmccache.Cache {
 		return Redis(id...)
 	case "memory":
 		return Memory(id...)
+	case "file":
+		return File(id...)
 	default:
 		return CacheU(id...)
 	}
@@ -88,45 +99,50 @@ func Cache(id ...string) gmccache.Cache {
 
 //Redis acquires a redis cache object associated the id, id default is : `default`
 func Redis(id ...string) gmccache.Cache {
-	id0 := "default"
-	if len(id) > 0 {
-		id0 = id[0]
-	}
-	v, ok := groupRedis[id0]
-	if !ok {
-		logf("[warn] redis cache `id`:%s not found", id0)
-	}
-	return v
+	return find("redis",id...)
 }
 
 func AddCacheU(id string, c gmccache.Cache) {
 	myCache[id] = c
 }
 func CacheU(id ...string) gmccache.Cache {
-	id0 := "default"
-	if len(id) > 0 {
-		id0 = id[0]
-	}
-	v, ok := myCache[id0]
-	if !ok {
-		logf("[warn] user cache `id`:%s not found", id0)
-	}
-	return v
+
+	return find("user",id...)
 }
 
 //Memory acquires a memory cache object associated the id, id default is : `default`
 func Memory(id ...string) gmccache.Cache {
+	return find("memory",id...)
+}
+//File acquires a file cache object associated the id, id default is : `default`
+func File(id ...string) gmccache.Cache {
+	return find("file",id...)
+}
+
+func find(typ string,id ...string) gmccache.Cache {
 	id0 := "default"
 	if len(id) > 0 {
 		id0 = id[0]
 	}
-	v, ok := groupMemory[id0]
+	var v gmccache.Cache
+	var ok bool
+	switch typ {
+	case "file":
+		v, ok = groupFile[id0]
+	case "memory":
+		v, ok = groupMemory[id0]
+	case "redis":
+		v, ok = groupRedis[id0]
+	case "user":
+		v, ok = myCache[id0]
+	default:
+		logf("[warn] %s cache not found", typ)
+	}
 	if !ok {
-		logf("[warn] memory cache `id`:%s not found", id0)
+		logf("[warn] %s cache `id`:%s not found",typ, id0)
 	}
 	return v
 }
-
 func logf(f string, v ...interface{}) {
 	if logger != nil {
 		logger.Println(gmcerr.New(fmt.Sprintf(f, v...)).String())

@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-var c gmccache.Cache
+var (
+	c      gmccache.Cache
+
+)
 
 func TestMemCache_Get(t *testing.T) {
 	assert := assert.New(t)
@@ -30,7 +33,7 @@ func TestMemCache_Expire(t *testing.T) {
 	assert := assert.New(t)
 	err := c.Set("test", "aaa", time.Second)
 	assert.Nil(err)
-	time.Sleep(time.Second*2)
+	time.Sleep(time.Second * 2)
 	_, err = c.Get("test")
 	assert.True(gmccache.IsNotExits(err))
 }
@@ -59,7 +62,7 @@ func TestMemCache_Clean(t *testing.T) {
 }
 func TestMemCache_String(t *testing.T) {
 	assert := assert.New(t)
-	assert.Contains(c.String(),"gmc file cache, gc: 1s, dir: ")
+	assert.Contains(c.String(), "gmc file cache, gc: 1s, dir: ")
 }
 func TestIncr(t *testing.T) {
 	assert := assert.New(t)
@@ -70,22 +73,22 @@ func TestIncr(t *testing.T) {
 	// incr
 	data, err := c.Incr("k3")
 	assert.Nil(err)
-	assert.EqualValues(2,data)
+	assert.EqualValues(2, data)
 
 	// decr
 	data, err = c.Decr("k3")
 	assert.Nil(err)
-	assert.EqualValues(1,data)
+	assert.EqualValues(1, data)
 
 	// incr N
-	data, err = c.IncrN("k3",3)
+	data, err = c.IncrN("k3", 3)
 	assert.Nil(err)
-	assert.EqualValues(4,data)
+	assert.EqualValues(4, data)
 
 	// decr N
-	data, err = c.DecrN("k3",3)
+	data, err = c.DecrN("k3", 3)
 	assert.Nil(err)
-	assert.EqualValues(1,data)
+	assert.EqualValues(1, data)
 
 	//Get
 	d, err := c.Get("k3")
@@ -112,9 +115,9 @@ func Test_Multi(t *testing.T) {
 
 	_data, err := c.GetMulti([]string{"k1", "k2"})
 
-	_,ok:=_data["k1"]
+	_, ok := _data["k1"]
 	assert.False(ok)
-	_,ok=_data["k2"]
+	_, ok = _data["k2"]
 	assert.False(ok)
 
 }
@@ -122,8 +125,8 @@ func Test_Multi(t *testing.T) {
 func TestMain(m *testing.M) {
 	cfg := gmccachefile.NewFileCacheConfig()
 	var e error
-	c,e = gmccachefile.NewFileCache(cfg)
-	if e!=nil{
+	c, e = gmccachefile.NewFileCache(cfg)
+	if e != nil {
 		panic(e)
 	}
 	code := m.Run()

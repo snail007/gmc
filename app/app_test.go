@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestparseConfigFile(t *testing.T) {
+func Test_parseConfigFile(t *testing.T) {
 	assert := assert.New(t)
 	app := New()
 	assert.Nil(app.parseConfigFile())

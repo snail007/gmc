@@ -29,9 +29,13 @@ type FileStoreConfig struct {
 	TTL    int64 //seconds
 }
 
+var (
+	folder = ".gmcsessions"
+)
+
 func NewConfig() FileStoreConfig {
 	return FileStoreConfig{
-		Dir:    filepath.Join(os.TempDir(), ".gmcsessons"),
+		Dir:    os.TempDir(),
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
@@ -54,6 +58,14 @@ func New(config interface{}) (st gmcsession.Store, err error) {
 		}
 	}
 	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
+	if cfg.Dir==""{
+		cfg.Dir="."
+	}
+	cfg.Dir, err = filepath.Abs(cfg.Dir)
+	if err != nil {
+		return
+	}
+	cfg.Dir = filepath.Join(cfg.Dir, folder)
 	if cfg.GCtime <= 0 {
 		cfg.GCtime = 300
 	}

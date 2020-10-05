@@ -16,11 +16,13 @@ func Test_Cache(t *testing.T) {
 	var c0 map[string]interface{}
 	cfg.UnmarshalKey("cache", &c0)
 	c0["memory"].([]interface{})[0].(map[string]interface{})["enable"] = true
+	c0["file"].([]interface{})[0].(map[string]interface{})["enable"] = true
 	cfg.Set("cache", c0)
 
 	//fmt.Println(cfg.Get("cache"))
 	gmccachehelper.Init(cfg)
 	assert.NotNil(gmccachehelper.Memory())
 	assert.NotNil(gmccachehelper.Redis())
+	assert.NotNil(gmccachehelper.File())
 	assert.Same(gmccachehelper.Cache(), gmccachehelper.Redis())
 }

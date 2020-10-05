@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -56,11 +57,15 @@ func NewFileCache(cfg interface{}) (cache gmccache.Cache, err error) {
 	c := &FileCache{
 		cfg: cfg0,
 	}
-
-	if !filepath.IsAbs(c.cfg.Dir) {
-		c.cfg.Dir, _ = filepath.Abs(c.cfg.Dir)
+	c.cfg.Dir = strings.Replace(c.cfg.Dir, "{tmp}", os.TempDir(), 1)
+	if c.cfg.Dir==""{
+		c.cfg.Dir="."
 	}
-	c.cfg.Dir=filepath.Join(c.cfg.Dir, folder)
+	c.cfg.Dir, err = filepath.Abs(c.cfg.Dir)
+	if err != nil {
+		return
+	}
+	c.cfg.Dir = filepath.Join(c.cfg.Dir, folder)
 	err = os.MkdirAll(c.cfg.Dir, 0700);
 	if err != nil {
 		return
@@ -256,7 +261,7 @@ func (c *FileCache) startGC() {
 		}
 		return nil
 	}); err != nil {
-		log.Printf("error garbage collecting cache files: %v", err)
+		log.Printf("error gc cache files: %v", err)
 	}
 
 	time.AfterFunc(time.Duration(c.cfg.CleanupInterval)*time.Second, func() { c.startGC() })

@@ -50,10 +50,12 @@ delimiterright="}}"
 enable=true
 store="memory"
 cookiename="gmcsid"
+# seconds
 ttl=3600
 
 [session.file]
-dir="{tmp}/.gmcsessions"
+dir="{tmp}"
+# seconds
 gctime=300
 prefix=".gmcsession_"
 
@@ -78,7 +80,9 @@ wait=true
 ########################################################
 # redis supported
 # support of mutiple redis server 
-# notic: each config section must have an unique id 
+# notic: each config section must have an unique id
+# cache.file.dir: {tmp} is a placeholder of system temp directory
+# timeout, idletimeout, maxconnlifetime, cleanupinterval in seconds
 ########################################################
 [cache]
 default="redis"
@@ -90,21 +94,23 @@ id="default"
 address="127.0.0.1:6379"
 prefix=""
 password=""
-# seconds
 timeout=10
 dbnum=0
 maxidle=10
 maxactive=30
-# seconds
 idletimeout=300
-# seconds
 maxconnlifetime=3600
 wait=true
 
 [[cache.memory]]
 enable=false
 id="default"
-# seconds
+cleanupinterval=30
+
+[[cache.file]]
+enable=false
+id="default"
+dir="{tmp}"
 cleanupinterval=30
 
 ########################################################

@@ -1,7 +1,7 @@
 <img src="/doc/images/logo.png" width="300" height="auto"/>  
 
 # GMC
-GMC , full name is golang Mellivora capensis framework. The golang  web framework  but not only web framework.
+GMC is a powerful and flexible golang web framework, but it's not only a web framework. It's full name is golang Mellivora capensis framework.
 
 
 ## Attention

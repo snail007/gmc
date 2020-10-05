@@ -3,7 +3,7 @@
 ############################################################
 # 1.support of tls and optional client auth.
 # 2.showerrorstack if on, when a panic error occurred
-# call stack and error message will display on the browser 
+# call stack and error message will display on the browser.
 ############################################################
 [httpserver]
 listen=":7080"
@@ -18,8 +18,8 @@ showerrorstack=true
 ############################################################
 # http server static files configuration 
 ############################################################
-# 1.dir is a local filesystem path
-# 2.urlpath is static dir url path
+# 1.dir is a local filesystem path.
+# 2.urlpath is static dir url path.
 ############################################################
 [static]
 dir="static"
@@ -28,10 +28,10 @@ urlpath="/static/"
 #############################################################
 # http server template configuration 
 #############################################################
-# 1.dir is a local template folder path
-# 2.ext is extension of template file 
+# 1.dir is a local template folder path.
+# 2.ext is extension of template file.
 # 3.left and right delimiters to the specified strings, 
-# to be used in subsequent calls to Parse
+# to be used in subsequent calls to Parse.
 #############################################################
 [template]
 dir="views"
@@ -42,20 +42,20 @@ delimiterright="}}"
 ########################################################
 # session configuration 
 ########################################################
-# store can be "file", "memory", "redis" 
-# {tmp} is a placeholder of system temp directory 
+# 1.store can be "file", "memory", "redis".
+# 2.{tmp} is a placeholder of system temp directory.
+# 3.ttl, gctime, timeout, idletimeout, maxconnlifetime,
+# cleanupinterval in seconds.
 ########################################################
 [session]
 # turn on/off session
 enable=true
 store="memory"
 cookiename="gmcsid"
-# seconds
 ttl=3600
 
 [session.file]
 dir="{tmp}"
-# seconds
 gctime=300
 prefix=".gmcsession_"
 
@@ -75,15 +75,17 @@ idletimeout=300
 maxconnlifetime=3600
 wait=true
 
-########################################################
+############################################################
 # cache configuration
-########################################################
-# redis supported
-# support of mutiple redis server 
-# notic: each config section must have an unique id
-# cache.file.dir: {tmp} is a placeholder of system temp directory
-# timeout, idletimeout, maxconnlifetime, cleanupinterval in seconds
-########################################################
+############################################################
+# 1.redis, memory, file are supported.
+# 2.support of mutiple redis server.
+# 3.notic: each config section must have an unique id.
+# 4.cache.file.dir: {tmp} is a placeholder of system
+# temp directory.
+# 5.timeout, idletimeout, maxconnlifetime, cleanupinterval,
+# in seconds.
+############################################################
 [cache]
 default="redis"
 
@@ -116,13 +118,16 @@ cleanupinterval=30
 ########################################################
 # database configuration
 ########################################################
-# mysql,sqlite3 are both supported
-# support of mutiple mysql server 
-# support of mutiple sqlite3 database
-# notic: each config section must have an unique id 
+# 1.mysql,sqlite3 are both supported.
+# 2.support of mutiple mysql server.
+# 3.support of mutiple sqlite3 database.
+# 4.notic: each config section must have an unique id.
+# 5.if database.sqlite3.password is not empty, database
+# will be encrypted.
 ########################################################
 [database]
 default="mysql"
+
 [[database.mysql]]
 enable=true
 id="default"
@@ -165,13 +170,12 @@ maxlifetimeseconds=1800
 enable=false
 id="default"
 database="test.db"
-# if password is not empty , database will be encrypted.
 password=""
 prefix=""
 prefix_sql_holder="__PREFIX__"
-# syncmode 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+# sync mode: 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
 syncmode=0
-# openmode ro,rw,rwc,memory
+# open mode: ro,rw,rwc,memory
 openmode="rw"
-# shared,private
+# cache mode: shared,private
 cachemode="shared"

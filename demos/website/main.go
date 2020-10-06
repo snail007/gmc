@@ -22,5 +22,4 @@ func main() {
 
 	// 3. run the app
 	app.Logger().Panic(gmc.StackE(app.Run()))
-
 }

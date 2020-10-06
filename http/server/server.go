@@ -98,7 +98,7 @@ func (s *HTTPServer) Init(cfg *gmcconfig.Config) (err error) {
 	return
 }
 func (s *HTTPServer) initBaseObjets() (err error) {
-	//init template
+	// init template
 	s.tpl, err = gmctemplate.New(s.config.GetString("template.dir"))
 	if err != nil {
 		return
@@ -110,22 +110,25 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	if err != nil {
 		return
 	}
-	//init session store
+
+	// init session store
 	err = s.initSessionStore()
 	if err != nil {
 		return
 	}
-	//init http server tls configuration
+
+	// init http server tls configuration
 	err = s.initTLSConfig()
 	if err != nil {
 		return
 	}
-	//init http server router
+
+	// init http server router
 	s.router = gmcrouter.NewHTTPRouter()
 	s.router.SetHandle50x(s.handle50x)
 	s.addr = s.config.GetString("httpserver.listen")
 
-	//init static files handler, must be after router inited
+	// init static files handler, must be after router inited
 	s.initStatic()
 	return
 }

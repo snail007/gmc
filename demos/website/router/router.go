@@ -27,10 +27,12 @@ func InitRouter(s *gmc.HTTPServer) {
 	// indicates router initialized
 	s.Logger().Printf("router inited.")
 }
+
 func filterAll(c gmc.C, server *gmc.HTTPServer) bool {
 	server.Logger().Printf(c.Request.RequestURI)
 	return false
 }
+
 func filter(c gmc.C, server *gmc.HTTPServer) bool {
 	path := strings.TrimRight(c.Request.URL.Path, "/\\")
 

@@ -10,16 +10,22 @@ import (
 
 func Initialize(s *gmc.HTTPServer) (err error) {
 	s.Logger().Println("using config file : ", s.Config().ConfigFileUsed())
-	// initialize your HTTPServer something here
+
+	// initialize database if needed
 	err = gmc.DB.Init(s.Config())
 	if err!=nil{
 		return
 	}
+
+	// initialize cache if needed
 	err = gmc.Cache.Init(s.Config())
 	if err!=nil{
 		return
 	}
+
+	// initialize router
 	router.InitRouter(s)
+
 	// all path in router
 	_,port,_:=net.SplitHostPort(s.Config().GetString("httpserver.listen"))
 	fmt.Println("please visit:")

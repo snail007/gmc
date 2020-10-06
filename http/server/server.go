@@ -524,22 +524,17 @@ func (s *HTTPServer) SetLog(l *log.Logger) {
 }
 func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
-		var isNext bool
-		func() {
+ 		func() {
 			defer func() {
 				if e := recover(); e != nil {
 					s.logger.Printf("middleware pani error : %s", gmcerr.Stack(e))
-					isNext = true
-					isStop = false
+ 					isStop = false
 				}
 			}()
 			isStop = fn(ctx, s)
 		}()
 		if isStop {
 			return
-		}
-		if !isNext {
-			break
 		}
 	}
 	return

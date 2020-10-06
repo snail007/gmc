@@ -22,6 +22,9 @@ func (this *Demo) Before__() {
 		this.Write("hello")
 	}
 }
+func (this *Demo) Index__() {
+	this.Write("index")
+}
 func (this *Demo) Hello() {
 	this.Write(" ")
 }

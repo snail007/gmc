@@ -7,6 +7,7 @@ package gmcrouter
 
 import (
 	"fmt"
+	gmcerr "github.com/snail007/gmc/error"
 	"io"
 	"net/http"
 	"os"
@@ -17,10 +18,10 @@ import (
 
 var (
 	anyMethods = []string{
+		http.MethodGet,
 		http.MethodHead,
 		http.MethodPatch,
 		http.MethodOptions,
-		http.MethodGet,
 		http.MethodPost,
 		http.MethodPut,
 		http.MethodDelete,
@@ -39,9 +40,9 @@ type HTTPRouter struct {
 	*Router
 	handle50x func(val *reflect.Value, err interface{})
 	// parent httprouter of current group
-	hr        *HTTPRouter
+	hr *HTTPRouter
 	//namespace of current group
-	ns        string
+	ns string
 }
 
 func NewHTTPRouter() *HTTPRouter {
@@ -87,17 +88,6 @@ func (s *HTTPRouter) Controller(urlPath string, obj interface{}) {
 	s.controller(urlPath, obj, "")
 }
 
-func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
-	path := prefix + n.path
-	if len(n.children) == 0 {
-		(*p)[path] = append((*p)[path], m)
-	} else {
-		for _, v := range n.children {
-			s.visit(v, path, m, p)
-		}
-	}
-}
-
 // PrintRouteTable dump all routes into `w`, if `w` is nil, os.Stdout will be used.
 func (s *HTTPRouter) PrintRouteTable(w io.Writer) {
 	if w == nil {
@@ -140,7 +130,28 @@ func (s *HTTPRouter) RouteTable() (table map[string][]string) {
 	for k, v := range s.trees {
 		s.visit(v, "", k, t)
 	}
+	m := []string{}
+	for _, v := range anyMethods {
+		h, _, _ := s.Lookup(v, "/")
+		if h != nil {
+			m = append(m, v)
+		}
+	}
+	if len(m) > 0 {
+		(*t)["/"] = m
+	}
 	return *t
+}
+func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
+	path := prefix + n.path
+	l := len(n.children)
+	if l == 0 {
+		(*p)[path] = append((*p)[path], m)
+	} else {
+		for _, v := range n.children {
+			s.visit(v, path, m, p)
+		}
+	}
 }
 
 //ControllerMethod binds a controller's method to router
@@ -150,7 +161,11 @@ func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method st
 func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) {
 	beforeIsFound := false
 	afterIsFound := false
+	isMehtodFound := false
 	for _, objMethod := range methods(obj) {
+		if isMehtodFound {
+			break
+		}
 		if skipMethods[objMethod] {
 			continue
 		}
@@ -160,22 +175,24 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 		case "After__":
 			afterIsFound = true
 		}
-		if strings.HasSuffix(objMethod, "__") {
-			continue
-		}
 		path := ""
 		if method != "" {
 			if objMethod != method {
 				continue
 			}
+			isMehtodFound = true
 			path = urlPath
 		} else {
+			if strings.HasSuffix(objMethod, "__") {
+				continue
+			}
 			p := urlPath
 			if !strings.HasSuffix(p, "/") {
 				p += "/"
 			}
 			path = p + strings.ToLower(objMethod)
 		}
+		objMethod0 := objMethod
 		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps Params) {
 			objv := reflect.ValueOf(obj)
 			isPanic := false
@@ -184,14 +201,16 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 			if beforeIsFound && s.call(&objv, "Before__", &isPanic) {
 				return
 			}
-			if !isPanic && s.call(&objv, objMethod, &isPanic) {
+			if !isPanic && s.call(&objv, objMethod0, &isPanic) {
 				return
 			}
 			if !isPanic && afterIsFound && s.call(&objv, "After__", &isPanic) {
 				return
 			}
-
 		})
+	}
+	if method != "" && !isMehtodFound {
+		panic(gmcerr.New("route [ "+urlPath+" ], method [ " + method + " ] not found"))
 	}
 }
 

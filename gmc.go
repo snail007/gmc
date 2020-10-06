@@ -26,6 +26,7 @@ type (
 	ServiceItem = gmcapp.ServiceItem
 	Service     = gmcservice.Service
 	Config      = gmcconfig.Config
+
 	// database
 	ResultSet = gmcdb.ResultSet
 	DBCache   = gmcdb.Cache
@@ -45,6 +46,7 @@ type (
 	W             = http.ResponseWriter
 	R             = *http.Request
 	C             = *gmcrouter.Ctx
+
 	// data
 	Map                = maputil.Map
 

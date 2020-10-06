@@ -52,6 +52,7 @@ func New(rootDir string) (t *Template, err error) {
 		tpl:     tpl,
 		ext:     ".html",
 	}
+	t.Funcs(addFunc())
 	return
 }
 

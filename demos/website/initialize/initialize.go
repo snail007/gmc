@@ -29,6 +29,5 @@ func Initialize(s *gmc.HTTPServer) (err error) {
 		}
 		fmt.Println("http://127.0.0.1:"+port+path)
 	}
-
 	return
 }

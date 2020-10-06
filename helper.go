@@ -8,6 +8,7 @@ import (
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
+	gmcerr "github.com/snail007/gmc/error"
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmchttpserver "github.com/snail007/gmc/http/server"
 	"github.com/snail007/gmc/util/maputil"
@@ -45,12 +46,17 @@ func (s *New0) Router() *gmcrouter.HTTPRouter {
 func (s *New0) HTTPServer() *gmchttpserver.HTTPServer {
 	return gmchttpserver.New()
 }
+
 func (s *New0) APIServer(address string) *gmchttpserver.APIServer {
 	return gmchttpserver.NewAPIServer(address)
 }
 
 func (s *New0) Map() *maputil.Map {
 	return maputil.NewMap()
+}
+
+func (s *New0) Error(e interface{}) error{
+	return gmcerr.New(e)
 }
 
 // database

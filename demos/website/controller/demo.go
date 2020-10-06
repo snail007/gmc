@@ -23,7 +23,9 @@ func (this *Demo) Before__() {
 	}
 }
 func (this *Demo) Index__() {
-	this.Write("index")
+	this.Write(this.Tpl.Execute("welcome",map[string]string{
+		"title":"i'm index page",
+	}))
 }
 func (this *Demo) Hello() {
 	this.Write(" ")

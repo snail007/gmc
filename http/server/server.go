@@ -106,6 +106,10 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	s.tpl.Delims(s.config.GetString("template.delimiterleft"),
 		s.config.GetString("template.delimiterright")).
 		Extension(s.config.GetString("template.ext"))
+	err = s.tpl.Parse()
+	if err != nil {
+		return
+	}
 	//init session store
 	err = s.initSessionStore()
 	if err != nil {
@@ -524,11 +528,11 @@ func (s *HTTPServer) SetLog(l *log.Logger) {
 }
 func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
- 		func() {
+		func() {
 			defer func() {
 				if e := recover(); e != nil {
 					s.logger.Printf("middleware pani error : %s", gmcerr.Stack(e))
- 					isStop = false
+					isStop = false
 				}
 			}()
 			isStop = fn(ctx, s)

@@ -39,8 +39,8 @@ func main() {
 	api.API("/hello", func(c gmc.C) {
 		api.Logger().Printf("request %s", c.Request.RequestURI)
 		c.Write("hello world!")
-	}).API("/hi", func(c gmc.C) {
-		c.Write("hi!")
+	}).API("/hi.:type", func(c gmc.C) {
+		c.Write("hi!"+c.Param.ByName("type"))
 	})
 	// trigger a panic error
 	api.API("/error", func(c gmc.C) {
@@ -63,7 +63,7 @@ please visit:
 http://127.0.0.1:8030/none
 http://127.0.0.1:8030/hello
 http://127.0.0.1:8030/error
-http://127.0.0.1:8030/hi
+http://127.0.0.1:8030/hi.json
 http://127.0.0.1:8030/v1/time
 	`)
 	// block main routine

@@ -42,6 +42,7 @@ type Controller struct {
 	Router       *gmcrouter.HTTPRouter
 	Config       *gmcconfig.Config
 	Cookie       *gmccookie.Cookies
+	Ctx          *gmcrouter.Ctx
 }
 
 func (this *Controller) Response__() http.ResponseWriter {
@@ -78,6 +79,7 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 	this.Response = w
 	this.Request = r
 	this.Args = ps
+	this.Ctx = gmcrouter.NewCtx(w, r, ps)
 	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Tpl = ctxvalue.Tpl
 	this.SessionStore = ctxvalue.SessionStore

@@ -16,7 +16,15 @@ import (
 )
 
 var (
-	shortcutMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions}
+	anyMethods = []string{
+		http.MethodHead,
+		http.MethodPatch,
+		http.MethodOptions,
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodDelete,
+	}
 	//helper functions in Controller in the list will exclude in router
 	skipMethods = map[string]bool{
 		"Die":            true,
@@ -30,7 +38,9 @@ var (
 type HTTPRouter struct {
 	*Router
 	handle50x func(val *reflect.Value, err interface{})
+	// parent httprouter of current group
 	hr        *HTTPRouter
+	//namespace of current group
 	ns        string
 }
 
@@ -166,26 +176,22 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 			}
 			path = p + strings.ToLower(objMethod)
 		}
-		for _, httpMethod := range shortcutMethods {
-			func(httpMethod, objMethod string) {
-				s.Handle(httpMethod, path, func(w http.ResponseWriter, r *http.Request, ps Params) {
-					objv := reflect.ValueOf(obj)
-					isPanic := false
-					invoke(objv, "MethodCallPre__", w, r, ps)
-					defer invoke(objv, "MethodCallPost__")
-					if beforeIsFound && s.call(&objv, "Before__", &isPanic) {
-						return
-					}
-					if !isPanic && s.call(&objv, objMethod, &isPanic) {
-						return
-					}
-					if !isPanic && afterIsFound && s.call(&objv, "After__", &isPanic) {
-						return
-					}
+		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps Params) {
+			objv := reflect.ValueOf(obj)
+			isPanic := false
+			invoke(objv, "MethodCallPre__", w, r, ps)
+			defer invoke(objv, "MethodCallPost__")
+			if beforeIsFound && s.call(&objv, "Before__", &isPanic) {
+				return
+			}
+			if !isPanic && s.call(&objv, objMethod, &isPanic) {
+				return
+			}
+			if !isPanic && afterIsFound && s.call(&objv, "After__", &isPanic) {
+				return
+			}
 
-				})
-			}(httpMethod, objMethod)
-		}
+		})
 	}
 }
 
@@ -233,7 +239,7 @@ func (s *HTTPRouter) Handle(method, path string, handle Handle) {
 // HandleAny registers a new request handle with the given path and all http methods,
 // GET, POST, PUT, PATCH, DELETE and OPTIONS
 func (s *HTTPRouter) HandleAny(path string, handle Handle) {
-	for _, method := range shortcutMethods {
+	for _, method := range anyMethods {
 		s.Handle(method, path, handle)
 	}
 }
@@ -249,7 +255,7 @@ func (s *HTTPRouter) Handler(method, path string, handler http.Handler) {
 // request handle match all http methods,
 // GET, POST, PUT, PATCH, DELETE and OPTIONS
 func (s *HTTPRouter) HandlerAny(path string, handler http.Handler) {
-	for _, method := range shortcutMethods {
+	for _, method := range anyMethods {
 		s.Handler(method, path, handler)
 	}
 }
@@ -264,7 +270,7 @@ func (s *HTTPRouter) HandlerFunc(method, path string, handler http.HandlerFunc) 
 // request handle match all http methods,
 // GET, POST, PUT, PATCH, DELETE and OPTIONS
 func (s *HTTPRouter) HandlerFuncAny(path string, handler http.HandlerFunc) {
-	for _, method := range shortcutMethods {
+	for _, method := range anyMethods {
 		s.HandlerFunc(method, path, handler)
 	}
 }

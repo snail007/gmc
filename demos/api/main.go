@@ -22,7 +22,7 @@ func main() {
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Printf("after request %s %d %d %s", c.Request.Method, c.StatusCode(), c.WriteCount(), c.Request.RequestURI)
+		s.Logger().Printf("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(),c.TimeUsed(), c.Request.RequestURI)
 		return false
 	})
 	// sets a function to handle 404 requests.

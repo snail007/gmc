@@ -155,24 +155,25 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h, args, _ := s.router.Lookup(r.Method, r.URL.Path)
+	h, params, _ := s.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
-		c := gmcrouter.NewCtx(w, r, args)
-		c0 = c
+		c0.SetParam(params)
 		// middleware1
-		if s.callMiddleware(c, s.middleware1) {
+		if s.callMiddleware(c0, s.middleware1) {
 			return
 		}
 
-		h(w, r, args)
+		start := time.Now()
+		h(w, r, params)
+		c0.SetTimeUsed(time.Now().Sub(start))
 
 		// middleware2
-		if s.callMiddleware(c, s.middleware2) {
+		if s.callMiddleware(c0, s.middleware2) {
 			return
 		}
 	} else {
 		//404
-		s.handle40x(gmcrouter.NewCtx(w, r))
+		s.handle40x(c0)
 	}
 
 }

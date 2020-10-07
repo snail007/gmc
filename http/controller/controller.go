@@ -35,7 +35,7 @@ type IController interface {
 type Controller struct {
 	Response     http.ResponseWriter
 	Request      *http.Request
-	Args         gmcrouter.Params
+	Param        gmcrouter.Params
 	Session      *gmcsession.Session
 	Tpl          *gmctemplate.Template
 	SessionStore gmcsession.Store
@@ -53,7 +53,7 @@ func (this *Controller) Request__() *http.Request {
 }
 
 func (this *Controller) Args__() gmcrouter.Params {
-	return this.Args
+	return this.Param
 }
 func (this *Controller) Session__() *gmcsession.Session {
 	return this.Session
@@ -78,7 +78,7 @@ func (this *Controller) Cookie__() *gmccookie.Cookies {
 func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
 	this.Response = w
 	this.Request = r
-	this.Args = ps
+	this.Param = ps
 	this.Ctx = gmcrouter.NewCtx(w, r, ps)
 	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Tpl = ctxvalue.Tpl

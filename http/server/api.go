@@ -69,33 +69,35 @@ func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h, args, _ := this.router.Lookup(r.Method, r.URL.Path)
+	h, params, _ := this.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
-		c := gmcrouter.NewCtx(w, r, args)
-		c0 = c
+		c0.SetParam(params)
 		// middleware1
-		if this.callMiddleware(c, this.middleware1) {
+		if this.callMiddleware(c0, this.middleware1) {
 			return
 		}
 
+		start := time.Now()
 		status := ""
-		err := this.call(func() { h(w, r, args) })
+		err := this.call(func() { h(w, r, params) })
+		c0.SetTimeUsed(time.Now().Sub(start))
 		if err != nil {
 			status = fmt.Sprintf("%s", err)
 			switch status {
 			case "__STOP__", "":
 			default:
 				//exception
-				this.handler500(gmcrouter.NewCtx(w, r, args), err)
+				this.handler500(c0, err)
 			}
 		}
+
 		// middleware2
-		if this.callMiddleware(c, this.middleware2) {
+		if this.callMiddleware(c0, this.middleware2) {
 			return
 		}
 
 	} else {
-		this.handler404(gmcrouter.NewCtx(w, r))
+		this.handler404(c0)
 	}
 }
 func (this *APIServer) Server() *http.Server {

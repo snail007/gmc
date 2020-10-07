@@ -15,6 +15,8 @@ func InitRouter(s *gmc.HTTPServer) {
 	// sets post routing handler, it be called only when url's path be found in router.
 	s.AddMiddleware1(filter)
 
+	s.AddMiddleware2(logging)
+
 	// acquire router object
 	r := s.Router()
 
@@ -41,6 +43,11 @@ func filter(c gmc.C, server *gmc.HTTPServer) bool {
 		c.Write([]byte("404"))
 		return true
 	}
-	// server.Logger().Printf(r.RequestURI)
+	//server.Logger().Printf("%v %s",c.TimeUsed(),path)
+	return false
+}
+
+func logging(c gmc.C, server *gmc.HTTPServer) bool {
+	server.Logger().Printf("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(),c.TimeUsed(), c.Request.RequestURI)
 	return false
 }

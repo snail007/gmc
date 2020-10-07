@@ -345,13 +345,13 @@ type User struct {
 
 func (this *User) URL() {
 	a := "a"
-	if this.Args != nil {
+	if this.Param != nil {
 		a = ""
 	}
 	this.Write(this.Request.URL.Path + a)
 }
 func (this *User) Ps() {
-	this.Write(this.Args.ByName("args") + this.Args.MatchedRoutePath())
+	this.Write(this.Param.ByName("args") + this.Param.MatchedRoutePath())
 }
 func Test_Controller(t *testing.T) {
 	assert := assert.New(t)
@@ -483,6 +483,7 @@ func mockConfig() *gmcconfig.Config {
 	cfg := gmcconfig.New()
 	cfg.SetConfigFile("../../app/app.toml")
 	cfg.ReadInConfig()
+	cfg.Set("template.dir","")
 	return cfg
 }
 func mockController(obj interface{}, s *HTTPServer, w http.ResponseWriter, r *http.Request) interface{} {

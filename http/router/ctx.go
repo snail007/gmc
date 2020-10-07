@@ -2,6 +2,7 @@ package gmcrouter
 
 import (
 	"net/http"
+	"time"
 
 	gmchttputil "github.com/snail007/gmc/util/httputil"
 )
@@ -10,6 +11,7 @@ type Ctx struct {
 	Response http.ResponseWriter
 	Request  *http.Request
 	Param    Params
+	timeUsed time.Duration
 }
 
 func NewCtx(w http.ResponseWriter, r *http.Request, ps ...Params) *Ctx {
@@ -25,6 +27,23 @@ func NewCtx(w http.ResponseWriter, r *http.Request, ps ...Params) *Ctx {
 		Param:    ps0,
 	}
 }
+
+func (this *Ctx) SetParam(param Params) *Ctx {
+	this.Param=param
+	return this
+}
+
+// acquires the method cost time, only for middleware2 and middleware3.
+func (this *Ctx) TimeUsed()time.Duration {
+	return this.timeUsed
+}
+
+// sets the method cost time, only for middleware2 and middleware3, do not call this.
+func (this *Ctx) SetTimeUsed(t time.Duration) *Ctx {
+	this.timeUsed=t
+	return this
+}
+
 // Write output data to response
 func (this *Ctx) Write(data ...interface{}) (n int, err error) {
 	return gmchttputil.Write(this.Response, data...)

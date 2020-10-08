@@ -100,8 +100,10 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 	//init lang
 	this.initLang()
 
-	//init GPSC
-	this.initGPSC()
+	//init GPSC, delayed, called in view render
+	this.View.OnRenderOnce(func() {
+		this.initGPSC()
+	})
 }
 
 // initLang parse browser's accept language to i18n lang flag.
@@ -136,6 +138,13 @@ func (this *Controller) initGPSC() {
 			if len(v) > 0 {
 				p[k] = v[0]
 			}
+		}
+	}
+
+	// session
+	if this.SessionStore != nil && this.Session != nil {
+		for k, v := range this.Session.Values() {
+			s[castutil.ToString(k)] = castutil.ToString(v)
 		}
 	}
 
@@ -201,17 +210,6 @@ func (this *Controller) SessionStart() (err error) {
 		err = this.SessionStore.Save(sess)
 		this.Session = sess
 	}
-
-	// fill session data to view
-	s:=map[string]string{}
-	if this.SessionStore != nil {
-		for k, v := range this.Session.Values() {
-			s[castutil.ToString(k)] = castutil.ToString(v)
-		}
-	}
-	this.View.SetMap(map[string]interface{}{
-		"S":s,
-	})
 
 	return
 }

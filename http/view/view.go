@@ -4,6 +4,7 @@ import (
 	gmctemplate "github.com/snail007/gmc/http/template"
 	gmchttputil "github.com/snail007/gmc/util/httputil"
 	"io"
+	"sync"
 )
 
 type View struct {
@@ -11,13 +12,16 @@ type View struct {
 	data   map[string]interface{}
 	writer io.Writer
 	layout string
+	once   *sync.Once
+	onceFn func()
 }
 
-func New(w io.Writer,tpl  *gmctemplate.Template) *View {
+func New(w io.Writer, tpl *gmctemplate.Template) *View {
 	return &View{
 		writer: w,
-		tpl:tpl,
-		data: map[string]interface{}{},
+		tpl:    tpl,
+		data:   map[string]interface{}{},
+		once:   &sync.Once{},
 	}
 }
 
@@ -37,8 +41,8 @@ func (this *View) SetMap(d map[string]interface{}) *View {
 
 //Render renders template `tpl` with `data`, and output.
 func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
-	_,err:=this.writer.Write(this.RenderR(tpl, data...))
-	if err!=nil{
+	_, err := this.writer.Write(this.RenderR(tpl, data...))
+	if err != nil {
 		panic(err)
 	}
 	return this
@@ -46,30 +50,40 @@ func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
 
 //Render renders template `tpl` with `data`, and returns render result.
 func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte) {
+	// init GPSC
+	this.once.Do(this.onceFn)
+
 	data0 := this.data
 	for k, v := range this.data {
 		data0[k] = v
 	}
 	d, err := this.tpl.Execute(tpl, data0)
-	if err!=nil{
+	if err != nil {
 		panic(err)
 	}
-	if this.layout!=""{
-		data0["GMC_LAYOUT_CONTENT"]=string(d)
+	if this.layout != "" {
+		data0["GMC_LAYOUT_CONTENT"] = string(d)
 		d, err = this.tpl.Execute(this.layout, data0)
-		if err!=nil{
+		if err != nil {
 			panic(err)
 		}
 	}
- 	return
+	return
 }
+
 // Layout sets the views layout when render template.
 func (this *View) Layout(l string) *View {
-	this.layout=l
+	this.layout = l
 	return this
 }
 
 // Stop exit controller method
 func (this *View) Stop() {
 	gmchttputil.Stop(this.writer)
+}
+
+// OnRenderOnce injects GPSC data
+func (this *View) OnRenderOnce(f func()) *View {
+	this.onceFn=f
+	return this
 }

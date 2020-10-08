@@ -66,6 +66,14 @@ func (this *Demo) SessionGet() {
 	this.Write(this.Session.Get("username"))
 }
 
+func (this *Demo) SessionGet1() {
+	err := this.SessionStart()
+	if err != nil {
+		this.Stop(err)
+	}
+	this.View.Render("sess")
+}
+
 func (this *Demo) Error500() {
 	a := 0
 	a /= a

@@ -130,27 +130,15 @@ func (s *HTTPRouter) RouteTable() (table map[string][]string) {
 	for k, v := range s.trees {
 		s.visit(v, "", k, t)
 	}
-	m := []string{}
-	for _, v := range anyMethods {
-		h, _, _ := s.Lookup(v, "/")
-		if h != nil {
-			m = append(m, v)
-		}
-	}
-	if len(m) > 0 {
-		(*t)["/"] = m
-	}
 	return *t
 }
 func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
 	path := prefix + n.path
-	l := len(n.children)
-	if l == 0 {
+	if n.handle!=nil{
 		(*p)[path] = append((*p)[path], m)
-	} else {
-		for _, v := range n.children {
-			s.visit(v, path, m, p)
-		}
+	}
+	for _, v := range n.children {
+		s.visit(v, path, m, p)
 	}
 }
 

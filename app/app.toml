@@ -39,7 +39,7 @@ dir="i18n"
 default="zh-cn"
 
 #############################################################
-# http server template configuration 
+# http server template / views configuration
 #############################################################
 # 1.dir is a local template folder path.
 # 2.ext is extension of template file.

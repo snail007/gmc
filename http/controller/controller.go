@@ -9,6 +9,7 @@ import (
 	"fmt"
 	gmcview "github.com/snail007/gmc/http/view"
 	gmci18n "github.com/snail007/gmc/i18n"
+	"github.com/snail007/gmc/util/castutil"
 	"net/http"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -46,7 +47,7 @@ type Controller struct {
 	Cookie       *gmccookie.Cookies
 	Ctx          *gmcrouter.Ctx
 	View         *gmcview.View
-	Lang          string
+	Lang         string
 }
 
 func (this *Controller) Response__() http.ResponseWriter {
@@ -80,6 +81,7 @@ func (this *Controller) Cookie__() *gmccookie.Cookies {
 
 //MethodCallPre__ called before controller method and Before__() if have.
 func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+	// 1. init basic objects
 	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Response = w
 	this.Request = r
@@ -93,19 +95,65 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 	this.Cookie = gmccookie.New(w, r)
 	this.Ctx = gmcrouter.NewCtx(w, r, ps)
 
+	// 2.init stuff below
+
 	//init lang
 	this.initLang()
+
+	//init GPSC
+	this.initGPSC()
 }
+
 // initLang parse browser's accept language to i18n lang flag.
-func (this *Controller)initLang()  {
-	if this.Config.GetBool("i18n.enable"){
-		this.Lang="none"
-		t,e:=gmci18n.MatchAcceptLanguageT(this.Request)
-		if e==nil{
-			this.Lang=t.String()
-			this.View.Set("Lang",this.Lang)
+func (this *Controller) initLang() {
+	if this.Config.GetBool("i18n.enable") {
+		this.Lang = "none"
+		t, e := gmci18n.MatchAcceptLanguageT(this.Request)
+		if e == nil {
+			this.Lang = t.String()
+			this.View.Set("Lang", this.Lang)
 		}
 	}
+}
+
+// init GPSC variables in views
+func (this *Controller) initGPSC() {
+	g, p, s, c := map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}
+
+	// get
+	for k, v := range this.Request.URL.Query() {
+		g[k] = ""
+		if len(v) > 0 {
+			g[k] = v[0]
+		}
+	}
+
+	// post
+	err := this.Request.ParseForm()
+	if err == nil {
+		for k, v := range this.Request.PostForm {
+			p[k] = ""
+			if len(v) > 0 {
+				p[k] = v[0]
+			}
+		}
+	}
+
+	// cookie
+	for _, v := range this.Request.Cookies() {
+		c[v.Name] = v.Value
+	}
+
+	// fill gpsc to data
+	data := map[string]interface{}{
+		"G": g,
+		"P": p,
+		"S": s,
+		"C": c,
+	}
+
+	// set data to view
+	this.View.SetMap(data)
 }
 
 //MethodCallPost__ called after controller method and After__() if have.
@@ -120,8 +168,8 @@ func (this *Controller) MethodCallPost__() {
 }
 
 //Tr translates the key to `this.Lang's` text.
-func (this *Controller) Tr(key string,defaultText ...string)string {
-	return  gmci18n.Tr(this.Lang,key, defaultText...)
+func (this *Controller) Tr(key string, defaultText ...string) string {
+	return gmci18n.Tr(this.Lang, key, defaultText...)
 }
 
 //Die will prevent to call After__() if have, and MethodCallPost__()
@@ -153,6 +201,18 @@ func (this *Controller) SessionStart() (err error) {
 		err = this.SessionStore.Save(sess)
 		this.Session = sess
 	}
+
+	// fill session data to view
+	s:=map[string]string{}
+	if this.SessionStore != nil {
+		for k, v := range this.Session.Values() {
+			s[castutil.ToString(k)] = castutil.ToString(v)
+		}
+	}
+	this.View.SetMap(map[string]interface{}{
+		"S":s,
+	})
+
 	return
 }
 

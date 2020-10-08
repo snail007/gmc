@@ -13,27 +13,40 @@ func Initialize(s *gmc.HTTPServer) (err error) {
 
 	// initialize database if needed
 	err = gmc.DB.Init(s.Config())
-	if err!=nil{
+	if err != nil {
 		return
 	}
 
 	// initialize cache if needed
 	err = gmc.Cache.Init(s.Config())
-	if err!=nil{
+	if err != nil {
 		return
 	}
+
+	// initialize i18n if needed
+	// for testing
+	s.Config().Set("i18n.enable",true)
+	gmc.I18n.Init(s.Config())
 
 	// initialize router
 	router.InitRouter(s)
 
+	// add template helper functions here
+	funMap := map[string]interface{}{
+		"test": func(str string) string {
+			return fmt.Sprintf("%d", len(str))
+		},
+	}
+	s.AddFuncMap(funMap)
+
 	// all path in router
-	_,port,_:=net.SplitHostPort(s.Config().GetString("httpserver.listen"))
+	_, port, _ := net.SplitHostPort(s.Config().GetString("httpserver.listen"))
 	fmt.Println("please visit:")
-	for path,_:=range s.Router().RouteTable(){
-		if strings.Contains(path,"*"){
+	for path, _ := range s.Router().RouteTable() {
+		if strings.Contains(path, "*") {
 			continue
 		}
-		fmt.Println("http://127.0.0.1:"+port+path)
+		fmt.Println("http://127.0.0.1:" + port + path)
 	}
 	return
 }

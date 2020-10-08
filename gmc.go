@@ -3,6 +3,7 @@ package gmc
 import (
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
+	gmci18n "github.com/snail007/gmc/i18n"
 	"net/http"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -48,7 +49,7 @@ type (
 	C             = *gmcrouter.Ctx
 
 	// data
-	Map                = maputil.Map
+	Map = maputil.Map
 
 	// error
 	Error = gmcerr.Error
@@ -59,4 +60,7 @@ var (
 	StackE = gmcerr.Stack
 	Errorf = gmcerr.Errorf
 	WrapE  = gmcerr.Wrap
+
+	// i18n
+	Tr = gmci18n.Tr
 )

@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	gmci18n "github.com/snail007/gmc/i18n"
 	"io"
 	"io/ioutil"
 	"log"
@@ -52,6 +53,7 @@ func SetBinData(data map[string]string) {
 
 type HTTPServer struct {
 	tpl          *gmctemplate.Template
+	tplFuncMap   map[string]interface{}
 	sessionStore gmcsession.Store
 	router       *gmcrouter.HTTPRouter
 	logger       *log.Logger
@@ -75,6 +77,7 @@ type HTTPServer struct {
 
 func New() *HTTPServer {
 	return &HTTPServer{
+		tplFuncMap:  map[string]interface{}{},
 		middleware0: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
@@ -98,6 +101,9 @@ func (s *HTTPServer) Init(cfg *gmcconfig.Config) (err error) {
 	return
 }
 func (s *HTTPServer) initBaseObjets() (err error) {
+	// init i18n for template
+	s.tplFuncMap["tr"]= gmci18n.Tr
+
 	// init template
 	s.tpl, err = gmctemplate.New(s.config.GetString("template.dir"))
 	if err != nil {
@@ -106,10 +112,6 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	s.tpl.Delims(s.config.GetString("template.delimiterleft"),
 		s.config.GetString("template.delimiterright")).
 		Extension(s.config.GetString("template.ext"))
-	err = s.tpl.Parse()
-	if err != nil {
-		return
-	}
 
 	// init session store
 	err = s.initSessionStore()
@@ -210,6 +212,14 @@ func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
 	} else {
 		s.handler50x(c, err)
 	}
+}
+
+// AddFuncMap adds helper functions to template
+func (s *HTTPServer) AddFuncMap(f map[string]interface{}) *HTTPServer {
+	for k, v := range f {
+		s.tplFuncMap[k] = v
+	}
+	return s
 }
 
 func (s *HTTPServer) SetConfig(c *gmcconfig.Config) *HTTPServer {
@@ -501,6 +511,11 @@ func (s *HTTPServer) Start() (err error) {
 			s.PrintRouteTable(nil)
 		}
 	}()
+	// delay template Parse
+	err = s.tpl.Funcs(s.tplFuncMap).Parse()
+	if err != nil {
+		return
+	}
 	if s.config.GetBool("httpserver.tlsenable") {
 		return s.ListenTLS()
 	}

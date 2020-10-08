@@ -74,6 +74,21 @@ func (this *Demo) Error500() {
 func (this *Demo) Version() {
 	this.Write("v1")
 }
+
+func (this *Demo) Func() {
+	this.View.Set("name","hello")
+	this.View.Render("func").Stop()
+	// this will never called
+	this.Write("def")
+}
+
+func (this *Demo) I18n1() {
+ 	this.View.Render("i18n")
+}
+func (this *Demo) I18n2() {
+	//this.Write(this.Lang," ",gmc.Tr(this.Lang,"001"))
+	this.Write(this.Lang," ",this.Tr("001","here you should tips yourself, what's 001? 这里的文字提示自己这个001是什么."))
+}
 func (this *Demo) Cache() {
 	gmc.Cache.Redis().Set("test", "aaa", time.Second)
 	v, _ := gmc.Cache.Redis().Get("test")

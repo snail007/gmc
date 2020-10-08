@@ -51,15 +51,15 @@ type FileStore struct {
 
 func New(config interface{}) (st gmcsession.Store, err error) {
 	cfg := config.(FileStoreConfig)
+	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
+	if cfg.Dir==""{
+		cfg.Dir="."
+	}
 	if !fileutil.ExistsDir(cfg.Dir) {
 		err = os.Mkdir(cfg.Dir, 0700)
 		if err != nil {
 			return
 		}
-	}
-	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
-	if cfg.Dir==""{
-		cfg.Dir="."
 	}
 	cfg.Dir, err = filepath.Abs(cfg.Dir)
 	if err != nil {

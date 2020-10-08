@@ -26,6 +26,19 @@ dir="static"
 urlpath="/static/"
 
 #############################################################
+# i18n configuration
+#############################################################
+# 1.dir is a local filesystem path.
+# 2.enable is true/false to enable/disable i18n in gmc.
+# 3.all i18n locale files extension is `.toml`, filename is
+# i18n standard FLAG. Such as: zh-CN, en-US case insensitive.
+#############################################################
+[i18n]
+enable=false
+dir="i18n"
+default="zh-cn"
+
+#############################################################
 # http server template configuration 
 #############################################################
 # 1.dir is a local template folder path.

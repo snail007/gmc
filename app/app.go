@@ -27,7 +27,7 @@ type GMCApp struct {
 	config            *gmcconfig.Config
 }
 type ServiceItem struct {
-	BeforeInit func(srv *gmcconfig.Config) (err error)
+	BeforeInit func(srv gmcservice.Service,cfg *gmcconfig.Config) (err error)
 	AfterInit  func(srv *ServiceItem) (err error)
 	Service    gmcservice.Service
 	ConfigID   string
@@ -221,7 +221,7 @@ func (s *GMCApp) run() (err error) {
 		}
 		//BeforeInit
 		if srvI.BeforeInit != nil {
-			err = srvI.BeforeInit(cfg)
+			err = srvI.BeforeInit(srv,cfg)
 			if err != nil {
 				return
 			}

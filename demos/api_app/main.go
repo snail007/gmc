@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/snail007/gmc/util/timeutil"
@@ -49,20 +51,15 @@ func main() {
 	api.API("/version", func(c gmc.C) {
 		c.Write(1.1)
 	})
+	api.API("/sleep", func(c gmc.C) {
+		time.Sleep(time.Second*10)
+		c.Write("reload")
+	})
 	// routing by group is supported
 	group1 := api.Group("/v1")
 	group1.API("/time", func(c gmc.C) {
 		c.Write(timeutil.TimeToStr(time.Now()))
 	})
-
-	fmt.Println(`
-please visit:
-http://127.0.0.1:8030/none
-http://127.0.0.1:8030/hello
-http://127.0.0.1:8030/error
-http://127.0.0.1:8030/hi
-http://127.0.0.1:8030/v1/time
-	`)
 
 	app := gmc.New.App()
 
@@ -73,6 +70,19 @@ http://127.0.0.1:8030/v1/time
 			return
 		},
 	})
+
+	// all path in router
+	_,port,_:=net.SplitHostPort(api.Address())
+	fmt.Println("please visit:")
+	for path,_:=range api.Router().RouteTable(){
+		if strings.Contains(path,"*"){
+			continue
+		}
+		if strings.Contains(path,":type"){
+			path="/hi.json"
+		}
+		fmt.Println("http://127.0.0.1:"+port+path)
+	}
 
 	app.Logger().Panic(gmc.StackE(app.Run()))
 }

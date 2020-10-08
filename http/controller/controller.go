@@ -7,6 +7,8 @@ package gmccontroller
 
 import (
 	"fmt"
+	gmcview "github.com/snail007/gmc/http/view"
+	gmci18n "github.com/snail007/gmc/i18n"
 	"net/http"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -43,6 +45,8 @@ type Controller struct {
 	Config       *gmcconfig.Config
 	Cookie       *gmccookie.Cookies
 	Ctx          *gmcrouter.Ctx
+	View         *gmcview.View
+	Lang          string
 }
 
 func (this *Controller) Response__() http.ResponseWriter {
@@ -76,16 +80,32 @@ func (this *Controller) Cookie__() *gmccookie.Cookies {
 
 //MethodCallPre__ called before controller method and Before__() if have.
 func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Response = w
 	this.Request = r
 	this.Param = ps
-	this.Ctx = gmcrouter.NewCtx(w, r, ps)
-	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Tpl = ctxvalue.Tpl
 	this.SessionStore = ctxvalue.SessionStore
 	this.Router = ctxvalue.Router
 	this.Config = ctxvalue.Config
+
+	this.View = gmcview.New(w, ctxvalue.Tpl)
 	this.Cookie = gmccookie.New(w, r)
+	this.Ctx = gmcrouter.NewCtx(w, r, ps)
+
+	//init lang
+	this.initLang()
+}
+// initLang parse browser's accept language to i18n lang flag.
+func (this *Controller)initLang()  {
+	if this.Config.GetBool("i18n.enable"){
+		this.Lang="none"
+		t,e:=gmci18n.MatchAcceptLanguageT(this.Request)
+		if e==nil{
+			this.Lang=t.String()
+			this.View.Set("Lang",this.Lang)
+		}
+	}
 }
 
 //MethodCallPost__ called after controller method and After__() if have.
@@ -97,6 +117,11 @@ func (this *Controller) MethodCallPost__() {
 			this.SessionStore.Save(this.Session)
 		}
 	}
+}
+
+//Tr translates the key to `this.Lang's` text.
+func (this *Controller) Tr(key string,defaultText ...string)string {
+	return  gmci18n.Tr(this.Lang,key, defaultText...)
 }
 
 //Die will prevent to call After__() if have, and MethodCallPost__()

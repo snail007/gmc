@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/snail007/gmc/util/timeutil"
@@ -22,7 +24,12 @@ func main() {
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Printf("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(),c.TimeUsed(), c.Request.RequestURI)
+		s.Logger().Printf("after request %s %d %d %s %s",
+			c.Request.Method,
+			c.StatusCode(),
+			c.WriteCount(),
+			c.TimeUsed(),
+			c.Request.RequestURI)
 		return false
 	})
 	// sets a function to handle 404 requests.
@@ -58,14 +65,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(`
-please visit:
-http://127.0.0.1:8030/none
-http://127.0.0.1:8030/hello
-http://127.0.0.1:8030/error
-http://127.0.0.1:8030/hi.json
-http://127.0.0.1:8030/v1/time
-	`)
+
+	// all path in router
+	_,port,_:=net.SplitHostPort(api.Listener().Addr().String())
+	fmt.Println("please visit:")
+	for path,_:=range api.Router().RouteTable(){
+		if strings.Contains(path,"*"){
+			continue
+		}
+		if strings.Contains(path,":type"){
+			path="/hi.json"
+		}
+		fmt.Println("http://127.0.0.1:"+port+path)
+	}
+
 	// block main routine
 	gmchook.WaitShutdown()
 }

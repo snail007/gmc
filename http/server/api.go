@@ -100,8 +100,14 @@ func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		this.handler404(c0)
 	}
 }
+func (this *APIServer) Address() string {
+	return this.address
+}
 func (this *APIServer) Server() *http.Server {
 	return this.server
+}
+func (this *APIServer) Router() *gmcrouter.HTTPRouter {
+	return this.router
 }
 func (this *APIServer) SetTLSFile(certFile, keyFile string) *APIServer {
 	this.certFile, this.keyFile = certFile, keyFile

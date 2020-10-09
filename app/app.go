@@ -3,9 +3,13 @@ package gmcapp
 import (
 	"encoding/json"
 	"fmt"
+	gmccachehelper "github.com/snail007/gmc/cache/helper"
+	gmcdbhelper "github.com/snail007/gmc/db/helper"
+	gmci18n "github.com/snail007/gmc/i18n"
 	"log"
 	"net"
 	"os"
+	"strings"
 
 	gmcconfig "github.com/snail007/gmc/config"
 
@@ -27,7 +31,7 @@ type GMCApp struct {
 	config            *gmcconfig.Config
 }
 type ServiceItem struct {
-	BeforeInit func(srv gmcservice.Service,cfg *gmcconfig.Config) (err error)
+	BeforeInit func(srv gmcservice.Service, cfg *gmcconfig.Config) (err error)
 	AfterInit  func(srv *ServiceItem) (err error)
 	Service    gmcservice.Service
 	ConfigID   string
@@ -46,7 +50,7 @@ func New() *GMCApp {
 	return app
 }
 func Default() *GMCApp {
-	app:= &GMCApp{
+	app := &GMCApp{
 		isBlock:           true,
 		onRun:             []func(*gmcconfig.Config) error{},
 		onShutdown:        []func(){},
@@ -56,11 +60,38 @@ func Default() *GMCApp {
 		attachConfigfiles: map[string]string{},
 	}
 	cfg := gmcconfig.New()
+
+	// env binding
+	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	cfg.SetEnvPrefix("GMC")
+	cfg.AutomaticEnv()
+
+	// config dir and name
 	cfg.SetConfigName("app")
 	cfg.AddConfigPath(".")
 	cfg.AddConfigPath("conf")
 	cfg.AddConfigPath("config")
 	app.config = cfg
+
+	// do some initialize
+	app.OnRun(func(config *gmcconfig.Config) (err error) {
+		// initialize database if needed
+		err = gmcdbhelper.Init(config)
+		if err != nil {
+			return
+		}
+
+		// initialize cache if needed
+		err = gmccachehelper.Init(config)
+		if err != nil {
+			return
+		}
+
+		// initialize i18n if needed
+		err = gmci18n.Init(config)
+
+		return
+	})
 	return app
 }
 
@@ -100,10 +131,12 @@ func (s *GMCApp) parseConfigFile() (err error) {
 		parse = true
 	} else if s.config != nil && s.config.ConfigFileUsed() == "" {
 		parse = true
-		fmt.Println("2222")
-
 	}
 	if parse {
+		// env binding
+		s.config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		s.config.SetEnvPrefix("GMC")
+		s.config.AutomaticEnv()
 		err = s.config.ReadInConfig()
 		if err != nil {
 			return
@@ -221,7 +254,7 @@ func (s *GMCApp) run() (err error) {
 		}
 		//BeforeInit
 		if srvI.BeforeInit != nil {
-			err = srvI.BeforeInit(srv,cfg)
+			err = srvI.BeforeInit(srv, cfg)
 			if err != nil {
 				return
 			}

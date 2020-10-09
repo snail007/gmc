@@ -29,7 +29,7 @@ var (
 	//helper functions in Controller in the list will exclude in router
 	skipMethods = map[string]bool{
 		"Die":            true,
-		"SessionDestory": true,
+		"SessionDestroy": true,
 		"SessionStart":   true,
 		"Stop":           true,
 		"Write":          true,

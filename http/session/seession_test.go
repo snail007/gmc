@@ -22,7 +22,7 @@ func TestNewSession(t *testing.T) {
 	sess.Set("a", "c")
 	sess.Set("a", "d")
 	assert.Equal(sess.Get("a"), "d")
-	sess.Destory()
+	sess.Destroy()
 	assert.Nil(sess.Get("a"))
 	//renew
 	sess = NewSession()
@@ -33,16 +33,16 @@ func TestNewSession(t *testing.T) {
 	sess.Set("a", "c")
 	v := sess.Values()
 	assert.Equal(len(v), 1)
-	//Destory
-	sess.Destory()
-	sess.Destory()
+	//Destroy
+	sess.Destroy()
+	sess.Destroy()
 	sess.Set("a", "b")
 	sess.Delete("a")
 	sess.Touch()
 	sess.Serialize()
 	sess.Unserialize("")
 	assert.Nil(sess.Values())
-	assert.True(sess.IsDestory())
+	assert.True(sess.IsDestroy())
 	assert.Len(sess.SessionID(), 32)
 }
 func TestSerialize(t *testing.T) {

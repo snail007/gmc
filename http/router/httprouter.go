@@ -29,10 +29,11 @@ var (
 	//helper functions in Controller in the list will exclude in router
 	skipMethods = map[string]bool{
 		"Die":            true,
-		"SessionDestory": true,
+		"SessionDestroy": true,
 		"SessionStart":   true,
 		"Stop":           true,
 		"Write":          true,
+		"Tr":             true,
 	}
 )
 
@@ -134,7 +135,7 @@ func (s *HTTPRouter) RouteTable() (table map[string][]string) {
 }
 func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
 	path := prefix + n.path
-	if n.handle!=nil{
+	if n.handle != nil {
 		(*p)[path] = append((*p)[path], m)
 	}
 	for _, v := range n.children {
@@ -198,7 +199,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 		})
 	}
 	if method != "" && !isMehtodFound {
-		panic(gmcerr.New("route [ "+urlPath+" ], method [ " + method + " ] not found"))
+		panic(gmcerr.New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
 	}
 }
 

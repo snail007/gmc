@@ -168,7 +168,7 @@ func (this *Controller) initGPSC() {
 //MethodCallPost__ called after controller method and After__() if have.
 func (this *Controller) MethodCallPost__() {
 	if this.SessionStore != nil && this.Session != nil {
-		if this.Session.IsDestory() {
+		if this.Session.IsDestroy() {
 			this.SessionStore.Delete(this.Session.SessionID())
 		} else {
 			this.SessionStore.Save(this.Session)
@@ -214,13 +214,13 @@ func (this *Controller) SessionStart() (err error) {
 	return
 }
 
-func (this *Controller) SessionDestory() (err error) {
+func (this *Controller) SessionDestroy() (err error) {
 	if this.SessionStore == nil {
 		err = fmt.Errorf("session is disabled")
 		return
 	}
 	if this.Session != nil {
-		this.Session.Destory()
+		this.Session.Destroy()
 	}
 	return
 }

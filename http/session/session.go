@@ -26,7 +26,7 @@ type Session struct {
 	id        string
 	values    map[interface{}]interface{}
 	lock      *sync.Mutex
-	isDestory bool
+	isDestroy bool
 	touchtime int64
 }
 
@@ -39,7 +39,7 @@ func NewSession() *Session {
 	return s
 }
 func (s *Session) Set(k interface{}, v interface{}) {
-	if s.isDestory {
+	if s.isDestroy {
 		return
 	}
 	s.lock.Lock()
@@ -49,7 +49,7 @@ func (s *Session) Set(k interface{}, v interface{}) {
 	return
 }
 func (s *Session) Get(k interface{}) (value interface{}) {
-	if s.isDestory {
+	if s.isDestroy {
 		return
 	}
 	s.lock.Lock()
@@ -62,7 +62,7 @@ func (s *Session) Get(k interface{}) (value interface{}) {
 	return nil
 }
 func (s *Session) Delete(k interface{}) (err error) {
-	if s.isDestory {
+	if s.isDestroy {
 		return
 	}
 	s.lock.Lock()
@@ -71,19 +71,19 @@ func (s *Session) Delete(k interface{}) (err error) {
 	s.touch()
 	return
 }
-func (s *Session) Destory() (err error) {
-	if s.isDestory {
+func (s *Session) Destroy() (err error) {
+	if s.isDestroy {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.values = map[interface{}]interface{}{}
-	s.isDestory = true
+	s.isDestroy = true
 	s.touch()
 	return
 }
 func (s *Session) Values() (data map[interface{}]interface{}) {
-	if s.isDestory {
+	if s.isDestroy {
 		return
 	}
 	s.lock.Lock()
@@ -95,8 +95,8 @@ func (s *Session) Values() (data map[interface{}]interface{}) {
 	s.touch()
 	return
 }
-func (s *Session) IsDestory() bool {
-	return s.isDestory
+func (s *Session) IsDestroy() bool {
+	return s.isDestroy
 }
 func (s *Session) SessionID() (sessionID string) {
 	return s.id
@@ -109,7 +109,7 @@ func (s *Session) Touchtime() (time int64) {
 	return s.touchtime
 }
 func (s *Session) Touch() *Session {
-	if s.isDestory {
+	if s.isDestroy {
 		return s
 	}
 	s.lock.Lock()
@@ -129,8 +129,8 @@ func newSessionID() (sessionID string) {
 	return hex.EncodeToString(k)
 }
 func (s *Session) Serialize() (str string, err error) {
-	if s.isDestory {
-		err = fmt.Errorf("session is destory")
+	if s.isDestroy {
+		err = fmt.Errorf("session is destroy")
 		return
 	}
 	s.lock.Lock()
@@ -150,8 +150,8 @@ func (s *Session) Serialize() (str string, err error) {
 	return
 }
 func (s *Session) Unserialize(data string) (err error) {
-	if s.isDestory {
-		err = fmt.Errorf("session is destory")
+	if s.isDestroy {
+		err = fmt.Errorf("session is destroy")
 		return
 	}
 	s.lock.Lock()

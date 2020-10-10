@@ -93,10 +93,16 @@ func (this *Demo) Func() {
 func (this *Demo) I18n1() {
  	this.View.Render("i18n")
 }
+
 func (this *Demo) I18n2() {
 	//this.Write(this.Lang," ",gmc.Tr(this.Lang,"001"))
 	this.Write(this.Lang," ",this.Tr("001","here you should tips yourself, what's 001? 这里的文字提示自己这个001是什么."))
 }
+
+func (this *Demo) I18n3() {
+	this.View.Render("i18n3")
+}
+
 func (this *Demo) Cache() {
 	gmc.Cache.Redis().Set("test", "aaa", time.Second)
 	v, _ := gmc.Cache.Redis().Get("test")

@@ -4,6 +4,7 @@ import (
 	gmcconfig "github.com/snail007/gmc/config"
 	gmcerr "github.com/snail007/gmc/error"
 	"golang.org/x/text/language"
+	"html/template"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -48,6 +49,10 @@ func Init(cfg *gmcconfig.Config) (err error) {
 
 func Tr(lang, key string, defaultMessage ...string) string {
 	return i18n.Tr(lang, key, defaultMessage...)
+}
+
+func TrV(lang, key string, defaultMessage ...string) template.HTML {
+	return template.HTML(i18n.Tr(lang, key, defaultMessage...))
 }
 
 func TrLangs(langs []string, key string, defaultMessage ...string) string {

@@ -32,7 +32,8 @@ delimiterright="}}"
     Example in the template:
     
     `{{tr .Lang "key001" "tips"}}`
-2. 
+    
+2. `string` only one argument, type is `interface{}`, convert it to string type. 
 
 ### gmc defined comparison functions
 

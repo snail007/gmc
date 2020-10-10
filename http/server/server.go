@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	gmci18n "github.com/snail007/gmc/i18n"
 	"io"
 	"io/ioutil"
 	"log"
@@ -53,7 +52,6 @@ func SetBinData(data map[string]string) {
 
 type HTTPServer struct {
 	tpl          *gmctemplate.Template
-	tplFuncMap   map[string]interface{}
 	sessionStore gmcsession.Store
 	router       *gmcrouter.HTTPRouter
 	logger       *log.Logger
@@ -77,7 +75,6 @@ type HTTPServer struct {
 
 func New() *HTTPServer {
 	return &HTTPServer{
-		tplFuncMap:  map[string]interface{}{},
 		middleware0: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
@@ -101,8 +98,6 @@ func (s *HTTPServer) Init(cfg *gmcconfig.Config) (err error) {
 	return
 }
 func (s *HTTPServer) initBaseObjets() (err error) {
-	// init i18n for template
-	s.tplFuncMap["tr"]= gmci18n.Tr
 
 	// init template
 	s.tpl, err = gmctemplate.New(s.config.GetString("template.dir"))
@@ -216,9 +211,7 @@ func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
 
 // AddFuncMap adds helper functions to template
 func (s *HTTPServer) AddFuncMap(f map[string]interface{}) *HTTPServer {
-	for k, v := range f {
-		s.tplFuncMap[k] = v
-	}
+	s.tpl.Funcs(f)
 	return s
 }
 
@@ -512,7 +505,7 @@ func (s *HTTPServer) Start() (err error) {
 		}
 	}()
 	// delay template Parse
-	err = s.tpl.Funcs(s.tplFuncMap).Parse()
+	err = s.tpl.Parse()
 	if err != nil {
 		return
 	}

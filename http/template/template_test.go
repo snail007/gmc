@@ -6,6 +6,8 @@
 package gmctemplate
 
 import (
+	"fmt"
+	"github.com/snail007/gmc/http/template/sprig"
 	"os"
 	"testing"
 )
@@ -18,6 +20,9 @@ func TestParse(t *testing.T) {
 	tpl.Execute("user/list", map[string]string{
 		"head": "test",
 	})
+	funcsM := sprig.GenericFuncMap()
+	fmt.Println(len(funcsM))
+	t.Fail()
 }
 func TestMain(m *testing.M) {
 	tpl.Delims("{{", "}}")

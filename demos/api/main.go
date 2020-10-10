@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	api := gmc.New.APIServer(":8030")
+	api := gmc.New.APIServer(":8030").Ext(".html")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
@@ -48,14 +48,14 @@ func main() {
 		c.Write("hello world!")
 	}).API("/hi.:type", func(c gmc.C) {
 		c.Write("hi!"+c.Param.ByName("type"))
-	})
+	},"")
 	// trigger a panic error
 	api.API("/error", func(c gmc.C) {
 		a := 0
 		a /= a
 	})
 	// routing by group is supported
-	group1 := api.Group("/v1")
+	group1 := api.Group("/v1").Ext(".json")
 	group1.API("/time", func(c gmc.C) {
 		c.Write(timeutil.TimeToStr(time.Now()))
 	})

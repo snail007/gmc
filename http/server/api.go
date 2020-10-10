@@ -35,6 +35,7 @@ type APIServer struct {
 	middleware2       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
 	middleware3       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
 	isShutdown        bool
+	ext               string
 }
 
 func NewAPIServer(address string) *APIServer {
@@ -148,12 +149,25 @@ func (this *APIServer) ShowErrorStack(isShow bool) *APIServer {
 	this.isShowErrorStack = isShow
 	return this
 }
-func (this *APIServer) API(path string, handle func(ctx *gmcrouter.Ctx)) *APIServer {
-	this.router.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+
+func (this *APIServer) Ext(ext string) *APIServer {
+	this.ext = ext
+	return this
+}
+
+func (this *APIServer) API(path string, handle func(ctx *gmcrouter.Ctx), ext ...string) *APIServer {
+	// default
+	ext1 := this.ext
+	if len(ext) > 0 {
+		// cover
+		ext1 = ext[0]
+	}
+	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
 		handle(gmcrouter.NewCtx(w, r, ps))
 	})
 	return this
 }
+
 func (this *APIServer) Group(path string) *APIServer {
 	newAPI := *this
 	newAPI.router = this.router.Group(path)

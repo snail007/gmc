@@ -18,7 +18,7 @@ func InitRouter(s *gmc.HTTPServer) {
 	s.AddMiddleware2(logging)
 
 	// acquire router object
-	r := s.Router()
+	r := s.Router().Ext(".json")
 
 	// bind a controller, /demo is path of controller, after this you can visit http://127.0.0.1:7080/demo/hello
 	// "hello" is full lower case name of controller method.

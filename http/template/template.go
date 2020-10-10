@@ -94,8 +94,8 @@ func (t *Template) Extension(ext string) *Template {
 // A template may be executed safely in parallel.
 func (t *Template) Execute(name string, data interface{}) (output []byte, err error) {
 	name = strings.Replace(name, "\\", "/", -1)
-	if !strings.HasSuffix(name, t.ext) {
-		name += t.ext
+	if strings.HasSuffix(name, t.ext) {
+		name = strings.TrimSuffix(name, t.ext)
 	}
 	buf := &bytes.Buffer{}
 	err = t.tpl.ExecuteTemplate(buf, name, data)
@@ -142,7 +142,7 @@ func (t *Template) parseFromDisk() (err error) {
 	}
 	var b []byte
 	for _, v := range names {
-		b, err = ioutil.ReadFile(filepath.Join(t.rootDir, v))
+		b, err = ioutil.ReadFile(filepath.Join(t.rootDir, v+t.ext))
 		if err != nil {
 			return
 		}
@@ -199,6 +199,7 @@ func (t *Template) tree(folder string, names *[]string) (err error) {
 			}
 			v0 := strings.Replace(v, "\\", "/", -1)
 			v0 = strings.Replace(v0, t.rootDir+"/", "", -1)
+			v0 = strings.TrimSuffix(v0, t.ext)
 			*names = append(*names, v0)
 		}
 	}

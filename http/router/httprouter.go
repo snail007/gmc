@@ -44,6 +44,7 @@ type HTTPRouter struct {
 	hr *HTTPRouter
 	//namespace of current group
 	ns string
+	ext string
 }
 
 func NewHTTPRouter() *HTTPRouter {
@@ -78,15 +79,21 @@ func (s *HTTPRouter) Namespace() string {
 	}
 	return strings.TrimRight(parentNS, "/") + s.ns
 }
+// Ext sets Controller()'s default ext
+func (this *HTTPRouter) Ext(ext string) *HTTPRouter {
+	this.ext = ext
+	return this
+}
 
 //SetHandle50x sets handler func to handle exception error
 func (s *HTTPRouter) SetHandle50x(fn func(c *reflect.Value, err interface{})) {
 	s.handle50x = fn
 }
 
-//Controller binds a controller's methods to router
-func (s *HTTPRouter) Controller(urlPath string, obj interface{}) {
-	s.controller(urlPath, obj, "")
+// Controller binds a controller's methods to router
+// ext is method's extension in url.
+func (s *HTTPRouter) Controller(urlPath string, obj interface{},ext ...string) {
+	s.controller(urlPath, obj, "",ext...)
 }
 
 // PrintRouteTable dump all routes into `w`, if `w` is nil, os.Stdout will be used.
@@ -143,11 +150,11 @@ func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
 	}
 }
 
-//ControllerMethod binds a controller's method to router
+// ControllerMethod binds a controller's method to router
 func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method string) {
 	s.controller(urlPath, obj, method)
 }
-func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) {
+func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, ext ...string) {
 	beforeIsFound := false
 	afterIsFound := false
 	isMehtodFound := false
@@ -179,7 +186,13 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string) 
 			if !strings.HasSuffix(p, "/") {
 				p += "/"
 			}
-			path = p + strings.ToLower(objMethod)
+			// default
+			ext1:=s.ext
+			if len(ext)>0{
+				// cover
+				ext1=ext[0]
+			}
+			path = p + strings.ToLower(objMethod)+ext1
 		}
 		objMethod0 := objMethod
 		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps Params) {

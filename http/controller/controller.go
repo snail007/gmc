@@ -149,6 +149,15 @@ func (this *Controller) Die(msg ...interface{}) {
 func (this *Controller) Stop(msg ...interface{}) {
 	gmchttputil.Stop(this.Response, msg...)
 }
+
+// StopE will exit controller method if error is not nil.
+// First argument is an error.
+// Secondary argument is fail function, it be called if error is not nil.
+// Third argument is success function, it be called if error is nil.
+func (this *Controller) StopE(err interface{}, fn ...func()) {
+	gmchttputil.StopE(err, fn...)
+}
+
 func (this *Controller) SessionStart() (err error) {
 	if this.SessionStore == nil {
 		err = fmt.Errorf("session is disabled")

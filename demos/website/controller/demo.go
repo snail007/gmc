@@ -24,9 +24,14 @@ func (this *Demo) Before__() {
 	}
 }
 func (this *Demo) Index__() {
-	this.Write(this.Tpl.Execute("welcome", map[string]string{
-		"title": "i'm index page",
-	}))
+	this.View.Set("title", "i'm index page")
+	this.StopE(this.View.Render("welcome").Err(), func() {
+		this.Write("execute template fail")
+	}, func() {
+		this.Stop()
+	})
+	// never output
+	this.Write(">>>>>")
 }
 func (this *Demo) Hello() {
 	this.Write(" ")

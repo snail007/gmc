@@ -4,6 +4,7 @@ import (
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	gmci18n "github.com/snail007/gmc/i18n"
+	gmchttputil "github.com/snail007/gmc/util/httputil"
 	"net/http"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -60,6 +61,7 @@ var (
 	StackE = gmcerr.Stack
 	Errorf = gmcerr.Errorf
 	WrapE  = gmcerr.Wrap
+	StopE  = gmchttputil.StopE
 
 	// i18n
 	Tr = gmci18n.Tr

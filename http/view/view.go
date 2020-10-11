@@ -14,6 +14,7 @@ type View struct {
 	layout string
 	once   *sync.Once
 	onceFn func()
+	lasterr error
 }
 
 func New(w io.Writer, tpl *gmctemplate.Template) *View {
@@ -23,6 +24,10 @@ func New(w io.Writer, tpl *gmctemplate.Template) *View {
 		data:   map[string]interface{}{},
 		once:   &sync.Once{},
 	}
+}
+
+func (this *View) Err() error {
+	return this.lasterr
 }
 
 // Set sets data apply to the template
@@ -41,10 +46,11 @@ func (this *View) SetMap(d map[string]interface{}) *View {
 
 //Render renders template `tpl` with `data`, and output.
 func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
-	_, err := this.writer.Write(this.RenderR(tpl, data...))
-	if err != nil {
-		panic(err)
+	d:=this.RenderR(tpl, data...)
+	if this.lasterr!=nil{
+		return this
 	}
+	_, this.lasterr = this.writer.Write(d)
 	return this
 }
 
@@ -57,16 +63,13 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 	for k, v := range this.data {
 		data0[k] = v
 	}
-	d, err := this.tpl.Execute(tpl, data0)
-	if err != nil {
-		panic(err)
+	d, this.lasterr = this.tpl.Execute(tpl, data0)
+	if this.lasterr != nil {
+		return
 	}
 	if this.layout != "" {
 		data0["GMC_LAYOUT_CONTENT"] = string(d)
-		d, err = this.tpl.Execute(this.layout, data0)
-		if err != nil {
-			panic(err)
-		}
+		d, this.lasterr = this.tpl.Execute(this.layout, data0)
 	}
 	return
 }

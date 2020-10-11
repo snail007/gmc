@@ -334,21 +334,21 @@ func (s *HTTPServer) Listen() (err error) {
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
 					if s.isShutdown {
-						s.logger.Printf("http server graceful shutdown on %s", s.addr)
+						s.logger.Printf("http server graceful shutdown on http://%s", s.addr)
 					} else {
-						s.logger.Printf("http server closed on %s", s.addr)
+						s.logger.Printf("http server closed on http://%s", s.addr)
 						s.server.Close()
 					}
 					break
 				} else {
-					s.logger.Printf("http server Serve fail on %s , error : %s", s.addr, err)
+					s.logger.Printf("http server Serve fail on http://%s , error : %s", s.addr, err)
 					time.Sleep(time.Second * 3)
 					continue
 				}
 			}
 		}
 	}()
-	s.logger.Printf("http server listen on >>> %s", s.listener.Addr())
+	s.logger.Printf("http server listen on http://%s", s.listener.Addr())
 	return
 }
 func (s *HTTPServer) ListenTLS() (err error) {
@@ -363,9 +363,9 @@ func (s *HTTPServer) ListenTLS() (err error) {
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
 					if s.isShutdown {
-						s.logger.Printf("https server graceful shutdown on %s", s.addr)
+						s.logger.Printf("https server graceful shutdown on https://%s", s.addr)
 					} else {
-						s.logger.Printf("https server closed on %s", s.addr)
+						s.logger.Printf("https server closed on https://%s", s.addr)
 						s.server.Close()
 					}
 					break
@@ -377,7 +377,7 @@ func (s *HTTPServer) ListenTLS() (err error) {
 			}
 		}
 	}()
-	s.logger.Printf("https server listen on >>> %s", s.listener.Addr())
+	s.logger.Printf("https server listen on https://%s", s.listener.Addr())
 	return
 }
 

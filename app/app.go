@@ -190,7 +190,7 @@ func (s *GMCApp) Run() (err error) {
 		return
 	}
 	s.reloadSignalMonitor()
-	s.logger.Printf("gmc app start done.")
+	s.logger.Printf("gmc app started done.")
 	gmchook.RegistShutdown(func() {
 		s.Stop()
 	})

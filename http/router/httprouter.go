@@ -125,7 +125,7 @@ func (s *HTTPRouter) PrintRouteTable(w io.Writer) {
 	for _, k := range keys {
 		fmt.Fprintf(w, "| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", k, strings.Join(m[k], ","))
 	}
-	fmt.Fprintf(w, "| %s | %s\n", t1, t2)
+	fmt.Fprintf(w, "| %s | %s\n\n", t1, t2)
 }
 
 //RouteTable returns all routes in router. KEY is url path, VALUE is http methods.

@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
+	gmcconfig "github.com/snail007/gmc/config"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmci18n "github.com/snail007/gmc/i18n"
 	"log"
 	"net"
 	"os"
 	"strings"
-
-	gmcconfig "github.com/snail007/gmc/config"
 
 	gmcerr "github.com/snail007/gmc/error"
 	gmchook "github.com/snail007/gmc/process/hook"

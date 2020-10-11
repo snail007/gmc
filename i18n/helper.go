@@ -16,7 +16,7 @@ var (
 
 func Init(cfg *gmcconfig.Config) (err error) {
 	dir := cfg.GetString("i18n.dir")
-	defaultLang := cfg.GetString("i18n.default")
+	fallbackLang := cfg.GetString("i18n.default")
 	enalbed := cfg.GetBool("i18n.enable")
 	if !enalbed {
 		return
@@ -25,7 +25,7 @@ func Init(cfg *gmcconfig.Config) (err error) {
 	if err != nil {
 		return
 	}
-	i18n.Lang(defaultLang)
+	i18n.Lang(fallbackLang)
 	for _, f := range files {
 		c := gmcconfig.New()
 		c.SetConfigFile(f)

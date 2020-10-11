@@ -24,7 +24,7 @@ func (this *I18nTool) Tr(key string, defaultMessage ...string) string {
 
 type I18n struct {
 	langs       map[string]map[string]string
-	defaultLang string
+	fallbackLang string
 }
 
 func New() *I18n {
@@ -39,19 +39,19 @@ func (this *I18n) Add(lang string, data map[string]string) *I18n {
 }
 
 func (this *I18n) Lang(lang string) *I18n {
-	this.defaultLang = strings.ToLower(lang)
+	this.fallbackLang = strings.ToLower(lang)
 	return this
 }
 
 func (this *I18n) Tr(lang, key string, defaultMessage ...string) string {
 	if lang == "" {
-		lang = this.defaultLang
+		lang = this.fallbackLang
 	}
 	msg := key
 	if len(defaultMessage) > 0 {
 		msg = defaultMessage[0]
 	}
-	for _, k := range []string{lang, this.defaultLang} {
+	for _, k := range []string{lang, this.fallbackLang} {
 		if v, ok := this.langs[k]; ok {
 			if vv, ok := v[key]; ok {
 				return vv
@@ -62,7 +62,7 @@ func (this *I18n) Tr(lang, key string, defaultMessage ...string) string {
 }
 
 func (this *I18n) TrLangs(langs []string, key string, defaultMessage ...string) string {
-	langs=append(langs,this.defaultLang)
+	langs=append(langs,this.fallbackLang)
 	msg := key
 	if len(defaultMessage) > 0 {
 		msg = defaultMessage[0]

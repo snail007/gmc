@@ -18,7 +18,8 @@ GMC Controller defined some helper methods, help you to coding more easy.
 
 1. `Die()`, call it, your code will exit current requested controller's method, and prevent `After__` be called.
 
-1. ``
+1. `StopE(error,failFunc,okayFunc func())`, error check helper, if error is nil, optional failFunc be called, 
+    and your code will exit current requested controller's method. Otherwise, optional okayFunc will be called.
 
 ## INSIDE METHODS
 

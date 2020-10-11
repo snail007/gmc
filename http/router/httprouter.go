@@ -32,6 +32,7 @@ var (
 		"SessionDestroy": true,
 		"SessionStart":   true,
 		"Stop":           true,
+		"StopE":          true,
 		"Write":          true,
 		"Tr":             true,
 	}
@@ -197,7 +198,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			if beforeIsFound {
 				invoke(objv, "Before__")
 			}
-			s.call(func(){invoke(objv, objMethod0)})
+			s.call(func() { invoke(objv, objMethod0) })
 			if afterIsFound {
 				invoke(objv, "After__")
 			}
@@ -213,7 +214,7 @@ func (s *HTTPRouter) call(fn func()) {
 		defer func() {
 			e := recover()
 			if e != nil {
- 				if fmt.Sprintf("%s",e)=="__STOP__"{
+				if fmt.Sprintf("%s", e) == "__STOP__" {
 					return
 				}
 				panic(gmcerr.Wrap(e))

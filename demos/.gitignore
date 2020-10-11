@@ -1,3 +1,6 @@
 /api/api
 /api_app/api_app
 /website/website
+/*.tar.gz
+/new_web/conf/app.toml
+/new_web_data.txt

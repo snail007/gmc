@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"github.com/snail007/gmc"

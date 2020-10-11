@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/snail007/gmc"
+	"myweb/initialize"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 		Service: gmc.New.HTTPServer(),
 		AfterInit: func(s *gmc.ServiceItem) (err error) {
 			// do some initialize after http server initialized.
-			err = Initialize(s.Service.(*gmc.HTTPServer))
+			err = initialize.Initialize(s.Service.(*gmc.HTTPServer))
 			return
 		},
 	})

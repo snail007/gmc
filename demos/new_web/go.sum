@@ -163,6 +163,8 @@ github.com/snail007/gmc v0.0.0-20201011050822-450e27a95b95 h1:1oDXimiOQtspKjkLMR
 github.com/snail007/gmc v0.0.0-20201011050822-450e27a95b95/go.mod h1:j5vngLWq8zEucnwtNLbcuC7BCg5JK1StfBXEE9C7nWE=
 github.com/snail007/gmc v0.0.0-20201011160042-a1b0c2fdb7e2 h1:Xoyaif+f/irFBc1ZUFFOPfCZlYQirdpefAyQ3rPpSD8=
 github.com/snail007/gmc v0.0.0-20201011160042-a1b0c2fdb7e2/go.mod h1:5QvfJ4ACbzCNXyuN6Wn1l4BypRrrII/JzM3XVWHdrr0=
+github.com/snail007/gmc v0.0.0-20201011161406-b3297e1eee20 h1:5d1wdiUzGVERrnNcHVmQGieVlAmimIizPWYh3GxBkGo=
+github.com/snail007/gmc v0.0.0-20201011161406-b3297e1eee20/go.mod h1:5QvfJ4ACbzCNXyuN6Wn1l4BypRrrII/JzM3XVWHdrr0=
 github.com/snail007/go-sqlcipher v0.0.0-20200925102221-14c524d566ca h1:/ZSVeXgW+NPiFwRW6ttujNCcHbnHlx2+zzLz/pIqLpk=
 github.com/snail007/go-sqlcipher v0.0.0-20200925102221-14c524d566ca/go.mod h1:6/PbZ9PzyJOQelY/nZqoGpqVo/OV4FK1Rug2cvFsYEg=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=

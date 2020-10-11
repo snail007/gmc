@@ -52,7 +52,7 @@ func main() {
 		c.Write(1.1)
 	})
 	api.API("/sleep", func(c gmc.C) {
-		time.Sleep(time.Second*10)
+		time.Sleep(time.Second * 10)
 		c.Write("reload")
 	})
 	// routing by group is supported
@@ -65,23 +65,23 @@ func main() {
 
 	app.AddService(gmc.ServiceItem{
 		Service: api,
-		BeforeInit: func(cfg *gmc.Config) (err error) {
+		BeforeInit: func(s gmc.Service, cfg *gmc.Config) (err error) {
 			api.PrintRouteTable(nil)
 			return
 		},
 	})
 
 	// all path in router
-	_,port,_:=net.SplitHostPort(api.Address())
+	_, port, _ := net.SplitHostPort(api.Address())
 	fmt.Println("please visit:")
-	for path,_:=range api.Router().RouteTable(){
-		if strings.Contains(path,"*"){
+	for path, _ := range api.Router().RouteTable() {
+		if strings.Contains(path, "*") {
 			continue
 		}
-		if strings.Contains(path,":type"){
-			path="/hi.json"
+		if strings.Contains(path, ":type") {
+			path = "/hi.json"
 		}
-		fmt.Println("http://127.0.0.1:"+port+path)
+		fmt.Println("http://127.0.0.1:" + port + path)
 	}
 
 	app.Logger().Panic(gmc.StackE(app.Run()))

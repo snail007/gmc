@@ -2,6 +2,7 @@ package controller
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/snail007/gmc"
@@ -15,16 +16,16 @@ type Demo struct {
 
 func (this *Demo) Before__() {
 	method := filepath.Base(this.Request.URL.Path)
-	if method == "db" {
+	if strings.Contains(method, "db") {
 		return
 	}
-	if method == "hello" {
+	if strings.Contains(method, "hello") {
 		this.Write("hello")
 	}
 }
 func (this *Demo) Index__() {
-	this.Write(this.Tpl.Execute("welcome",map[string]string{
-		"title":"i'm index page",
+	this.Write(this.Tpl.Execute("welcome", map[string]string{
+		"title": "i'm index page",
 	}))
 }
 func (this *Demo) Hello() {
@@ -32,10 +33,10 @@ func (this *Demo) Hello() {
 }
 func (this *Demo) After__() {
 	method := filepath.Base(this.Request.URL.Path)
-	if method == "db" {
+	if strings.Contains(method, "db") {
 		return
 	}
-	if method == "hello" {
+	if strings.Contains(method, "hello") {
 		this.Write("world!")
 	}
 }
@@ -84,19 +85,19 @@ func (this *Demo) Version() {
 }
 
 func (this *Demo) Func() {
-	this.View.Set("name","hello")
+	this.View.Set("name", "hello")
 	this.View.Render("func").Stop()
 	// this will never called
 	this.Write("def")
 }
 
 func (this *Demo) I18n1() {
- 	this.View.Render("i18n")
+	this.View.Render("i18n")
 }
 
 func (this *Demo) I18n2() {
 	//this.Write(this.Lang," ",gmc.Tr(this.Lang,"001"))
-	this.Write(this.Lang," ",this.Tr("001","here you should tips yourself, what's 001? 这里的文字提示自己这个001是什么."))
+	this.Write(this.Lang, " ", this.Tr("001", "here you should tips yourself, what's 001? 这里的文字提示自己这个001是什么."))
 }
 
 func (this *Demo) I18n3() {

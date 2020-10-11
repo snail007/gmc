@@ -39,7 +39,7 @@ func filter(c gmc.C, server *gmc.HTTPServer) bool {
 	path := strings.TrimRight(c.Request.URL.Path, "/\\")
 
 	// we want to prevent user to access method `controller.Demo.Protected`
-	if strings.HasSuffix(path, "protected") {
+	if strings.Contains(path, "protected") {
 		c.Write([]byte("404"))
 		return true
 	}

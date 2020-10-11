@@ -81,7 +81,7 @@ func Test_handle50x(t *testing.T) {
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := New()
 	s.Init(gmcconfig.New())
-	s.handle50x(&objrf, fmt.Errorf("aaa"))
+	s.handle50x(gmcrouter.NewCtx(w,objv.Request), fmt.Errorf("aaa"))
 
 	//response
 	resp := w.Result()
@@ -99,10 +99,11 @@ func Test_handle50x_1(t *testing.T) {
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := New()
 	s.Init(gmcconfig.New())
-	s.SetHandler50x(func(c gmccontroller.IController, err interface{}) {
+	s.SetHandler50x(func(c *gmcrouter.Ctx,tpl *gmctemplate.Template, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
-	s.handle50x(&objrf, fmt.Errorf("aaa"))
+	c:=gmcrouter.NewCtx(w,objv.Request)
+	s.handle50x(c, fmt.Errorf("aaa"))
 
 	//response
 	resp := w.Result()
@@ -110,6 +111,7 @@ func Test_handle50x_1(t *testing.T) {
 	assert.Equal(resp.StatusCode, int(http.StatusOK))
 	assert.Equal("aaabbb", string(b))
 }
+
 func TestConnCount(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
@@ -353,6 +355,39 @@ func (this *User) URL() {
 func (this *User) Ps() {
 	this.Write(this.Param.ByName("args") + this.Param.MatchedRoutePath())
 }
+func Test_Handle(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.router.HandleAny("/user/url", func(w http.ResponseWriter, r *http.Request, params gmcrouter.Params) {
+		c:=gmcrouter.NewCtx(w,r)
+		c.Write("/user/url")
+	})
+	h, _, _ := s.router.Lookup("GET", "/user/url")
+	assert.NotNil(h)
+	w, r := mockRequest("/user/url")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("/user/url", str)
+}
+
+func Test_Handle500(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.router.HandlerFunc("GET","/user/url", func(w http.ResponseWriter, r *http.Request) {
+		a:=0
+		a/=a
+	})
+	s.SetHandler50x(func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template, err interface{}) {
+		ctx.Write("500")
+	})
+	h, _, _ := s.router.Lookup("GET", "/user/url")
+	assert.NotNil(h)
+	w, r := mockRequest("/user/url")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("500", str)
+}
+
 func Test_Controller(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()

@@ -39,11 +39,10 @@ var (
 
 type HTTPRouter struct {
 	*Router
-	handle50x func(val *reflect.Value, err interface{})
 	// parent httprouter of current group
 	hr *HTTPRouter
 	//namespace of current group
-	ns string
+	ns  string
 	ext string
 }
 
@@ -79,21 +78,17 @@ func (s *HTTPRouter) Namespace() string {
 	}
 	return strings.TrimRight(parentNS, "/") + s.ns
 }
+
 // Ext sets Controller()'s default ext
 func (this *HTTPRouter) Ext(ext string) *HTTPRouter {
 	this.ext = ext
 	return this
 }
 
-//SetHandle50x sets handler func to handle exception error
-func (s *HTTPRouter) SetHandle50x(fn func(c *reflect.Value, err interface{})) {
-	s.handle50x = fn
-}
-
 // Controller binds a controller's methods to router
 // ext is method's extension in url.
-func (s *HTTPRouter) Controller(urlPath string, obj interface{},ext ...string) {
-	s.controller(urlPath, obj, "",ext...)
+func (s *HTTPRouter) Controller(urlPath string, obj interface{}, ext ...string) {
+	s.controller(urlPath, obj, "", ext...)
 }
 
 // PrintRouteTable dump all routes into `w`, if `w` is nil, os.Stdout will be used.
@@ -187,27 +182,24 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 				p += "/"
 			}
 			// default
-			ext1:=s.ext
-			if len(ext)>0{
+			ext1 := s.ext
+			if len(ext) > 0 {
 				// cover
-				ext1=ext[0]
+				ext1 = ext[0]
 			}
-			path = p + strings.ToLower(objMethod)+ext1
+			path = p + strings.ToLower(objMethod) + ext1
 		}
 		objMethod0 := objMethod
 		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps Params) {
 			objv := reflect.ValueOf(obj)
-			isPanic := false
-			invoke(objv, "MethodCallPre__", w, r, ps)
 			defer invoke(objv, "MethodCallPost__")
-			if beforeIsFound && s.call(&objv, "Before__", &isPanic) {
-				return
+			invoke(objv, "MethodCallPre__", w, r, ps)
+			if beforeIsFound {
+				invoke(objv, "Before__")
 			}
-			if !isPanic && s.call(&objv, objMethod0, &isPanic) {
-				return
-			}
-			if !isPanic && afterIsFound && s.call(&objv, "After__", &isPanic) {
-				return
+			s.call(func(){invoke(objv, objMethod0)})
+			if afterIsFound {
+				invoke(objv, "After__")
 			}
 		})
 	}
@@ -216,29 +208,22 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 	}
 }
 
-func (s *HTTPRouter) call(objv *reflect.Value, objMethod string, isPanic *bool) (isDIE bool) {
+func (s *HTTPRouter) call(fn func()) {
 	func() {
 		defer func() {
 			e := recover()
 			if e != nil {
-				switch fmt.Sprintf("%s", e) {
-				case "__DIE__":
-					isDIE = true
-				case "__STOP__":
-					//do nothing
-				default:
-					//exception
-					*isPanic = true
-					if s.handle50x != nil {
-						s.handle50x(objv, e)
-					}
+ 				if fmt.Sprintf("%s",e)=="__STOP__"{
+					return
 				}
+				panic(gmcerr.Wrap(e))
 			}
 		}()
-		invoke(*objv, objMethod)
+		fn()
 	}()
 	return
 }
+
 func (s *HTTPRouter) path(path string) string {
 	ns := strings.TrimRight(s.Namespace(), "/")
 	return ns + path

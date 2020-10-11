@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -26,8 +25,6 @@ import (
 	gmcmemorystore "github.com/snail007/gmc/http/session/memorystore"
 	gmcredisstore "github.com/snail007/gmc/http/session/redisstore"
 	gmctemplate "github.com/snail007/gmc/http/template"
-
-	gmccontroller "github.com/snail007/gmc/http/controller"
 
 	gmcrouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
@@ -61,7 +58,7 @@ type HTTPServer struct {
 	connCnt      *int64
 	config       *gmcconfig.Config
 	handler40x   func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)
-	handler50x   func(c gmccontroller.IController, err interface{})
+	handler50x   func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
@@ -122,7 +119,6 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init http server router
 	s.router = gmcrouter.NewHTTPRouter()
-	s.router.SetHandle50x(s.handle50x)
 	s.addr = s.config.GetString("httpserver.listen")
 
 	// init static files handler, must be after router inited
@@ -161,8 +157,18 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		start := time.Now()
-		h(w, r, params)
+		status := ""
+		err := s.call(func() { h(w, r, params) })
 		c0.SetTimeUsed(time.Now().Sub(start))
+		if err != nil {
+			status = fmt.Sprintf("%s", err)
+			switch status {
+			case "__DIE__", "":
+			default:
+				//exception
+				s.handle50x(c0,err)
+			}
+		}
 
 		// middleware2
 		if s.callMiddleware(c0, s.middleware2) {
@@ -174,11 +180,23 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func (s *HTTPServer) call(fn func()) (err interface{}) {
+	func() {
+		defer func() {
+			e := recover()
+			if e != nil {
+				err = gmcerr.Wrap(e)
+			}
+		}()
+		fn()
+	}()
+	return
+}
 func (s *HTTPServer) SetHandler40x(fn func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)) *HTTPServer {
 	s.handler40x = fn
 	return s
 }
-func (s *HTTPServer) SetHandler50x(fn func(c gmccontroller.IController, err interface{})) *HTTPServer {
+func (s *HTTPServer) SetHandler50x(fn func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template, err interface{})) *HTTPServer {
 	s.handler50x = fn
 	return s
 }
@@ -195,17 +213,16 @@ func (s *HTTPServer) handle40x(ctx *gmcrouter.Ctx) {
 }
 
 // called in httprouter
-func (s *HTTPServer) handle50x(objv *reflect.Value, err interface{}) {
-	c := objv.Interface().(gmccontroller.IController)
-	if s.handler50x == nil {
-		c.Response__().WriteHeader(http.StatusInternalServerError)
-		c.Response__().Header().Set("Content-Type", "text/plain")
-		c.Write("Internal Server Error")
+func (s *HTTPServer) handle50x(c *gmcrouter.Ctx, err interface{}) {
+ 	if s.handler50x == nil {
+		c.WriteHeader(http.StatusInternalServerError)
+		c.Response.Header().Set("Content-Type", "text/plain")
+		c.Write([]byte("Internal Server Error"))
 		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
-			c.Write("\n" + gmcerr.Stack(err))
+			c.Write([]byte("\n" + gmcerr.Stack(err)))
 		}
 	} else {
-		s.handler50x(c, err)
+		s.handler50x(c,s.tpl, err)
 	}
 }
 
@@ -256,7 +273,6 @@ func (s *HTTPServer) Logger() *log.Logger {
 }
 func (s *HTTPServer) SetRouter(r *gmcrouter.HTTPRouter) *HTTPServer {
 	s.router = r
-	s.router.SetHandle50x(s.handle50x)
 	return s
 }
 func (s *HTTPServer) Router() *gmcrouter.HTTPRouter {

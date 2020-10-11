@@ -23,18 +23,6 @@ import (
 	gmctemplate "github.com/snail007/gmc/http/template"
 )
 
-type IController interface {
-	Response__() http.ResponseWriter
-	Request__() *http.Request
-	Args__() gmcrouter.Params
-	Write(data ...interface{}) (n int, err error)
-	Session__() *gmcsession.Session
-	Tpl__() *gmctemplate.Template
-	SessionStore__() gmcsession.Store
-	Router__() *gmcrouter.HTTPRouter
-	Config__() *gmcconfig.Config
-	Cookie__() *gmccookie.Cookies
-}
 type Controller struct {
 	Response     http.ResponseWriter
 	Request      *http.Request
@@ -48,35 +36,6 @@ type Controller struct {
 	Ctx          *gmcrouter.Ctx
 	View         *gmcview.View
 	Lang         string
-}
-
-func (this *Controller) Response__() http.ResponseWriter {
-	return this.Response
-}
-func (this *Controller) Request__() *http.Request {
-	return this.Request
-}
-
-func (this *Controller) Args__() gmcrouter.Params {
-	return this.Param
-}
-func (this *Controller) Session__() *gmcsession.Session {
-	return this.Session
-}
-func (this *Controller) Tpl__() *gmctemplate.Template {
-	return this.Tpl
-}
-func (this *Controller) SessionStore__() gmcsession.Store {
-	return this.SessionStore
-}
-func (this *Controller) Router__() *gmcrouter.HTTPRouter {
-	return this.Router
-}
-func (this *Controller) Config__() *gmcconfig.Config {
-	return this.Config
-}
-func (this *Controller) Cookie__() *gmccookie.Cookies {
-	return this.Cookie
 }
 
 //MethodCallPre__ called before controller method and Before__() if have.

@@ -14,5 +14,5 @@ func (this *Demo) Index__() {
 		Render("welcome")
 }
 func (this *Demo) Hello() {
-	this.Write("fmt.Println(\"hello world!\")")
+	this.Write("fmt.Println(\"Hello GMC!\")")
 }

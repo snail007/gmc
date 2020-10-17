@@ -62,7 +62,7 @@ delimiterright="}}"
 ########################################################
 [session]
 # turn on/off session
-enable=true
+enable=false
 store="memory"
 cookiename="gmcsid"
 ttl=3600
@@ -104,7 +104,7 @@ default="redis"
 
 [[cache.redis]]
 debug=true
-enable=true
+enable=false
 id="default"
 address="127.0.0.1:6379"
 prefix=""
@@ -142,7 +142,7 @@ cleanupinterval=30
 default="mysql"
 
 [[database.mysql]]
-enable=true
+enable=false
 id="default"
 host="127.0.0.1"
 port="3306"

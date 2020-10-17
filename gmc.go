@@ -52,6 +52,11 @@ type (
 	// data
 	Map = maputil.Map
 
+	// Map
+	M   = map[string]interface{}
+	Mii = map[interface{}]interface{}
+	Mss = map[string]string
+
 	// error
 	Error = gmcerr.Error
 )

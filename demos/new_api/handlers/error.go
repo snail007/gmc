@@ -19,5 +19,5 @@ func error404(c gmc.C) {
 
 func error500(c gmc.C, err interface{}) {
 	c.WriteHeader(http.StatusInternalServerError)
-	c.Write("panic error : ", err)
+	c.Write(gmc.StackE(err))
 }

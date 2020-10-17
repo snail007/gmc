@@ -84,6 +84,7 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 				}
 			}
 			if !found {
+				fmt.Println(found)
 				n, err = w.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))
 			}
 		}

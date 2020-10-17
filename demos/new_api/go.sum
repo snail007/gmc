@@ -172,6 +172,8 @@ github.com/smartystreets/goconvey v1.6.4 h1:fv0U8FUIMPNf1L9lnHLvLhgicrIVChEkdzIK
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/snail007/gmc v0.0.0-20201017063547-a472834941ee h1:C4qy2ZUI4+EcuQ0pCfpL80EYaxpOTHbg5uxMefnsfBQ=
 github.com/snail007/gmc v0.0.0-20201017063547-a472834941ee/go.mod h1:5QvfJ4ACbzCNXyuN6Wn1l4BypRrrII/JzM3XVWHdrr0=
+github.com/snail007/gmc v0.0.0-20201017073632-9a342f8d198a h1:HgBxoapU0E3gpFgkNSAJWdT7h53qssqyTVesvv/CexA=
+github.com/snail007/gmc v0.0.0-20201017073632-9a342f8d198a/go.mod h1:5QvfJ4ACbzCNXyuN6Wn1l4BypRrrII/JzM3XVWHdrr0=
 github.com/snail007/go-sqlcipher v0.0.0-20200925102221-14c524d566ca h1:/ZSVeXgW+NPiFwRW6ttujNCcHbnHlx2+zzLz/pIqLpk=
 github.com/snail007/go-sqlcipher v0.0.0-20200925102221-14c524d566ca/go.mod h1:6/PbZ9PzyJOQelY/nZqoGpqVo/OV4FK1Rug2cvFsYEg=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=

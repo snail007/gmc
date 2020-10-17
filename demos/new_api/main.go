@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/snail007/gmc"
-	gmccachehelper "github.com/snail007/gmc/cache/helper"
-	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	"mygmcapi/handlers"
 )
 
@@ -22,9 +20,9 @@ func main() {
 	}
 	//4. init db, cache, handlers
 	// int db
-	gmcdbhelper.Init(cfg)
+	gmc.DB.Init(cfg)
 	// init cache
-	gmccachehelper.Init(cfg)
+	gmc.Cache.Init(cfg)
 	// init api handlers
 	handlers.Init(api)
 	// 5. add service

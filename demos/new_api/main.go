@@ -11,7 +11,7 @@ func main() {
 	if err != nil {
 		app.Logger().Fatal(err)
 	}
-api:=gmc.New.APIServer(":")
+api:=gmc.New.APIServer()
 
 	// init api
 	handlers.Init(api)

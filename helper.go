@@ -62,7 +62,7 @@ func (s *New0) APIServer(address string) *gmchttpserver.APIServer {
 	return gmchttpserver.NewAPIServer(address)
 }
 
-func (s *New0) NewDefaultAPIServer(cfg *gmcconfig.Config) (api *gmchttpserver.APIServer,err error) {
+func (s *New0) APIServerDefault(cfg *gmcconfig.Config) (api *gmchttpserver.APIServer,err error) {
 	return gmchttpserver.NewDefaultAPIServer(cfg)
 }
 

@@ -2,26 +2,35 @@ package main
 
 import (
 	"github.com/snail007/gmc"
+	gmccachehelper "github.com/snail007/gmc/cache/helper"
+	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	"mygmcapi/handlers"
 )
 
 func main() {
+	// 1. create app
 	app := gmc.New.App()
-	_, err := gmc.New.ConfigFile("conf/app.toml")
+	// 2. parse config file
+	cfg, err := gmc.New.ConfigFile("conf/app.toml")
 	if err != nil {
 		app.Logger().Fatal(err)
 	}
-api:=gmc.New.APIServer()
-
-	// init api
+	// 3. create api server
+	api, err := gmc.New.APIServerDefault(cfg)
+	if err != nil {
+		app.Logger().Fatal(err)
+	}
+	//4. init db, cache, handlers
+	// int db
+	gmcdbhelper.Init(cfg)
+	// init cache
+	gmccachehelper.Init(cfg)
+	// init api handlers
 	handlers.Init(api)
-
+	// 5. add service
 	app.AddService(gmc.ServiceItem{
 		Service: api,
-		BeforeInit: func(s gmc.Service, cfg *gmc.Config) (err error) {
-			api.PrintRouteTable(nil)
-			return
-		},
 	})
+	// 6. run app
 	app.Logger().Panic(gmc.StackE(app.Run()))
 }

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -68,6 +69,7 @@ type HTTPServer struct {
 	middleware2          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
 	middleware3          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
 	isShutdown           bool
+	localaddr            *sync.Map
 }
 
 func New() *HTTPServer {
@@ -76,6 +78,7 @@ func New() *HTTPServer {
 		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
 		middleware3: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
+		localaddr:   &sync.Map{},
 	}
 }
 
@@ -136,7 +139,11 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 	w = gmchttputil.NewResponseWriter(w)
 	r = r.WithContext(rctx)
+
+	// init ctx
 	c0 := gmcrouter.NewCtx(w, r)
+	addr,_:=s.localaddr.Load(r.RemoteAddr)
+	c0.Localaddr=addr.(string)
 
 	defer func() {
 		// middleware3
@@ -166,7 +173,7 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case "__DIE__", "":
 			default:
 				//exception
-				s.handle50x(c0,err)
+				s.handle50x(c0, err)
 			}
 		}
 
@@ -214,7 +221,7 @@ func (s *HTTPServer) handle40x(ctx *gmcrouter.Ctx) {
 
 // called in httprouter
 func (s *HTTPServer) handle50x(c *gmcrouter.Ctx, err interface{}) {
- 	if s.handler50x == nil {
+	if s.handler50x == nil {
 		c.WriteHeader(http.StatusInternalServerError)
 		c.Response.Header().Set("Content-Type", "text/plain")
 		c.Write([]byte("Internal Server Error"))
@@ -222,7 +229,7 @@ func (s *HTTPServer) handle50x(c *gmcrouter.Ctx, err interface{}) {
 			c.Write([]byte("\n" + gmcerr.Stack(err)))
 		}
 	} else {
-		s.handler50x(c,s.tpl, err)
+		s.handler50x(c, s.tpl, err)
 	}
 }
 
@@ -385,8 +392,10 @@ func (s *HTTPServer) ListenTLS() (err error) {
 func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
+		s.localaddr.Store(c.RemoteAddr().String(),c.LocalAddr().String())
 		atomic.AddInt64(s.connCnt, 1)
 	case http.StateClosed:
+		s.localaddr.Delete(c.RemoteAddr().String())
 		atomic.AddInt64(s.connCnt, -1)
 	}
 }

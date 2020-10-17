@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -40,6 +42,8 @@ type APIServer struct {
 	isShutdown        bool
 	ext               string
 	config            *gmcconfig.Config
+	localaddr         *sync.Map
+	connCnt           *int64
 }
 
 func NewAPIServer(address string) *APIServer {
@@ -55,6 +59,7 @@ func NewAPIServer(address string) *APIServer {
 		middleware1:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
 		middleware2:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
 		middleware3:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
+		localaddr:        &sync.Map{},
 	}
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
@@ -242,6 +247,21 @@ func (this *APIServer) Run() (err error) {
 		}
 	}()
 	return
+}
+func (s *APIServer) ActiveConnCount() int64 {
+	return atomic.LoadInt64(s.connCnt)
+}
+
+//ConnState count the active conntions
+func (s *APIServer) connState(c net.Conn, st http.ConnState) {
+	switch st {
+	case http.StateNew:
+		s.localaddr.Store(c.RemoteAddr().String(), c.LocalAddr().String())
+		atomic.AddInt64(s.connCnt, 1)
+	case http.StateClosed:
+		s.localaddr.Delete(c.RemoteAddr().String())
+		atomic.AddInt64(s.connCnt, -1)
+	}
 }
 func (this *APIServer) handler404(ctx *gmcrouter.Ctx) *APIServer {
 	if this.handle404 == nil {

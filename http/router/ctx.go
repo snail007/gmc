@@ -12,6 +12,7 @@ type Ctx struct {
 	Request  *http.Request
 	Param    Params
 	timeUsed time.Duration
+	Localaddr string
 }
 
 func NewCtx(w http.ResponseWriter, r *http.Request, ps ...Params) *Ctx {

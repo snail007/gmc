@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/snail007/gmc"
-	"myweb/controller"
+	"mygmcweb/controller"
 )
 
 func InitRouter(s *gmc.HTTPServer) {

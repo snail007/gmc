@@ -1,2 +1,42 @@
-<h1>{{.title}}</h1>
-<a href="/demo/hello">Hello?</a>
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello GMC!</title>
+    <style>
+        .middle {
+            width: 200px;
+            margin: 0 auto;
+        }
+
+        .middle1 {
+            width: 120px;
+            margin: 0 auto;
+        }
+    </style>
+    <script src="/static/jquery.js"></script>
+</head>
+<body>
+<div class="middle">
+    <h1>{{.title}}</h1>
+</div>
+<div class="middle1">
+    <p><a href="/demo/hello" class="hello">Hello?</a></p>
+</div>
+<div class="middle1">
+    <p><a href="https://github.com/snail007/gmc/">GitHub</a></p>
+</div>
+<script>
+    $(function () {
+        $("body").hide().fadeIn(3000);
+        $(".hello").click(function () {
+            $.get(this.href, function (data) {
+                alert(data);
+            })
+            return false;
+        });
+    });
+</script>
+</body>
+</html>
+

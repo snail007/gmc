@@ -1,4 +1,4 @@
-module mygmcweb
+module mygmcapi
 
 go 1.12
 

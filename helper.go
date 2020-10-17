@@ -33,7 +33,9 @@ type New0 struct {
 func (s *New0) Config() *gmcconfig.Config {
 	return gmcconfig.New()
 }
-
+func (s *New0) ConfigFile(file string) (cfg *gmcconfig.Config,err error) {
+	return gmcconfig.NewFile(file)
+}
 func (s *New0) App() *APP {
 	return gmcapp.New()
 }

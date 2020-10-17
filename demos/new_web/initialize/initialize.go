@@ -2,7 +2,7 @@ package initialize
 
 import (
 	"github.com/snail007/gmc"
-	"myweb/router"
+	"mygmcweb/router"
 )
 
 func Initialize(s *gmc.HTTPServer) (err error) {

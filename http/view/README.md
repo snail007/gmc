@@ -51,6 +51,7 @@ delimiterright="}}"
     Notice that this only worked after the SessionStart() in a controller is be called.
 1. `.C` access COOKIE data. `.C` is a `map[string][string]`, 
     `.C.key` key is cookie field name in cookies raw string.
+1. `PATH` current Request.URL.Path.
    
 
 

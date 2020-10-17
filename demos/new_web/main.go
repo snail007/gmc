@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/snail007/gmc"
-	"myweb/initialize"
+	"mygmcweb/initialize"
 )
 
 func main() {

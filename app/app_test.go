@@ -2,6 +2,7 @@ package gmcapp
 
 import (
 	"fmt"
+	gmcservice "github.com/snail007/gmc/service"
 	"testing"
 	"time"
 
@@ -21,11 +22,12 @@ func TestRun(t *testing.T) {
 	assert := assert.New(t)
 	app := New().
 		Block(false).
-		SetConfigFile("app.toml").
-		AddService(ServiceItem{
+		SetConfigFile("app.toml")
+	app.AddService(ServiceItem{
 			Service: httpserver.New(),
-			BeforeInit: func(config *gmcconfig.Config) (err error) {
-				config.Set("httpserver.listen", ":")
+			BeforeInit: func(srv gmcservice.Service, cfg *gmcconfig.Config) (err error) {
+				cfg.Set("template.dir","../http/template/tests/views")
+				cfg.Set("httpserver.listen", ":")
 				return
 			},
 		})
@@ -51,7 +53,6 @@ func TestRun_1(t *testing.T) {
 	err := app.Run()
 	assert.NotNil(err)
 	assert.NotSame(app.Config(), app.Config("007"))
-	app.Stop()
 }
 func TestRun_2(t *testing.T) {
 	assert := assert.New(t)
@@ -60,7 +61,7 @@ func TestRun_2(t *testing.T) {
 	server := httpserver.New()
 	app.AddService(ServiceItem{
 		Service: server,
-		BeforeInit: func(config *gmcconfig.Config) (err error) {
+		BeforeInit: func(srv gmcservice.Service,config *gmcconfig.Config) (err error) {
 			config.Set("session.store", "none")
 			return
 		},

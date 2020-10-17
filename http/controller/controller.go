@@ -11,6 +11,7 @@ import (
 	gmci18n "github.com/snail007/gmc/i18n"
 	"github.com/snail007/gmc/util/castutil"
 	"net/http"
+	"path/filepath"
 
 	gmcconfig "github.com/snail007/gmc/config"
 
@@ -119,6 +120,8 @@ func (this *Controller) initGPSC() {
 		"S": s,
 		"C": c,
 	}
+	path,_:=filepath.Abs(this.Request.URL.Path)
+	data["PATH"] =path
 
 	// set data to view
 	this.View.SetMap(data)

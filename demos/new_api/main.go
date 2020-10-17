@@ -7,6 +7,7 @@ import (
 
 func main() {
 	app := gmc.New.App()
+
 	cfg,err:=gmc.New.ConfigFile()
 	if err!=nil{
 		app.Logger().Fatal(err)

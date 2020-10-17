@@ -3,11 +3,14 @@ package gmchttpserver
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -36,6 +39,7 @@ type APIServer struct {
 	middleware3       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
 	isShutdown        bool
 	ext               string
+	config            *gmcconfig.Config
 }
 
 func NewAPIServer(address string) *APIServer {
@@ -56,6 +60,32 @@ func NewAPIServer(address string) *APIServer {
 	api.server.SetKeepAlivesEnabled(false)
 	api.server.ErrorLog = api.logger
 	return api
+}
+
+func NewDefaultAPIServer(config *gmcconfig.Config) (api *APIServer, err error) {
+	api = NewAPIServer(config.GetString("apiserver.listen"))
+	if config.GetBool("apiserver.tlsenable") {
+		tlsCfg := &tls.Config{}
+		if config.GetBool("apiserver.tlsclientauth") {
+			tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+		clientCertPool := x509.NewCertPool()
+		caBytes, e := ioutil.ReadFile(config.GetString("apiserver.tlsclientsca"))
+		if e != nil {
+			return nil, e
+		}
+		ok := clientCertPool.AppendCertsFromPEM(caBytes)
+		if !ok {
+			api = nil
+			err = gmcerr.New("failed to parse tls clients root certificate")
+			return
+		}
+		tlsCfg.ClientCAs = clientCertPool
+		api.server.TLSConfig = tlsCfg
+	}
+	api.config = config
+	api.ShowErrorStack(config.GetBool("apiserver.showerrorstack"))
+	return
 }
 
 func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -184,6 +214,9 @@ func (this *APIServer) Run() (err error) {
 		if err != nil {
 			return
 		}
+	}
+	if this.config != nil && this.config.GetBool("apiserver.printroute") {
+		this.router.PrintRouteTable(os.Stdout)
 	}
 	this.address = this.listener.Addr().String()
 	go func() {

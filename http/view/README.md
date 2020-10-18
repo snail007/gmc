@@ -52,7 +52,7 @@ delimiterright="}}"
 1. `.C` access COOKIE data. `.C` is a `map[string][string]`, 
     `.C.key` key is cookie field name in cookies raw string.
 1. `.U` current URL information `u:=map[string]string`.
-
+    
     ```golang
     u["HOST"] = u0.Host
     u["HOSTNAME"]=u0.Hostname()
@@ -68,7 +68,7 @@ delimiterright="}}"
     u["URI"]=u0.RequestURI()
     u["URL"]=u0.String()
     ```
-  
+   TIPS: `[scheme:][//[userinfo@]host][/]path[?query][#fragment]`  
 
 
 

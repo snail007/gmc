@@ -66,6 +66,9 @@ func New(config interface{}) (st gmcsession.Store, err error) {
 		return
 	}
 	cfg.Dir = filepath.Join(cfg.Dir, folder)
+	if !fileutil.ExistsDir(cfg.Dir){
+		os.Mkdir(cfg.Dir,0700)
+	}
 	if cfg.GCtime <= 0 {
 		cfg.GCtime = 300
 	}

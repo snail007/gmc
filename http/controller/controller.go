@@ -7,15 +7,12 @@ package gmccontroller
 
 import (
 	"fmt"
+	gmcconfig "github.com/snail007/gmc/config"
 	gmcview "github.com/snail007/gmc/http/view"
 	gmci18n "github.com/snail007/gmc/i18n"
 	"github.com/snail007/gmc/util/castutil"
-	"net/http"
-	"path/filepath"
-
-	gmcconfig "github.com/snail007/gmc/config"
-
 	gmchttputil "github.com/snail007/gmc/util/httputil"
+	"net/http"
 
 	gmccookie "github.com/snail007/gmc/http/cookie"
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -80,7 +77,7 @@ func (this *Controller) initLang() {
 
 // init GPSC variables in views
 func (this *Controller) initGPSC() {
-	g, p, s, c := map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}
+	g, p, s, c, u := map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}
 
 	// get
 	for k, v := range this.Request.URL.Query() {
@@ -113,15 +110,30 @@ func (this *Controller) initGPSC() {
 		c[v.Name] = v.Value
 	}
 
+	// URL
+	u0 := this.Request.URL
+	u["HOST"] = u0.Host
+	u["HOSTNAME"]=u0.Hostname()
+	u["PORT"]=u0.Port()
+	u["PATH"] = u0.Path
+	u["FRAGMENT"] = u0.Fragment
+	u["OPAQUE"] = u0.Opaque
+	u["RAW_PATH"] = u0.RawPath
+	u["RAW_QUERY"] = u0.RawQuery
+	u["SCHEME"] = u0.Scheme
+	u["USER"] = u0.User.Username()
+	u["PASSWORD"],_ = u0.User.Password()
+	u["URI"]=u0.RequestURI()
+	u["URL"]=u0.String()
+
 	// fill gpsc to data
 	data := map[string]interface{}{
 		"G": g,
 		"P": p,
 		"S": s,
 		"C": c,
+		"U": u,
 	}
-	path,_:=filepath.Abs(this.Request.URL.Path)
-	data["PATH"] =path
 
 	// set data to view
 	this.View.SetMap(data)

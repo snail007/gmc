@@ -51,8 +51,24 @@ delimiterright="}}"
     Notice that this only worked after the SessionStart() in a controller is be called.
 1. `.C` access COOKIE data. `.C` is a `map[string][string]`, 
     `.C.key` key is cookie field name in cookies raw string.
-1. `PATH` current Request.URL.Path.
-   
+1. `.U` current URL information `u:=map[string]string`.
+
+    ```golang
+    u["HOST"] = u0.Host
+    u["HOSTNAME"]=u0.Hostname()
+    u["PORT"]=u0.Port()
+    u["PATH"] = u0.Path
+    u["FRAGMENT"] = u0.Fragment
+    u["OPAQUE"] = u0.Opaque
+    u["RAW_PATH"] = u0.RawPath
+    u["RAW_QUERY"] = u0.RawQuery
+    u["SCHEME"] = u0.Scheme
+    u["USER"] = u0.User.Username()
+    u["PASSWORD"],_ = u0.User.Password()
+    u["URI"]=u0.RequestURI()
+    u["URL"]=u0.String()
+    ```
+  
 
 
 

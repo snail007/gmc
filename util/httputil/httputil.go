@@ -37,7 +37,7 @@ func StopE(err interface{},fn  ...func()) {
 		}
 		return
 	}
-	if failFn!=nil{
+	if failFnf failFn!=nil{
 		failFn()
 	}
 	panic("__STOP__")
@@ -69,22 +69,13 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 		default:
 			t := reflect.TypeOf(v)
 			//map, slice
-			jsonType := []string{"[", "map["}
-			found := false
-			vTypeStr := t.String()
-			for _, typ := range jsonType {
-				if strings.HasPrefix(vTypeStr, typ) {
-					found = true
-					var b []byte
-					b, err = json.Marshal(v)
-					if err == nil {
-						n, err = w.Write(b)
-					}
-					break
+			if t.Kind()==reflect.Slice || t.Kind()==reflect.Map {
+				var b []byte
+				b, err = json.Marshal(v)
+				if err == nil {
+					n, err = w.Write(b)
 				}
-			}
-			if !found {
-				fmt.Println(found)
+			}else {
 				n, err = w.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))
 			}
 		}

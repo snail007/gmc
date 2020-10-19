@@ -69,20 +69,20 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 		default:
 			t := reflect.TypeOf(v)
 			//map, slice
-			jsonType := []string{"[", "map["}
+			//jsonType := []string{"[", "map["}
 			found := false
-			vTypeStr := t.String()
-			for _, typ := range jsonType {
-				if strings.HasPrefix(vTypeStr, typ) {
-					found = true
-					var b []byte
-					b, err = json.Marshal(v)
-					if err == nil {
-						n, err = w.Write(b)
-					}
-					break
+			//vTypeStr := t.String()
+			//for _, typ := range jsonType {
+			if t.Kind()==reflect.Slice || t.Kind()==reflect.Map {
+				found = true
+				var b []byte
+				b, err = json.Marshal(v)
+				if err == nil {
+					n, err = w.Write(b)
 				}
+				//break
 			}
+			//}
 			if !found {
 				fmt.Println(found)
 				n, err = w.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))

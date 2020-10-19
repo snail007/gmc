@@ -4,7 +4,7 @@ import (
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	gmci18n "github.com/snail007/gmc/i18n"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
+	gmchttputil "github.com/snail007/gmc/util/http"
 	"net/http"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -19,7 +19,7 @@ import (
 	gmcsession "github.com/snail007/gmc/http/session"
 	gmctemplate "github.com/snail007/gmc/http/template"
 	gmcservice "github.com/snail007/gmc/service"
-	"github.com/snail007/gmc/util/maputil"
+	"github.com/snail007/gmc/util/map"
 )
 
 type (
@@ -50,7 +50,7 @@ type (
 	C             = *gmcrouter.Ctx
 
 	// data
-	Map = maputil.Map
+	Map = _map.Map
 
 	// Map
 	M   = map[string]interface{}

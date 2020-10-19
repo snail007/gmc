@@ -12,7 +12,7 @@ import (
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmchttpserver "github.com/snail007/gmc/http/server"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"github.com/snail007/gmc/util/maputil"
+	"github.com/snail007/gmc/util/map"
 )
 
 var (
@@ -66,8 +66,8 @@ func (s *New0) APIServerDefault(cfg *gmcconfig.Config) (api *gmchttpserver.APISe
 	return gmchttpserver.NewDefaultAPIServer(cfg)
 }
 
-func (s *New0) Map() *maputil.Map {
-	return maputil.NewMap()
+func (s *New0) Map() *_map.Map {
+	return _map.NewMap()
 }
 
 func (s *New0) Error(e interface{}) error {

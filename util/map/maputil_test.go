@@ -1,4 +1,4 @@
-package maputil
+package _map
 
 import (
 	"testing"

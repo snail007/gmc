@@ -2,7 +2,7 @@ package gmccacheredis
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/util/castutil"
+	"github.com/snail007/gmc/util/cast"
 	"log"
 	"os"
 	"sync"
@@ -153,7 +153,7 @@ func (c *RedisCache) GetMulti(keys []string) (map[string]string, error) {
 		if val==nil{
 			continue
 		}
-		values[keys[i]] = castutil.ToString(val)
+		values[keys[i]] = cast.ToString(val)
 	}
 
 	return values, nil

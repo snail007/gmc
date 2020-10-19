@@ -15,7 +15,7 @@ import (
 	gmcerr "github.com/snail007/gmc/error"
 	gmchook "github.com/snail007/gmc/process/hook"
 	gmcservice "github.com/snail007/gmc/service"
-	"github.com/snail007/gmc/util/logutil"
+	logutil "github.com/snail007/gmc/util/log"
 )
 
 type GMCApp struct {

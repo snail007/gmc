@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	gmchttputil "github.com/snail007/gmc/util/httputil"
+	gmchttputil "github.com/snail007/gmc/util/http"
 )
 
 type Ctx struct {

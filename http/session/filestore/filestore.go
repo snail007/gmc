@@ -18,7 +18,7 @@ import (
 
 	gmcerr "github.com/snail007/gmc/error"
 	gmcsession "github.com/snail007/gmc/http/session"
-	"github.com/snail007/gmc/util/fileutil"
+	"github.com/snail007/gmc/util/file"
 )
 
 type FileStoreConfig struct {

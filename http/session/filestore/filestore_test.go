@@ -14,7 +14,7 @@ import (
 	"time"
 
 	gmcsession "github.com/snail007/gmc/http/session"
-	"github.com/snail007/gmc/util/fileutil"
+	"github.com/snail007/gmc/util/file"
 	"github.com/stretchr/testify/assert"
 )
 

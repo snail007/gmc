@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/snail007/gmc/util/logutil"
+	logutil "github.com/snail007/gmc/util/log"
 
 	"github.com/snail007/gmc"
 )

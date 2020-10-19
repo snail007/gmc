@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	logutil "github.com/snail007/gmc/util/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -29,9 +30,8 @@ import (
 
 	gmcrouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
-	"github.com/snail007/gmc/util/logutil"
-)
+	gmchttputil "github.com/snail007/gmc/util/http"
+ )
 
 var (
 	bindata = map[string][]byte{}

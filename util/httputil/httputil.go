@@ -37,45 +37,6 @@ func StopE(err interface{},fn  ...func()) {
 		}
 		return
 	}
-	ipackage gmchttputil
-
-import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"reflect"
-	"strconv"
-	"strings"
-)
-
-func Die(w io.Writer, data ...interface{}) {
-	Write(w, data...)
-	panic("__DIE__")
-}
-
-func Stop(w io.Writer, data ...interface{}) {
-	Write(w, data...)
-	panic("__STOP__")
-}
-
-// StopE will exit controller method if error is not nil.
-// First argument is an error.
-// Secondary argument is fail function, it be called if error is not nil.
-// Third argument is success function, it be called if error is nil.
-func StopE(err interface{},fn  ...func()) {
-	var failFn, okayFn func()
-	if len(fn)>=1{
-		failFn=fn[0]
-	}
-	if len(fn)>=2{
-		okayFn=fn[1]
-	}
-	if err==nil{
-		if okayFn!=nil{
-			okayFn()
-		}
-		return
-	}
 	if failFnf failFn!=nil{
 		failFn()
 	}

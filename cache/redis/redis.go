@@ -233,7 +233,7 @@ func (c *RedisCache) exec(commandName string, args ...interface{}) (reply interf
 		st := time.Now()
 		reply, err = conn.Do(commandName, args...)
 		c.logf(
-			"operate redis cache. command: %s, key: %v, elapsed time: %.03f\n",
+			"operate redis cache. command: %s, key: %v, elapsed time: %.03f ms\n",
 			commandName, args[0], time.Since(st).Seconds()*1000,
 		)
 		return

@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/snail007/gmc/util/timeutil"
+	"github.com/snail007/gmc/util/time"
 )
 
 func main() {

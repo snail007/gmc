@@ -155,9 +155,9 @@ charset="utf8"
 collate="utf8_general_ci"
 maxidle=30
 maxconns=200
-timeout=3000
-readtimeout=5000
-writetimeout=5000
+timeout=15000
+readtimeout=15000
+writetimeout=15000
 maxlifetimeseconds=1800
 
 [[database.mysql]]

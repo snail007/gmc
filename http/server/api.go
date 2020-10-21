@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	logutil "github.com/snail007/gmc/util/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,10 +20,8 @@ import (
 	gmcconfig "github.com/snail007/gmc/config"
 
 	gmcerr "github.com/snail007/gmc/error"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
-	"github.com/snail007/gmc/util/logutil"
-
 	gmcrouter "github.com/snail007/gmc/http/router"
+	gmchttputil "github.com/snail007/gmc/util/http"
 )
 
 type APIServer struct {

@@ -10,8 +10,8 @@ import (
 	gmcconfig "github.com/snail007/gmc/config"
 	gmcview "github.com/snail007/gmc/http/view"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"github.com/snail007/gmc/util/castutil"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
+	"github.com/snail007/gmc/util/cast"
+	gmchttputil "github.com/snail007/gmc/util/http"
 	"net/http"
 
 	gmccookie "github.com/snail007/gmc/http/cookie"
@@ -101,7 +101,7 @@ func (this *Controller) initGPSC() {
 	// session
 	if this.SessionStore != nil && this.Session != nil {
 		for k, v := range this.Session.Values() {
-			s[castutil.ToString(k)] = castutil.ToString(v)
+			s[cast.ToString(k)] = cast.ToString(v)
 		}
 	}
 

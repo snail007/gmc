@@ -1,4 +1,4 @@
-module demoapi
+module demoapiapp
 
 go 1.12
 

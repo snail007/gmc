@@ -7,8 +7,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	gmccache "github.com/snail007/gmc/cache"
-	"github.com/snail007/gmc/util/castutil"
-	"github.com/snail007/gmc/util/fileutil"
+	"github.com/snail007/gmc/util/cast"
+	"github.com/snail007/gmc/util/file"
 	"io/ioutil"
 	"log"
 	"os"
@@ -121,7 +121,7 @@ func (c *FileCache) Get(key string) (val string, err error) {
 		err=gmccache.KEY_NOT_EXISTS
 		return
 	}
-	return castutil.ToString(item.Val), nil
+	return cast.ToString(item.Val), nil
 }
 
 // Delete deletes cached value by given key.
@@ -139,12 +139,12 @@ func (c *FileCache) Incr(key string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	item.Val = castutil.ToString(castutil.ToInt64(item.Val) + int64(1))
+	item.Val = cast.ToString(cast.ToInt64(item.Val) + int64(1))
 	err = c.Set(key, item.Val, time.Second*time.Duration(item.TTL))
 	if err != nil {
 		return 0, err
 	}
-	return castutil.ToInt64(item.Val), nil
+	return cast.ToInt64(item.Val), nil
 }
 
 // Decrease cached int value.
@@ -153,12 +153,12 @@ func (c *FileCache) Decr(key string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	item.Val = castutil.ToString(castutil.ToInt64(item.Val) - int64(1))
+	item.Val = cast.ToString(cast.ToInt64(item.Val) - int64(1))
 	err = c.Set(key, item.Val, time.Second*time.Duration(item.TTL))
 	if err != nil {
 		return 0, err
 	}
-	return castutil.ToInt64(item.Val), nil
+	return cast.ToInt64(item.Val), nil
 }
 
 // Incr value N by key
@@ -167,12 +167,12 @@ func (c *FileCache) IncrN(key string, n int64) (val int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	item.Val = castutil.ToString(castutil.ToInt64(item.Val) + int64(n))
+	item.Val = cast.ToString(cast.ToInt64(item.Val) + int64(n))
 	err = c.Set(key, item.Val, time.Second*time.Duration(item.TTL))
 	if err != nil {
 		return 0, err
 	}
-	return castutil.ToInt64(item.Val) , nil
+	return cast.ToInt64(item.Val) , nil
 }
 
 // Decr value N by key
@@ -181,12 +181,12 @@ func (c *FileCache) DecrN(key string, n int64) (val int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	item.Val = castutil.ToString(castutil.ToInt64(item.Val) - int64(n))
+	item.Val = cast.ToString(cast.ToInt64(item.Val) - int64(n))
 	err = c.Set(key, item.Val, time.Second*time.Duration(item.TTL))
 	if err != nil {
 		return 0, err
 	}
-	return castutil.ToInt64(item.Val), nil
+	return cast.ToInt64(item.Val), nil
 }
 
 // IsExist returns true if cached value exists.

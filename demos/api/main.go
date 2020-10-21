@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/snail007/gmc/util/timeutil"
+	"github.com/snail007/gmc/util/time"
 
 	"github.com/snail007/gmc"
 	gmchook "github.com/snail007/gmc/process/hook"

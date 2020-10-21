@@ -10,11 +10,11 @@ import (
 
 	gmcconfig "github.com/snail007/gmc/config"
 
-	"github.com/snail007/gmc/util/logutil"
+	logutil "github.com/snail007/gmc/util/log"
 
 	gmccache "github.com/snail007/gmc/cache"
 	gmccacheredis "github.com/snail007/gmc/cache/redis"
-	"github.com/snail007/gmc/util/castutil"
+	"github.com/snail007/gmc/util/cast"
 )
 
 var (
@@ -39,38 +39,38 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 		}
 		for _, vv := range v.([]interface{}) {
 			vvv := vv.(map[string]interface{})
-			if !castutil.ToBool(vvv["enable"]) {
+			if !cast.ToBool(vvv["enable"]) {
 				continue
 			}
-			id := castutil.ToString(vvv["id"])
+			id := cast.ToString(vvv["id"])
 			if k == "redis" {
 				if _, ok := groupRedis[id]; ok {
 					return
 				}
 				cfg := &gmccacheredis.RedisCacheConfig{
-					Debug:           castutil.ToBool(vvv["debug"]),
-					Prefix:          castutil.ToString(vvv["prefix"]),
+					Debug:           cast.ToBool(vvv["debug"]),
+					Prefix:          cast.ToString(vvv["prefix"]),
 					Logger:          logger,
-					Addr:            castutil.ToString(vvv["address"]),
-					Password:        castutil.ToString(vvv["password"]),
-					DBNum:           castutil.ToInt(vvv["dbnum"]),
-					MaxIdle:         castutil.ToInt(vvv["maxidle"]),
-					MaxActive:       castutil.ToInt(vvv["maxactive"]),
-					IdleTimeout:     time.Duration(castutil.ToInt(vvv["idletimeout"])) * time.Second,
-					Wait:            castutil.ToBool(vvv["wait"]),
-					MaxConnLifetime: time.Duration(castutil.ToInt(vvv["maxconnlifetime"])) * time.Second,
-					Timeout:         time.Duration(castutil.ToInt(vvv["timeout"])) * time.Second,
+					Addr:            cast.ToString(vvv["address"]),
+					Password:        cast.ToString(vvv["password"]),
+					DBNum:           cast.ToInt(vvv["dbnum"]),
+					MaxIdle:         cast.ToInt(vvv["maxidle"]),
+					MaxActive:       cast.ToInt(vvv["maxactive"]),
+					IdleTimeout:     time.Duration(cast.ToInt(vvv["idletimeout"])) * time.Second,
+					Wait:            cast.ToBool(vvv["wait"]),
+					MaxConnLifetime: time.Duration(cast.ToInt(vvv["maxconnlifetime"])) * time.Second,
+					Timeout:         time.Duration(cast.ToInt(vvv["timeout"])) * time.Second,
 				}
 				groupRedis[id] = gmccacheredis.New(cfg)
 			} else if k == "memory" {
 				cfg := &gmccachemem.MemCacheConfig{
-					CleanupInterval: time.Duration(castutil.ToInt(vvv["cleanupinterval"])) * time.Second,
+					CleanupInterval: time.Duration(cast.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
 				groupMemory[id] = gmccachemem.NewMemCache(cfg)
 			} else if k == "file" {
 				cfg := &gmccachefile.FileCacheConfig{
-					Dir:             castutil.ToString(vvv["dir"]),
-					CleanupInterval: time.Duration(castutil.ToInt(vvv["cleanupinterval"])) * time.Second,
+					Dir:             cast.ToString(vvv["dir"]),
+					CleanupInterval: time.Duration(cast.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
 
 				groupFile[id],err = gmccachefile.NewFileCache(cfg)

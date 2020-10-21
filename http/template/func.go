@@ -3,7 +3,7 @@ package gmctemplate
 import (
 	"github.com/snail007/gmc/http/template/sprig"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"github.com/snail007/gmc/util/castutil"
+	"github.com/snail007/gmc/util/cast"
 )
 
 func addFunc() map[string]interface{}{
@@ -19,5 +19,5 @@ func addFunc() map[string]interface{}{
 }
 
 func anyTostring(v interface{})string  {
-	return castutil.ToString(v)
+	return cast.ToString(v)
 }

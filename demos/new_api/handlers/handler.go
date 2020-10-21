@@ -6,7 +6,7 @@ import (
 	"github.com/snail007/gmc"
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmchttpserver "github.com/snail007/gmc/http/server"
-	"github.com/snail007/gmc/util/timeutil"
+	"github.com/snail007/gmc/util/time"
 	"time"
 )
 

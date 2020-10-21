@@ -6,7 +6,6 @@ import (
 	"io"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 func Die(w io.Writer, data ...interface{}) {
@@ -23,21 +22,21 @@ func Stop(w io.Writer, data ...interface{}) {
 // First argument is an error.
 // Secondary argument is fail function, it be called if error is not nil.
 // Third argument is success function, it be called if error is nil.
-func StopE(err interface{},fn  ...func()) {
+func StopE(err interface{}, fn ...func()) {
 	var failFn, okayFn func()
-	if len(fn)>=1{
-		failFn=fn[0]
+	if len(fn) >= 1 {
+		failFn = fn[0]
 	}
-	if len(fn)>=2{
-		okayFn=fn[1]
+	if len(fn) >= 2 {
+		okayFn = fn[1]
 	}
-	if err==nil{
-		if okayFn!=nil{
+	if err == nil {
+		if okayFn != nil {
 			okayFn()
 		}
 		return
 	}
-	if failFn!=nil{
+	if failFn != nil {
 		failFn()
 	}
 	panic("__STOP__")
@@ -69,22 +68,13 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 		default:
 			t := reflect.TypeOf(v)
 			//map, slice
-			jsonType := []string{"[", "map["}
-			found := false
-			vTypeStr := t.String()
-			for _, typ := range jsonType {
-				if strings.HasPrefix(vTypeStr, typ) {
-					found = true
-					var b []byte
-					b, err = json.Marshal(v)
-					if err == nil {
-						n, err = w.Write(b)
-					}
-					break
+			if t.Kind() == reflect.Slice || t.Kind() == reflect.Map {
+				var b []byte
+				b, err = json.Marshal(v)
+				if err == nil {
+					n, err = w.Write(b)
 				}
-			}
-			if !found {
-				fmt.Println(found)
+			} else {
 				n, err = w.Write([]byte(fmt.Sprintf("unsupported type to write: %s", t.String())))
 			}
 		}

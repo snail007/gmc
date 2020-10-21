@@ -1,7 +1,7 @@
 /*
 Package maputil is a order map implements
 */
-package maputil
+package _map
 
 import (
 	"container/list"

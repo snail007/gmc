@@ -20,7 +20,7 @@ import (
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmcmemorystore "github.com/snail007/gmc/http/session/memorystore"
 	gmctemplate "github.com/snail007/gmc/http/template"
-	"github.com/snail007/gmc/util/logutil"
+	logutil "github.com/snail007/gmc/util/log"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	gmccore "github.com/snail007/gmc/core"
 	logutil "github.com/snail007/gmc/util/log"
 	"io"
 	"io/ioutil"
@@ -29,7 +30,7 @@ type APIServer struct {
 	server            *http.Server
 	address           string
 	router            *gmcrouter.HTTPRouter
-	logger            *log.Logger
+	logger            gmccore.Logger
 	handle404         func(ctx *gmcrouter.Ctx)
 	handle500         func(ctx *gmcrouter.Ctx, err interface{})
 	isShowErrorStack  bool
@@ -62,7 +63,14 @@ func NewAPIServer(address string) *APIServer {
 	}
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
-	api.server.ErrorLog = api.logger
+	api.server.ErrorLog = func() *log.Logger {
+		ns := api.logger.Namespace()
+		if ns != "" {
+			ns = "[" + ns + "]"
+		}
+		l := log.New(api.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
+		return l
+	}()
 	return api
 }
 
@@ -148,11 +156,11 @@ func (this *APIServer) SetTLSFile(certFile, keyFile string) *APIServer {
 	this.certFile, this.keyFile = certFile, keyFile
 	return this
 }
-func (this *APIServer) SetLogger(l *log.Logger) *APIServer {
+func (this *APIServer) SetLogger(l gmccore.Logger) *APIServer {
 	this.logger = l
 	return this
 }
-func (this *APIServer) Logger() *log.Logger {
+func (this *APIServer) Logger() gmccore.Logger {
 	return this.logger
 }
 func (this *APIServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
@@ -226,22 +234,22 @@ func (this *APIServer) Run() (err error) {
 	go func() {
 		var err error
 		if this.certFile != "" && this.keyFile != "" {
-			this.logger.Printf("api server on https://%s", this.address)
+			this.logger.Infof("api server on https://%s", this.address)
 			err = this.server.ServeTLS(this.listener, this.certFile, this.keyFile)
 		} else {
-			this.logger.Printf("api server on http://%s", this.address)
+			this.logger.Infof("api server on http://%s", this.address)
 			err = this.server.Serve(this.listener)
 		}
 		if err != nil {
 			if strings.Contains(err.Error(), "closed") {
 				if this.isShutdown {
-					this.logger.Printf("api server graceful shutdown on %s", this.address)
+					this.logger.Infof("api server graceful shutdown on %s", this.address)
 				} else {
-					this.logger.Printf("api server closed on %s", this.address)
+					this.logger.Infof("api server closed on %s", this.address)
 					this.server.Close()
 				}
 			} else {
-				this.logger.Printf("api server exited unexpectedly on %s, error : %s", this.address, err)
+				this.logger.Warnf("api server exited unexpectedly on %s, error : %s", this.address, err)
 			}
 		}
 	}()
@@ -302,7 +310,7 @@ func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gm
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("middleware pani error : %s", gmcerr.Stack(e))
+					s.logger.Warn("middleware panic error : %s", gmcerr.Stack(e))
 					isStop = false
 				}
 			}()
@@ -344,7 +352,7 @@ func (this *APIServer) GracefulStop() {
 }
 
 //SetLog implements service.Service SetLog
-func (this *APIServer) SetLog(l *log.Logger) {
+func (this *APIServer) SetLog(l gmccore.Logger) {
 	this.logger = l
 }
 

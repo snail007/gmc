@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	gmccore "github.com/snail007/gmc/core"
 	"net"
 
 	logutil "github.com/snail007/gmc/util/log"
@@ -12,7 +12,7 @@ import (
 type MyService struct {
 	gmc.Service
 	l       net.Listener
-	log     *log.Logger
+	log     gmccore.Logger
 	address string
 }
 
@@ -29,21 +29,21 @@ func (s *MyService) Start() (err error) {
 		s.l, err = net.Listen("tcp", s.address)
 	}
 	// do something
-	s.log.Printf("server listen on %s", s.l.Addr().String())
+	s.log.Infof("server listen on %s", s.l.Addr().String())
 	return
 }
 func (s *MyService) Stop() {
-	s.log.Printf("server stoped on %s", s.l.Addr().String())
+	s.log.Infof("server stoped on %s", s.l.Addr().String())
 	// 1. close active connections ...
 	// 2. stop accept
 	s.l.Close()
 }
 func (s *MyService) GracefulStop() {
-	s.log.Printf("server graceful stop on %s", s.l.Addr().String())
+	s.log.Infof("server graceful stop on %s", s.l.Addr().String())
 	// 1. stop accept
 	s.l.Close()
 }
-func (s *MyService) SetLog(l *log.Logger) {
+func (s *MyService) SetLog(l gmccore.Logger) {
 	s.log = l
 }
 func (s *MyService) InjectListeners(ls []net.Listener) {

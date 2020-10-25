@@ -2,9 +2,9 @@ package gmc
 
 import (
 	gmcapp "github.com/snail007/gmc/app"
-	gmccache "github.com/snail007/gmc/cache"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmcconfig "github.com/snail007/gmc/config"
+	"github.com/snail007/gmc/core"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
@@ -12,7 +12,7 @@ import (
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmchttpserver "github.com/snail007/gmc/http/server"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"github.com/snail007/gmc/util/map"
+	_map "github.com/snail007/gmc/util/map"
 )
 
 var (
@@ -102,19 +102,19 @@ func (s *Cache0) Init(cfg *gmcconfig.Config) error {
 	return gmccachehelper.Init(cfg)
 }
 
-func (s *Cache0) Cache(id ...string) gmccache.Cache {
+func (s *Cache0) Cache(id ...string) gmccore.Cache {
 	return gmccachehelper.Cache(id...)
 }
 
-func (s *Cache0) Redis(id ...string) gmccache.Cache {
+func (s *Cache0) Redis(id ...string) gmccore.Cache {
 	return gmccachehelper.Redis(id...)
 }
 
-func (s *Cache0) File(id ...string) gmccache.Cache {
+func (s *Cache0) File(id ...string) gmccore.Cache {
 	return gmccachehelper.File(id...)
 }
 
-func (s *Cache0) Memory(id ...string) gmccache.Cache {
+func (s *Cache0) Memory(id ...string) gmccore.Cache {
 	return gmccachehelper.Memory(id...)
 }
 

@@ -1,20 +1,20 @@
 package gmccachemem_test
 
 import (
-	gmccache "github.com/snail007/gmc/cache"
 	gmccachemem "github.com/snail007/gmc/cache/memory"
+	"github.com/snail007/gmc/core"
 	assert "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
 )
 
-var c gmccache.Cache
+var c gmccore.Cache
 
 func TestMemCache_Get(t *testing.T) {
 	assert := assert.New(t)
 	_, err := c.Get("test")
-	assert.True(gmccache.IsNotExits(err))
+	assert.True(gmccore.IsNotExits(err))
 }
 func TestMemCache_Set(t *testing.T) {
 	assert := assert.New(t)
@@ -30,7 +30,7 @@ func TestMemCache_Expire(t *testing.T) {
 	assert.Nil(err)
 	time.Sleep(time.Second)
 	_, err = c.Get("test")
-	assert.True(gmccache.IsNotExits(err))
+	assert.True(gmccore.IsNotExits(err))
 }
 func TestMemCache_Delete(t *testing.T) {
 	assert := assert.New(t)
@@ -38,7 +38,7 @@ func TestMemCache_Delete(t *testing.T) {
 	assert.Nil(err)
 	c.Del("test")
 	_, err = c.Get("test")
-	assert.True(gmccache.IsNotExits(err))
+	assert.True(gmccore.IsNotExits(err))
 }
 func TestMemCache_Has(t *testing.T) {
 	assert := assert.New(t)
@@ -53,7 +53,7 @@ func TestMemCache_Clean(t *testing.T) {
 	assert.Nil(err)
 	c.Clear()
 	_, err = c.Get("test")
-	assert.True(gmccache.IsNotExits(err))
+	assert.True(gmccore.IsNotExits(err))
 }
 func TestMemCache_String(t *testing.T) {
 	assert := assert.New(t)

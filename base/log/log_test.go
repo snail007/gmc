@@ -13,7 +13,7 @@ import (
 
 func TestNewGMCLog(t *testing.T) {
 	assert := assert2.New(t)
-	assert.Implements(new(gmccore.Log), gmclog.NewGMCLog())
+	assert.Implements(new(gmccore.Logger), gmclog.NewGMCLog())
 }
 
 func TestGMCLog_SetOutput(t *testing.T) {
@@ -141,7 +141,7 @@ func TestGMCLog_Warnf(t *testing.T) {
 func TestGMCLog_Panic(t *testing.T) {
 	assert := assert2.New(t)
 	l := gmclog.NewGMCLog()
-	assert.PanicsWithValue(" PANIC a", func() {
+	assert.PanicsWithValue("PANIC a", func() {
 		l.Panic("a")
 	})
 }
@@ -149,7 +149,7 @@ func TestGMCLog_Panic(t *testing.T) {
 func TestGMCLog_Panicf(t *testing.T) {
 	assert := assert2.New(t)
 	l := gmclog.NewGMCLog()
-	assert.PanicsWithValue(" PANIC a10", func() {
+	assert.PanicsWithValue("PANIC a10", func() {
 		l.Panicf("a%d", 10)
 	})
 }

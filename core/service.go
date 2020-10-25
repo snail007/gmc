@@ -1,7 +1,6 @@
 package gmccore
 
 import (
-	"log"
 	"net"
 
 	gmcconfig "github.com/snail007/gmc/config"
@@ -15,7 +14,7 @@ type Service interface {
 	Stop()
 	// blocking until all resource are released
 	GracefulStop()
-	SetLog(*log.Logger)
+	SetLog(log Logger)
 	// called After Init
 	InjectListeners([]net.Listener)
 	Listeners() []net.Listener

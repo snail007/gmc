@@ -6,7 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
-	gmccache "github.com/snail007/gmc/cache"
+	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util/cast"
 	"github.com/snail007/gmc/util/file"
 	"io/ioutil"
@@ -47,12 +47,12 @@ func (item *Item) hasExpired() bool {
 
 // FileCache represents a file cache adapter implementation.
 type FileCache struct {
-	gmccache.Cache
+	gmccore.Cache
 	cfg *FileCacheConfig
 }
 
 // NewFileCache creates and returns a new file cache.
-func NewFileCache(cfg interface{}) (cache gmccache.Cache, err error) {
+func NewFileCache(cfg interface{}) (cache gmccore.Cache, err error) {
 	cfg0 := cfg.(*FileCacheConfig)
 	c := &FileCache{
 		cfg: cfg0,
@@ -111,14 +111,14 @@ func (c *FileCache) Get(key string) (val string, err error) {
 	item, err := c.read(key)
 	if err != nil {
 		if os.IsNotExist(err){
-			err=gmccache.KEY_NOT_EXISTS
+			err= gmccore.KEY_NOT_EXISTS
 		}
 		return
 	}
 
 	if item.hasExpired() {
 		os.Remove(c.filepath(key))
-		err=gmccache.KEY_NOT_EXISTS
+		err= gmccore.KEY_NOT_EXISTS
 		return
 	}
 	return cast.ToString(item.Val), nil
@@ -203,10 +203,10 @@ func (c *FileCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := c.Get(key)
-		if e != nil && !gmccache.IsNotExits(e) {
+		if e != nil && !gmccore.IsNotExits(e) {
 			return nil, e
 		}
-		if !gmccache.IsNotExits(e){
+		if !gmccore.IsNotExits(e){
 			d[key] = v
 		}
 	}

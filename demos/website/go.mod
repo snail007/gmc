@@ -1,4 +1,4 @@
-module demoweb
+module github.com/snail007/gmc/demos/website
 
 go 1.12
 

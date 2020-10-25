@@ -2,14 +2,14 @@ package gmccachemem
 
 import (
 	"fmt"
-	gmccache "github.com/snail007/gmc/cache"
+	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util/cast"
 	"time"
 )
 
 type (
 	MemCache struct {
-		gmccache.Cache
+		gmccore.Cache
 		cfg *MemCacheConfig
 		c   *Cache
 	}
@@ -24,7 +24,7 @@ func NewMemCacheConfig() *MemCacheConfig {
 	}
 }
 
-func NewMemCache(cfg interface{}) gmccache.Cache {
+func NewMemCache(cfg interface{}) gmccore.Cache {
 	cfg0 := cfg.(*MemCacheConfig)
 	rc := &MemCache{
 		cfg: cfg0,
@@ -51,7 +51,7 @@ func (s *MemCache) Get(key string) (string, error) {
 	if b {
 		return cast.ToString(v), nil
 	}
-	return "", gmccache.KEY_NOT_EXISTS
+	return "", gmccore.KEY_NOT_EXISTS
 }
 func (s *MemCache) Set(key string, value string, ttl time.Duration) error {
 	s.c.Set(key, value, ttl)
@@ -97,7 +97,7 @@ func (s *MemCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := s.Get(key)
-		if e != nil && !gmccache.IsNotExits(e) {
+		if e != nil && !gmccore.IsNotExits(e) {
 			return nil, e
 		}
 		d[key] = cast.ToString(v)

@@ -8,7 +8,6 @@ import (
 	"github.com/snail007/gmc/core"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -25,7 +24,7 @@ type GMCApp struct {
 	attachConfig      map[string]*gmcconfig.Config
 	attachConfigfiles map[string]string
 	services          []ServiceItem
-	logger            *log.Logger
+	logger            gmccore.Logger
 	configFile        string
 	config            *gmcconfig.Config
 }
@@ -189,7 +188,7 @@ func (s *GMCApp) Run() (err error) {
 		return
 	}
 	s.reloadSignalMonitor()
-	s.logger.Printf("gmc app started done.")
+	s.logger.Infof("gmc app started done.")
 	gmchook.RegistShutdown(func() {
 		s.Stop()
 	})
@@ -205,7 +204,7 @@ func (s *GMCApp) Stop() {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("run beforeShutdown hook fail, error : %s", gmcerr.Stack(e))
+					s.logger.Infof("run beforeShutdown hook fail, error : %s", gmcerr.Stack(e))
 				}
 			}()
 			fn()
@@ -233,7 +232,7 @@ func (s *GMCApp) AddService(item ServiceItem) *GMCApp {
 	s.services = append(s.services, item)
 	return s
 }
-func (s *GMCApp) Logger() *log.Logger {
+func (s *GMCApp) Logger() gmccore.Logger {
 	return s.logger
 }
 

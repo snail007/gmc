@@ -8,8 +8,9 @@ package gmcfilestore
 import (
 	"crypto/md5"
 	"fmt"
+	gmccore "github.com/snail007/gmc/core"
+	logutil "github.com/snail007/gmc/util/log"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,7 @@ type FileStoreConfig struct {
 	Dir    string
 	GCtime int //seconds
 	Prefix string
-	Logger *log.Logger
+	Logger gmccore.Logger
 	TTL    int64 //seconds
 }
 
@@ -39,7 +40,7 @@ func NewConfig() FileStoreConfig {
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
-		Logger: log.New(os.Stdout, "[filestore]", log.LstdFlags),
+		Logger: logutil.New("[filestore]"),
 	}
 }
 
@@ -91,14 +92,14 @@ func (s *FileStore) Load(sessionID string) (sess *gmcsession.Session, isExists b
 	}
 	str, err := ioutil.ReadFile(f)
 	if err != nil {
-		s.cfg.Logger.Printf("filestore read file error: %s", err)
+		s.cfg.Logger.Warnf("filestore read file error: %s", err)
 		return
 	}
 	sess = gmcsession.NewSession()
 	err = sess.Unserialize(string(str))
 	if err != nil {
 		sess = nil
-		s.cfg.Logger.Printf("filestore unserialize error: %s", err)
+		s.cfg.Logger.Warnf("filestore unserialize error: %s", err)
 		return
 	}
 	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
@@ -161,7 +162,7 @@ func (s *FileStore) gc() {
 		names := []string{}
 		err = s.tree(s.cfg.Dir, &names)
 		if err != nil {
-			s.cfg.Logger.Printf("filestore gc error: %s", err)
+			s.cfg.Logger.Warnf("filestore gc error: %s", err)
 			continue
 		}
 		files = names

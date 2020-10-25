@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	gmccore "github.com/snail007/gmc/core"
 	logutil "github.com/snail007/gmc/util/log"
 	"io"
 	"io/ioutil"
@@ -31,7 +32,7 @@ import (
 	gmcrouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
 	gmchttputil "github.com/snail007/gmc/util/http"
- )
+)
 
 var (
 	bindata = map[string][]byte{}
@@ -52,7 +53,7 @@ type HTTPServer struct {
 	tpl          *gmctemplate.Template
 	sessionStore gmcsession.Store
 	router       *gmcrouter.HTTPRouter
-	logger       *log.Logger
+	logger       gmccore.Logger
 	addr         string
 	listener     net.Listener
 	server       *http.Server
@@ -136,15 +137,15 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SessionStore: s.sessionStore,
 		Router:       s.router,
 		Config:       s.config,
+		Logger:       s.logger,
 	})
 	w = gmchttputil.NewResponseWriter(w)
 	r = r.WithContext(rctx)
 
 	// init ctx
 	c0 := gmcrouter.NewCtx(w, r)
-	addr,_:=s.localaddr.Load(r.RemoteAddr)
-	c0.Localaddr,_=addr.(string)
-
+	addr, _ := s.localaddr.Load(r.RemoteAddr)
+	c0.Localaddr, _ = addr.(string)
 
 	defer func() {
 		// middleware3
@@ -271,12 +272,19 @@ func (s *HTTPServer) InjectListeners(l []net.Listener) {
 func (s *HTTPServer) Server() *http.Server {
 	return s.server
 }
-func (s *HTTPServer) SetLogger(l *log.Logger) *HTTPServer {
+func (s *HTTPServer) SetLogger(l gmccore.Logger) *HTTPServer {
 	s.logger = l
-	s.server.ErrorLog = s.logger
+	s.server.ErrorLog = func() *log.Logger {
+		ns := s.logger.Namespace()
+		if ns != "" {
+			ns = "[" + ns + "]"
+		}
+		l := log.New(s.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
+		return l
+	}()
 	return s
 }
-func (s *HTTPServer) Logger() *log.Logger {
+func (s *HTTPServer) Logger() gmccore.Logger {
 	return s.logger
 }
 func (s *HTTPServer) SetRouter(r *gmcrouter.HTTPRouter) *HTTPServer {
@@ -342,21 +350,21 @@ func (s *HTTPServer) Listen() (err error) {
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
 					if s.isShutdown {
-						s.logger.Printf("http server graceful shutdown on http://%s", s.addr)
+						s.logger.Infof("http server graceful shutdown on http://%s", s.addr)
 					} else {
-						s.logger.Printf("http server closed on http://%s", s.addr)
+						s.logger.Infof("http server closed on http://%s", s.addr)
 						s.server.Close()
 					}
 					break
 				} else {
-					s.logger.Printf("http server Serve fail on http://%s , error : %s", s.addr, err)
+					s.logger.Warnf("http server Serve fail on http://%s , error : %s", s.addr, err)
 					time.Sleep(time.Second * 3)
 					continue
 				}
 			}
 		}
 	}()
-	s.logger.Printf("http server listen on http://%s", s.listener.Addr())
+	s.logger.Infof("http server listen on http://%s", s.listener.Addr())
 	return
 }
 func (s *HTTPServer) ListenTLS() (err error) {
@@ -371,21 +379,21 @@ func (s *HTTPServer) ListenTLS() (err error) {
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
 					if s.isShutdown {
-						s.logger.Printf("https server graceful shutdown on https://%s", s.addr)
+						s.logger.Infof("https server graceful shutdown on https://%s", s.addr)
 					} else {
-						s.logger.Printf("https server closed on https://%s", s.addr)
+						s.logger.Infof("https server closed on https://%s", s.addr)
 						s.server.Close()
 					}
 					break
 				} else {
-					s.logger.Printf("http server ServeTLS fail , error : %s", err)
+					s.logger.Warnf("http server ServeTLS fail , error : %s", err)
 					time.Sleep(time.Second * 3)
 					continue
 				}
 			}
 		}
 	}()
-	s.logger.Printf("https server listen on https://%s", s.listener.Addr())
+	s.logger.Infof("https server listen on https://%s", s.listener.Addr())
 	return
 }
 
@@ -393,7 +401,7 @@ func (s *HTTPServer) ListenTLS() (err error) {
 func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
-		s.localaddr.Store(c.RemoteAddr().String(),c.LocalAddr().String())
+		s.localaddr.Store(c.RemoteAddr().String(), c.LocalAddr().String())
 		atomic.AddInt64(s.connCnt, 1)
 	case http.StateClosed:
 		s.localaddr.Delete(c.RemoteAddr().String())
@@ -560,7 +568,7 @@ func (s *HTTPServer) GracefulStop() {
 }
 
 //SetLog implements service.Service SetLog
-func (s *HTTPServer) SetLog(l *log.Logger) {
+func (s *HTTPServer) SetLog(l gmccore.Logger) {
 	s.logger = l
 	return
 }
@@ -569,7 +577,7 @@ func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *g
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("middleware pani error : %s", gmcerr.Stack(e))
+					s.logger.Warnf("middleware panic error : %s", gmcerr.Stack(e))
 					isStop = false
 				}
 			}()

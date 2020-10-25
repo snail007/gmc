@@ -9,7 +9,7 @@ import (
 )
 
 func Initialize(s *gmc.HTTPServer) (err error) {
-	s.Logger().Println("using config file : ", s.Config().ConfigFileUsed())
+	s.Logger().Infof("using config file : %s", s.Config().ConfigFileUsed())
 
 	// initialize database if needed
 	err = gmc.DB.Init(s.Config())

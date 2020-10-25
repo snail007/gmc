@@ -2,21 +2,20 @@ package gmccacheredis
 
 import (
 	"fmt"
+	gmccore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util/cast"
-	"log"
-	"os"
+	logutil "github.com/snail007/gmc/util/log"
 	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	gmccache "github.com/snail007/gmc/cache"
 	gmcerr "github.com/snail007/gmc/error"
 )
 
 type RedisCacheConfig struct {
 	Debug           bool
 	Prefix          string
-	Logger          *log.Logger
+	Logger          gmccore.Logger
 	Addr            string
 	Password        string
 	DBNum           int
@@ -32,7 +31,7 @@ func NewRedisCacheConfig() *RedisCacheConfig {
 	return &RedisCacheConfig{
 		Debug:           false,
 		Prefix:          "",
-		Logger:          log.New(os.Stderr, "", log.LstdFlags),
+		Logger:          logutil.New(""),
 		Addr:            "127.0.0.1:6379",
 		Password:        "",
 		DBNum:           0,
@@ -52,7 +51,7 @@ type RedisCache struct {
 }
 
 // New redis cache
-func New(cfg interface{}) gmccache.Cache {
+func New(cfg interface{}) gmccore.Cache {
 	cfg0 := cfg.(*RedisCacheConfig)
 	rc := &RedisCache{
 		cfg:         cfg0,
@@ -247,7 +246,7 @@ func (c *RedisCache) exec(commandName string, args ...interface{}) (reply interf
 
 func (c *RedisCache) logf(format string, v ...interface{}) {
 	if c.cfg.Debug && c.cfg.Logger != nil {
-		c.cfg.Logger.Printf(format, v...)
+		c.cfg.Logger.Infof(format, v...)
 	}
 }
 

@@ -13,7 +13,7 @@ const (
 
 type LOG_LEVEL int
 
-type Log interface {
+type Logger interface {
 
 	Panic(v ...interface{})
 	Panicf(format string, v ...interface{})
@@ -35,7 +35,7 @@ type Log interface {
 
 	SetLevel(LOG_LEVEL)
 
-	With(name string) Log
+	With(name string) Logger
 	Namespace() string
 
 	Writer() io.Writer

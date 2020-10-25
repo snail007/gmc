@@ -5,6 +5,7 @@ import (
 	"fmt"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmcconfig "github.com/snail007/gmc/config"
+	"github.com/snail007/gmc/core"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
 	gmci18n "github.com/snail007/gmc/i18n"
 	"log"
@@ -14,7 +15,6 @@ import (
 
 	gmcerr "github.com/snail007/gmc/error"
 	gmchook "github.com/snail007/gmc/process/hook"
-	gmcservice "github.com/snail007/gmc/service"
 	logutil "github.com/snail007/gmc/util/log"
 )
 
@@ -30,9 +30,9 @@ type GMCApp struct {
 	config            *gmcconfig.Config
 }
 type ServiceItem struct {
-	BeforeInit func(srv gmcservice.Service, cfg *gmcconfig.Config) (err error)
+	BeforeInit func(srv gmccore.Service, cfg *gmcconfig.Config) (err error)
 	AfterInit  func(srv *ServiceItem) (err error)
-	Service    gmcservice.Service
+	Service    gmccore.Service
 	ConfigID   string
 }
 

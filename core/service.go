@@ -1,4 +1,4 @@
-package gmcservice
+package gmccore
 
 import (
 	"log"

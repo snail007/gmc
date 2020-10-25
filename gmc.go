@@ -1,6 +1,7 @@
 package gmc
 
 import (
+	"github.com/snail007/gmc/core"
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	gmci18n "github.com/snail007/gmc/i18n"
@@ -18,15 +19,14 @@ import (
 	gmchttpserver "github.com/snail007/gmc/http/server"
 	gmcsession "github.com/snail007/gmc/http/session"
 	gmctemplate "github.com/snail007/gmc/http/template"
-	gmcservice "github.com/snail007/gmc/service"
-	"github.com/snail007/gmc/util/map"
+	gmcmap "github.com/snail007/gmc/util/map"
 )
 
 type (
 	// app
 	APP         = gmcapp.GMCApp
 	ServiceItem = gmcapp.ServiceItem
-	Service     = gmcservice.Service
+	Service     = gmccore.Service
 	Config      = gmcconfig.Config
 
 	// database
@@ -50,7 +50,7 @@ type (
 	C             = *gmcrouter.Ctx
 
 	// data
-	Map = _map.Map
+	Map = gmcmap.Map
 
 	// Map
 	M   = map[string]interface{}

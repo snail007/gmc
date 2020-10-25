@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+	"github.com/snail007/gmc/core"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -13,8 +14,6 @@ import (
 	"testing"
 
 	gmcconfig "github.com/snail007/gmc/config"
-
-	gmcservice "github.com/snail007/gmc/service"
 
 	gmccontroller "github.com/snail007/gmc/http/controller"
 	gmcrouter "github.com/snail007/gmc/http/router"
@@ -483,7 +482,7 @@ func Test_SetBindata_4(t *testing.T) {
 func Test_Service(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s0 := (gmcservice.Service)(s)
+	s0 := (gmccore.Service)(s)
 	err := s0.Start()
 	assert.Nil(err)
 	s0.Stop()
@@ -494,7 +493,7 @@ func Test_Service_2(t *testing.T) {
 	cfg := mockConfig()
 	cfg.Set("httpserver.tlsenable", true)
 	s := mockHTTPServer(cfg)
-	s0 := (gmcservice.Service)(s)
+	s0 := (gmccore.Service)(s)
 	err := s0.Start()
 	assert.Nil(err)
 	s.SetLog(s.logger)

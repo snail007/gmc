@@ -35,7 +35,7 @@ urlpath="/static/"
 level=0
 # 0,1 => console, file
 output=[0,1]
-# only worked when output= 1 or 2
+# only worked when output contains 1
 dir="./logs"
 # filename in logs dir.
 # available placeholders are:

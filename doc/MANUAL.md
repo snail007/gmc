@@ -32,6 +32,10 @@
 
 # Middleware
 
+## HTTP Architecture
+
+<img src="/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  
+
 # Useful Packages
 
 ## gpool

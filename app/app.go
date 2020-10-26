@@ -47,6 +47,9 @@ func New() *GMCApp {
 		attachConfigfiles: map[string]string{},
 	}
 	app.OnRun(func(config *gmcconfig.Config) (err error) {
+		if config == nil || config.Sub("log") == nil {
+			return
+		}
 		app.logger, err = gmclog.NewFromConfig(config)
 		return
 	})

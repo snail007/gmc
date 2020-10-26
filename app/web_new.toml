@@ -26,6 +26,24 @@ dir="static"
 urlpath="/static/"
 
 #############################################################
+# logging configuration
+#############################################################
+#
+#############################################################
+[log]
+# 0,1,2,3,4,5 => TRACE, DEBUG, INFO, WARN, ERROR, PANIC
+level=0
+# 0,1 => console, file
+output=[0]
+# only worked when output= 1 or 2
+dir="./logs"
+# filename in logs dir.
+# available placeholders are:
+# %Y:Year 2020, %M:Month 10, %d:Day 10, %H:24Hours 21
+gmcweb="gmcweb_%Y%m%d.log"
+gzip=false
+
+#############################################################
 # i18n configuration
 #############################################################
 # 1.dir is a local filesystem path.

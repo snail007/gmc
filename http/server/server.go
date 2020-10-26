@@ -535,7 +535,7 @@ func (s *HTTPServer) PrintRouteTable(w io.Writer) {
 func (s *HTTPServer) Start() (err error) {
 	defer func() {
 		if err == nil && s.config.GetBool("httpserver.printroute") {
-			s.PrintRouteTable(nil)
+			s.PrintRouteTable(s.logger.Writer())
 		}
 	}()
 	// delay template Parse

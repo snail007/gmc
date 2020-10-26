@@ -3,18 +3,18 @@ package gmcapp
 import (
 	"encoding/json"
 	"fmt"
+	gmclog "github.com/snail007/gmc/base/log"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmcconfig "github.com/snail007/gmc/config"
 	"github.com/snail007/gmc/core"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
+	gmcerr "github.com/snail007/gmc/error"
 	gmci18n "github.com/snail007/gmc/i18n"
+	gmchook "github.com/snail007/gmc/process/hook"
+	logutil "github.com/snail007/gmc/util/log"
 	"net"
 	"os"
 	"strings"
-
-	gmcerr "github.com/snail007/gmc/error"
-	gmchook "github.com/snail007/gmc/process/hook"
-	logutil "github.com/snail007/gmc/util/log"
 )
 
 type GMCApp struct {
@@ -28,6 +28,7 @@ type GMCApp struct {
 	configFile        string
 	config            *gmcconfig.Config
 }
+
 type ServiceItem struct {
 	BeforeInit func(srv gmccore.Service, cfg *gmcconfig.Config) (err error)
 	AfterInit  func(srv *ServiceItem) (err error)
@@ -45,6 +46,10 @@ func New() *GMCApp {
 		attachConfig:      map[string]*gmcconfig.Config{},
 		attachConfigfiles: map[string]string{},
 	}
+	app.OnRun(func(config *gmcconfig.Config) (err error) {
+		app.logger, err = gmclog.NewFromConfig(config)
+		return
+	})
 	return app
 }
 func Default() *GMCApp {
@@ -73,6 +78,12 @@ func Default() *GMCApp {
 
 	// do some initialize
 	app.OnRun(func(config *gmcconfig.Config) (err error) {
+		// initialize logging
+		app.logger, err = gmclog.NewFromConfig(config)
+		if err != nil {
+			return
+		}
+
 		// initialize database if needed
 		err = gmcdbhelper.Init(config)
 		if err != nil {
@@ -232,6 +243,11 @@ func (s *GMCApp) AddService(item ServiceItem) *GMCApp {
 	s.services = append(s.services, item)
 	return s
 }
+
+func (s *GMCApp) SetLogger(logger gmccore.Logger) {
+	s.logger = logger
+}
+
 func (s *GMCApp) Logger() gmccore.Logger {
 	return s.logger
 }
@@ -278,6 +294,7 @@ func (s *GMCApp) run() (err error) {
 		if err != nil {
 			return
 		}
+		srv.SetLog(s.logger)
 
 		//AfterInit
 		if srvI.AfterInit != nil {

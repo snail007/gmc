@@ -1,4 +1,4 @@
-module demoapi
+module mygmcweb
 
 go 1.12
 

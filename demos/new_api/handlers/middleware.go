@@ -15,11 +15,11 @@ func initMiddleware(api *gmchttpserver.APIServer) {
 }
 
 func middleware1(c gmc.C, s *gmc.APIServer) (isStop bool) {
-	s.Logger().Printf("before request %s", c.Request.RequestURI)
+	s.Logger().Infof("before request %s", c.Request.RequestURI)
 	return false
 }
 
 func middleware2(c gmc.C, s *gmc.APIServer) (isStop bool) {
-	s.Logger().Printf("after request %s %d %d %s", c.Request.Method, c.StatusCode(), c.WriteCount(), c.Request.RequestURI)
+	s.Logger().Infof("after request %s %d %d %s", c.Request.Method, c.StatusCode(), c.WriteCount(), c.Request.RequestURI)
 	return false
 }

@@ -37,7 +37,7 @@ type ServiceItem struct {
 }
 
 func New() *GMCApp {
-	app := &GMCApp{
+	return &GMCApp{
 		isBlock:           true,
 		onRun:             []func(*gmcconfig.Config) error{},
 		onShutdown:        []func(){},
@@ -46,67 +46,51 @@ func New() *GMCApp {
 		attachConfig:      map[string]*gmcconfig.Config{},
 		attachConfigfiles: map[string]string{},
 	}
-	app.OnRun(func(config *gmcconfig.Config) (err error) {
-		if config == nil || config.Sub("log") == nil {
-			return
-		}
-		app.logger, err = gmclog.NewFromConfig(config)
-		return
-	})
-	return app
 }
+
 func Default() *GMCApp {
-	app := &GMCApp{
-		isBlock:           true,
-		onRun:             []func(*gmcconfig.Config) error{},
-		onShutdown:        []func(){},
-		services:          []ServiceItem{},
-		logger:            logutil.New(""),
-		attachConfig:      map[string]*gmcconfig.Config{},
-		attachConfigfiles: map[string]string{},
-	}
+	// default config dir and name
 	cfg := gmcconfig.New()
-
-	// env binding
-	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	cfg.SetEnvPrefix("GMC")
-	cfg.AutomaticEnv()
-
-	// config dir and name
 	cfg.SetConfigName("app")
 	cfg.AddConfigPath(".")
 	cfg.AddConfigPath("conf")
 	cfg.AddConfigPath("config")
-	app.config = cfg
-
-	// do some initialize
-	app.OnRun(func(config *gmcconfig.Config) (err error) {
-		// initialize logging
-		app.logger, err = gmclog.NewFromConfig(config)
-		if err != nil {
-			return
-		}
-
-		// initialize database if needed
-		err = gmcdbhelper.Init(config)
-		if err != nil {
-			return
-		}
-
-		// initialize cache if needed
-		err = gmccachehelper.Init(config)
-		if err != nil {
-			return
-		}
-
-		// initialize i18n if needed
-		err = gmci18n.Init(config)
-
-		return
-	})
-	return app
+	return New().SetConfig(cfg)
 }
+func (s *GMCApp) initialize() (err error) {
+	if s.config == nil {
+		return
+	}
 
+	// initialize logging
+	if s.config.Sub("log") != nil {
+		s.logger, err = gmclog.NewFromConfig(s.config)
+		if err != nil {
+			return
+		}
+	}
+
+	// initialize database
+	if s.config.Sub("database") != nil {
+		err = gmcdbhelper.Init(s.config)
+		if err != nil {
+			return
+		}
+	}
+
+	// initialize cache
+	if s.config.Sub("cache") != nil {
+		err = gmccachehelper.Init(s.config)
+		if err != nil {
+			return
+		}
+	}
+	// initialize i18n if needed
+	if s.config.Sub("i18n") != nil {
+		err = gmci18n.Init(s.config)
+	}
+	return
+}
 func (s *GMCApp) SetConfigFile(file string) *GMCApp {
 	s.configFile = file
 	return s
@@ -189,6 +173,10 @@ func (s *GMCApp) callRunE(fns []func(*gmcconfig.Config) error) (err error) {
 }
 func (s *GMCApp) Run() (err error) {
 	err = s.parseConfigFile()
+	if err != nil {
+		return
+	}
+	err = s.initialize()
 	if err != nil {
 		return
 	}

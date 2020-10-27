@@ -37,7 +37,7 @@ func initHanlder(api *gmchttpserver.APIServer) {
 	// http://foo.com/v1/hello
 	group0 := api.Group("/v1")
 	group0.API("/hello", func(c gmc.C) {
-		api.Logger().Printf("request %s", c.Request.RequestURI)
+		api.Logger().Infof("request %s", c.Request.RequestURI)
 		c.Write("hello world!")
 	})
 	// http://foo.com/v1/hi

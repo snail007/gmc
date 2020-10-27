@@ -12,3 +12,4 @@
 .idea/
 /demos/website/website
 go.sum
+/app/logs

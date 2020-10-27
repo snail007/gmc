@@ -10,9 +10,9 @@
 
 ## 模版函数
 
-# Web HTTP 服务器
+# Web 服务器
 
-# API HTTP 服务器
+# API 服务器
 
 # 数据库
 
@@ -72,8 +72,9 @@ GMC框架，为了降低使用者学习成本和加速开发，提供了开源GM
     
 1. 一键打包网站静态文件为go文件，GMC集成了把网站静态文件，诸如：css，js，font等等，
     打包进入二进制的功能，编译项目代码之前，只需要在相关目录执行 `gmct static --dir ../static` 
-    命令，即可打包视图目录所有视图文件为一个go文件。然后正常编译项目，视图就会被打包进入项目编译
+    命令，即可打包静态资源目录所有文件为一个go文件。然后正常编译项目，静态资源文件就会被打包进入项目编译
     后的二进制文件中。
+    
 1. 热编译项目，在项目开发过程中，我们会不断的修改go文件或者视图文件，然后需要手动重新编译，运行，
    才能看到修改后的效果，这占用了同学们不少的时间，为了解决此问题，只需要在项目编译目录执行`gmct run`
    即可，GMCT工具可以侦测到你对项目做的修改，会自动重新编译并运行项目，你修改了项目文件，只要刷新浏览器
@@ -161,3 +162,105 @@ gmct run
 ```
 
 打开浏览器访问：http://127.0.0.1:7082 , 就可以看见新建的API轻量级项目运行效果。
+
+### 打包视图文件
+
+GMC视图模块支持打包视图文件到编译的二进制程序中。由于打包功能和项目目录结构有关，所以这里假设目录结构是gmct生成的web项目目录结构。
+
+目录结构如下：
+
+```text
+new_web/
+├── conf
+├── controller
+├── initialize
+├── router
+├── static
+└── views
+```
+
+完成此功能需要下面几个步骤：
+
+```shell
+cd initialize
+gmct tpl --dir ../views
+```
+
+执行了命令后，会发现目录initialize中多了一个前缀是`gmc_templates_bindata_`的go文件，
+比如：`gmc_templates_bindata_2630881503983182670.go`。此文件中有init方法，
+会在`initialize`包被引用的时候自动执行，把视图文件二进制数据注入GMC视图模块中。
+
+当你go build编译了你的项目后，避免后面开发，运行代码一直使用这个go文件里面的视图数据，
+可以在目录initialize执行：`gmct tpl --clean` 可以安全的清理上面生成的go文件。
+
+### 打包静态文件
+
+GMC的HTTP静态文件模块支持打包静态文件到编译的二进制程序中。由于打包功能和项目目录结构有关，
+所以这里假设目录结构是gmct生成的web项目目录结构。
+
+目录结构如下：
+
+```text
+new_web/
+├── conf
+├── controller
+├── initialize
+├── router
+├── static
+└── views
+```
+
+完成此功能需要下面几个步骤：
+
+```shell
+cd initialize
+gmct static --dir ../static
+```
+
+执行了命令后，会发现目录initialize中多了一个前缀是`gmc_static_bindata_`的go文件，
+比如：`gmc_static_bindata_1780615241186372497.go`。此文件中有init方法，
+会在`initialize`包被引用的时候自动执行，把视图文件二进制数据注入GMC的HTTP静态文件服务模块中。
+
+当你go build编译了你的项目后，避免后面开发，运行代码一直使用这个go文件里面的静态文件数据，
+可以在目录initialize执行：`gmct static --clean` 可以安全的清理上面生成的go文件。
+
+另外，静态文件打包进入二进制以后，查找静态文件的顺序是：  
+1、查找二进制数据里面是否有该文件。  
+2、查找静态目录static是否有该文件。  
+
+### 热编译项目
+
+在项目开发过程中，我们会不断的修改go文件或者视图文件，然后需要手动重新编译，运行，
+才能看到修改后的效果，这占用了同学们不少的时间，为了解决此问题，只需要在项目编译目录执行`gmct run`
+即可，GMCT工具可以侦测到你对项目做的修改，会自动重新编译并运行项目，你修改了项目文件，只要刷新浏览器
+就可以看见最新修改效果。
+
+执行`gmct run`后会在当前目录生成一个名称为`gmcrun.toml`的配置文件，你可以通过修改该文件，定制`gmct run`的编译行为。
+
+默认情况下配置如下：
+
+```toml
+[build]
+# ${DIR} is a placeholder presents current dir absolute path, no slash in the end.
+# you can using it in monitor_dirs, include_files, exclude_files, exclude_dirs.
+monitor_dirs=["."]
+args=["-ldflags","-s -w"]
+env=["CGO_ENABLED=1","GO111MODULE=on"]
+include_exts=[".go",".html",".htm",".tpl",".toml",".ini",".conf",".yaml"]
+include_files=[]
+exclude_files=["gmcrun.toml"]
+exclude_dirs=["vendor"]
+```
+
+配置说明：
+
+1. `monitor_dirs` 监控目录，默认是当前目录，可以指定多个，数组形式。
+1. `args` 额外传递给 `go build` 的参数，数组，多个参数分开写。
+1. `env` 设置`go build`执行时的环境变量，可以指定多个，数组形式。
+1. `include_exts` 监控的文件后缀，只监控此后缀文件的改动。可以指定多个，数组形式。
+1. `include_files` 设置额外监控的文件，支持相对路径和绝对路径，可以指定多个，数组形式。
+1. `exclude_files` 设置额外不监控的文件，支持相对路径和绝对路径，可以指定多个，数组形式。
+1. `exclude_dirs`  设置额外不监控的目录，支持相对路径和绝对路径，可以指定多个，数组形式。
+
+在 `monitor_dirs`, `include_files`, `exclude_files`, `exclude_dirs`中可以使用
+变量`{DIR}`代表当前目录的绝对路径, 末尾没有`/`。

@@ -11,7 +11,6 @@ import (
 	gmcerr "github.com/snail007/gmc/error"
 	gmci18n "github.com/snail007/gmc/i18n"
 	gmchook "github.com/snail007/gmc/process/hook"
-	logutil "github.com/snail007/gmc/util/log"
 	"net"
 	"os"
 	"strings"
@@ -42,7 +41,7 @@ func New() *GMCApp {
 		onRun:             []func(*gmcconfig.Config) error{},
 		onShutdown:        []func(){},
 		services:          []ServiceItem{},
-		logger:            logutil.New(""),
+		logger:            nil,
 		attachConfig:      map[string]*gmcconfig.Config{},
 		attachConfigfiles: map[string]string{},
 	}
@@ -63,11 +62,14 @@ func (s *GMCApp) initialize() (err error) {
 	}
 
 	// initialize logging
-	if s.config.Sub("log") != nil {
+	if s.config.Sub("log") != nil && s.logger==nil{
 		s.logger, err = gmclog.NewFromConfig(s.config)
 		if err != nil {
 			return
 		}
+	}
+	if s.logger==nil{
+		s.logger=gmclog.NewGMCLog()
 	}
 
 	// initialize database

@@ -21,13 +21,92 @@
 ## SQLITE3 数据库
 
 # 缓存
+GMC缓存Cache支持Redis、File、内存缓存三种类型,因为Redis基本目前web开发的标准配置，默认开启Redis缓存，缓存实现了对三种缓存池的实现，
+减少了系统调用的开销，为适应不同的业务场景，开发者可以采用不同缓存实现。
+Cache的目录结构：
+```text
+cache/
+├── examples
+├── file
+├── helper //helper实现了对各缓存接口实现的封装
+├── memory
+└── redis
+```
+配置方式：
 
-## Redis 缓存
+Cache配置目录：WEBROOT/app/app/app.toml
+```shell
+[cache]
+default="redis" //设置默认生效缓存配置项，比如项目默认为redis缓存生效
+[[cache.redis]] //redis配置项
+[[cache.file]]  //file配置项
+[[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
+```
+快速开始
+```shell
+package main
 
-## File 缓存
+import (
+	"time"
 
-## 内存缓存
+	"github.com/snail007/gmc"
+)
 
+func main() {
+	cfg := gmc.New.Config()
+	cfg.SetConfigFile("../../app/app.toml")
+	err := cfg.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	// Init only using [cache] section in app.toml
+	gmc.Cache.Init(cfg)
+
+	// cache default is redis in app.toml
+	// so gmc.Cache() equal to  gmc.Redis()
+	// we can connect to multiple cache drivers at same time, id is the unique name of driver
+	// gmc.Cache(id) to load `id` named default driver.
+	c := gmc.Cache.Cache()
+	c.Set("test", "aaa", time.Second)
+	c.Get("test")
+}
+```
+## Redis缓存
+基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
+```shell
+[[cache.redis]]
+debug=true       //是否启用调试
+enable=true      //开启redis缓存
+id="default"     //缓存池ID
+address=":6379"  //redis客户端链接地址
+prefix=""
+password=""
+timeout=10       //等待连接池分配连接的最大时长（毫秒），超过这个时长还没可用的连接则发生
+dbnum=0          //连接Redis时的 DB 编号，默认是0.
+maxidle=10       //连接池中最多可空闲maxIdle个连接
+maxactive=30     //连接池支持的最大连接数
+idletimeout=300  //一个连接idle状态的最大时长（毫秒），超时则被释放
+maxconnlifetime=3600 //一个连接的生命时长（毫秒），超时而且没被使用则被释放
+wait=true
+```
+## Memory缓存
+cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
+配置信息如下所示，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启文件缓存，默认关闭
+```shell
+[[cache.memory]]
+enable=false
+id="default"
+cleanupinterval=30
+```
+## File缓存
+配置信息如下所示，配置 dir 表示缓存的文件目录，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启文件缓存，默认关闭
+```shell
+[[cache.file]]
+enable=false
+id="default"
+dir="{tmp}"
+cleanupinterval=30
+```
 # I18n国际化
 
 # 中间件

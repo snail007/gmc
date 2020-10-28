@@ -38,6 +38,23 @@ API 和 Web HTTP服务器工作流程架构图如下，此图可以直观的帮�
 
 <img src="/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  
 
+# 平滑重启/热升级
+
+此功能只适用于Linux平台系统，不适用于Windows系统。
+
+当我们的程序部署到线上的时候，就面临一个平滑重启/平滑升级的问题，也就是在不中断当前已有连接的保证服务一直可用的情况下，进行程序的重启升级。
+
+通过gmc.APP启动的Web和API服务都支持平滑重启/平滑升级，使用非常简单，当你需要重启的时候，使用pkill或者kill命令给程序发送`USR2`信号即可。
+
+比如：
+
+```shell
+pkill -USR2 website
+kill -USR2 11297
+```
+
+本示例中 `website` 是程序名称，`11297`是程序的`pid`。两种方式都可以，自己看习惯选择。
+
 # 工具包
 
 ## gpool

@@ -50,10 +50,42 @@ c := gmc.Cache.Cache()
 1. 开始自由使用,详细使用可参考测试文件
 c.Set("test", "aaa", time.Second)
 c.Get("test")
-## Redis 缓存
+## Redis缓存
 基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
-## 内存缓存
+```shell
+[[cache.redis]]
+debug=true       //是否启用调试
+enable=true      //开启redis缓存
+id="default"     //缓存池ID
+address=":6379"  //redis客户端链接地址
+prefix=""
+password=""
+timeout=10       //等待连接池分配连接的最大时长（毫秒），超过这个时长还没可用的连接则发生
+dbnum=0          //连接Redis时的 DB 编号，默认是0.
+maxidle=10       //连接池中最多可空闲maxIdle个连接
+maxactive=30     //连接池支持的最大连接数
+idletimeout=300  //一个连接idle状态的最大时长（毫秒），超时则被释放
+maxconnlifetime=3600 //一个连接的生命时长（毫秒），超时而且没被使用则被释放
+wait=true
+```
+## Memory缓存
 cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
+配置信息如下所示，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启文件缓存，默认关闭
+```shell
+[[cache.memory]]
+enable=false
+id="default"
+cleanupinterval=30
+```
+## File缓存
+配置信息如下所示，配置 dir 表示缓存的文件目录，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启文件缓存，默认关闭
+```shell
+[[cache.file]]
+enable=false
+id="default"
+dir="{tmp}"
+cleanupinterval=30
+```
 # I18n国际化
 
 # 中间件

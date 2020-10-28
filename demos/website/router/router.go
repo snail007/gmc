@@ -27,11 +27,11 @@ func InitRouter(s *gmc.HTTPServer) {
 	r.ControllerMethod("/index.html",new(controller.Demo),"Index__")
 
 	// indicates router initialized
-	s.Logger().Printf("router inited.")
+	s.Logger().Infof("router inited.")
 }
 
 func filterAll(c gmc.C, server *gmc.HTTPServer) bool {
-	server.Logger().Printf(c.Request.RequestURI)
+	server.Logger().Infof(c.Request.RequestURI)
 	return false
 }
 
@@ -48,6 +48,6 @@ func filter(c gmc.C, server *gmc.HTTPServer) bool {
 }
 
 func logging(c gmc.C, server *gmc.HTTPServer) bool {
-	server.Logger().Printf("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(),c.TimeUsed(), c.Request.RequestURI)
+	server.Logger().Infof("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(),c.TimeUsed(), c.Request.RequestURI)
 	return false
 }

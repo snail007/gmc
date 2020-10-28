@@ -26,6 +26,24 @@ dir="static"
 urlpath="/static/"
 
 #############################################################
+# logging configuration
+#############################################################
+#
+#############################################################
+[log]
+# 0,1,2,3,4,5 => TRACE, DEBUG, INFO, WARN, ERROR, PANIC
+level=0
+# 0,1 => console, file
+output=[0,1]
+# only worked when output contains 1
+dir="./logs"
+# filename in logs dir.
+# available placeholders are:
+# %Y:Year 2020, %M:Month 10, %d:Day 10, %H:24Hours 21
+filename="test_%Y%m%d%H%i%s.log"
+gzip=true
+
+#############################################################
 # i18n configuration
 #############################################################
 # 1.dir is a local filesystem path.
@@ -155,9 +173,9 @@ charset="utf8"
 collate="utf8_general_ci"
 maxidle=30
 maxconns=200
-timeout=3000
-readtimeout=5000
-writetimeout=5000
+timeout=15000
+readtimeout=15000
+writetimeout=15000
 maxlifetimeseconds=1800
 
 [[database.mysql]]

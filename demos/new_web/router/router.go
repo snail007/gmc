@@ -16,5 +16,5 @@ func InitRouter(s *gmc.HTTPServer) {
 	r.ControllerMethod("/index.html", new(controller.Demo), "Index__")
 
 	// indicates router initialized
-	s.Logger().Printf("router inited.")
+	s.Logger().Infof("router inited.")
 }

@@ -3,19 +3,17 @@ package gmcapp
 import (
 	"encoding/json"
 	"fmt"
+	gmclog "github.com/snail007/gmc/base/log"
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmcconfig "github.com/snail007/gmc/config"
+	"github.com/snail007/gmc/core"
 	gmcdbhelper "github.com/snail007/gmc/db/helper"
+	gmcerr "github.com/snail007/gmc/error"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"log"
+	gmchook "github.com/snail007/gmc/process/hook"
 	"net"
 	"os"
 	"strings"
-
-	gmcerr "github.com/snail007/gmc/error"
-	gmchook "github.com/snail007/gmc/process/hook"
-	gmcservice "github.com/snail007/gmc/service"
-	"github.com/snail007/gmc/util/logutil"
 )
 
 type GMCApp struct {
@@ -25,75 +23,76 @@ type GMCApp struct {
 	attachConfig      map[string]*gmcconfig.Config
 	attachConfigfiles map[string]string
 	services          []ServiceItem
-	logger            *log.Logger
+	logger            gmccore.Logger
 	configFile        string
 	config            *gmcconfig.Config
 }
+
 type ServiceItem struct {
-	BeforeInit func(srv gmcservice.Service, cfg *gmcconfig.Config) (err error)
+	BeforeInit func(srv gmccore.Service, cfg *gmcconfig.Config) (err error)
 	AfterInit  func(srv *ServiceItem) (err error)
-	Service    gmcservice.Service
+	Service    gmccore.Service
 	ConfigID   string
 }
 
 func New() *GMCApp {
-	app := &GMCApp{
+	return &GMCApp{
 		isBlock:           true,
 		onRun:             []func(*gmcconfig.Config) error{},
 		onShutdown:        []func(){},
 		services:          []ServiceItem{},
-		logger:            logutil.New(""),
+		logger:            nil,
 		attachConfig:      map[string]*gmcconfig.Config{},
 		attachConfigfiles: map[string]string{},
 	}
-	return app
 }
+
 func Default() *GMCApp {
-	app := &GMCApp{
-		isBlock:           true,
-		onRun:             []func(*gmcconfig.Config) error{},
-		onShutdown:        []func(){},
-		services:          []ServiceItem{},
-		logger:            logutil.New(""),
-		attachConfig:      map[string]*gmcconfig.Config{},
-		attachConfigfiles: map[string]string{},
-	}
+	// default config dir and name
 	cfg := gmcconfig.New()
-
-	// env binding
-	cfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	cfg.SetEnvPrefix("GMC")
-	cfg.AutomaticEnv()
-
-	// config dir and name
 	cfg.SetConfigName("app")
 	cfg.AddConfigPath(".")
 	cfg.AddConfigPath("conf")
 	cfg.AddConfigPath("config")
-	app.config = cfg
-
-	// do some initialize
-	app.OnRun(func(config *gmcconfig.Config) (err error) {
-		// initialize database if needed
-		err = gmcdbhelper.Init(config)
-		if err != nil {
-			return
-		}
-
-		// initialize cache if needed
-		err = gmccachehelper.Init(config)
-		if err != nil {
-			return
-		}
-
-		// initialize i18n if needed
-		err = gmci18n.Init(config)
-
-		return
-	})
-	return app
+	return New().SetConfig(cfg)
 }
+func (s *GMCApp) initialize() (err error) {
+	if s.config == nil {
+		return
+	}
 
+	// initialize logging
+	if s.config.Sub("log") != nil && s.logger==nil{
+		s.logger, err = gmclog.NewFromConfig(s.config)
+		if err != nil {
+			return
+		}
+	}
+	if s.logger==nil{
+		s.logger=gmclog.NewGMCLog()
+	}
+
+	// initialize database
+	if s.config.Sub("database") != nil {
+		err = gmcdbhelper.Init(s.config)
+		if err != nil {
+			return
+		}
+	}
+
+	// initialize cache
+	if s.config.Sub("cache") != nil {
+		err = gmccachehelper.Init(s.config)
+		if err != nil {
+			return
+		}
+	}
+	// initialize i18n if needed
+	if s.config.Sub("i18n") != nil {
+		err = gmci18n.Init(s.config)
+	}
+	return
+}
 func (s *GMCApp) SetConfigFile(file string) *GMCApp {
 	s.configFile = file
 	return s
@@ -179,6 +178,10 @@ func (s *GMCApp) Run() (err error) {
 	if err != nil {
 		return
 	}
+	err = s.initialize()
+	if err != nil {
+		return
+	}
 	// on run
 	err = s.callRunE(s.onRun)
 	if err != nil {
@@ -189,7 +192,7 @@ func (s *GMCApp) Run() (err error) {
 		return
 	}
 	s.reloadSignalMonitor()
-	s.logger.Printf("gmc app started done.")
+	s.logger.Infof("gmc app started done.")
 	gmchook.RegistShutdown(func() {
 		s.Stop()
 	})
@@ -205,7 +208,7 @@ func (s *GMCApp) Stop() {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					s.logger.Printf("run beforeShutdown hook fail, error : %s", gmcerr.Stack(e))
+					s.logger.Infof("run beforeShutdown hook fail, error : %s", gmcerr.Stack(e))
 				}
 			}()
 			fn()
@@ -233,7 +236,12 @@ func (s *GMCApp) AddService(item ServiceItem) *GMCApp {
 	s.services = append(s.services, item)
 	return s
 }
-func (s *GMCApp) Logger() *log.Logger {
+
+func (s *GMCApp) SetLogger(logger gmccore.Logger) {
+	s.logger = logger
+}
+
+func (s *GMCApp) Logger() gmccore.Logger {
 	return s.logger
 }
 
@@ -279,6 +287,7 @@ func (s *GMCApp) run() (err error) {
 		if err != nil {
 			return
 		}
+		srv.SetLog(s.logger)
 
 		//AfterInit
 		if srvI.AfterInit != nil {

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	gmcrouter "github.com/snail007/gmc/http/router"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
+	gmchttputil "github.com/snail007/gmc/util/http"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/snail007/gmc/util/timeutil"
+	"github.com/snail007/gmc/util/time"
 
 	"github.com/snail007/gmc"
 	gmchook "github.com/snail007/gmc/process/hook"
@@ -18,13 +18,13 @@ func main() {
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Printf("before request %s", c.Request.RequestURI)
+		s.Logger().Infof("before request %s", c.Request.RequestURI)
 		return false
 	})
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Printf("after request %s %d %d %s %s",
+		s.Logger().Infof("after request %s %d %d %s %s",
 			c.Request.Method,
 			c.StatusCode(),
 			c.WriteCount(),
@@ -44,7 +44,7 @@ func main() {
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly
 	api.API("/hello", func(c gmc.C) {
-		api.Logger().Printf("request %s", c.Request.RequestURI)
+		api.Logger().Infof("request %s", c.Request.RequestURI)
 		c.Write("hello world!")
 	}).API("/hi.:type", func(c gmc.C) {
 		c.Write("hi!"+c.Param.ByName("type"))

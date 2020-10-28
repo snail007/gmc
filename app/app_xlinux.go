@@ -18,7 +18,7 @@ func (s *GMCApp) reloadSignalMonitor() {
 		ch := make(chan os.Signal)
 		signal.Notify(ch, syscall.SIGUSR2)
 		<-ch
-		s.logger.Printf("Recieved USR2 signal , now reloading ...")
+		s.logger.Infof("Recieved USR2 signal , now reloading ...")
 		s.reload()
 	}()
 }
@@ -35,7 +35,7 @@ func (s *GMCApp) reload() {
 		for _, l := range srv.Listeners() {
 			f, e := l.(*net.TCPListener).File()
 			if e != nil {
-				s.logger.Printf("reload fail, %s", e)
+				s.logger.Warnf("reload fail, %s", e)
 				return
 			}
 			files = append(files, f)
@@ -58,7 +58,7 @@ func (s *GMCApp) reload() {
 	cmd.Stdout = os.Stdout
 	err := cmd.Start()
 	if err != nil {
-		s.logger.Printf("reload fail, fork error : %s", err)
+		s.logger.Warnf("reload fail, fork error : %s", err)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (s *GMCApp) reload() {
 		}(srvI)
 	}
 	g.Wait()
-	s.logger.Printf("gmc app reload done.")
+	s.logger.Infof("gmc app reload done.")
 	os.Exit(0)
 	return
 }

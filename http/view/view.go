@@ -2,7 +2,7 @@ package gmcview
 
 import (
 	gmctemplate "github.com/snail007/gmc/http/template"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
+	gmchttputil "github.com/snail007/gmc/util/http"
 	"io"
 	"sync"
 )

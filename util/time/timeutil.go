@@ -188,26 +188,50 @@ func TimeToDateStr(t time.Time) string {
 //Time format
 //@param format  "h:i:s","Y-m-d h:i:s","y-m-d"
 func TimeFormat(t time.Time, format string) string {
-	return t.Format(formatToLayout(format))
-}
-
-//format to layout
-func formatToLayout(format string) string {
 	format = strings.TrimSpace(format)
+	layout:=""
 	format = strings.Replace(format, "yyyy", "Y", 1)
 	format = stringDedup(format) //String deduplication
-	layout := strings.Replace(format, "Y", "2006", 1)
-	layout = strings.Replace(layout, "y", "06", 1)
-	layout = strings.Replace(layout, "m", "01", 1)
-	layout = strings.Replace(layout, "n", "1", 1)
-	layout = strings.Replace(layout, "d", "02", 1)
-	layout = strings.Replace(layout, "j", "2", 1)
-	layout = strings.Replace(layout, "H", "15", 1)
-	layout = strings.Replace(layout, "h", "03", 1)
-	layout = strings.Replace(layout, "g", "3", 1)
-	layout = strings.Replace(layout, "i", "04", 1)
-	layout = strings.Replace(layout, "s", "05", 1)
-	return layout
+	d:=map[string]string{
+		"Y":"2006",
+		"y":"06",
+		"m":"01",
+		"n":"1",
+		"d":"02",
+		"j":"2",
+		"H":"15",
+		"h":"03",
+		"g":"3",
+		"i":"04",
+		"s":"05",
+	}
+	for k,v:=range d{
+		layout = strings.Replace(layout, k, v, 1)
+	}
+	return t.Format(layout)
+}
+
+//Time format text
+//@param format  "%h:%i:%s","%Y-%m-%d %h:%i:%s","%y-%m-%d"
+func TimeFormatText(t time.Time, text string) string {
+	d:=map[string]string{
+		"Y":t.Format("2006"),
+		"y":t.Format("06"),
+		"m":t.Format("01"),
+		"n":t.Format("1"),
+		"d":t.Format("02"),
+		"j":t.Format("2"),
+		"H":t.Format("15"),
+		"h":t.Format("03"),
+		"g":t.Format("3"),
+		"i":t.Format("04"),
+		"s":t.Format("05"),
+	}
+	for k,v:=range d{
+		k="%"+k
+		text = strings.Replace(text, k, v, 1)
+	}
+	return text
 }
 
 //String deduplication

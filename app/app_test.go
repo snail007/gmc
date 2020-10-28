@@ -2,7 +2,7 @@ package gmcapp
 
 import (
 	"fmt"
-	gmcservice "github.com/snail007/gmc/service"
+	"github.com/snail007/gmc/core"
 	"testing"
 	"time"
 
@@ -25,7 +25,7 @@ func TestRun(t *testing.T) {
 		SetConfigFile("app.toml")
 	app.AddService(ServiceItem{
 			Service: httpserver.New(),
-			BeforeInit: func(srv gmcservice.Service, cfg *gmcconfig.Config) (err error) {
+			BeforeInit: func(srv gmccore.Service, cfg *gmcconfig.Config) (err error) {
 				cfg.Set("template.dir","../http/template/tests/views")
 				cfg.Set("httpserver.listen", ":")
 				return
@@ -61,7 +61,7 @@ func TestRun_2(t *testing.T) {
 	server := httpserver.New()
 	app.AddService(ServiceItem{
 		Service: server,
-		BeforeInit: func(srv gmcservice.Service,config *gmcconfig.Config) (err error) {
+		BeforeInit: func(srv gmccore.Service,config *gmcconfig.Config) (err error) {
 			config.Set("session.store", "none")
 			return
 		},

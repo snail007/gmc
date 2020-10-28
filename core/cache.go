@@ -1,4 +1,4 @@
-package gmccache
+package gmccore
 
 import (
 	"fmt"

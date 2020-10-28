@@ -11,12 +11,12 @@ func main() {
 	// 2. parse config file
 	cfg, err := gmc.New.ConfigFile("conf/app.toml")
 	if err != nil {
-		app.Logger().Fatal(err)
+		app.Logger().Error(err)
 	}
 	// 3. create api server
 	api, err := gmc.New.APIServerDefault(cfg)
 	if err != nil {
-		app.Logger().Fatal(err)
+		app.Logger().Error(err)
 	}
 	//4. init db, cache, handlers
 	// int db

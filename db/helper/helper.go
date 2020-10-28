@@ -4,7 +4,7 @@ import (
 	gmcconfig "github.com/snail007/gmc/config"
 	gmcmysql "github.com/snail007/gmc/db/mysql"
 	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
-	"github.com/snail007/gmc/util/castutil"
+	"github.com/snail007/gmc/util/cast"
 )
 
 var (
@@ -22,30 +22,30 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 		}
 		for _, vv := range v.([]interface{}) {
 			vvv := vv.(map[string]interface{})
-			if !castutil.ToBool(vvv["enable"]) {
+			if !cast.ToBool(vvv["enable"]) {
 				continue
 			}
-			id := castutil.ToString(vvv["id"])
+			id := cast.ToString(vvv["id"])
 			if k == "mysql" {
 				db := groupMySQL.DB(id)
 				if db != nil {
 					return
 				}
 				err = groupMySQL.Regist(id, gmcmysql.DBConfig{
-					Charset:                  castutil.ToString(vvv["charset"]),
-					Collate:                  castutil.ToString(vvv["collate"]),
-					Host:                     castutil.ToString(vvv["host"]),
-					Port:                     castutil.ToInt(vvv["port"]),
-					Database:                 castutil.ToString(vvv["database"]),
-					Username:                 castutil.ToString(vvv["username"]),
-					Password:                 castutil.ToString(vvv["password"]),
-					TablePrefix:              castutil.ToString(vvv["prefix"]),
-					TablePrefixSqlIdentifier: castutil.ToString(vvv["prefix_sql_holder"]),
-					Timeout:                  castutil.ToInt(vvv["timeout"]),
-					ReadTimeout:              castutil.ToInt(vvv["readtimeout"]),
-					WriteTimeout:             castutil.ToInt(vvv["writetimeout"]),
-					SetMaxIdleConns:          castutil.ToInt(vvv["maxidle"]),
-					SetMaxOpenConns:          castutil.ToInt(vvv["maxconns"]),
+					Charset:                  cast.ToString(vvv["charset"]),
+					Collate:                  cast.ToString(vvv["collate"]),
+					Host:                     cast.ToString(vvv["host"]),
+					Port:                     cast.ToInt(vvv["port"]),
+					Database:                 cast.ToString(vvv["database"]),
+					Username:                 cast.ToString(vvv["username"]),
+					Password:                 cast.ToString(vvv["password"]),
+					TablePrefix:              cast.ToString(vvv["prefix"]),
+					TablePrefixSqlIdentifier: cast.ToString(vvv["prefix_sql_holder"]),
+					Timeout:                  cast.ToInt(vvv["timeout"]),
+					ReadTimeout:              cast.ToInt(vvv["readtimeout"]),
+					WriteTimeout:             cast.ToInt(vvv["writetimeout"]),
+					SetMaxIdleConns:          cast.ToInt(vvv["maxidle"]),
+					SetMaxOpenConns:          cast.ToInt(vvv["maxconns"]),
 				})
 				if err != nil {
 					return
@@ -56,13 +56,13 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 					return
 				}
 				err = groupSQLite3.Regist(id, gmcsqlite3.DBConfig{
-					Database:                 castutil.ToString(vvv["database"]),
-					Password:                 castutil.ToString(vvv["password"]),
-					TablePrefix:              castutil.ToString(vvv["prefix"]),
-					TablePrefixSqlIdentifier: castutil.ToString(vvv["prefix_sql_holder"]),
-					SyncMode:                 castutil.ToInt(vvv["syncmode"]),
-					OpenMode:                 castutil.ToString(vvv["openmode"]),
-					CacheMode:                castutil.ToString(vvv["cachemode"]),
+					Database:                 cast.ToString(vvv["database"]),
+					Password:                 cast.ToString(vvv["password"]),
+					TablePrefix:              cast.ToString(vvv["prefix"]),
+					TablePrefixSqlIdentifier: cast.ToString(vvv["prefix_sql_holder"]),
+					SyncMode:                 cast.ToInt(vvv["syncmode"]),
+					OpenMode:                 cast.ToString(vvv["openmode"]),
+					CacheMode:                cast.ToString(vvv["cachemode"]),
 				})
 				if err != nil {
 					return

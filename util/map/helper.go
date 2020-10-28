@@ -1,4 +1,4 @@
-package maputil
+package gmcmap
 
 import "fmt"
 

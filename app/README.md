@@ -30,7 +30,7 @@ type Service interface {
 	Start() error
 	Stop()
 	GracefulStop()
-	SetLog(*log.Logger)
+	SetLog(gmccore.Logger)
 	InjectListeners([]net.Listener)
 	Listeners() []net.Listener
 }

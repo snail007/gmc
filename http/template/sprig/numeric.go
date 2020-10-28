@@ -2,7 +2,7 @@ package sprig
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/util/castutil"
+	"github.com/snail007/gmc/util/cast"
 	"math"
 	"strconv"
 	"strings"
@@ -10,16 +10,16 @@ import (
 
 // toFloat64 converts 64-bit floats
 func toFloat64(v interface{}) float64 {
-	return castutil.ToFloat64(v)
+	return cast.ToFloat64(v)
 }
 
 func toInt(v interface{}) int {
-	return castutil.ToInt(v)
+	return cast.ToInt(v)
 }
 
 // toInt64 converts integer types to 64-bit integers
 func toInt64(v interface{}) int64 {
-	return castutil.ToInt64(v)
+	return cast.ToInt64(v)
 }
 
 func max(a interface{}, i ...interface{}) int64 {

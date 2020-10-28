@@ -7,8 +7,8 @@ package gmcmemorystore
 
 import (
 	"fmt"
-	"log"
-	"os"
+	gmccore "github.com/snail007/gmc/core"
+	logutil "github.com/snail007/gmc/util/log"
 	"sync"
 	"time"
 
@@ -18,7 +18,7 @@ import (
 
 type MemoryStoreConfig struct {
 	GCtime int //seconds
-	Logger *log.Logger
+	Logger gmccore.Logger
 	TTL    int64 //seconds
 }
 
@@ -26,7 +26,7 @@ func NewConfig() MemoryStoreConfig {
 	return MemoryStoreConfig{
 		GCtime: 300,
 		TTL:    15 * 60,
-		Logger: log.New(os.Stdout, "[memorystore]", log.LstdFlags),
+		Logger: logutil.New("[memorystore]"),
 	}
 }
 

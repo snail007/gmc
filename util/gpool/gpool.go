@@ -7,8 +7,8 @@ package gpool
 
 import (
 	"context"
-	"log"
-	"os"
+	gmccore "github.com/snail007/gmc/core"
+	logutil "github.com/snail007/gmc/util/log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,7 +22,7 @@ type GPool struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	runningtCnt *int32
-	logger      *log.Logger
+	logger      gmccore.Logger
 	workerCnt   int
 }
 
@@ -37,7 +37,7 @@ func New(workerCount int) (p *GPool) {
 		cancel:      cancel0,
 		runningtCnt: &cnt,
 		workerCnt:   workerCount,
-		logger:      log.New(os.Stdout, "", log.LstdFlags),
+		logger:      logutil.New(""),
 	}
 	p.init()
 	return
@@ -138,12 +138,12 @@ func (s *GPool) log(fmt string, v ...interface{}) {
 	if s.logger == nil {
 		return
 	}
-	s.logger.Printf(fmt, v...)
+	s.logger.Infof(fmt, v...)
 }
 
 //SetLogger set the logger to logging, you can SetLogger(nil) to disable logging
 //
 //default is log.New(os.Stdout, "", log.LstdFlags),
-func (s *GPool) SetLogger(l *log.Logger) {
+func (s *GPool) SetLogger(l gmccore.Logger) {
 	s.logger = l
 }

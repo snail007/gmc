@@ -8,10 +8,11 @@ package gmccontroller
 import (
 	"fmt"
 	gmcconfig "github.com/snail007/gmc/config"
+	gmccore "github.com/snail007/gmc/core"
 	gmcview "github.com/snail007/gmc/http/view"
 	gmci18n "github.com/snail007/gmc/i18n"
-	"github.com/snail007/gmc/util/castutil"
-	gmchttputil "github.com/snail007/gmc/util/httputil"
+	"github.com/snail007/gmc/util/cast"
+	gmchttputil "github.com/snail007/gmc/util/http"
 	"net/http"
 
 	gmccookie "github.com/snail007/gmc/http/cookie"
@@ -34,6 +35,7 @@ type Controller struct {
 	Ctx          *gmcrouter.Ctx
 	View         *gmcview.View
 	Lang         string
+	Logger       gmccore.Logger
 }
 
 //MethodCallPre__ called before controller method and Before__() if have.
@@ -47,6 +49,7 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 	this.SessionStore = ctxvalue.SessionStore
 	this.Router = ctxvalue.Router
 	this.Config = ctxvalue.Config
+	this.Logger = ctxvalue.Logger
 
 	this.View = gmcview.New(w, ctxvalue.Tpl)
 	this.Cookie = gmccookie.New(w, r)
@@ -101,7 +104,7 @@ func (this *Controller) initGPSC() {
 	// session
 	if this.SessionStore != nil && this.Session != nil {
 		for k, v := range this.Session.Values() {
-			s[castutil.ToString(k)] = castutil.ToString(v)
+			s[cast.ToString(k)] = cast.ToString(v)
 		}
 	}
 
@@ -113,8 +116,8 @@ func (this *Controller) initGPSC() {
 	// URL
 	u0 := this.Request.URL
 	u["HOST"] = u0.Host
-	u["HOSTNAME"]=u0.Hostname()
-	u["PORT"]=u0.Port()
+	u["HOSTNAME"] = u0.Hostname()
+	u["PORT"] = u0.Port()
 	u["PATH"] = u0.Path
 	u["FRAGMENT"] = u0.Fragment
 	u["OPAQUE"] = u0.Opaque
@@ -122,9 +125,9 @@ func (this *Controller) initGPSC() {
 	u["RAW_QUERY"] = u0.RawQuery
 	u["SCHEME"] = u0.Scheme
 	u["USER"] = u0.User.Username()
-	u["PASSWORD"],_ = u0.User.Password()
-	u["URI"]=u0.RequestURI()
-	u["URL"]=u0.String()
+	u["PASSWORD"], _ = u0.User.Password()
+	u["URI"] = u0.RequestURI()
+	u["URL"] = u0.String()
 
 	// fill gpsc to data
 	data := map[string]interface{}{

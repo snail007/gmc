@@ -9,7 +9,7 @@ import (
 )
 
 func Initialize(s *gmc.HTTPServer) (err error) {
-	s.Logger().Println("using config file : ", s.Config().ConfigFileUsed())
+	s.Logger().Infof("using config file : %s", s.Config().ConfigFileUsed())
 
 	// initialize database if needed
 	err = gmc.DB.Init(s.Config())
@@ -41,12 +41,12 @@ func Initialize(s *gmc.HTTPServer) (err error) {
 
 	// all path in router
 	_, port, _ := net.SplitHostPort(s.Config().GetString("httpserver.listen"))
-	fmt.Println("please visit:")
+	fmt.Fprintln(s.Logger().Writer(),"please visit:")
 	for path, _ := range s.Router().RouteTable() {
 		if strings.Contains(path, "*") {
 			continue
 		}
-		fmt.Println("http://127.0.0.1:" + port + path)
+		fmt.Fprintln(s.Logger().Writer(),"http://127.0.0.1:" + port + path)
 	}
 	return
 }

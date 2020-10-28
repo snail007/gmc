@@ -1,4 +1,4 @@
-module mygmcapi
+module demoapiapp
 
 go 1.12
 

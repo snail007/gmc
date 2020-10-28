@@ -2,14 +2,14 @@ package gmccachemem
 
 import (
 	"fmt"
-	gmccache "github.com/snail007/gmc/cache"
-	"github.com/snail007/gmc/util/castutil"
+	"github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/util/cast"
 	"time"
 )
 
 type (
 	MemCache struct {
-		gmccache.Cache
+		gmccore.Cache
 		cfg *MemCacheConfig
 		c   *Cache
 	}
@@ -24,7 +24,7 @@ func NewMemCacheConfig() *MemCacheConfig {
 	}
 }
 
-func NewMemCache(cfg interface{}) gmccache.Cache {
+func NewMemCache(cfg interface{}) gmccore.Cache {
 	cfg0 := cfg.(*MemCacheConfig)
 	rc := &MemCache{
 		cfg: cfg0,
@@ -49,9 +49,9 @@ func (s *MemCache) String() string {
 func (s *MemCache) Get(key string) (string, error) {
 	v, b := s.c.Get(key)
 	if b {
-		return castutil.ToString(v), nil
+		return cast.ToString(v), nil
 	}
-	return "", gmccache.KEY_NOT_EXISTS
+	return "", gmccore.KEY_NOT_EXISTS
 }
 func (s *MemCache) Set(key string, value string, ttl time.Duration) error {
 	s.c.Set(key, value, ttl)
@@ -65,7 +65,7 @@ func (s *MemCache) Incr(key string) (v int64, err error) {
 	err = s.c.Increment(key, 1)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = castutil.ToInt64(n)
+		v = cast.ToInt64(n)
 	}
 	return
 }
@@ -73,7 +73,7 @@ func (s *MemCache) Decr(key string) (v int64, err error) {
 	err = s.c.Decrement(key, 1)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = castutil.ToInt64(n)
+		v = cast.ToInt64(n)
 	}
 	return
 }
@@ -81,7 +81,7 @@ func (s *MemCache) IncrN(key string, n int64) (v int64, err error) {
 	err = s.c.Increment(key, n)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = castutil.ToInt64(n)
+		v = cast.ToInt64(n)
 	}
 	return
 }
@@ -89,7 +89,7 @@ func (s *MemCache) DecrN(key string, n int64) (v int64, err error) {
 	err = s.c.Decrement(key, n)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = castutil.ToInt64(n)
+		v = cast.ToInt64(n)
 	}
 	return
 }
@@ -97,10 +97,10 @@ func (s *MemCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := s.Get(key)
-		if e != nil && !gmccache.IsNotExits(e) {
+		if e != nil && !gmccore.IsNotExits(e) {
 			return nil, e
 		}
-		d[key] = castutil.ToString(v)
+		d[key] = cast.ToString(v)
 	}
 	return d, nil
 }

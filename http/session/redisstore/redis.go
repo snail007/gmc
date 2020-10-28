@@ -6,11 +6,10 @@
 package gmcredisstore
 
 import (
-	"log"
-	"os"
+	"github.com/snail007/gmc/core"
+	logutil "github.com/snail007/gmc/util/log"
 	"time"
 
-	gmccache "github.com/snail007/gmc/cache"
 	gmcredis "github.com/snail007/gmc/cache/redis"
 	gmcsession "github.com/snail007/gmc/http/session"
 )
@@ -18,13 +17,13 @@ import (
 type RedisStoreConfig struct {
 	TTL      int64 //seconds
 	RedisCfg *gmcredis.RedisCacheConfig
-	Logger   *log.Logger
+	Logger   gmccore.Logger
 }
 
 func NewRedisStoreConfig() RedisStoreConfig {
 	return RedisStoreConfig{
 		TTL:      3600,
-		Logger:   log.New(os.Stdout, "[redisstore]", log.LstdFlags),
+		Logger:   logutil.New("[redisstore]"),
 		RedisCfg: gmcredis.NewRedisCacheConfig(),
 	}
 }
@@ -32,7 +31,7 @@ func NewRedisStoreConfig() RedisStoreConfig {
 type RedisStore struct {
 	gmcsession.Store
 	cfg   RedisStoreConfig
-	cache gmccache.Cache
+	cache gmccore.Cache
 }
 
 func New(config interface{}) (st gmcsession.Store, err error) {
@@ -54,7 +53,7 @@ func (s *RedisStore) Load(sessionID string) (sess *gmcsession.Session, isExists 
 	err := sess.Unserialize(v)
 	if err != nil {
 		sess = nil
-		s.cfg.Logger.Printf("redisstore unserialize error: %s", err)
+		s.cfg.Logger.Warnf("redisstore unserialize error: %s", err)
 		return
 	}
 	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {

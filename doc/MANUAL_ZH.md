@@ -33,12 +33,15 @@ cache/
 └── redis
 ```
 配置方式：
+
 Cache配置目录：WEBROOT/app/app/app.toml
+```shell
 [cache]
 default="redis" //设置默认生效缓存配置项，比如项目默认为redis缓存生效
 [[cache.redis]] //redis配置项
 [[cache.file]]  //file配置项
 [[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
+```
 缓存的使用：
 1. 初始化配置项
 gmc.Cache.Init(cfg)

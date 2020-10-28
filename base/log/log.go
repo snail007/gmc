@@ -39,7 +39,7 @@ func (G *GMCLog) With(namespace string) gmccore.Logger {
 func (G *GMCLog) Namespace() string {
 	ns := G.ns
 	if G.parent != nil {
-		ns = G.parent.ns + "/" + G.ns
+		ns = G.parent.Namespace() + "/" + G.ns
 	}
 	return strings.TrimLeft(ns, "/")
 }

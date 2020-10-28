@@ -42,14 +42,35 @@ default="redis" //设置默认生效缓存配置项，比如项目默认为redis
 [[cache.file]]  //file配置项
 [[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
 ```
-缓存的使用：
-1. 初始化配置项
-gmc.Cache.Init(cfg)
-1. 实例化配置
-c := gmc.Cache.Cache()
-1. 开始自由使用,详细使用可参考测试文件
-c.Set("test", "aaa", time.Second)
-c.Get("test")
+快速开始
+```shell
+package main
+
+import (
+	"time"
+
+	"github.com/snail007/gmc"
+)
+
+func main() {
+	cfg := gmc.New.Config()
+	cfg.SetConfigFile("../../app/app.toml")
+	err := cfg.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	// Init only using [cache] section in app.toml
+	gmc.Cache.Init(cfg)
+
+	// cache default is redis in app.toml
+	// so gmc.Cache() equal to  gmc.Redis()
+	// we can connect to multiple cache drivers at same time, id is the unique name of driver
+	// gmc.Cache(id) to load `id` named default driver.
+	c := gmc.Cache.Cache()
+	c.Set("test", "aaa", time.Second)
+	c.Get("test")
+}
+```
 ## Redis缓存
 基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
 ```shell

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
 type GMCLog struct {
@@ -13,6 +14,7 @@ type GMCLog struct {
 	parent *GMCLog
 	ns     string
 	level  gmccore.LOG_LEVEL
+	mu  sync.RWMutex
 }
 
 func NewGMCLog() gmccore.Logger {
@@ -149,5 +151,7 @@ func (G *GMCLog) Writer() io.Writer {
 }
 
 func (G *GMCLog) SetOutput(w io.Writer) {
+	G.mu.Lock()
+	defer G.mu.Unlock()
 	G.l.SetOutput(w)
 }

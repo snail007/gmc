@@ -40,11 +40,11 @@ default="redis" //设置默认生效缓存配置项，比如项目默认为redis
 [[cache.file]]  //file配置项
 [[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
 缓存的使用：
-1.初始化配置项
+1. 初始化配置项
 gmc.Cache.Init(cfg)
-2.实例化配置
+1. 实例化配置
 c := gmc.Cache.Cache()
-3.开始自由使用,详细使用可参考测试文件
+1. 开始自由使用,详细使用可参考测试文件
 c.Set("test", "aaa", time.Second)
 c.Get("test")
 ## Redis 缓存

@@ -21,13 +21,36 @@
 ## SQLITE3 数据库
 
 # 缓存
-
+GMC缓存Cache支持Redis、File、内存缓存三种类型,因为Redis基本目前web开发的标准配置，默认开启Redis缓存，缓存实现了对三种缓存池的实现，
+减少了系统调用的开销，为适应不同的业务场景，开发者可以采用不同缓存实现。
+Cache的目录结构：
+```text
+cache/
+├── examples
+├── file
+├── helper //helper实现了对各缓存接口实现的封装
+├── memory
+└── redis
+```
+配置方式：
+Cache配置目录：WEBROOT/app/app/app.toml
+[cache]
+default="redis" //设置默认生效缓存配置项，比如项目默认为redis缓存生效
+[[cache.redis]] //redis配置项
+[[cache.file]]  //file配置项
+[[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
+缓存的使用：
+1.初始化配置项
+gmc.Cache.Init(cfg)
+2.实例化配置
+c := gmc.Cache.Cache()
+3.开始自由使用,详细使用可参考测试文件
+c.Set("test", "aaa", time.Second)
+c.Get("test")
 ## Redis 缓存
-
-## File 缓存
-
+基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
 ## 内存缓存
-
+cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
 # I18n国际化
 
 # 中间件

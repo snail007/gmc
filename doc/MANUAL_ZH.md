@@ -22,11 +22,108 @@
 
 # 缓存
 
-## Redis 缓存
+## 缓存介绍
 
-## File 缓存
+GMC缓存Cache支持Redis、File、内存缓存三种类型，为适应不同的业务场景，开发者也可以自己实现`gmccore.Cache`接口，
+然后通过`gmccachehelper.AddCacheU(id,cache)`注册自己的缓存，然后就可以通过`gmc.Cache.Cache(id)`获取自己注册的缓存对象。
 
-## 内存缓存
+如果要在`gmc`项目里面使用缓存，需要修改配置文件`app.toml`里面的`[cache]`部分，首先设置默认缓存类型,比如使用redis `default="redis"`，
+然后需要修改对应缓存驱动`[[redis]]`部分的启用`enable=true`。每个驱动类型的缓存都可以配置多个，每个的id必须唯一，id是"default"的将作为默认使用。
+
+比如：
+
+如果redis配置了多个，那么`gmc.Cache.Redis()`获取的就是id为default的那个。
+
+## 缓存配置说明
+
+```shell
+[cache]
+default="redis" //设置默认生效缓存配置项，比如项目默认为redis缓存生效
+[[cache.redis]] //redis配置项
+[[cache.file]]  //file配置项
+[[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
+```
+
+通过gmc.APP启动的API或者Web服务，使用配置文件配置缓存，当你在配置文件app.toml启用了缓存，
+那么可以通过gmc.Cache.Cache()使用缓存。
+
+### Redis缓存
+
+基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
+
+```shell
+[[cache.redis]]
+debug=true       //是否启用调试
+enable=true      //开启redis缓存
+id="default"     //缓存池ID
+address=":6379"  //redis客户端链接地址
+prefix=""
+password=""
+timeout=10       //等待连接池分配连接的最大时长（毫秒），超过这个时长还没可用的连接则发生
+dbnum=0          //连接Redis时的 DB 编号，默认是0.
+maxidle=10       //连接池中最多可空闲maxIdle个连接
+maxactive=30     //连接池支持的最大连接数
+idletimeout=300  //一个连接idle状态的最大时长（毫秒），超时则被释放
+maxconnlifetime=3600 //一个连接的生命时长（毫秒），超时而且没被使用则被释放
+wait=true
+```
+
+### Memory缓存
+
+cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
+配置信息如下所示，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
+
+```shell
+[[cache.memory]]
+enable=false
+id="default"
+cleanupinterval=30
+```
+
+### File缓存
+
+配置信息如下所示，配置 dir 表示缓存的文件目录，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
+
+```shell
+[[cache.file]]
+enable=false
+id="default"
+dir="{tmp}"
+cleanupinterval=30
+```
+
+## 单独使用缓存模块
+
+当然`gmccache`包也可以单独使用，不依赖gmc框架,自己实例化配置对象，初始化缓存配置，使用方法示例如下：
+
+```golang
+package main
+
+import (
+	"time"
+
+	"github.com/snail007/gmc"
+)
+
+func main() {
+	cfg := gmc.New.Config()
+	cfg.SetConfigFile("../../app/app.toml")
+	err := cfg.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	// Init only using [cache] section in app.toml
+	gmc.Cache.Init(cfg)
+
+	// cache default is redis in app.toml
+	// so gmc.Cache() equal to  gmc.Redis()
+	// we can connect to multiple cache drivers at same time, id is the unique name of driver
+	// gmc.Cache(id) to load `id` named default driver.
+	c := gmc.Cache.Cache()
+	c.Set("test", "aaa", time.Second)
+	c.Get("test")
+}
+```
 
 # I18n国际化
 

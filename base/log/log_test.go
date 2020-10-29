@@ -60,10 +60,10 @@ func TestGMCLog_With_2(t *testing.T) {
 	var out bytes.Buffer
 	l := gmclog.NewGMCLog()
 	l.SetOutput(&out)
-	l0 := l.With("api").With("user")
+	l0 := l.With("api").With("user").With("list")
 	l0.Info("a")
 	t.Log(out.String())
-	assert.True(strings.HasSuffix(out.String(), "[api/user] INFO a\n"))
+	assert.True(strings.HasSuffix(out.String(), "[api/user/list] INFO a\n"))
 }
 
 func TestGMCLog_Infof(t *testing.T) {

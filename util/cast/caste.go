@@ -970,6 +970,11 @@ func ToStringMapE(i interface{}) (map[string]interface{}, error) {
 			m[ToString(k)] = val
 		}
 		return m, nil
+	case map[string]string:
+		for k, val := range v {
+			m[ToString(k)] = val
+		}
+		return m, nil
 	case map[string]interface{}:
 		return v, nil
 	default:

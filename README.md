@@ -1,4 +1,4 @@
-<img src="/doc/images/logo.png" width="300" height="auto"/>  
+<img src="/doc/images/logo2.png" width="200" height="auto"/>  
 
 # GMC
 GMC is a powerful and flexible golang web framework, but it's not only a web framework. It's full name is golang Mellivora capensis framework.

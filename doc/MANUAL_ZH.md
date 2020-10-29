@@ -21,20 +21,21 @@
 ## SQLITE3 数据库
 
 # 缓存
-GMC缓存Cache支持Redis、File、内存缓存三种类型,因为Redis基本目前web开发的标准配置，默认开启Redis缓存，缓存实现了对三种缓存池的实现，
-减少了系统调用的开销，为适应不同的业务场景，开发者可以采用不同缓存实现。
-Cache的目录结构：
-```text
-cache/
-├── examples
-├── file
-├── helper //helper实现了对各缓存接口实现的封装
-├── memory
-└── redis
-```
-配置方式：
 
-Cache配置目录：WEBROOT/app/app/app.toml
+## 缓存介绍
+
+GMC缓存Cache支持Redis、File、内存缓存三种类型，为适应不同的业务场景，开发者也可以自己实现`gmccore.Cache`接口，
+然后通过`gmccachehelper.AddCacheU(id,cache)`注册自己的缓存，然后就可以通过`gmc.Cache.Cache(id)`获取自己注册的缓存对象。
+
+如果要在`gmc`项目里面使用缓存，需要修改配置文件`app.toml`里面的`[cache]`部分，首先设置默认缓存类型,比如使用redis `default="redis"`，
+然后需要修改对应缓存驱动`[[redis]]`部分的启用`enable=true`。每个驱动类型的缓存都可以配置多个，每个的id必须唯一，id是"default"的将作为默认使用。
+
+比如：
+
+如果redis配置了多个，那么`gmc.Cache.Redis()`获取的就是id为default的那个。
+
+## 缓存配置说明
+
 ```shell
 [cache]
 default="redis" //设置默认生效缓存配置项，比如项目默认为redis缓存生效
@@ -42,8 +43,60 @@ default="redis" //设置默认生效缓存配置项，比如项目默认为redis
 [[cache.file]]  //file配置项
 [[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
 ```
-快速开始
+
+通过gmc.APP启动的API或者Web服务，使用配置文件配置缓存，当你在配置文件app.toml启用了缓存，
+那么可以通过gmc.Cache.Cache()使用缓存。
+
+### Redis缓存
+
+基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
+
 ```shell
+[[cache.redis]]
+debug=true       //是否启用调试
+enable=true      //开启redis缓存
+id="default"     //缓存池ID
+address=":6379"  //redis客户端链接地址
+prefix=""
+password=""
+timeout=10       //等待连接池分配连接的最大时长（毫秒），超过这个时长还没可用的连接则发生
+dbnum=0          //连接Redis时的 DB 编号，默认是0.
+maxidle=10       //连接池中最多可空闲maxIdle个连接
+maxactive=30     //连接池支持的最大连接数
+idletimeout=300  //一个连接idle状态的最大时长（毫秒），超时则被释放
+maxconnlifetime=3600 //一个连接的生命时长（毫秒），超时而且没被使用则被释放
+wait=true
+```
+
+### Memory缓存
+
+cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
+配置信息如下所示，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
+
+```shell
+[[cache.memory]]
+enable=false
+id="default"
+cleanupinterval=30
+```
+
+### File缓存
+
+配置信息如下所示，配置 dir 表示缓存的文件目录，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
+
+```shell
+[[cache.file]]
+enable=false
+id="default"
+dir="{tmp}"
+cleanupinterval=30
+```
+
+## 单独使用缓存模块
+
+当然`gmccache`包也可以单独使用，不依赖gmc框架,自己实例化配置对象，初始化缓存配置，使用方法示例如下：
+
+```golang
 package main
 
 import (
@@ -71,43 +124,61 @@ func main() {
 	c.Get("test")
 }
 ```
-## Redis缓存
-基于redigo@v2.0.0实现，支持redis官方主流方法调用，可以适用绝大部分业务场景
-```shell
-[[cache.redis]]
-debug=true       //是否启用调试
-enable=true      //开启redis缓存
-id="default"     //缓存池ID
-address=":6379"  //redis客户端链接地址
-prefix=""
-password=""
-timeout=10       //等待连接池分配连接的最大时长（毫秒），超过这个时长还没可用的连接则发生
-dbnum=0          //连接Redis时的 DB 编号，默认是0.
-maxidle=10       //连接池中最多可空闲maxIdle个连接
-maxactive=30     //连接池支持的最大连接数
-idletimeout=300  //一个连接idle状态的最大时长（毫秒），超时则被释放
-maxconnlifetime=3600 //一个连接的生命时长（毫秒），超时而且没被使用则被释放
-wait=true
-```
-## Memory缓存
-cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
-配置信息如下所示，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启文件缓存，默认关闭
-```shell
-[[cache.memory]]
-enable=false
-id="default"
-cleanupinterval=30
-```
-## File缓存
-配置信息如下所示，配置 dir 表示缓存的文件目录，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启文件缓存，默认关闭
-```shell
-[[cache.file]]
-enable=false
-id="default"
-dir="{tmp}"
-cleanupinterval=30
-```
+
 # I18n国际化
+
+GMC国际化文件内容是由多行的key=value组成。文件名称使用标准的HTTP头部`Accept-Language`中的格式，比如：zh-CN，en-US。
+后缀是`.toml`。
+
+value，可以理解为，value是fmt.Printf里第一个参数，里面可以写支持的占位符。
+模版输出的时候，可以格式化输出。
+
+比如：
+
+{{printf (trs .Lang "foo2") 100 }}
+
+printf，tr，string都是模版函数。
+1. printf是格式化字符串作用和fmt.Printf一样。
+1. tr是翻译函数，第一个参数是固定的，它对应控制器里面的this.Lang。
+1. 由于tr返回的是template.HTML类型数据，可以用string函数转为string类型。
+
+比如中文翻译文件 `zh-CN.toml` 内容：
+
+```text
+hello="你好"
+foo="任意内容"
+foo1="你的年龄是%d岁"
+foo2="还支持html哟，<b>加粗</b>"
+```
+
+比如英文翻译文件 `en-US.toml` 内容：
+
+```text
+hello="Hello"
+foo="Bar"
+```
+
+hello，foo 其实就是一个key，用来寻找对应的value，也就对应的内容。
+
+以上就是GMC的国际化的规则和原理。
+
+国际化功能，在使用之前需要在配置app.toml里的`[i18n]`模块启用国际化功能，设置`enable=true`，
+设置国际化文件目录`dir="i18n"`，默认是程序平级目录`i18n`，里面存放上面说的国际化翻译文件。
+当有请求的时候，控制器方法在被调用之前，控制器的`this.Lang`成员变量，已经根据访问者浏览器的
+Accept-Language被初始化好。在控制器中可以通过this.Tr(key , hint string)，寻找多个国际
+化语言文件中最优匹配的语言，然后在该语言文件中进行寻找匹配key翻译结果。
+
+国际化相关配置如下：
+
+```toml
+[i18n]
+enable=false
+dir="i18n"
+default="zh-cn"
+```
+
+`default`是默认语言，如果用户HTTP请求头部的语言，国际化模块找不到与之匹配的语言，那么就使用
+这个`default`设置的语言进行翻译。
 
 # 中间件
 
@@ -116,6 +187,23 @@ cleanupinterval=30
 API 和 Web HTTP服务器工作流程架构图如下，此图可以直观的帮助你快速掌握中间件的使用。
 
 <img src="/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  
+
+# 平滑重启/热升级
+
+此功能只适用于Linux平台系统，不适用于Windows系统。
+
+当我们的程序部署到线上的时候，就面临一个平滑重启/平滑升级的问题，也就是在不中断当前已有连接的保证服务一直可用的情况下，进行程序的重启升级。
+
+通过gmc.APP启动的Web和API服务都支持平滑重启/平滑升级，使用非常简单，当你需要重启的时候，使用pkill或者kill命令给程序发送`USR2`信号即可。
+
+比如：
+
+```shell
+pkill -USR2 website
+kill -USR2 11297
+```
+
+本示例中 `website` 是程序名称，`11297`是程序的`pid`。两种方式都可以，自己看习惯选择。
 
 # 工具包
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	logutil "github.com/snail007/gmc/util/log"
 	"net"
 	"net/http"
 	"strings"
@@ -83,6 +84,6 @@ func main() {
 		}
 		fmt.Println("http://127.0.0.1:" + port + path)
 	}
-
+	app.SetLogger(logutil.New("api-app"))
 	app.Logger().Panic(gmc.StackE(app.Run()))
 }

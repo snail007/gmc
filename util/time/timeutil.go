@@ -191,7 +191,7 @@ func TimeFormat(t time.Time, format string) string {
 	format = strings.TrimSpace(format)
 	layout:=""
 	format = strings.Replace(format, "yyyy", "Y", 1)
-	format = stringDedup(format) //String deduplication
+	layout = stringDedup(format) //String deduplication
 	d:=map[string]string{
 		"Y":"2006",
 		"y":"06",

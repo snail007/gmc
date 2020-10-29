@@ -30,6 +30,59 @@
 
 # I18n国际化
 
+GMC国际化文件内容是由多行的key=value组成。文件名称使用标准的HTTP头部`Accept-Language`中的格式，比如：zh-CN，en-US。
+后缀是`.toml`。
+
+value，可以理解为，value是fmt.Printf里第一个参数，里面可以写支持的占位符。
+模版输出的时候，可以格式化输出。
+
+比如：
+
+{{printf (trs .Lang "foo2") 100 }}
+
+printf，tr，string都是模版函数。
+1. printf是格式化字符串作用和fmt.Printf一样。
+1. tr是翻译函数，第一个参数是固定的，它对应控制器里面的this.Lang。
+1. 由于tr返回的是template.HTML类型数据，可以用string函数转为string类型。
+
+比如中文翻译文件 `zh-CN.toml` 内容：
+
+```text
+hello="你好"
+foo="任意内容"
+foo1="你的年龄是%d岁"
+foo2="还支持html哟，<b>加粗</b>"
+```
+
+比如英文翻译文件 `en-US.toml` 内容：
+
+```text
+hello="Hello"
+foo="Bar"
+```
+
+hello，foo 其实就是一个key，用来寻找对应的value，也就对应的内容。
+
+以上就是GMC的国际化的规则和原理。
+
+国际化功能，在使用之前需要在配置app.toml里的`[i18n]`模块启用国际化功能，设置`enable=true`，
+设置国际化文件目录`dir="i18n"`，默认是程序平级目录`i18n`，里面存放上面说的国际化翻译文件。
+当有请求的时候，控制器方法在被调用之前，控制器的`this.Lang`成员变量，已经根据访问者浏览器的
+Accept-Language被初始化好。在控制器中可以通过this.Tr(key , hint string)，寻找多个国际
+化语言文件中最优匹配的语言，然后在该语言文件中进行寻找匹配key翻译结果。
+
+国际化相关配置如下：
+
+```toml
+[i18n]
+enable=false
+dir="i18n"
+default="zh-cn"
+```
+
+`default`是默认语言，如果用户HTTP请求头部的语言，国际化模块找不到与之匹配的语言，那么就使用
+这个`default`设置的语言进行翻译。
+
 # 中间件
 
 ## HTTP 服务器

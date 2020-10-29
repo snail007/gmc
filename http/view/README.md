@@ -27,13 +27,17 @@ delimiterright="}}"
 ### gmc defined functions
 
 1. `tr` be used in i18n, first argument is always `.Lang`, secondary is key name in your i18n locale config file.
-    third is optional tips text for yourself , it will be not output.
+    third is optional tips text for yourself , it will be not output. returns template.HTML typed string.
     
     Example in the template:
     
     `{{tr .Lang "key001" "tips"}}`
-    
-2. `string` only one argument, type is `interface{}`, convert it to string type. 
+
+1. `trs` as same as `tr`, but returns string type.
+
+1. `string` only one argument, type is `interface{}`, convert it to string type. 
+
+1. `tohtml` only one argument, convert it to template.HTML type.
 
 ### gmc defined comparison functions
 

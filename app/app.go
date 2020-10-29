@@ -57,6 +57,12 @@ func Default() *GMCApp {
 	return New().SetConfig(cfg)
 }
 func (s *GMCApp) initialize() (err error) {
+	defer func() {
+		if s.logger==nil{
+			s.logger=gmclog.NewGMCLog()
+		}
+	}()
+
 	if s.config == nil {
 		return
 	}
@@ -67,9 +73,6 @@ func (s *GMCApp) initialize() (err error) {
 		if err != nil {
 			return
 		}
-	}
-	if s.logger==nil{
-		s.logger=gmclog.NewGMCLog()
 	}
 
 	// initialize database

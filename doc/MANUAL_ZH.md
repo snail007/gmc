@@ -42,7 +42,192 @@ GMC快速开始的最好方式是通过GMCT工具链，所以首先同学们要�
 
 # 控制器
 
+## 编写控制器
+
+编写一个自己的GMC控制器，需要导入包`github.com/snail007/gmc`,定义自己的`struct`继承`gmc.Controller`即可。
+
+下面示例代码，实现了一个简单的控制器，定义了一个`Hello`方法。
+
+```go
+package controller
+
+import (
+	"github.com/snail007/gmc"
+)
+
+type Demo struct {
+	gmc.Controller
+}
+
+func (this *Demo) Hello() {
+	this.Write("fmt.Println(\"Hello GMC!\")")
+}
+```
+
+## 控制器规则
+
+1. 控制器名称无限制。
+1. 后缀是两个连续英文半角下划线`__`的控制器方法，在路由里面注册控制器的时候会被忽略。
+1. 控制器方法名称不能包含以下名称，它们是GMC完成框架功能的方法，同学们的控制器里面不能使用这些名称。
+   `MethodCallPre__()`，`MethodCallPost__()`，`Stop()`，`Die()`，`Tr()`，`SessionStart()`，
+   `SessionDestroy()`，`Write()`，`StopE()`。
+1. 方法名称是`Before__()`的方法，是控制器的构造方法，不需要可以不定义，在被访问控制器方法执行之前被调用，
+    可以调用`this.Stop()`阻止被访问`控制器方法`的调用，但不能阻止`After__()`控制器析构方法的调用。
+    可以通过`this.Die()`阻止被访问`控制器方法`和`After__()`调用。
+1. 方法名称是`After__()`的方法，是控制器的析构方法，不需要可以不定义，在被访问控制器方法执行之后被调用。
+1. 控制器成员不能包含以下名称，它们是GMC完成框架功能用的，同学们的控制器里面的成员名称不能使用这些名称。
+   `Response`，`Request`，`Param`，`Session`，`Tpl`，`SessionStore`，`Router`，`Config`，
+   `Cookie`，`Ctx`，`View`，`Lang`，`Logger`，这些成员是十分有用的，我们经常会使用到它们，下面会对它们一一介绍。
+
+## 获取输入
+
+获取输入可以通过`this.Request`对象，它是原生标准的`*http.Request`对象。通过可以访问`GET，POST，COOKIE，上传文件`等数据。
+另外还能通过`this.Ctx`进行一些便捷的输入操作。
+
+## 输出内容
+
+输出可以通过`this.Response`对象，它是原生标准的`http.ResponseWriter`对象。另外你还可以通过`this.Write()`，输出绝大部分数据内容，
+它能自动识别各种数据类型，自动转换后输出到浏览器。
+
+## Session操作
+
+GMC的session和其它同类实现有很大区别，其它同类实现，要么你全局开启，要么全局关闭，这样带来的缺点是，无论你访问哪个控制器的方法，
+框架都会进行初始化session的各种操作，造成不必要的，很大的性能消耗。GMC避免了这个缺点，借鉴了PHP的SESSION实现机制，在需要操作session数据的地方，
+手动调用this.SessionStart()开启session后，才可以访问session数据，这样把性能的消耗降低到最低。另外需要销毁session数据的时候，
+调用this.SessionDestroy()即可。
+
+控制里面可以通过：
+- `this.SessionStart()`开启session。
+- `this.SessionDestroy()`销毁session数据。
+- `this.Session`访问或者设置session数据，必须`this.SessionStart()`开启session后才能使用这个对象，不然这个对象是nil的。
+
+## Cookie操作
+
+操作Cookie，不仅可以通过标准的`this.Request`和`http.ResponseWriter`，
+还能通过GMC提供的`this.Cookie`进行Cookie的`Set，Get，Remove`操作。
+
 # 路由
+
+GMC的路由支持以下功能：
+
+- 绑定控制器，自动识别方法名称，方法名称在URL中一律使用小写。
+- 绑定控制器方法。
+- 绑定`http.Handler`。
+- 自定义控制器在URL里面的路径。
+- 路由分组。
+- 每个控制器可以自定义自己的URL后缀。
+- 每个路由组可以自定义自己的URL后缀。
+
+## 获取路由
+
+通过示例项目，同学们看到，通过新建的Web服务器或者API服务器对象的Router()方法就可以获取对应的路由对象，然后就可以它进行路由的各种配置了。
+
+示例项目的router包里面，通过路由对象进行了简单路由绑定。
+
+## 绑定路由
+
+路由绑定有以下几种方式。
+
+### 绑定控制器
+
+```go
+//...
+r.Controller("/demo", new(controller.Demo))
+//...
+```
+还能传递第三个参数，作为此控制器可以在URL中访问的方法的URL后缀。
+
+### 绑定控制器方法
+
+```go
+//...
+r.ControllerMethod("/",new(controller.Demo),"Index__")
+//...
+```
+
+`ControllerMethod`，可以绑定控制器任意的公有方法，即使后缀是`__`也能绑定。
+
+### 绑定`http.Handler`
+
+下面示例中使用了各种方法绑定一个`http.Handler` `myHanlder` 到URL路径 `/hello` 上，
+`HandlerAny`相当于一次性绑定`GET,POST,DELETE,OPTIONS,PUT,PATCH,HEAD`。
+
+```go
+//...
+r.Handler("GET","/hello",myHanlder)
+r.Handler("POST","/hello",myHanlder)
+r.Handler("DELETE","/hello",myHanlder)
+r.Handler("OPTIONS","/hello",myHanlder)
+r.Handler("PUT","/hello",myHanlder)
+r.Handler("PATCH","/hello",myHanlder)
+r.Handler("HEAD","/hello",myHanlder)
+r.HandlerAny("/hello",myHanlder)
+//...
+```
+
+### 绑定`gmc.Handle`
+
+下面示例中使用了各种方法绑定一个`gmc.Handle` `myHanlde` 到URL路径 `/hello` 上，
+`HandleAny`相当于一次性绑定`GET,POST,DELETE,OPTIONS,PUT,PATCH,HEAD`。
+
+```go
+//...
+func Hello(w gmc.W, r gmc.R, ps gmc.P) {
+    w.Write([]byte("Hello"))
+}
+r.GET("/hello",Hello)
+r.POST("/hello",Hello)
+r.DELETE("/hello",Hello)
+r.OPTIONS("/hello",Hello)
+r.PUT("/hello",Hello)
+r.PATCH("/hello",Hello)
+r.HEAD("/hello",Hello)
+r.Handle("GET","/hello",Hello)
+r.HandleAny("/hello",Hello)
+//...
+```
+
+## 定义参数
+
+示例代码如下：
+         
+ ```go
+ //...
+r.GET("/user/:name",Hello)
+ //...
+ ```
+`:name`是一个占位符参数，此位置的值：
+- 在控制器里面可以通过this.Param.ByName("name")获取。
+- 在绑定的Handle里面可以通过 gmc.P.ByName("name")获取。
+- 在http.Handler里面可以通过：
+    ```go
+    params := httprouter.ParamsFromContext(r.Context())
+    params.ByName("name")
+    ```
+
+## 参数规则
+
+定义一个或多个参数：
+
+```
+URL绑定路径: /user/:user
+
+ /user/gordon              匹配
+ /user/you                 匹配
+ /user/gordon/profile      不匹配
+ /user/                    不匹配
+```
+
+匹配所有路径：
+
+```
+URL绑定路径: /src/*filepath
+
+ /src/                     匹配
+ /src/somefile.go          匹配
+ /src/subdir/somefile.go   匹配
+```
+
 
 # 模版引擎
 
@@ -57,6 +242,8 @@ GMC快速开始的最好方式是通过GMCT工具链，所以首先同学们要�
 ## MySQL 数据库
 
 ## SQLITE3 数据库
+
+# SESSION
 
 # 缓存
 

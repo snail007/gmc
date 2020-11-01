@@ -79,26 +79,28 @@ type (
 
 var (
 
-	// Shortcut of gmcerr.Stack.
+	// Alias of gmcerr.Stack.
 	// Acquires the full stack, returns string.
 	StackE = gmcerr.Stack
 
-	// Shortcut of gmcerr.Errorf
+	// Alias of gmcerr.Errorf
 	// Create a gmcerr.Error with format string.
 	Errorf = gmcerr.Errorf
 
-	// Shortcut of gmcerr.Wrap
+	// Alias of gmcerr.Wrap
 	// Wrap an error or string to a gmc.Error.
 	WrapE = gmcerr.Wrap
 
-	// Shortcut of gmchttputil.StopE
+	// Alias of gmchttputil.StopE
 	// StopE will exit controller method if error is not nil.
 	// First argument is an error.
 	// Secondary argument is fail function, it be called if error is not nil.
 	// Third argument is success function, it be called if error is nil.
 	StopE = gmchttputil.StopE
 
-	// Shortcut of gmci18n.Tr
+	// Alias of gmci18n.Tr
 	// This only worked after gmci18n.Init called.
 	Tr = gmci18n.Tr
+	// Alias of gmci18n.Tr gmcrouter.ParamsFromContext
+	ParamsFromContext = gmcrouter.ParamsFromContext
 )

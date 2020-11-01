@@ -201,7 +201,7 @@ r.GET("/user/:name",Hello)
 - 在绑定的Handle里面可以通过 `gmc.P.ByName("name")` 获取。
 - 在 `http.Handler` 里面可以通过：
     ```go
-    params := httprouter.ParamsFromContext(r.Context())
+    params := gmc.ParamsFromContext(r.Context())
     params.ByName("name")
     ```
 

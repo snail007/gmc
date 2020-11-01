@@ -2,6 +2,44 @@
 
 # 快速开始
 
+GMC快速开始的最好方式是通过GMCT工具链，所以首先同学们要安装好`GMCT工具链`，可以参考本手册[GMCT工具链](#GMCT-工具链)章节进行安装。
+
+快速建立一个Web项目，请参考：[初始化一个Web项目](#初始化一个Web项目)
+
+假设我们用`GMCT工具链`新建了一个项目，项目路径是：`$GOPATH/src/gmcdemo`，默认情况下，项目目录文件结构如下：
+
+```text
+./gmcdemo
+├── conf
+│   └── app.toml
+├── controller
+│   └── demo.go
+├── gmcrun.toml
+├── go.mod
+├── go.sum
+├── initialize
+│   └── initialize.go
+├── main.go
+├── router
+│   └── router.go
+├── static
+│   └── jquery.js
+└── views
+    └── welcome.html
+```
+
+项目文件说明：
+1. `conf/app.toml` 是项目配置文件，几乎所有Web功能都在这里配置，比如：web监听设置，session，缓存，数据库等等，是最常用的文件。
+1. `controller/demo.go` demo控制器文件，默认为同学们建立好了一个示例控制器，快打开它看看吧。
+1. `gmcrun.toml`这个文件不是gmc项目的，是gmct工具的配置文件，因为我用了gmct run运行项目，所以会有此文件，具体使用可以参考[GMCT工具链](#GMCT-工具链)。
+1. `go.mod, go.sum` 这两个是项目go mod包依赖管理文件。
+1. `initialize/initialize.go` 是项目启动时，初始化的操作都单独在这一个文件里面，而不是所有东西都写在入口件里面，这种方法是GMC推荐的项目结构组织方式。
+    示例项目默认情况下，这个文件的初始化方法里面调用了初始化了路由的配置。
+1. `router/router.go` 路由的配置，项目单独最为一个文件独立出来，这样可以很清晰的管理我们的路由。
+1. `main.go` 这个是项目的入口文件，主要是通过新建的`GMC APP`对象启动了`Web服务`，然后在服务初始化的时候，调用了上面`initialize`初始化包的初始化方法。
+1. `static/jquery.js` 是项目默认主页引入的js文件。
+1. `views/welcome.html` 是项目默认主页使用的视图文件，在上面说的`Demo控制器`里面你可以看见它的身影哟，我们访问 `http://127.0.0.1:7080/` 看见的页面，就是这个视图渲染的结果。
+
 # 控制器
 
 # 路由
@@ -184,7 +222,22 @@ default="zh-cn"
 
 ## HTTP 服务器
 
-API 和 Web HTTP服务器工作流程架构图如下，此图可以直观的帮助你快速掌握中间件的使用。
+GMC的Web和API服务器都支持中间件，当现有功能无法完成你的需求，你可以通过注册中间件，完成各种功能，比如：`权限认证`，`日志记录`，`数据埋点`，`修改请求`等等。
+从GMC收到用户请求开始，到控制器方法或者handler被真正被执行这期间，按着执行的顺序和时机，中间件分为四种
+名字分别为：`Middleware0`，`Middleware1`，`Middleware2`，`Middleware3`，每种中间件都可以注册多个，
+它们会按添加的顺序被依次执行，但是当某种的某个中间件返回FALSE的时候，位于这个中间件后的此类中间件都将被跳过执行。
+
+一个中间件就是一个function。
+
+API服务中它的定义是`func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)`。
+
+Web服务中它的定义是`func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)`。
+
+API 和 Web HTTP服务器工作流程架构图如下，它们执行的顺序和时机，此图可以直观的帮助你快速掌握中间件的使用。
+
+下图是适用于Web和API服务，把下面的controller理解为API中注册的 handler，就是API服务中间件的流程图。
+
+图中的STOP对应的就是中间件function返回的值是true的时候。
 
 <img src="/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  
 

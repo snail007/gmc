@@ -197,9 +197,9 @@ r.GET("/user/:name",Hello)
  //...
  ```
 `:name`是一个占位符参数，此位置的值：
-- 在控制器里面可以通过this.Param.ByName("name")获取。
-- 在绑定的Handle里面可以通过 gmc.P.ByName("name")获取。
-- 在http.Handler里面可以通过：
+- 在控制器里面可以通过 `this.Param.ByName("name")` 获取。
+- 在绑定的Handle里面可以通过 `gmc.P.ByName("name")` 获取。
+- 在 `http.Handler` 里面可以通过：
     ```go
     params := httprouter.ParamsFromContext(r.Context())
     params.ByName("name")

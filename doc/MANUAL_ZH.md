@@ -167,7 +167,7 @@ r.HandlerAny("/hello",myHanlder)
 
 ### 绑定`gmc.Handle`
 
-下面示例中使用了各种方法绑定一个`gmc.Handle` `myHanlde` 到URL路径 `/hello` 上，
+下面示例中使用了各种方法绑定一个`gmc.Handle` `Hello` 到URL路径 `/hello` 上，
 `HandleAny`相当于一次性绑定`GET,POST,DELETE,OPTIONS,PUT,PATCH,HEAD`。
 
 ```go

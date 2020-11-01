@@ -209,7 +209,7 @@ r.GET("/user/:name",Hello)
 
 定义一个或多个参数：
 
-```
+```text
 URL绑定路径: /user/:user
 
  /user/gordon              匹配
@@ -220,7 +220,7 @@ URL绑定路径: /user/:user
 
 匹配所有路径：
 
-```
+```text
 URL绑定路径: /src/*filepath
 
  /src/                     匹配

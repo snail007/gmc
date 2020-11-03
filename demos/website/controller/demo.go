@@ -114,3 +114,9 @@ func (this *Demo) Cache() {
 	v, _ := gmc.Cache.Redis().Get("test")
 	this.Write(v)
 }
+
+func (this *Demo) List() {
+	pager := this.Ctx.NewPager(10, 10000)
+	this.View.Set("paginator", pager)
+	this.View.Render("list")
+}

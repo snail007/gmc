@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+{{ $pager := .paginator }}
+<ul class="pagination pagination-sm">
+    <li><span>共 {{$pager.Nums}} 条数据 </span></li>
+    {{if $pager.HasPrev}}
+        <li><a href="{{$pager.PageLinkFirst}}">首页</a></li>
+        <li><a href="{{$pager.PageLinkPrev}}"><span><i class="glyphicon glyphicon-backward"></i></span></a></li>
+    {{else}}
+        <li class="disabled"><a>首页</a></li>
+        <li class="disabled"><a><span><i class="glyphicon glyphicon-backward"></i></span></a></li>
+    {{end}}
+    {{range $index, $page := $pager.Pages}}
+        <li{{if $pager.IsActive .}} class="active"{{end}}>
+            <a href="{{$pager.PageLink $page}}">{{$page}}</a>
+        </li>
+    {{end}}
+    {{if $pager.HasNext}}
+        <li><a href="{{$pager.PageLinkNext}}"><span><i class="glyphicon glyphicon-forward"></i></span></a></li>
+        <li><a href="{{$pager.PageLinkLast}}">尾页</a></li>
+    {{else}}
+        <li class="disabled"><a><span><i class="glyphicon glyphicon-forward"></i></span></a></li>
+        <li class="disabled"><a>尾页</a></li>
+    {{end}}
+</ul>
+<form action="{{$pager.PageBaseLink}}" onsubmit="location=this.action+document.pager.page.value;return false;" name="pager"><input name="page"/><input type="submit" value="goto"></form>

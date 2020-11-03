@@ -548,7 +548,6 @@ func (c *cache) IncrementFloat64(k string, n float64) (float64, error) {
 // possible to decrement it by n. To retrieve the decremented value, use one
 // of the specialized methods, e.g. DecrementInt64.
 func (c *cache) Decrement(k string, n int64) error {
-	// TODO: Implement Increment and Decrement more cleanly.
 	// (Cannot do Increment(k, n*-1) for uints.)
 	c.mu.Lock()
 	v, found := c.items[k]
@@ -556,35 +555,35 @@ func (c *cache) Decrement(k string, n int64) error {
 		c.mu.Unlock()
 		return fmt.Errorf("Item not found")
 	}
-	switch v.Object.(type) {
+	switch val:=v.Object.(type) {
 	case string:
 		v.Object = cast.ToInt64(v.Object.(string)) - int64(n)
 	case int:
-		v.Object = v.Object.(int) - int(n)
+		v.Object = val - int(n)
 	case int8:
-		v.Object = v.Object.(int8) - int8(n)
+		v.Object = val - int8(n)
 	case int16:
-		v.Object = v.Object.(int16) - int16(n)
+		v.Object = val - int16(n)
 	case int32:
-		v.Object = v.Object.(int32) - int32(n)
+		v.Object = val - int32(n)
 	case int64:
-		v.Object = v.Object.(int64) - n
+		v.Object = val - n
 	case uint:
-		v.Object = v.Object.(uint) - uint(n)
+		v.Object = val - uint(n)
 	case uintptr:
-		v.Object = v.Object.(uintptr) - uintptr(n)
+		v.Object = val- uintptr(n)
 	case uint8:
-		v.Object = v.Object.(uint8) - uint8(n)
+		v.Object = val - uint8(n)
 	case uint16:
-		v.Object = v.Object.(uint16) - uint16(n)
+		v.Object = val - uint16(n)
 	case uint32:
-		v.Object = v.Object.(uint32) - uint32(n)
+		v.Object = val- uint32(n)
 	case uint64:
-		v.Object = v.Object.(uint64) - uint64(n)
+		v.Object = val - uint64(n)
 	case float32:
-		v.Object = v.Object.(float32) - float32(n)
+		v.Object = val - float32(n)
 	case float64:
-		v.Object = v.Object.(float64) - float64(n)
+		v.Object = val - float64(n)
 	default:
 		c.mu.Unlock()
 		return fmt.Errorf("The value for %s is not an integer", k)

@@ -21,5 +21,6 @@ func main() {
 	})
 
 	// 3. run the app
-	app.Logger().Panic(gmc.StackE(app.Run()))
+	err:=gmc.StackE(app.Run())
+	app.Logger().Panic(err)
 }

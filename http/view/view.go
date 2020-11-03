@@ -1,6 +1,7 @@
 package gmcview
 
 import (
+	gmcerr "github.com/snail007/gmc/error"
 	gmctemplate "github.com/snail007/gmc/http/template"
 	gmchttputil "github.com/snail007/gmc/util/http"
 	"io"
@@ -65,6 +66,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 	}
 	d, this.lasterr = this.tpl.Execute(tpl, data0)
 	if this.lasterr != nil {
+		gmchttputil.Stop(this.writer,gmcerr.Wrap(this.lasterr).ErrorStack())
 		return
 	}
 	if this.layout != "" {

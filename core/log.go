@@ -3,7 +3,7 @@ package gmccore
 import "io"
 
 const (
-	LTRACE=iota
+	LTRACE = iota
 	LDEBUG
 	LINFO
 	LWARN
@@ -14,7 +14,6 @@ const (
 type LOG_LEVEL int
 
 type Logger interface {
-
 	Panic(v ...interface{})
 	Panicf(format string, v ...interface{})
 
@@ -41,4 +40,7 @@ type Logger interface {
 	Writer() io.Writer
 	SetOutput(w io.Writer)
 
+	Async() bool
+	WaitAsyncDone()
+	EnableAsync()
 }

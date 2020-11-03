@@ -61,6 +61,11 @@ func (s *GMCApp) initialize() (err error) {
 		if s.logger==nil{
 			s.logger=gmclog.NewGMCLog()
 		}
+		if s.logger.Async(){
+			s.OnShutdown(func() {
+				s.logger.WaitAsyncDone()
+			})
+		}
 	}()
 
 	if s.config == nil {

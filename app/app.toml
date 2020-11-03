@@ -28,7 +28,8 @@ urlpath="/static/"
 #############################################################
 # logging configuration
 #############################################################
-#
+# async=true, you must call logger.WaitAsyncDone() before
+# shutdown.
 #############################################################
 [log]
 # 0,1,2,3,4,5 => TRACE, DEBUG, INFO, WARN, ERROR, PANIC
@@ -40,8 +41,9 @@ dir="./logs"
 # filename in logs dir.
 # available placeholders are:
 # %Y:Year 2020, %M:Month 10, %d:Day 10, %H:24Hours 21
-filename="test_%Y%m%d%H%i%s.log"
+filename="test_%Y%m%d%H.log"
 gzip=true
+async=true
 
 #############################################################
 # i18n configuration

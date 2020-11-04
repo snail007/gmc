@@ -205,6 +205,7 @@ func (g *GMCLog) Write(v ...interface{}) {
 		}:
 			g.asyncWG.Add(1)
 		default:
+			g.l.Print("WARN gmclog buf chan overflow")
 		}
 		return
 	}
@@ -221,6 +222,7 @@ func (g *GMCLog) Writef(format string, v ...interface{}) {
 		}:
 			g.asyncWG.Add(1)
 		default:
+			g.l.Print("WARN gmclog buf chan overflow")
 		}
 		return
 	}

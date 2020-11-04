@@ -18,6 +18,7 @@ func InitRouter(s *gmc.HTTPServer) {
 
 	s.AddMiddleware2(logging)
 
+	// middleware: accesslog
 	s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
 
 	// acquire router object

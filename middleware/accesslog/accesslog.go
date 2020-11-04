@@ -20,9 +20,8 @@ func newFromConfig(c *gmcconfig.Config) *accesslog {
 	cfg := c.Sub("accesslog")
 	logger := gmclog.NewGMCLog().(*gmclog.GMCLog)
 	logger.SetFlags(0)
-	writer, _ := gmclog.NewFileWriter(cfg.GetString("filename"),
-		cfg.GetString("dir"), cfg.GetBool("gzip"))
-	logger.SetOutput(writer)
+ 	logger.SetOutput(gmclog.NewFileWriter(cfg.GetString("filename"),
+		cfg.GetString("dir"), cfg.GetBool("gzip")))
 	logger.EnableAsync()
 	return &accesslog{
 		format: cfg.GetString("format"),
@@ -50,7 +49,7 @@ func log(ctx *gmcrouter.Ctx, logger *accesslog) {
 	rule := [][]string{
 		[]string{"$host", ctx.Request.Host},
 		[]string{"$uri", ctx.Request.URL.RequestURI()},
-		[]string{"$time_used", cast.ToString(int(ctx.TimeUsed()/time.Millisecond))},
+		[]string{"$time_used", cast.ToString(int(ctx.TimeUsed() / time.Millisecond))},
 		[]string{"$status_code", cast.ToString(ctx.StatusCode())},
 		[]string{"$query", ctx.Request.URL.Query().Encode()},
 		[]string{"$req_time", time.Now().Format("2006-01-02 15:04:05")},
@@ -60,7 +59,7 @@ func log(ctx *gmcrouter.Ctx, logger *accesslog) {
 	}
 	str := logger.format
 	for _, v := range rule {
-		key:=fmt.Sprintf("${%s}",v[0][1:])
+		key := fmt.Sprintf("${%s}", v[0][1:])
 		str = strings.Replace(str, key, v[1], 1)
 		str = strings.Replace(str, v[0], v[1], 1)
 	}

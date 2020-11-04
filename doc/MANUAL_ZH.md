@@ -235,7 +235,152 @@ URL绑定路径: /src/*filepath
 
 # 模版引擎
 
+GMC模版引擎，是对`text/template`的包装，增强了其功能。模版的基本使用方式，语法都和`text/template`一样。
+
+## 模版配置
+
+模版的配置在app.toml中，默认如下：
+
+```toml
+[template]
+dir="views"
+ext=".html"
+delimiterleft="{{"
+delimiterright="}}"
+```
+
+- dir 是存放视图模版文件的目录。
+- ext 是模版文件的后缀，只有此后缀的文件才会被解析。
+- delimiterleft 模版中语法块的左符号。
+- delimiterright 模版中语法块的右符号。
+
+## 包含模版
+
+假设模版目录是views，它里面的文件结构如下：
+
+```text
+views/
+├── common
+│   └── head.html
+└── user
+    └── list.html
+```
+
+user/list.html 内容如下：
+
+```text
+{{template "common/head" . }}
+```
+这样就在`user/list.html`中包含了模版文件`common/head.html`，不需要写`.html`后缀，`.` 的作用是把当前模版的数据
+传递给`common/head.html`。如果不需要传递数据，可以省略`.`，即 `{{template "common/head"}}`。
+
+## 模版布局
+
+布局模版是开发网站经常用到的，我们渲染很多页面的时候，它们的基础布局框架是一样的，只是某一部分不同，这个时候就需要用到布局模版支持，
+原理是渲染某个模版的的时候，把它渲染的结果放到"布局模版"的指定位置。
+
+假设视图文件夹是views，它的文件结构如下：
+
+```text
+views/
+├── layout
+│   └── page.html
+└── user
+    └── profile.html
+```
+
+`page.html`内容如下：
+
+```text
+`{{.GMC_LAYOUT_CONTENT}}`
+```
+
+当我们在控制器里面渲染`profile.html`，代码如下：
+
+```go
+this.View.Layout("layout/page").Render("profile")
+```
+
+渲染过程是，首先使用视图数据渲染`profile.html`,然后把渲染的结果给模版变量 `GMC_LAYOUT_CONTENT`，
+然后用这个数据渲染`layout/page.html`，把渲染结果输出到浏览器。
+
 ## 模版函数
+
+### 内置函数
+
+`text/template` 内置函数如下：
+
+`and`, `call`, `html`, `index`, `slice`, `js`, `len`, `not`, `or`, `print`, `printf`, `println`, `urlquery`
+
+### 内置比较函数
+
+`text/template` 内置比较函数如下：
+
+`eq`, `ne`, `lt`, `le`, `gt`, `ge`
+
+### GMC 模版函数
+
+GMC为了方面模版的使用，定义了很多有用的函数。
+
+1. `tr` 用在国际化中，第一个参数固定是 `.Lang`, 第二个参数是在国际化配置文件中定义的key。第三个参数是提示信息，这个信息不会输出。返回的数据类型是：template.HTML
+    
+    示例:
+    
+    `{{tr .Lang "key001" "提示信息，这个是什么"}}`
+
+1. `trs` 和`tr`功能一样，但是返回的数据类型是string。
+
+1. `string` 只有一个参数，转换数据为字符串。 
+
+1. `tohtml` 只有一个参数，转换数据为 template.HTML 类型.
+
+1. `val` 获取模版变量内容，如果变量不存在，返回空""，而不是"&lt;no value&gt;，可以用于安全输出模版变量。
+        两个参数，第一个固定是 `.` 第二个是变量名称。
+            
+    示例:
+    
+    `{{val . "name"}}`
+
+另外基于引入了"sprig"定义的大量有用模版方法，它们全部介绍在：`template/sprig/docs`。
+
+### GMC 模版变量
+
+在模版中，GMC 为模版准备好了以下变量，可以直接在任何模版中使用，它们的含义如下：
+
+1. `.Lang` 它是客户端发送的http头部 Accept-Language 被解析后的标准格式，比如：zh-CN。
+    模版国际化函数`tr`会用到它。
+1. `.G` GET数据，是一个 `map[string][string]`，`{{.G.key}}` key是GET数据的中的键名称。
+1. `.P` POST数据，是一个 `map[string][string]`，`{{.P.key}}` key是POST数据的中的键名称。
+1. `.S` SESION数据，是一个 `map[string][string]`，`{{.S.key}}` key是SESSION数据的中的键名称。
+    提示：只有在控制器里面调用 `SessionStart()` 开启了session，才有效。
+1. `.C` POST数据，是一个 `map[string][string]`，`{{.C.key}}` key是COOKIE数据的中的键名称。
+1. `.U` 当前请求URL的信息， 是一个 `map[string]string`，它的详细内容如下：
+    
+    ```golang
+    //u0 是一个url对象。
+    u["HOST"] = u0.Host
+    u["HOSTNAME"]=u0.Hostname()
+    u["PORT"]=u0.Port()
+    u["PATH"] = u0.Path
+    u["FRAGMENT"] = u0.Fragment
+    u["OPAQUE"] = u0.Opaque
+    u["RAW_PATH"] = u0.RawPath
+    u["RAW_QUERY"] = u0.RawQuery
+    u["SCHEME"] = u0.Scheme
+    u["USER"] = u0.User.Username()
+    u["PASSWORD"],_ = u0.User.Password()
+    u["URI"]=u0.RequestURI()
+    u["URL"]=u0.String()
+    ```
+   
+   提示:
+   
+   URL的完整格式： `[scheme:][//[userinfo@]host][/]path[?query][#fragment]`  
+ 
+## 获取渲染内容
+
+默认情况下，控制器里面使用`this.View,Render()`渲染模版，结果会被输出到浏览器。
+如果我们想获取渲染结果，而不是输出到浏览器，可以使用`this.View.RenderR()`渲染模版，它会把渲染结果返回。
 
 # Web 服务器
 

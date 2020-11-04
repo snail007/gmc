@@ -64,6 +64,11 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 	for k, v := range this.data {
 		data0[k] = v
 	}
+	if len(data)>0{
+		for k, v := range data[0] {
+			data0[k] = v
+		}
+	}
 	d, this.lasterr = this.tpl.Execute(tpl, data0)
 	if this.lasterr != nil {
 		gmchttputil.Stop(this.writer,gmcerr.Wrap(this.lasterr).ErrorStack())

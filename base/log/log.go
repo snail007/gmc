@@ -6,153 +6,217 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
+type bufChnItem struct {
+	level    gmccore.LOG_LEVEL
+	isFormat bool
+	format   string
+	msg      []interface{}
+}
 type GMCLog struct {
-	l      *log.Logger
-	parent *GMCLog
-	ns     string
-	level  gmccore.LOG_LEVEL
+	l         *log.Logger
+	parent    *GMCLog
+	ns        string
+	level     gmccore.LOG_LEVEL
+	async     bool
+	asyncOnce *sync.Once
+	bufChn    chan bufChnItem
+	asyncWG   *sync.WaitGroup
 }
 
 func NewGMCLog() gmccore.Logger {
-	l := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds)
+	l := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
 	return &GMCLog{
-		l:     l,
-		level: gmccore.LDEBUG,
+		l:         l,
+		level:     gmccore.LDEBUG,
+		asyncOnce: &sync.Once{},
 	}
 }
 
-func (G *GMCLog) SetLevel(i gmccore.LOG_LEVEL) {
-	G.level = i
+func (g *GMCLog) WaitAsyncDone() {
+	g.asyncWG.Wait()
 }
 
-func (G *GMCLog) With(namespace string) gmccore.Logger {
+func (g *GMCLog) Async() bool {
+	return g.async
+}
+
+func (g *GMCLog) asyncWriterInit() {
+	g.bufChn = make(chan bufChnItem, 2048)
+	g.asyncWG = &sync.WaitGroup{}
+	go func() {
+		for {
+			item := <-g.bufChn
+			if item.isFormat {
+				g.l.Printf(item.format, item.msg...)
+			} else {
+				g.l.Print(item.msg...)
+			}
+			g.asyncWG.Done()
+		}
+	}()
+}
+
+func (g *GMCLog) EnableAsync() {
+	g.async = true
+	g.asyncOnce.Do(func() {
+		g.asyncWriterInit()
+	})
+}
+
+func (g *GMCLog) SetLevel(i gmccore.LOG_LEVEL) {
+	g.level = i
+}
+
+func (g *GMCLog) With(namespace string) gmccore.Logger {
 	return &GMCLog{
-		l:      G.l,
-		parent: G,
+		l:      g.l,
+		parent: g,
 		ns:     namespace,
-		level:  G.level,
+		level:  g.level,
 	}
 }
 
-func (G *GMCLog) Namespace() string {
-	ns := G.ns
-	if G.parent != nil {
-		ns = G.parent.Namespace() + "/" + G.ns
+func (g *GMCLog) Namespace() string {
+	ns := g.ns
+	if g.parent != nil {
+		ns = g.parent.Namespace() + "/" + g.ns
 	}
 	return strings.TrimLeft(ns, "/")
 }
 
-func (G *GMCLog) namespace() string {
-	if G.parent != nil {
-		return "[" + G.Namespace() + "] "
+func (g *GMCLog) namespace() string {
+	if g.parent != nil {
+		return "[" + g.Namespace() + "] "
 	}
 	return ""
 }
 
-func (G *GMCLog) Panic(v ...interface{}) {
-	if G.level > gmccore.LPANIC {
+func (g *GMCLog) Panic(v ...interface{}) {
+	if g.level > gmccore.LPANIC {
 		return
 	}
-	v0 := []interface{}{G.namespace() + "PANIC "}
-	G.l.Panic(append(v0, v...)...)
+	v0 := []interface{}{g.namespace() + "PANIC "}
+	g.l.Panic(append(v0, v...)...)
 }
 
-func (G *GMCLog) Panicf(format string, v ...interface{}) {
-	if G.level > gmccore.LPANIC {
+func (g *GMCLog) Panicf(format string, v ...interface{}) {
+	if g.level > gmccore.LPANIC {
 		return
 	}
-	G.l.Panicf(G.namespace()+"PANIC "+format, v...)
+	g.l.Panicf(g.namespace()+"PANIC "+format, v...)
 }
 
-func (G *GMCLog) Errorf(format string, v ...interface{}) {
-	if G.level > gmccore.LERROR {
+func (g *GMCLog) Errorf(format string, v ...interface{}) {
+	if g.level > gmccore.LERROR {
 		return
 	}
-	G.l.Fatalf(G.namespace()+"ERROR "+format, v...)
+	g.l.Fatalf(g.namespace()+"ERROR "+format, v...)
 }
 
-func (G *GMCLog) Error(v ...interface{}) {
-	if G.level > gmccore.LERROR {
+func (g *GMCLog) Error(v ...interface{}) {
+	if g.level > gmccore.LERROR {
 		return
 	}
-	v0 := []interface{}{G.namespace() + "ERROR "}
-	G.l.Fatal(append(v0, v...)...)
+	v0 := []interface{}{g.namespace() + "ERROR "}
+	g.l.Fatal(append(v0, v...)...)
 }
 
-func (G *GMCLog) Warnf(format string, v ...interface{}) {
-	if G.level > gmccore.LWARN {
+func (g *GMCLog) Warnf(format string, v ...interface{}) {
+	if g.level > gmccore.LWARN {
 		return
 	}
-	G.writef(G.namespace()+"WARN "+format, v...)
+	g.writef(g.namespace()+"WARN "+format, v...)
 }
 
-func (G *GMCLog) Warn(v ...interface{}) {
-	if G.level > gmccore.LWARN {
+func (g *GMCLog) Warn(v ...interface{}) {
+	if g.level > gmccore.LWARN {
 		return
 	}
-	v0 := []interface{}{G.namespace() + "WARN "}
-	G.write(append(v0, v...)...)
+	v0 := []interface{}{g.namespace() + "WARN "}
+	g.write(append(v0, v...)...)
 }
 
-func (G *GMCLog) Infof(format string, v ...interface{}) {
-	if G.level > gmccore.LINFO {
+func (g *GMCLog) Infof(format string, v ...interface{}) {
+	if g.level > gmccore.LINFO {
 		return
 	}
-	G.writef(G.namespace()+"INFO "+format, v...)
+	g.writef(g.namespace()+"INFO "+format, v...)
 }
 
-func (G *GMCLog) Info(v ...interface{}) {
-	if G.level > gmccore.LINFO {
+func (g *GMCLog) Info(v ...interface{}) {
+	if g.level > gmccore.LINFO {
 		return
 	}
-	v0 := []interface{}{G.namespace() + "INFO "}
-	G.write(append(v0, v...)...)
+	v0 := []interface{}{g.namespace() + "INFO "}
+	g.write(append(v0, v...)...)
 }
 
-func (G *GMCLog) Debugf(format string, v ...interface{}) {
-	if G.level > gmccore.LDEBUG {
+func (g *GMCLog) Debugf(format string, v ...interface{}) {
+	if g.level > gmccore.LDEBUG {
 		return
 	}
-	G.writef(G.namespace()+"DEBUG "+format, v...)
+	g.writef(g.namespace()+"DEBUG "+format, v...)
 }
 
-func (G *GMCLog) Debug(v ...interface{}) {
-	if G.level > gmccore.LDEBUG {
+func (g *GMCLog) Debug(v ...interface{}) {
+	if g.level > gmccore.LDEBUG {
 		return
 	}
-	v0 := []interface{}{G.namespace() + "DEBUG "}
-	G.write(append(v0, v...)...)
+	v0 := []interface{}{g.namespace() + "DEBUG "}
+	g.write(append(v0, v...)...)
 }
 
-func (G *GMCLog) Tracef(format string, v ...interface{}) {
-	if G.level > gmccore.LTRACE {
+func (g *GMCLog) Tracef(format string, v ...interface{}) {
+	if g.level > gmccore.LTRACE {
 		return
 	}
-	G.writef(G.namespace()+"TRACE "+format, v...)
+	g.writef(g.namespace()+"TRACE "+format, v...)
 }
 
-func (G *GMCLog) Trace(v ...interface{}) {
-	if G.level > gmccore.LTRACE {
+func (g *GMCLog) Trace(v ...interface{}) {
+	if g.level > gmccore.LTRACE {
 		return
 	}
-	v0 := []interface{}{G.namespace() + "TRACE "}
-	G.write(append(v0, v...)...)
+	v0 := []interface{}{g.namespace() + "TRACE "}
+	g.write(append(v0, v...)...)
 }
 
-func (G *GMCLog) Writer() io.Writer {
-	return G.l.Writer()
+func (g *GMCLog) Writer() io.Writer {
+	return g.l.Writer()
 }
 
-func (G *GMCLog) SetOutput(w io.Writer) {
-	G.l.SetOutput(w)
+func (g *GMCLog) SetOutput(w io.Writer) {
+	g.l.SetOutput(w)
 }
-
-func (G *GMCLog) write(v ...interface{}) {
-	G.l.Print(v...)
+func (g *GMCLog) write(v ...interface{}) {
+	if g.async {
+		select {
+		case g.bufChn <- bufChnItem{
+			isFormat: false,
+			msg:      v,
+		}:
+			g.asyncWG.Add(1)
+		default:
+		}
+		return
+	}
+	g.l.Print(v...)
 }
-
-func (G *GMCLog) writef(f string, v ...interface{}) {
-	G.l.Printf(f, v...)
+func (g *GMCLog) writef(format string, v ...interface{}) {
+	if g.async {
+		select {
+		case g.bufChn <- bufChnItem{
+			isFormat: true,
+			format:   format,
+			msg:      v,
+		}:
+			g.asyncWG.Add(1)
+		default:
+		}
+		return
+	}
+	g.l.Printf(format, v...)
 }

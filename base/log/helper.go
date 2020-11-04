@@ -16,6 +16,9 @@ func NewFromConfig(c *gmcconfig.Config) (l gmccore.Logger, err error) {
 	l = NewGMCLog()
 	cfg := c.Sub("log")
 	l.SetLevel(gmccore.LOG_LEVEL(cfg.GetInt("level")))
+	if cfg.GetBool("async"){
+		l.EnableAsync()
+	}
 	output := cfg.GetIntSlice("output")
 	var writers []io.Writer
 	for _, v := range output {

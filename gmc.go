@@ -75,6 +75,10 @@ type (
 	Mss = map[string]string
 	// Alias of type gmcerr.Error
 	Error = gmcerr.Error
+	// Alias of api middleware
+	MiddlewareAPI func(ctx *gmcrouter.Ctx, api *APIServer) (isStop bool)
+	// Alias of web middleware
+	MiddlewareWeb func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
 )
 
 var (

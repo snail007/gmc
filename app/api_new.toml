@@ -30,7 +30,7 @@ output=[0]
 dir="./logs"
 # filename in logs dir.
 # available placeholders are:
-# %Y:Year 2020, %M:Month 10, %d:Day 10, %H:24Hours 21
+# %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
 filename="gmcapi_%Y%m%d.log"
 gzip=false
 async=false

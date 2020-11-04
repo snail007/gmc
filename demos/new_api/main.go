@@ -30,6 +30,7 @@ func main() {
 		Service: api,
 	})
 	// 6. run app
-	e := gmc.StackE(app.Run())
-	app.Logger().Panic(e)
+	if e := gmc.StackE(app.Run());e!=""{
+		app.Logger().Panic(e)
+	}
 }

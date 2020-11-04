@@ -27,7 +27,7 @@ type GMCLog struct {
 }
 
 func NewGMCLog() gmccore.Logger {
-	l := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
+	l := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds)
 	return &GMCLog{
 		l:         l,
 		level:     gmccore.LDEBUG,
@@ -128,7 +128,7 @@ func (g *GMCLog) Warnf(format string, v ...interface{}) {
 	if g.level > gmccore.LWARN {
 		return
 	}
-	g.writef(g.namespace()+"WARN "+format, v...)
+	g.Writef(g.namespace()+"WARN "+format, v...)
 }
 
 func (g *GMCLog) Warn(v ...interface{}) {
@@ -136,14 +136,14 @@ func (g *GMCLog) Warn(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "WARN "}
-	g.write(append(v0, v...)...)
+	g.Write(append(v0, v...)...)
 }
 
 func (g *GMCLog) Infof(format string, v ...interface{}) {
 	if g.level > gmccore.LINFO {
 		return
 	}
-	g.writef(g.namespace()+"INFO "+format, v...)
+	g.Writef(g.namespace()+"INFO "+format, v...)
 }
 
 func (g *GMCLog) Info(v ...interface{}) {
@@ -151,14 +151,14 @@ func (g *GMCLog) Info(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "INFO "}
-	g.write(append(v0, v...)...)
+	g.Write(append(v0, v...)...)
 }
 
 func (g *GMCLog) Debugf(format string, v ...interface{}) {
 	if g.level > gmccore.LDEBUG {
 		return
 	}
-	g.writef(g.namespace()+"DEBUG "+format, v...)
+	g.Writef(g.namespace()+"DEBUG "+format, v...)
 }
 
 func (g *GMCLog) Debug(v ...interface{}) {
@@ -166,14 +166,14 @@ func (g *GMCLog) Debug(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "DEBUG "}
-	g.write(append(v0, v...)...)
+	g.Write(append(v0, v...)...)
 }
 
 func (g *GMCLog) Tracef(format string, v ...interface{}) {
 	if g.level > gmccore.LTRACE {
 		return
 	}
-	g.writef(g.namespace()+"TRACE "+format, v...)
+	g.Writef(g.namespace()+"TRACE "+format, v...)
 }
 
 func (g *GMCLog) Trace(v ...interface{}) {
@@ -181,7 +181,7 @@ func (g *GMCLog) Trace(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "TRACE "}
-	g.write(append(v0, v...)...)
+	g.Write(append(v0, v...)...)
 }
 
 func (g *GMCLog) Writer() io.Writer {
@@ -191,7 +191,12 @@ func (g *GMCLog) Writer() io.Writer {
 func (g *GMCLog) SetOutput(w io.Writer) {
 	g.l.SetOutput(w)
 }
-func (g *GMCLog) write(v ...interface{}) {
+
+func (g *GMCLog) SetFlags(f int) {
+	g.l.SetFlags(f)
+}
+
+func (g *GMCLog) Write(v ...interface{}) {
 	if g.async {
 		select {
 		case g.bufChn <- bufChnItem{
@@ -205,7 +210,8 @@ func (g *GMCLog) write(v ...interface{}) {
 	}
 	g.l.Print(v...)
 }
-func (g *GMCLog) writef(format string, v ...interface{}) {
+
+func (g *GMCLog) Writef(format string, v ...interface{}) {
 	if g.async {
 		select {
 		case g.bufChn <- bufChnItem{

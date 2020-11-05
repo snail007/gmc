@@ -1,5 +1,9 @@
 # GMC 框架简介
 
+GMC 提供方便快捷的Web开发，API开发。提供强大的配套工具链，让你一键生成各种项目，摆脱手动建立各种文件夹，文件的烦恼。
+集成热编译，平滑更新/重启，打包静态文件到二进制，打包视图到二进制等，让你的Web程序保持高度的移植性和易维护性。
+丰富的文档说明，详细的解说，让你使用起来得心应手。
+
 # 快速开始
 
 GMC快速开始的最好方式是通过GMCT工具链，所以首先同学们要安装好`GMCT工具链`，可以参考本手册[GMCT工具链](#GMCT-工具链)章节进行安装。
@@ -665,7 +669,7 @@ func main() {
 }
 ```
 
-由于数据库说明比较多，详细的请 [参考这里](/db/mysql/README.md)
+由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/db/mysql/README.md)
 
 ## SQLITE3 数据库
 
@@ -694,7 +698,7 @@ cachemode="shared"
 `gmc.DB.DB(id ...string)`或`gmc.DB.SQLite3(id ...string)`获取数据库操作对象。
 
 
-由于数据库说明比较多，详细的请 [参考这里](/db/sqlite3/README.md)
+由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/db/sqlite3/README.md)
 
 # 缓存
 

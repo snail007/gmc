@@ -62,7 +62,7 @@ maxidle=10
 maxactive=30
 idletimeout=300
 maxconnlifetime=3600
-wait=true
+wait=false
 
 [[cache.memory]]
 enable=false

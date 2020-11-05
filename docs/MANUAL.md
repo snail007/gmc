@@ -1,5 +1,7 @@
 # GMC INTRODUCTION
 
+<img align="right" src="https://github.com/snail007/gmc/blob/master/doc/images/logo2.png?raw=true" width="200" height="auto"/>  
+
 GMC provides easy and fast Web and API development, and aims at high performance, high productivity, and lightweight. 
 
 GMC provides a powerful supporting tool chain, let you one-command to generate a base project, get rid of the manual 
@@ -902,7 +904,7 @@ The following figure is for Web and API services, think of the controller below 
 
 The STOP in the figure corresponds to when the value returned by the middleware function is true.
 
-<img src="/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  
+<img src="https://github.com/snail007/gmc/blob/master/doc/images/http-and-api-server-architecture.png?raw=true" width="960" height="auto"/>  
 
 # HOT UPDATE & RESTART
 

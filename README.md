@@ -5,8 +5,8 @@ GMC is a powerful and flexible golang web framework. GMC is `Golang Mellivora Ca
 
 # Contents
 
-[USER GUIDE](https://snail007.github.io/gmc/)
-[使用指南](https://snail007.github.io/gmc/zh)
+- [USER GUIDE](https://snail007.github.io/gmc/)
+- [使用指南](https://snail007.github.io/gmc/zh)
 
 
 ## Attention

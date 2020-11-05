@@ -2,7 +2,7 @@
 
 <img align="right" src="https://github.com/snail007/gmc/blob/master/doc/images/logo2.png?raw=true" width="200" height="auto"/>  
 
-GMC 提供方便快捷的Web开发，API开发，目标是高性能，高生产力，轻量级。提供强大的配套工具链，让你一键生成各种项目，摆脱手动建立各种文件夹，文件的烦恼。
+GMC 是Golang快速WEB开发框架，提供方便快捷的Web开发，API开发，目标是高性能，高生产力，轻量级。提供强大的配套工具链，让你一键生成各种项目，摆脱手动建立各种文件夹，文件的烦恼。
 
 集成热编译，平滑更新/重启，打包静态文件到二进制，打包视图到二进制等，让你的Web程序保持高度的移植性和易维护性。
 

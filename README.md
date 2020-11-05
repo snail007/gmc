@@ -1,7 +1,9 @@
-<img src="/doc/images/logo2.png" width="200" height="auto"/>  
 
-# GMC
-GMC is a powerful and flexible golang web framework. GMC is `Golang Mellivora Capensis` framework.
+# GMC Web & API Framework
+
+<img align="right" src="/doc/images/logo2.png" width="200" height="auto"/>  
+
+GMC is a powerful and flexible golang web and api development framework. GMC goal is high performance and write less code to do more things.
 
 # Contents
 
@@ -28,9 +30,3 @@ A package must be include the fllowing files:
 | README.md | testing and benchmarkresult must be include |
 
 You can reference the package sync/gpool to get more infomation about code specification.
-
-## TESTING RESOURCES
-
-## HTTP Architecture
-
-<img src="/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  

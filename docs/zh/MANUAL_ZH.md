@@ -341,7 +341,8 @@ GMC为了方面模版的使用，定义了很多有用的函数。
     
     `{{val . "name"}}`
 
-另外基于引入了"sprig"定义的大量有用模版方法，它们全部介绍在：`template/sprig/docs`。
+另外基于引入了 [sprig](https://github.com/masterminds/sprig) 定义的大量有用模版方法，
+gmc做了精简，精简后的全部介绍在：[template/sprig/docs](/http/template/sprig/docs)，文档里的方法在gmc的模版里面可以直接使用。
 
 ### GMC 模版变量
 
@@ -384,15 +385,316 @@ GMC为了方面模版的使用，定义了很多有用的函数。
 
 # Web 服务器
 
+GMC把Web开发有网页页面的网站，比如新闻站，管理后台这种归为Web服务， 对于这种项目，GMC专门设计了`Web服务`。
+
+GMC Web服务默认包含了模版，静态文件，数据库，session，缓存，国际化这些模块，可以在配置里面开启关闭，开箱即用。
+
+通过GMCT工具链生成的Web项目，默认配置文件位于：conf/app.toml，app.toml是项目的核心，几乎所有gmc功能都是这里配置。
+
+Web服务器在gmc中对应的是：`gmc.HTTPWebServer`，我们也可以看见，在项目的main文件，里面通过`gmc.APP`对象启动一个Web服务。
+
+还可以在服务初始化前后执行一些自己的初始化等操作。
+
+gmc生成的web项目，主文件内容如下：
+
+```go
+package main
+
+import (
+	"github.com/snail007/gmc"
+	"mygmcweb/initialize"
+)
+
+func main() {
+
+	// 1. create an default app to run.
+	app := gmc.New.AppDefault()
+
+	// 2. add a http server service to app.
+	app.AddService(gmc.ServiceItem{
+		Service: gmc.New.HTTPServer(),
+		AfterInit: func(s *gmc.ServiceItem) (err error) {
+			// do some initialize after http server initialized.
+			err = initialize.Initialize(s.Service.(*gmc.HTTPServer))
+			return
+		},
+	})
+
+	// 3. run the app
+	if e := gmc.StackE(app.Run());e!=""{
+		app.Logger().Panic(e)
+	}
+}
+
+```
+
+主要做了三件事情：
+
+1. 创建一个默认gmc.APP对象，用来管理程序和服务的整个生命周期，默认APP对象会使用`conf/app.toml`作为配置文件。
+1. 创建一个gmc.HTTPWebServer服务对象，添加到APP的服务列表中，并定义了服务初始化后执行的一些自己的初始化。
+1.  启动APP，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
+
 # API 服务器
+
+同学们经常会为APP或者第三方写一些数据的HTTP API接口，就是对外提供数据接口没有页面的这种API服务，GMD专门设计了`API服务`。
+
+API服务相对于Web服务更加精简，性能更好，去掉了模版，静态文件，国际化，session这些模块。
+
+## API项目
+
+通过GMCT工具链生成的API项目，默认配置文件位于：conf/app.toml，app.toml是项目的核心，几乎所有gmc功能都是这里配置，
+此项目适合最为独立完整的一个API项目。
+
+项目主文件如下：
+
+```go
+package main
+
+import (
+	"github.com/snail007/gmc"
+	"mygmcapi/handlers"
+)
+
+func main() {
+	// 1. create app
+	app := gmc.New.App()
+	// 2. parse config file
+	cfg, err := gmc.New.ConfigFile("conf/app.toml")
+	if err != nil {
+		app.Logger().Error(err)
+	}
+	// 3. create api server
+	api, err := gmc.New.APIServerDefault(cfg)
+	if err != nil {
+		app.Logger().Error(err)
+	}
+	//4. init db, cache, handlers
+	// int db
+	gmc.DB.Init(cfg)
+	// init cache
+	gmc.Cache.Init(cfg)
+	// init api handlers
+	handlers.Init(api)
+	// 5. add service
+	app.AddService(gmc.ServiceItem{
+		Service: api,
+	})
+	// 6. run app
+	if e := gmc.StackE(app.Run());e!=""{
+		app.Logger().Panic(e)
+	}
+}
+
+```
+主要做了以下事情：
+
+1. 创建一个默认gmc.APP对象，用来管理程序和服务的整个生命周期。
+1. 创建一个配置对象，设置使用`conf/app.toml`作为配置文件。
+1. 创建一个gmc.APIServer服务对象，并使用上面的配置对象。
+1. 初始化后执行的一些用到的功能，数据库，缓存，路由。
+1. 把API对象添加到APP管理服务列表中。
+1. 启动APP，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
+
+
+## 极简API
+
+如果你就只想对外提供一个或几个简单接口，什么多余的功能都不需要，甚至不需要任何配置文件，
+仅仅是监听端口管理路由，你只需要注册路由处理函数即可。通过GMC生成的`simple API`是一个很好示例。
+
+Simple API示例：
+
+```go
+package main
+
+import (
+	"github.com/snail007/gmc"
+)
+
+func main() {
+
+	api := gmc.New.APIServer(":7082")
+	api.API("/", func(c gmc.C) {
+ 		c.Write(gmc.M{
+ 			"code":0,
+ 			"message":"Hello GMC!",
+ 			"data":nil,
+		})
+	})
+
+	app := gmc.New.App()
+	app.AddService(gmc.ServiceItem{
+		Service: api,
+		BeforeInit: func(s gmc.Service, cfg *gmc.Config) (err error) {
+			api.PrintRouteTable(nil)
+			return
+		},
+	})
+
+	if e := gmc.StackE(app.Run());e!=""{
+		app.Logger().Panic(e)
+	}
+}
+```
+
+上面的示例使用APP对API服务进行管理，我们甚至APP都可以不用。
+
+代码如下：
+
+```go
+package main
+
+import (
+	"github.com/snail007/gmc"
+)
+
+func main() {
+
+	api := gmc.New.APIServer(":7082").Ext(".json")
+	api.API("/hello", func(c gmc.C) {
+ 		c.Write(gmc.M{
+ 			"code":0,
+ 			"message":"Hello GMC!",
+ 			"data":nil,
+		})
+	})
+	if e := gmc.StackE(api.Run());e!=""{
+		panic(e)
+	}
+}
+```
+
+主要做了以下事情：
+
+1. 创建一个gmc.APIServer服务对象，监听7082端口，设置url后缀为`.json`。
+1. 注册了一个url路径`/hello.json`，输出一个json数据。
+1. 启动API，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
 
 # 数据库
 
+GMC默认提供MYSQL和SQLite3数据库的便捷访问支持，其它类型数据库请同学们使用成熟第三方数据库操作库。
+
+GMC 数据库操作支持：
+1. 多数据源支持.
+1. SQLite3支持加密.
+1. 方便的链式查询和更新。
+1. 映射结果集到结构体。
+1. 事务支持。
+
 ## MySQL 数据库
+
+MySQL数据库支持连接池，各种超时配置，详细配置信息在app.toml中的`[database]`部分。
+
+```toml
+[database]
+default="mysql"
+
+[[database.mysql]]
+enable=true
+id="default"
+host="127.0.0.1"
+port="3306"
+username="root"
+password="admin"
+database="test"
+prefix=""
+prefix_sql_holder="__PREFIX__"
+charset="utf8"
+collate="utf8_general_ci"
+maxidle=30
+maxconns=200
+timeout=15000
+readtimeout=15000
+writetimeout=15000
+maxlifetimeseconds=1800
+
+[[database.mysql]]
+enable=false
+id="news"
+host="127.0.0.1"
+port="3306"
+username="root"
+password="admin"
+database="test"
+prefix=""
+prefix_sql_holder="__PREFIX__"
+charset="utf8"
+collate="utf8_general_ci"
+maxidle=30
+maxconns=200
+timeout=3000
+readtimeout=5000
+writetimeout=5000
+maxlifetimeseconds=1800
+```
+
+可以发现`database.mysql`是一个数组，同学们可以配置个，只要保证id唯一就可以。
+`id`是在代码里面使用这个配置数据库对象的标识。
+
+### 使用数据库
+
+在API或者Web项目里面，app启动之后，也就是数据库被初始化成功后，在代码里面可以通过
+`gmc.DB.DB(id ...string)`或`gmc.DB.MySQL(id ...string)`获取数据库操作对象。
+
+示例代码：
+
+```go
+
+package main
+
+import (
+	"github.com/snail007/gmc"
+)
+
+func main() {
+	cfg := gmc.New.Config()
+	cfg.SetConfigFile("../../app/app.toml")
+	err := cfg.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	// Init only using [database] section in app.toml
+	gmc.DB.Init(cfg)
+
+	// database default is mysql in app.toml
+	// so gmc.DB.DB() equal to  gmc.DB.MySQL()
+	// we can connect to multiple cache drivers at same time, id is the unique name of driver
+	// gmc.DB.DB(id) to load `id` named default driver.
+	db := gmc.DB.DB().(*gmc.MySQL)
+	//do something with db
+	db.AR()
+}
+```
+
+由于数据库说明比较多，详细的请 [参考这里](/db/mysql/README.md)
 
 ## SQLITE3 数据库
 
-# SESSION
+SQLITE3 数据库各种配置和加密，详细配置信息在app.toml中的`[database]`部分。
+
+```toml
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+# if password is not empty , database will be encrypted.
+password=""
+prefix=""
+prefix_sql_holder="__PREFIX__"
+# syncmode 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+syncmode=0
+# openmode ro,rw,rwc,memory
+openmode="rw"
+# shared,private
+cachemode="shared"
+```
+
+### 使用数据库
+
+在API或者Web项目里面，app启动之后，也就是数据库被初始化成功后，在代码里面可以通过
+`gmc.DB.DB(id ...string)`或`gmc.DB.SQLite3(id ...string)`获取数据库操作对象。
+
+
+由于数据库说明比较多，详细的请 [参考这里](/db/sqlite3/README.md)
 
 # 缓存
 

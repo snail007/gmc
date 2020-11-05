@@ -1,7 +1,9 @@
 # GMC 框架简介
 
-GMC 提供方便快捷的Web开发，API开发。提供强大的配套工具链，让你一键生成各种项目，摆脱手动建立各种文件夹，文件的烦恼。
+GMC 提供方便快捷的Web开发，API开发，目标是高性能，高生产力，轻量级。提供强大的配套工具链，让你一键生成各种项目，摆脱手动建立各种文件夹，文件的烦恼。
+
 集成热编译，平滑更新/重启，打包静态文件到二进制，打包视图到二进制等，让你的Web程序保持高度的移植性和易维护性。
+
 丰富的文档说明，详细的解说，让你使用起来得心应手。
 
 # 快速开始
@@ -308,21 +310,19 @@ this.View.Layout("layout/page").Render("profile")
 渲染过程是，首先使用视图数据渲染`profile.html`,然后把渲染的结果给模版变量 `GMC_LAYOUT_CONTENT`，
 然后用这个数据渲染`layout/page.html`，把渲染结果输出到浏览器。
 
-## 模版函数
-
 ### 内置函数
 
 `text/template` 内置函数如下：
 
 `and`, `call`, `html`, `index`, `slice`, `js`, `len`, `not`, `or`, `print`, `printf`, `println`, `urlquery`
 
-### 内置比较函数
+## 内置比较函数
 
 `text/template` 内置比较函数如下：
 
 `eq`, `ne`, `lt`, `le`, `gt`, `ge`
 
-### GMC 模版函数
+## GMC 模版函数
 
 GMC为了方面模版的使用，定义了很多有用的函数。
 
@@ -346,9 +346,9 @@ GMC为了方面模版的使用，定义了很多有用的函数。
     `{{val . "name"}}`
 
 另外基于引入了 [sprig](https://github.com/masterminds/sprig) 定义的大量有用模版方法，
-gmc做了精简，精简后的全部介绍在：[template/sprig/docs](/http/template/sprig/docs)，文档里的方法在gmc的模版里面可以直接使用。
+gmc做了精简，精简后的全部介绍在：[template/sprig/docs](https://github.com/snail007/gmc/tree/master/http/template/sprig/docs) ，文档里的方法在gmc的模版里面可以直接使用。
 
-### GMC 模版变量
+## GMC 模版变量
 
 在模版中，GMC 为模版准备好了以下变量，可以直接在任何模版中使用，它们的含义如下：
 
@@ -361,7 +361,7 @@ gmc做了精简，精简后的全部介绍在：[template/sprig/docs](/http/temp
 1. `.C` POST数据，是一个 `map[string][string]`，`{{.C.key}}` key是COOKIE数据的中的键名称。
 1. `.U` 当前请求URL的信息， 是一个 `map[string]string`，它的详细内容如下：
     
-    ```golang
+    ```go
     //u0 是一个url对象。
     u["HOST"] = u0.Host
     u["HOSTNAME"]=u0.Hostname()
@@ -399,7 +399,7 @@ Web服务器在gmc中对应的是：`gmc.HTTPWebServer`，我们也可以看见�
 
 还可以在服务初始化前后执行一些自己的初始化等操作。
 
-gmc生成的web项目，主文件内容如下：
+GMCT 生成的web项目，主文件内容如下：
 
 ```go
 package main
@@ -745,13 +745,13 @@ maxidle=10       //连接池中最多可空闲maxIdle个连接
 maxactive=30     //连接池支持的最大连接数
 idletimeout=300  //一个连接idle状态的最大时长（毫秒），超时则被释放
 maxconnlifetime=3600 //一个连接的生命时长（毫秒），超时而且没被使用则被释放
-wait=true
+wait=false       //没有空闲可用连接的时候，是等待还是返回错误。
 ```
 
 ### Memory缓存
 
-cache.go是轻量级的go缓存实现，shard.go没有使用 go 的”hash/fnv”中的 hash.Hash 函数，使用的是djb3算法，在大块文件存储效率比标准cache提升约1倍
-配置信息如下所示，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
+GMC 内存缓存是轻量级的go缓存实现，没有使用 go 的`hash/fnv`中的 `hash.Hash` 函数，使用的是`djb3`算法，在大块文件存储效率比标准cache提升约1倍
+配置信息如下所示，`cleanupinterval` 是 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
 
 ```shell
 [[cache.memory]]
@@ -762,7 +762,7 @@ cleanupinterval=30
 
 ### File缓存
 
-配置信息如下所示，配置 dir 表示缓存的文件目录，cleanupinterval信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
+配置信息如下所示，配置 dir 表示缓存的文件目录，`cleanupinterval`信息表示 GC 的时间，表示每隔 30s 会进行一次过期清理,id是默认连接池id,enable表示是否开启缓存，默认关闭。
 
 ```shell
 [[cache.file]]
@@ -776,7 +776,7 @@ cleanupinterval=30
 
 当然`gmccache`包也可以单独使用，不依赖gmc框架,自己实例化配置对象，初始化缓存配置，使用方法示例如下：
 
-```golang
+```go
 package main
 
 import (
@@ -805,7 +805,7 @@ func main() {
 }
 ```
 
-# I18n国际化
+# I18N 国际化
 
 GMC国际化文件内容是由多行的key=value组成。文件名称使用标准的HTTP头部`Accept-Language`中的格式，比如：zh-CN，en-US。
 后缀是`.toml`。
@@ -857,12 +857,9 @@ dir="i18n"
 default="zh-cn"
 ```
 
-`default`是默认语言，如果用户HTTP请求头部的语言，国际化模块找不到与之匹配的语言，那么就使用
-这个`default`设置的语言进行翻译。
+`default` is the default language. If the language of the user's HTTP request header is not found by the internationalization module, then the language set by `default` is used for translation.
 
 # 中间件
-
-## HTTP 服务器
 
 GMC的Web和API服务器都支持中间件，当现有功能无法完成你的需求，你可以通过注册中间件，完成各种功能，比如：`权限认证`，`日志记录`，`数据埋点`，`修改请求`等等。
 从GMC收到用户请求开始，到控制器方法或者handler被真正被执行这期间，按着执行的顺序和时机，中间件分为四种
@@ -941,16 +938,16 @@ GMC框架，为了降低使用者学习成本和加速开发，提供了开源GM
    才能看到修改后的效果，这占用了同学们不少的时间，为了解决此问题，只需要在项目编译目录执行`gmct run`
    即可，GMCT工具可以侦测到你对项目做的修改，会自动重新编译并运行项目，你修改了项目文件，只要刷新浏览器
    就可以看见最新修改效果。
-   
-## 工具链使用指南
+
+## 安装工具链
 
 工具链的使用，需要本机安装好git，配置好了GO环境，go版本1.12及以上即可，并设置 `GOPATH`环境变量。
 `PATH`环境变量包含`$GOPATH/bin`目录。环境变量配置不熟悉的同学可以先搜索学习一下配置系统环境变量。
 
-### 安装工具链
 gmct工具链的安装有两种方式。一种是直接从源码编译。一种是下载编译好的二进制。
 
-#### 1、从源码编译
+### 1、从源码编译
+
 此方法需要确保你的网络可以正常的`go get`和`go mod`到各种依赖包，由于特殊原因，如不能下载依赖包，
 可以使用通过设置GOPROXY环境变量走代理下载依赖包。设置请参考 [设置GOPROXY环境变量](https://goproxy.io/) 。
 
@@ -976,11 +973,11 @@ go install
 gmct --help
 ```
 
-#### 2、下载二进制
+### 2、下载二进制
 下载地址：[GMCT工具链](https://github.com/snail007/gmct/releases) ，需要根据你的操作系统平台，下载对应的二进制文件压缩包即可，然后解压得到gmct或者gmct.exe
 把它放在`$GOPATH/bin`目录即可,然后打开一个命令行，执行`gmct --help`如果有显示`gmct`的帮助信息，说明安装成功。
 
-### 初始化一个Web项目
+## 生成Web项目
 
 GMCT初始化的项目默认使用`go mod`管理依赖,项目路径开始开始于：`$GOPATH/src` 。
 初始化项目只需要一个参数`--pkg`就是项目路径。
@@ -995,7 +992,7 @@ gmct run
 
 打开浏览器访问：http://127.0.0.1:7080 , 就可以看见新建的web项目运行效果。
 
-### 初始化一个API项目
+## 生成API项目
 
 GMCT初始化的项目默认使用`go mod`管理依赖,项目路径开始开始于：`$GOPATH/src` 。
 初始化项目只需要一个参数`--pkg`就是项目路径。
@@ -1010,7 +1007,7 @@ gmct run
 
 打开浏览器访问：http://127.0.0.1:7081 , 就可以看见新建的API项目运行效果。
 
-### 初始化一个API轻量级项目
+## 生成API轻量级项目
 
 GMCT初始化的项目默认使用`go mod`管理依赖,项目路径开始开始于：`$GOPATH/src` 。
 初始化项目只需要一个参数`--pkg`就是项目路径。
@@ -1025,7 +1022,7 @@ gmct run
 
 打开浏览器访问：http://127.0.0.1:7082 , 就可以看见新建的API轻量级项目运行效果。
 
-### 打包视图文件
+## 打包视图文件
 
 GMC视图模块支持打包视图文件到编译的二进制程序中。由于打包功能和项目目录结构有关，所以这里假设目录结构是gmct生成的web项目目录结构。
 
@@ -1055,7 +1052,7 @@ gmct tpl --dir ../views
 当你go build编译了你的项目后，避免后面开发，运行代码一直使用这个go文件里面的视图数据，
 可以在目录initialize执行：`gmct tpl --clean` 可以安全的清理上面生成的go文件。
 
-### 打包静态文件
+## 打包静态文件
 
 GMC的HTTP静态文件模块支持打包静态文件到编译的二进制程序中。由于打包功能和项目目录结构有关，
 所以这里假设目录结构是gmct生成的web项目目录结构。
@@ -1090,7 +1087,7 @@ gmct static --dir ../static
 1、查找二进制数据里面是否有该文件。  
 2、查找静态目录static是否有该文件。  
 
-### 热编译项目
+## 热编译项目
 
 在项目开发过程中，我们会不断的修改go文件或者视图文件，然后需要手动重新编译，运行，
 才能看到修改后的效果，这占用了同学们不少的时间，为了解决此问题，只需要在项目编译目录执行`gmct run`
@@ -1125,4 +1122,4 @@ exclude_dirs=["vendor"]
 1. `exclude_dirs`  设置额外不监控的目录，支持相对路径和绝对路径，可以指定多个，数组形式。
 
 在 `monitor_dirs`, `include_files`, `exclude_files`, `exclude_dirs`中可以使用
-变量`{DIR}`代表当前目录的绝对路径, 末尾没有`/`。
+变量`${DIR}`代表当前目录的绝对路径, 末尾没有`/`。

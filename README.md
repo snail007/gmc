@@ -3,13 +3,12 @@
 
 <img align="right" src="/doc/images/logo2.png" width="200" height="auto"/>  
 
-GMC is a powerful and flexible golang web and api development framework. GMC goal is high performance and write less code to do more things.
+GMC is a powerful and flexible golang web and api development framework. GMC goal is high performance, good productivity and write less code to do more things.
 
 # Contents
 
 - [USER GUIDE](https://snail007.github.io/gmc/)
 - [使用指南](https://snail007.github.io/gmc/zh)
-
 
 ## Attention
 this project is undergoing development, will be changed frequently.

@@ -889,7 +889,7 @@ default="zh-cn"
 Both THE Web and API servers of GMC support middleware. When existing functions cannot meet your requirements, you can complete various functions by registering middleware, such as: `authorization`, `logging`, `modification request` and so on.
 From the time the GMC receives a user request to the time the controller method or handler is actually executed, the middleware is divided into four types according to the order and timing of execution.
 
-With the names` middleware0 `, `middleware1`, `middleware2`, `middleware3`, each type of middleware can be registered with more than one.
+With the names` Middleware0 `, `Middleware1`, `Middleware2`, `Middleware3`, each type of middleware can be registered with more than one.
 They are executed in the order in which they were added, but when one of the middleware returns FALSE, the middleware behind that middleware is skipped.
 
 A middleware is a function.

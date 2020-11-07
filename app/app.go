@@ -58,8 +58,13 @@ func Default() *GMCApp {
 }
 func (s *GMCApp) initialize() (err error) {
 	defer func() {
-		if s.logger==nil{
-			s.logger=gmclog.NewGMCLog()
+		if s.logger == nil {
+			s.logger = gmclog.NewGMCLog()
+		}
+		if s.logger.Async() {
+			s.OnShutdown(func() {
+				s.logger.WaitAsyncDone()
+			})
 		}
 	}()
 
@@ -68,11 +73,8 @@ func (s *GMCApp) initialize() (err error) {
 	}
 
 	// initialize logging
-	if s.config.Sub("log") != nil && s.logger==nil{
-		s.logger, err = gmclog.NewFromConfig(s.config)
-		if err != nil {
-			return
-		}
+	if s.config.Sub("log") != nil && s.logger == nil {
+		s.logger = gmclog.NewFromConfig(s.config)
 	}
 
 	// initialize database

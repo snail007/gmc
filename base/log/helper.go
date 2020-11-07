@@ -12,29 +12,29 @@ import (
 	"time"
 )
 
-func NewFromConfig(c *gmcconfig.Config) (l gmccore.Logger, err error) {
+func NewFromConfig(c *gmcconfig.Config) (l gmccore.Logger) {
 	l = NewGMCLog()
 	cfg := c.Sub("log")
 	l.SetLevel(gmccore.LOG_LEVEL(cfg.GetInt("level")))
+	if cfg.GetBool("async") {
+		l.EnableAsync()
+	}
 	output := cfg.GetIntSlice("output")
 	var writers []io.Writer
 	for _, v := range output {
 		switch v {
 		case 0:
-			writers=append(writers,os.Stdout)
+			writers = append(writers, os.Stdout)
 		case 1:
-			w0, err := NewFileWriter(cfg.GetString("filename"),
+			w0 := NewFileWriter(cfg.GetString("filename"),
 				cfg.GetString("dir"), cfg.GetBool("gzip"))
-			if err != nil {
-				return nil, err
-			}
 			w0.SetLogger(l)
-			writers=append(writers,w0)
+			writers = append(writers, w0)
 		}
 	}
-	if len(writers)==1{
+	if len(writers) == 1 {
 		l.SetOutput(writers[0])
-	}else if len(writers)>1{
+	} else if len(writers) > 1 {
 		l.SetOutput(io.MultiWriter(writers...))
 	}
 	return
@@ -49,13 +49,15 @@ type FileWriter struct {
 	logger   gmccore.Logger
 }
 
-func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter, err error) {
+func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter) {
 	if !fileutil.ExistsDir(dir) {
 		os.MkdirAll(dir, 0755)
 	}
+	logger := NewGMCLog()
 	filename0 := filepath.Join(dir, timeutil.TimeFormatText(time.Now(), filename))
 	w0, err := os.OpenFile(filename0, os.O_CREATE|os.O_APPEND, 0700)
 	if err != nil {
+		logger.Warnf("new writer fail, error: %s", err)
 		return
 	}
 	w = &FileWriter{
@@ -64,7 +66,7 @@ func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter, err
 		dir:      dir,
 		file:     w0,
 		isGzip:   isGzip,
-		logger:   NewGMCLog(),
+		logger:   logger,
 	}
 	return
 }

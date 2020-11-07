@@ -14,6 +14,7 @@ func addFunc() map[string]interface{}{
 		"trs":gmci18n.Tr,
 		"string":anyTostring,
 		"tohtml":anyToTplHTML,
+		"val":trimNoValue,
 	}
 	for k,v:=range f2{
 		funcMap[k]=v
@@ -27,4 +28,10 @@ func anyTostring(v interface{})string  {
 
 func anyToTplHTML(v interface{})template.HTML  {
 	return template.HTML(anyTostring(v))
+}
+func trimNoValue(m map[string]interface{},key string)interface{}  {
+	if v,ok:=m[key];ok{
+		return v
+	}
+	return ""
 }

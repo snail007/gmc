@@ -189,7 +189,6 @@ func TimeToDateStr(t time.Time) string {
 //@param format  "h:i:s","Y-m-d h:i:s","y-m-d"
 func TimeFormat(t time.Time, format string) string {
 	format = strings.TrimSpace(format)
-	layout:=""
 	format = strings.Replace(format, "yyyy", "Y", 1)
 	layout = stringDedup(format) //String deduplication
 	d:=map[string]string{
@@ -206,9 +205,9 @@ func TimeFormat(t time.Time, format string) string {
 		"s":"05",
 	}
 	for k,v:=range d{
-		layout = strings.Replace(layout, k, v, 1)
+		format = strings.Replace(format, k, v, 1)
 	}
-	return t.Format(layout)
+	return t.Format(format)
 }
 
 //Time format text

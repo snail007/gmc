@@ -6,6 +6,7 @@
 package gmcrouter
 
 import (
+	"bytes"
 	"fmt"
 	gmcerr "github.com/snail007/gmc/error"
 	"io"
@@ -120,12 +121,14 @@ func (s *HTTPRouter) PrintRouteTable(w io.Writer) {
 	}
 	t1 := strings.Repeat("-", maxplen)
 	t2 := strings.Repeat("-", maxmlen)
-	fmt.Fprintf(w, "\n:ROUTE TABLE\n| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", "PATH", "METHOD")
-	fmt.Fprintf(w, "| %s | %s\n", t1, t2)
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("\n:ROUTE TABLE\n| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", "PATH", "METHOD"))
+	buf.WriteString(fmt.Sprintf("| %s | %s\n", t1, t2))
 	for _, k := range keys {
-		fmt.Fprintf(w, "| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", k, strings.Join(m[k], ","))
+		buf.WriteString(fmt.Sprintf("| %-"+fmt.Sprintf("%d", maxplen)+"s | %s\n", k, strings.Join(m[k], ",")))
 	}
-	fmt.Fprintf(w, "| %s | %s\n\n", t1, t2)
+	buf.WriteString(fmt.Sprintf("| %s | %s\n\n", t1, t2))
+	fmt.Fprint(w, buf.String())
 }
 
 //RouteTable returns all routes in router. KEY is url path, VALUE is http methods.

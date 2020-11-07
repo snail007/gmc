@@ -39,6 +39,8 @@ delimiterright="}}"
 
 1. `tohtml` only one argument, convert it to template.HTML type.
 
+1. `val` get template variable value, if variable not exits it returns "" instead of <no value>.
+
 ### gmc defined comparison functions
 
 

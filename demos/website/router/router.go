@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/snail007/gmc/middleware/accesslog"
 	"strings"
 
 	"github.com/snail007/gmc"
@@ -17,14 +18,17 @@ func InitRouter(s *gmc.HTTPServer) {
 
 	s.AddMiddleware2(logging)
 
+	// middleware: accesslog
+	s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
+
 	// acquire router object
 	r := s.Router().Ext(".json")
 
 	// bind a controller, /demo is path of controller, after this you can visit http://127.0.0.1:7080/demo/hello
 	// "hello" is full lower case name of controller method.
 	r.Controller("/demo", new(controller.Demo))
-	r.ControllerMethod("/",new(controller.Demo),"Index__")
-	r.ControllerMethod("/index.html",new(controller.Demo),"Index__")
+	r.ControllerMethod("/", new(controller.Demo), "Index__")
+	r.ControllerMethod("/index.html", new(controller.Demo), "Index__")
 
 	// indicates router initialized
 	s.Logger().Infof("router inited.")
@@ -48,6 +52,6 @@ func filter(c gmc.C, server *gmc.HTTPServer) bool {
 }
 
 func logging(c gmc.C, server *gmc.HTTPServer) bool {
-	server.Logger().Infof("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(),c.TimeUsed(), c.Request.RequestURI)
+	server.Logger().Infof("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(), c.TimeUsed(), c.Request.RequestURI)
 	return false
 }

@@ -145,7 +145,7 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// init ctx
 	c0 := gmcrouter.NewCtx(w, r)
 	addr, _ := s.localaddr.Load(r.RemoteAddr)
-	c0.Localaddr, _ = addr.(string)
+	c0.LocalAddr, _ = addr.(string)
 
 	defer func() {
 		// middleware3

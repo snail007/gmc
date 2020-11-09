@@ -65,12 +65,14 @@ default="zh-cn"
 # 2.ext is extension of template file.
 # 3.left and right delimiters to the specified strings, 
 # to be used in subsequent calls to Parse.
+# 4. layout is sub dir name in template folder.
 #############################################################
 [template]
 dir="views"
 ext=".html"
 delimiterleft="{{"
 delimiterright="}}"
+layout=""
 
 ########################################################
 # session configuration 

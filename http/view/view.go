@@ -5,17 +5,19 @@ import (
 	gmctemplate "github.com/snail007/gmc/http/template"
 	gmchttputil "github.com/snail007/gmc/util/http"
 	"io"
+	"strings"
 	"sync"
 )
 
 type View struct {
-	tpl    *gmctemplate.Template
-	data   map[string]interface{}
-	writer io.Writer
-	layout string
-	once   *sync.Once
-	onceFn func()
-	lasterr error
+	tpl       *gmctemplate.Template
+	data      map[string]interface{}
+	writer    io.Writer
+	layout    string
+	once      *sync.Once
+	onceFn    func()
+	lasterr   error
+	layoutDir string
 }
 
 func New(w io.Writer, tpl *gmctemplate.Template) *View {
@@ -47,8 +49,8 @@ func (this *View) SetMap(d map[string]interface{}) *View {
 
 //Render renders template `tpl` with `data`, and output.
 func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
-	d:=this.RenderR(tpl, data...)
-	if this.lasterr!=nil{
+	d := this.RenderR(tpl, data...)
+	if this.lasterr != nil {
 		return this
 	}
 	_, this.lasterr = this.writer.Write(d)
@@ -59,24 +61,31 @@ func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
 func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte) {
 	// init GPSC
 	this.once.Do(this.onceFn)
-
 	data0 := this.data
 	for k, v := range this.data {
 		data0[k] = v
 	}
-	if len(data)>0{
+	if len(data) > 0 {
 		for k, v := range data[0] {
 			data0[k] = v
 		}
 	}
 	d, this.lasterr = this.tpl.Execute(tpl, data0)
 	if this.lasterr != nil {
-		gmchttputil.Stop(this.writer,gmcerr.Wrap(this.lasterr).ErrorStack())
+		gmchttputil.Stop(this.writer, gmcerr.Wrap(this.lasterr).ErrorStack())
 		return
 	}
 	if this.layout != "" {
 		data0["GMC_LAYOUT_CONTENT"] = string(d)
-		d, this.lasterr = this.tpl.Execute(this.layout, data0)
+		layout := this.layout
+		if this.layoutDir != "" {
+			layout = this.layoutDir + "/" + this.layout
+		}
+		d, this.lasterr = this.tpl.Execute(layout, data0)
+		if this.lasterr != nil {
+			gmchttputil.Stop(this.writer, gmcerr.Wrap(this.lasterr).ErrorStack())
+			return
+		}
 	}
 	return
 }
@@ -94,6 +103,13 @@ func (this *View) Stop() {
 
 // OnRenderOnce injects GPSC data
 func (this *View) OnRenderOnce(f func()) *View {
-	this.onceFn=f
+	this.onceFn = f
 	return this
+}
+
+// SetLayoutDir sets default dir of layout
+func (this *View) SetLayoutDir(layoutDir string) {
+	layoutDir = strings.Trim(layoutDir, "/")
+	layoutDir = strings.Replace(layoutDir, "\\", "/", -1)
+	this.layoutDir = layoutDir
 }

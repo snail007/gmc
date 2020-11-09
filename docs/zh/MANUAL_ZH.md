@@ -300,7 +300,7 @@ views/
 `page.html`内容如下：
 
 ```text
-`{{.GMC_LAYOUT_CONTENT}}`
+{{.GMC_LAYOUT_CONTENT}}
 ```
 
 当我们在控制器里面渲染`profile.html`，代码如下：

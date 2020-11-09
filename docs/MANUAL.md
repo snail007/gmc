@@ -324,7 +324,7 @@ views/
 `page.html`content is as follows:
 
 ```text
-`{{.GMC_LAYOUT_CONTENT}}`
+{{.GMC_LAYOUT_CONTENT}}
 ```
 
 When we render `profile.html` in the controller, the code is as follows:

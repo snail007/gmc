@@ -56,6 +56,7 @@ func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, 
 	this.Ctx = gmcrouter.NewCtx(w, r, ps)
 
 	// 2.init stuff below
+	this.View.SetLayoutDir(this.Config.GetString("template.layout"))
 
 	//init lang
 	this.initLang()

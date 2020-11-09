@@ -190,7 +190,7 @@ func TimeToDateStr(t time.Time) string {
 func TimeFormat(t time.Time, format string) string {
 	format = strings.TrimSpace(format)
 	format = strings.Replace(format, "yyyy", "Y", 1)
-	layout = stringDedup(format) //String deduplication
+	format = stringDedup(format) //String deduplication
 	d:=map[string]string{
 		"Y":"2006",
 		"y":"06",

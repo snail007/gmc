@@ -8,14 +8,27 @@ import (
 	"strconv"
 )
 
+const (
+	dieKEY  = "__DIE__"
+	stopKEY = "__STOP__"
+)
+
 func Die(w io.Writer, data ...interface{}) {
 	Write(w, data...)
-	panic("__DIE__")
+	panic(dieKEY)
 }
 
 func Stop(w io.Writer, data ...interface{}) {
 	Write(w, data...)
-	panic("__STOP__")
+	panic(stopKEY)
+}
+
+func JustStop() {
+	panic(stopKEY)
+}
+
+func JustDie() {
+	panic(dieKEY)
 }
 
 // StopE will exit controller method if error is not nil.

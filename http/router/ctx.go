@@ -161,6 +161,6 @@ func (this *Ctx) POST(key string, Default ...string) (val string) {
 // Redirect redirects to the url, using http location header, and sets http code 302
 func (this *Ctx) Redirect(url string) (val string) {
 	http.Redirect(this.Response, this.Request, url, http.StatusFound)
-	this.Stop()
+	gmchttputil.JustDie()
 	return
 }

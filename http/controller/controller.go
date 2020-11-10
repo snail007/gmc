@@ -149,7 +149,10 @@ func (this *Controller) MethodCallPost__() {
 		if this.Session.IsDestroy() {
 			this.SessionStore.Delete(this.Session.SessionID())
 		} else {
-			this.SessionStore.Save(this.Session)
+			err:=this.SessionStore.Save(this.Session)
+			if err!=nil{
+				this.Logger.Warnf("save session fail, %s",err)
+			}
 		}
 	}
 }
@@ -182,6 +185,10 @@ func (this *Controller) SessionStart() (err error) {
 		err = fmt.Errorf("session is disabled")
 		return
 	}
+	if this.Session!=nil{
+		//already started
+		return
+	}
 	sessionCookieName := this.Config.GetString("session.cookiename")
 	sid, _ := this.Cookie.Get(sessionCookieName)
 	var isExists bool
@@ -192,7 +199,9 @@ func (this *Controller) SessionStart() (err error) {
 		sess := gmcsession.NewSession()
 		sess.Touch()
 		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gmccookie.Options{
+			Path: "/",
 			MaxAge: this.Config.GetInt("session.ttl"),
+			HTTPOnly:true,
 		})
 		err = this.SessionStore.Save(sess)
 		this.Session = sess

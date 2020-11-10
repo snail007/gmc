@@ -1,6 +1,7 @@
 package sprig
 
 import (
+	"github.com/snail007/gmc/util/cast"
 	"strconv"
 	"time"
 )
@@ -37,6 +38,8 @@ func dateInZone(fmt string, date interface{}, zone string) string {
 		t = time.Unix(int64(date), 0)
 	case int32:
 		t = time.Unix(int64(date), 0)
+	case string:
+		t = time.Unix(cast.ToInt64(date), 0)
 	}
 
 	loc, err := time.LoadLocation(zone)
@@ -75,6 +78,8 @@ func dateAgo(date interface{}) string {
 		t = time.Unix(date, 0)
 	case int:
 		t = time.Unix(int64(date), 0)
+	case string:
+		t = time.Unix(cast.ToInt64(date), 0)
 	}
 	// Drop resolution to seconds
 	duration := time.Since(t).Round(time.Second)

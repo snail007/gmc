@@ -215,3 +215,8 @@ func (this *Controller) SessionDestroy() (err error) {
 func (this *Controller) Write(data ...interface{}) (n int, err error) {
 	return gmchttputil.Write(this.Response, data...)
 }
+
+func (this *Controller) WriteE(data ...interface{}) (n int, err error) {
+	this.Response.WriteHeader(http.StatusInternalServerError)
+	return gmchttputil.Write(this.Response, data...)
+}

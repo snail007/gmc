@@ -53,6 +53,12 @@ func (this *Ctx) Write(data ...interface{}) (n int, err error) {
 	return gmchttputil.Write(this.Response, data...)
 }
 
+// WriteE outputs data to response and sets http status code 500
+func (this *Ctx) WriteE(data ...interface{}) (n int, err error) {
+	this.Response.WriteHeader(http.StatusInternalServerError)
+	return gmchttputil.Write(this.Response, data...)
+}
+
 // WriteHeader sets http code in response
 func (this *Ctx) WriteHeader(statusCode int) {
 	this.Response.WriteHeader(statusCode)
@@ -131,5 +137,30 @@ func (this *Ctx) ClientIP() (ip string) {
 
 // NewPager create a new paginator used for template
 func (this *Ctx) NewPager(perPage int, total int64) *gmcutil.Paginator {
-	return gmcutil.NewPaginator(this.Request, perPage, total,"page")
+	return gmcutil.NewPaginator(this.Request, perPage, total, "page")
+}
+
+// GET gets the first value associated with the given key in url query.
+func (this *Ctx) GET(key string, Default ...string) (val string) {
+	val = this.Request.URL.Query().Get(key)
+	if val == "" && len(Default) > 0 {
+		return Default[0]
+	}
+	return
+}
+
+// POST gets the first value associated with the given key in post body.
+func (this *Ctx) POST(key string, Default ...string) (val string) {
+	val = this.Request.PostFormValue(key)
+	if val == "" && len(Default) > 0 {
+		return Default[0]
+	}
+	return
+}
+
+// Redirect redirects to the url, using http location header, and sets http code 302
+func (this *Ctx) Redirect(url string) (val string) {
+	http.Redirect(this.Response, this.Request, url, http.StatusFound)
+	this.Stop()
+	return
 }

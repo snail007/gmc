@@ -37,6 +37,10 @@ type (
 	MySQL = gmcmysql.DB
 	// Alias of type gmcsqlite3.DB
 	SQLite3 = gmcsqlite3.DB
+	// Alias of type gmcmysql.DB
+	MySQLG = gmcmysql.DBGroup
+	// Alias of type gmcsqlite3.DB
+	SQLite3G = gmcsqlite3.DBGroup
 	// Alias of type gmccontroller.Controller
 	Controller = gmccontroller.Controller
 	// Alias of type gmccookie.Cookies

@@ -156,9 +156,9 @@ func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method st
 func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, ext ...string) {
 	beforeIsFound := false
 	afterIsFound := false
-	isMehtodFound := false
+	isMethodFound := false
 	for _, objMethod := range methods(obj) {
-		if isMehtodFound {
+		if isMethodFound {
 			break
 		}
 		if skipMethods[objMethod] {
@@ -175,7 +175,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			if objMethod != method {
 				continue
 			}
-			isMehtodFound = true
+			isMethodFound = true
 			path = urlPath
 		} else {
 			if strings.HasSuffix(objMethod, "__") {
@@ -207,7 +207,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			}
 		})
 	}
-	if method != "" && !isMehtodFound {
+	if method != "" && !isMethodFound {
 		panic(gmcerr.New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
 	}
 }

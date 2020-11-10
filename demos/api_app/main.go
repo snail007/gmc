@@ -83,7 +83,7 @@ func main() {
 		}
 		fmt.Println("http://127.0.0.1:" + port + path)
 	}
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gmc.StackE(app.Run()); e != "" {
 		app.Logger().Panic(e)
 	}
 }

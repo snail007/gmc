@@ -35,7 +35,12 @@ var (
 		"Stop":           true,
 		"StopE":          true,
 		"Write":          true,
+		"WriteE":         true,
 		"Tr":             true,
+		"Before":         true,
+		"After":          true,
+		"MethodCallPost": true,
+		"MethodCallPre":  true,
 	}
 )
 
@@ -154,33 +159,30 @@ func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method st
 	s.controller(urlPath, obj, method)
 }
 func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, ext ...string) {
-	beforeIsFound := false
-	afterIsFound := false
-	isMethodFound := false
+	bindMethods := []string{}
+	allMethods := map[string]bool{}
+	if method != "" {
+		bindMethods = append(bindMethods, method)
+	}
 	for _, objMethod := range methods(obj) {
-		if isMethodFound {
-			break
-		}
-		if skipMethods[objMethod] {
+		allMethods[objMethod] = true
+		if method != "" ||
+			skipMethods[objMethod] ||
+			strings.HasSuffix(objMethod, "__") ||
+			strings.HasSuffix(objMethod, "_") {
 			continue
 		}
-		switch objMethod {
-		case "Before__":
-			beforeIsFound = true
-		case "After__":
-			afterIsFound = true
-		}
+		bindMethods = append(bindMethods, objMethod)
+	}
+
+	beforeIsFound := allMethods["Before"]
+	afterIsFound := allMethods["After"]
+
+	for _, objMethod := range bindMethods {
 		path := ""
-		if method != "" {
-			if objMethod != method {
-				continue
-			}
-			isMethodFound = true
+		if objMethod == method {
 			path = urlPath
 		} else {
-			if strings.HasSuffix(objMethod, "__") {
-				continue
-			}
 			p := urlPath
 			if !strings.HasSuffix(p, "/") {
 				p += "/"
@@ -195,19 +197,29 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 		}
 		objMethod0 := objMethod
 		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps Params) {
-			objv := reflect.ValueOf(obj)
-			defer invoke(objv, "MethodCallPost__")
-			invoke(objv, "MethodCallPre__", w, r, ps)
+			obj0 := reflect.ValueOf(obj)
+			var val reflect.Value
+			if obj0.Kind() == reflect.Ptr {
+				val = obj0.Elem()
+			} else {
+				val = obj0
+			}
+			vp := reflect.New(val.Type())
+			vp.Elem().Set(val)
+			objv := vp.Interface()
+
+			defer invoke(objv, "MethodCallPost")
+			invoke(objv, "MethodCallPre", w, r, ps)
 			if beforeIsFound {
-				invoke(objv, "Before__")
+				invoke(objv, "Before")
 			}
 			s.call(func() { invoke(objv, objMethod0) })
 			if afterIsFound {
-				invoke(objv, "After__")
+				invoke(objv, "After")
 			}
 		})
 	}
-	if method != "" && !isMethodFound {
+	if method != "" && !allMethods[method] {
 		panic(gmcerr.New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
 	}
 }

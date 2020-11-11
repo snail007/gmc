@@ -19,17 +19,17 @@ type Controller struct {
 	gmccontroller.Controller
 }
 
-func (this *Controller) Before__() {
+func (this *Controller) Before() {
 	this.Response.Write([]byte("OKAY"))
 }
 func (this *Controller) Method1() {
 	this.Response.Write([]byte("OKAY"))
 }
-func (this *Controller) After__() {
+func (this *Controller) After() {
 	this.Response.Write([]byte("OKAY"))
 }
 func (this *Controller) TestMethod() {
-	this.Response.Write([]byte("OKAY" + this.Args.ByName("name")))
+	this.Response.Write([]byte("OKAY" + this.Param.ByName("name")))
 }
 func TestController(t *testing.T) {
 	assert := assert.New(t)

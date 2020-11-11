@@ -12,6 +12,7 @@ import (
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmchttpserver "github.com/snail007/gmc/http/server"
 	gmci18n "github.com/snail007/gmc/i18n"
+	gmccaptcha "github.com/snail007/gmc/util/captcha"
 	_map "github.com/snail007/gmc/util/map"
 )
 
@@ -45,6 +46,16 @@ func (s *New0) ConfigFile(file string) (cfg *gmcconfig.Config, err error) {
 // App creates an new object of gmc.APP
 func (s *New0) App() *APP {
 	return gmcapp.New()
+}
+
+// Captcha creates an captcha object
+func (s *New0) Captcha() *gmccaptcha.Captcha {
+	return gmccaptcha.New()
+}
+
+// Captcha creates an captcha object, and sets default configuration
+func (s *New0) CaptchaDefault() *gmccaptcha.Captcha {
+	return gmccaptcha.NewDefault()
 }
 
 // Tr creates an new object of gmci18n.I18nTool

@@ -12,9 +12,9 @@ type Demo struct {
 	gmc.Controller
 }
 
-// Before__ -> Foo-Method -> After__ , if panic occur will stop the function link call.
+// Before -> Foo-Method -> After , if panic occur will stop the function link call.
 
-func (this *Demo) Before__() {
+func (this *Demo) Before() {
 	method := filepath.Base(this.Request.URL.Path)
 	if strings.Contains(method, "db") {
 		return
@@ -36,7 +36,7 @@ func (this *Demo) Index__() {
 func (this *Demo) Hello() {
 	this.Write(" ")
 }
-func (this *Demo) After__() {
+func (this *Demo) After() {
 	method := filepath.Base(this.Request.URL.Path)
 	if strings.Contains(method, "db") {
 		return

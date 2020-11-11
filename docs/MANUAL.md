@@ -95,16 +95,16 @@ func(this *Demo) Hello() {
 
 1. Unlimited controller name.
 
-1. Suffixes are two underscore`__`controller method, in the routing binding controller will be ignored.
+1. Suffixes are two or one underscore `__` , `_` controller method, in the routing binding controller will be ignored.
 
 1. The controller method names cannot contain the following names. They are GMC methods to complete the framework function, 
-and these names cannot be used in the controllers of students.`MethodCallPre__()`,`MethodCallPost__()`,`Stop()`,`Die()`,`Tr()`,`SessionStart()`,`SessionDestroy()`,`Write()`,`StopE()`.
+and these names cannot be used in the controllers of students.`MethodCallPre()`,`MethodCallPost()`,`Stop()`,`Die()`,`Tr()`,`SessionStart()`,`SessionDestroy()`,`Write()`,`StopE()`.
 
-1. The method with the name`Before__()`is the constructor of the controller, need not be undefined, and is called before 
+1. The method with the name`Before()`is the constructor of the controller, need not be undefined, and is called before 
 the execution of the accessed controller method, You can call`this.stop()`to prevent calls to the controller method being accessed, 
-but not to block calls to the`After__()`controller destructor method. The`this.die()`controller method and`After__()`calls can be prevent by`this.die()`.
+but not to block calls to the`After()`controller destructor method. The`this.die()`controller method and`After()`calls can be prevent by`this.die()`.
 
-1. A method whose name is`After__()`is the controller's destructor, which is not required to be undefined and is called after the execution of the accessor controller method.
+1. A method whose name is`After()`is the controller's destructor, which is not required to be undefined and is called after the execution of the accessor controller method.
 
 1. The controller members cannot contain the following names, which are used by GMC to complete the framework function. 
 The names in the controller cannot be these:
@@ -1046,6 +1046,28 @@ gmct run
 ```
 
 Open the browser at `http://127.0.0.1:7082`, and you can see the new API lightweight project in action.
+
+## NEW ADMIN PROJECT
+
+GMCT initializes projects by default using `go mod` to manage dependencies. The project path starts with: `$GOPATH/src`.
+Only one parameter `--pkg` is the project path is needed to initialize the project.
+
+Operate the steps and execute the following commands sequentially:
+
+```shell
+gmct new admin --pkg foo.com/foo/myadmin
+cd $GOPATH/src/foo.com/foo/myadmin
+```
+
+1. Admin Console using MySQL database, you need to create a database, and then import data file, located in: `doc/db.sql`.
+1. Modify the database configuration in file `conf/app.tml`.
+1. Execute `gmct run` in the project directory.
+
+Open the browser visit `http://127.0.0.1:7082`, and you can see the new ADMIN project in action.
+
+username：`root`
+
+password：`123456`
 
 ## Create Controller
 

@@ -38,8 +38,8 @@ type Controller struct {
 	Logger       gmccore.Logger
 }
 
-//MethodCallPre__ called before controller method and Before__() if have.
-func (this *Controller) MethodCallPre__(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+//MethodCallPre called before controller method and Before() if have.
+func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
 	// 1. init basic objects
 	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Response = w
@@ -143,8 +143,8 @@ func (this *Controller) initGPSC() {
 	this.View.SetMap(data)
 }
 
-//MethodCallPost__ called after controller method and After__() if have.
-func (this *Controller) MethodCallPost__() {
+//MethodCallPost called after controller method and After() if have.
+func (this *Controller) MethodCallPost() {
 	if this.SessionStore != nil && this.Session != nil {
 		if this.Session.IsDestroy() {
 			this.SessionStore.Delete(this.Session.SessionID())
@@ -162,7 +162,7 @@ func (this *Controller) Tr(key string, defaultText ...string) string {
 	return gmci18n.Tr(this.Lang, key, defaultText...)
 }
 
-//Die will prevent to call After__() if have, and MethodCallPost__()
+//Die will prevent to call After() if have, and MethodCallPost()
 func (this *Controller) Die(msg ...interface{}) {
 	gmchttputil.Die(this.Response, msg...)
 }
@@ -217,6 +217,8 @@ func (this *Controller) SessionDestroy() (err error) {
 	}
 	if this.Session != nil {
 		this.Session.Destroy()
+		sessionCookieName := this.Config.GetString("session.cookiename")
+		this.Cookie.Remove(sessionCookieName)
 	}
 	return
 }

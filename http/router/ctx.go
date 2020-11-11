@@ -109,6 +109,11 @@ func (this *Ctx) IsOPTIONS() bool {
 	return http.MethodOptions == this.Request.Method
 }
 
+// IsOPTIONS returns true if the request is jquery AJAX request.
+func (this *Ctx) IsAJAX() bool {
+	return strings.EqualFold(this.Request.Header.Get("X-Requested-With"), "XMLHttpRequest")
+}
+
 // Stop will exit controller method or api handle function at once
 func (this *Ctx) Stop(msg ...interface{}) {
 	gmchttputil.Stop(this.Response, msg...)
@@ -164,3 +169,4 @@ func (this *Ctx) Redirect(url string) (val string) {
 	gmchttputil.JustDie()
 	return
 }
+

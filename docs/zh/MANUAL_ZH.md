@@ -1036,7 +1036,7 @@ gmct new admin --pkg foo.com/foo/myadmin
 cd $GOPATH/src/foo.com/foo/myadmin
 ```
 
-1. 管理后台使用MySQL数据库，需要你建立一个数据库，然后导入数据文件,位于：`doc/db.sql`.
+1. 管理后台使用MySQL数据库，需要你建立一个数据库，然后导入数据文件,位于：`docs/db.sql`.
 1. 修改配置文件 `conf/app.tml` 配置里面的MySQL数据库连接信息.
 1. 在项目目录执行 `gmct run` 。
 

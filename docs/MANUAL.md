@@ -1059,7 +1059,7 @@ gmct new admin --pkg foo.com/foo/myadmin
 cd $GOPATH/src/foo.com/foo/myadmin
 ```
 
-1. Admin Console using MySQL database, you need to create a database, and then import data file, located in: `doc/db.sql`.
+1. Admin Console using MySQL database, you need to create a database, and then import data file, located in: `docs/db.sql`.
 1. Modify the database configuration in file `conf/app.tml`.
 1. Execute `gmct run` in the project directory.
 

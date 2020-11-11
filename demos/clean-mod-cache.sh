@@ -1,3 +1,3 @@
 #!/bin/bash
 
-rm -rf $GOPATH/pkg/mod/cache
+sudo rm -rf $GOPATH/pkg/mod/cache

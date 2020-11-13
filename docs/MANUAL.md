@@ -1069,7 +1069,7 @@ username：`root`
 
 password：`123456`
 
-## Create Controller
+## GENERATE CONTROLLER
 
 GMCT can generate a controller with several empty methods, eliminating the need to manually set up the controller.
 
@@ -1088,6 +1088,28 @@ Parameters description:
 `-n` is the name of the controller 'struct', and the file name USES all lowercase controller names.
 
 `-f` if the file to be generated already exists and is not overwritten by default, the '-f' parameter can be used to enforce overwriting.
+
+## GENERATE TABLE MODEL
+
+GMCT can generate a table model file with common methods to CURD table data without the hassle of writing a table model.
+
+The following commands need to be executed under the model directory.
+
+To operate, execute the following command:
+
+```shell
+gmct model -n table
+```
+
+After executing, we found a model file in the current directory: `user.go`.
+
+Parameter description:
+
+-n is the name of the database table. If the table prefix is set in the configuration file, there is no need to write the table prefix, such as the table name: `user`, `system_config`.
+
+-t generates a model of MySQL by default, and also supports SQLite3, with values of: `mysql` or `sqlite3`, default is `mysql`.
+
+-f if the file to be generated already exists and is not overwritten by default, the `-f` parameter can be used to enforce overwriting.
 
 ## PACK TEMPLATE FILES INTO BINARY
 

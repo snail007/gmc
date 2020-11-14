@@ -1002,7 +1002,7 @@ gmct --help
 Download address: [GMCT tool chain](https://github.com/snail007/gmct/releases), need according to your operating system platform, download the corresponding binary package, and then extract the `gmct` binary or `gmct.exe`
 Just put it in the `$GOPATH/bin` directory, then open a command line and execute `gmct -- Help`. If you have help information for `GMCT`, the installation is successful.
 
-## NEW WEB PROJECT
+## GENERATE WEB PROJECT
 
 GMCT initializes projects by default using `go mod` to manage dependencies. The project path starts with: `$GOPATH/src`.
 Only one parameter `--pkg` is the project path is needed to initialize the project.
@@ -1017,7 +1017,7 @@ gmct run
 
 Open the browser and visit http://127.0.0.1:7080 to see the new Web project in action.
 
-## NEW API PROJECT
+## GENERATE API PROJECT
 
 GMCT initializes projects by default using `go mod` to manage dependencies. The project path starts with: `$GOPATH/src`.
 Only one parameter `--pkg` is the project path is needed to initialize the project.
@@ -1032,7 +1032,7 @@ gmct run
 
 Open the browser to `http://127.0.0.1:7081`, and you can see the new API project in action.
 
-## NEW SIMPLE API PROJECT
+## GENERATE SIMPLE API PROJECT
 
 GMCT initializes projects by default using `go mod` to manage dependencies. The project path starts with: `$GOPATH/src`.
 Only one parameter `--pkg` is the project path is needed to initialize the project.
@@ -1047,7 +1047,7 @@ gmct run
 
 Open the browser at `http://127.0.0.1:7082`, and you can see the new API lightweight project in action.
 
-## NEW ADMIN PROJECT
+## GENERATE ADMIN PROJECT
 
 GMCT initializes projects by default using `go mod` to manage dependencies. The project path starts with: `$GOPATH/src`.
 Only one parameter `--pkg` is the project path is needed to initialize the project.

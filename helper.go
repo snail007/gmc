@@ -188,3 +188,5 @@ func (s *I18n0) Init(cfg *gmcconfig.Config) error {
 func (s *I18n0) Tr(lang, key string, defaultMessage ...string) string {
 	return gmci18n.Tr(lang, key, defaultMessage...)
 }
+
+

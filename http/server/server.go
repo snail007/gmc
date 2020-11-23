@@ -191,12 +191,9 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (s *HTTPServer) call(fn func()) (err interface{}) {
 	func() {
-		defer func() {
-			e := recover()
-			if e != nil {
-				err = gmcerr.Wrap(e)
-			}
-		}()
+		defer gmcerr.Recover(func(e interface{}) {
+			err = gmcerr.Wrap(e)
+		})
 		fn()
 	}()
 	return
@@ -575,12 +572,10 @@ func (s *HTTPServer) SetLog(l gmccore.Logger) {
 func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer func() {
-				if e := recover(); e != nil {
-					s.logger.Warnf("middleware panic error : %s", gmcerr.Stack(e))
-					isStop = false
-				}
-			}()
+			defer gmcerr.Recover(func(e interface{}) {
+				s.logger.Warnf("middleware panic error : %s", gmcerr.Stack(e))
+				isStop = false
+			})
 			isStop = fn(ctx, s)
 		}()
 		if isStop {

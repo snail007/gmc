@@ -46,19 +46,15 @@ func New(workerCount int) (p *GPool) {
 //initialize workers to run tasks, a work is a goroutine
 func (s *GPool) init() {
 	go func() {
-		defer func() {
-			if e := recover(); e != nil {
-				s.log("GPool stopped unexceptedly, err: %s", gmcerr.Stack(e))
-			}
-		}()
+		defer gmcerr.Recover(func(e interface{}) {
+			s.log("GPool stopped unexpectedly, err: %s", gmcerr.Stack(e))
+		})
 		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
 			go func(i int) {
-				defer func() {
-					if e := recover(); e != nil {
-						s.log("GPool: a worker stopped unexceptedly, err: %s", gmcerr.Stack(e))
-					}
-				}()
+				defer gmcerr.Recover(func(e interface{}) {
+					s.log("GPool: a worker stopped unexpectedly, err: %s", gmcerr.Stack(e))
+				})
 				// s.log("GPool: worker[%d] started ...", i)
 				ctx, cancle := context.WithCancel(s.ctx)
 				defer cancle()
@@ -88,11 +84,9 @@ func (s *GPool) init() {
 
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer func() {
-		if e := recover(); e != nil {
-			s.log("GPool: a task stopped unexceptedly, err: %s", gmcerr.Stack(e))
-		}
-	}()
+	defer gmcerr.Recover(func(e interface{}) {
+		s.log("GPool: a task stopped unexceptedly, err: %s", gmcerr.Stack(e))
+	})
 	fn()
 }
 

@@ -72,12 +72,9 @@ func (s *MemoryStore) Delete(sessionID string) (err error) {
 }
 
 func (s *MemoryStore) gc() {
-	defer func() {
-		e := recover()
-		if e != nil {
-			fmt.Printf("memorystore gc error: %s", gmcerr.Stack(e))
-		}
-	}()
+	defer gmcerr.Recover(func(e interface{}) {
+		fmt.Printf("memorystore gc error: %s", gmcerr.Stack(e))
+	})
 	first := true
 	for {
 		if first {

@@ -99,6 +99,10 @@ var (
 	// Wrap an error or string to a gmc.Error.
 	WrapE = gmcerr.Wrap
 
+	// Alias of gmcerr.Recover
+	// handle recover panic error in defer
+	Recover=gmcerr.Recover
+
 	// Alias of gmchttputil.StopE
 	// StopE will exit controller method if error is not nil.
 	// First argument is an error.

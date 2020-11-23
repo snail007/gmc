@@ -143,12 +143,9 @@ func (s *FileStore) file(sessionID string) string {
 	return path
 }
 func (s *FileStore) gc() {
-	defer func() {
-		e := recover()
-		if e != nil {
-			fmt.Printf("filestore gc error: %s", gmcerr.Stack(e))
-		}
-	}()
+	defer gmcerr.Recover(func(e interface{}) {
+		fmt.Printf("filestore gc error: %s", gmcerr.Stack(e))
+	})
 	var files []string
 	var err error
 	var file *os.File

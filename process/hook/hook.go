@@ -24,11 +24,9 @@ func RegistShutdown(fn func()) {
 	shutdown = append(shutdown, fn)
 }
 func WaitShutdown() {
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Printf("shutdown hook manager crashed, err: %s", gmcerr.Stack(e))
-		}
-	}()
+	defer gmcerr.Recover(func(e interface{}) {
+		fmt.Printf("shutdown hook manager crashed, err: %s", gmcerr.Stack(e))
+	})
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan,
 		os.Interrupt,
@@ -49,11 +47,9 @@ func MockShutdown() {
 }
 func runHooks() {
 	caller := func(fn func()) {
-		defer func() {
-			if e := recover(); e != nil {
-				fmt.Printf("shutdown hook crashed, err: %s", gmcerr.Stack(e))
-			}
-		}()
+		defer gmcerr.Recover(func(e interface{}) {
+			fmt.Printf("shutdown hook crashed, err: %s", gmcerr.Stack(e))
+		})
 		fn()
 	}
 	for _, fn := range shutdown {

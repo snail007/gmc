@@ -295,12 +295,9 @@ func (this *APIServer) handler500(ctx *gmcrouter.Ctx, err interface{}) *APIServe
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
-		defer func() {
-			e := recover()
-			if e != nil {
-				err = gmcerr.Wrap(e)
-			}
-		}()
+		defer gmcerr.Recover(func(e interface{}) {
+			err = gmcerr.Wrap(e)
+		})
 		fn()
 	}()
 	return
@@ -308,12 +305,10 @@ func (s *APIServer) call(fn func()) (err interface{}) {
 func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer func() {
-				if e := recover(); e != nil {
-					s.logger.Warn("middleware panic error : %s", gmcerr.Stack(e))
-					isStop = false
-				}
-			}()
+			defer gmcerr.Recover(func(e interface{}) {
+				s.logger.Warn("middleware panic error : %s", gmcerr.Stack(e))
+				isStop = false
+			})
 			isStop = fn(ctx, s)
 		}()
 		if isStop {

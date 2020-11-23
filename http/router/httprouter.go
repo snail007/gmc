@@ -226,15 +226,12 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 
 func (s *HTTPRouter) call(fn func()) {
 	func() {
-		defer func() {
-			e := recover()
-			if e != nil {
-				if fmt.Sprintf("%s", e) == "__STOP__" {
-					return
-				}
-				panic(gmcerr.Wrap(e))
+		defer gmcerr.Recover(func(e interface{}) {
+			if fmt.Sprintf("%s", e) == "__STOP__" {
+				return
 			}
-		}()
+			panic(gmcerr.Wrap(e))
+		})
 		fn()
 	}()
 	return

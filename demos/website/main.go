@@ -11,11 +11,10 @@ var (
 )
 
 func main() {
+	defer gmc.Recover(func(e interface{}) {
+		fmt.Printf("main exited, %s\n", e)
+	})
 	defer func() {
-		e := recover()
-		if e != nil {
-			fmt.Printf("main exited, %s\n", e)
-		}
 		if app != nil && app.Logger() != nil && app.Logger().Async() {
 			app.Logger().WaitAsyncDone()
 		}

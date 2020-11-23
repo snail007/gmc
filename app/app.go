@@ -161,12 +161,10 @@ func (s *GMCApp) callRunE(fns []func(*gmcconfig.Config) error) (err error) {
 	hasError := false
 	for _, fn := range fns {
 		func() {
-			defer func() {
-				if e := recover(); e != nil {
-					hasError = true
-					err = gmcerr.Wrap(e)
-				}
-			}()
+			defer gmcerr.Recover(func(e interface{}){
+				hasError = true
+				err = gmcerr.Wrap(e)
+			})
 			err = fn(s.config)
 			if err != nil {
 				hasError = true
@@ -212,9 +210,9 @@ func (s *GMCApp) Stop() {
 	for _, fn := range s.onShutdown {
 		func() {
 			defer func() {
-				if e := recover(); e != nil {
+				gmcerr.Recover(func(e interface{}){
 					s.logger.Infof("run beforeShutdown hook fail, error : %s", gmcerr.Stack(e))
-				}
+				})
 			}()
 			fn()
 		}()

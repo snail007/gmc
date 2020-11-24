@@ -17,8 +17,9 @@ type ResultSet struct {
 	rawRows      *[]map[string][]byte
 	LastInsertId int64
 	RowsAffected int64
-	// TimeUsed returns milliseconds used by execute the SQL
+	// TimeUsed milliseconds used by execute the SQL statement associated to the result set
 	TimeUsed int
+	// SQL statement associated to the result set
 	SQL      string
 }
 

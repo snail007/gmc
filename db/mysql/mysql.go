@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
 	gmcdb "github.com/snail007/gmc/db"
 
@@ -133,6 +134,7 @@ func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *gmcdb.ResultSet, err err
 	return db.ExecSQLTx(ar.SQL(), tx, ar.values...)
 }
 func (db *DB) ExecSQLTx(sqlStr string, tx *sql.Tx, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+	start := time.Now().UnixNano()
 	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSqlIdentifier, db.Config.TablePrefix, -1)
 	var stmt *sql.Stmt
 	var result sql.Result
@@ -148,6 +150,8 @@ func (db *DB) ExecSQLTx(sqlStr string, tx *sql.Tx, values ...interface{}) (rs *g
 	}
 	rs.RowsAffected, err = result.RowsAffected()
 	rs.LastInsertId, err = result.LastInsertId()
+	rs.TimeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rs.SQL = sqlStr
 	if err != nil {
 		return
 	}
@@ -157,6 +161,7 @@ func (db *DB) Exec(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
 	return db.ExecSQL(ar.SQL(), ar.values...)
 }
 func (db *DB) ExecSQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+	start := time.Now().UnixNano()
 	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSqlIdentifier, db.Config.TablePrefix, -1)
 	var stmt *sql.Stmt
 	var result sql.Result
@@ -172,12 +177,15 @@ func (db *DB) ExecSQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet
 	}
 	rs.RowsAffected, err = result.RowsAffected()
 	rs.LastInsertId, err = result.LastInsertId()
+	rs.TimeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rs.SQL = sqlStr
 	if err != nil {
 		return
 	}
 	return
 }
 func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
 	stmt, err = db.ConnPool.Prepare(sqlStr)
@@ -225,9 +233,12 @@ func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSe
 		results = append(results, row)
 	}
 	rs = gmcdb.NewResultSet(&results)
+	rs.TimeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rs.SQL = sqlStr
 	return
 }
 func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
+	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	if ar.cacheKey != "" {
 		var data []byte
@@ -301,6 +312,8 @@ func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
 		}
 	}
 	rs = gmcdb.NewResultSet(&results)
+	rs.TimeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rs.SQL = ar.SQL()
 	return
 }
 

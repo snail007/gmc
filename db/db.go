@@ -17,6 +17,9 @@ type ResultSet struct {
 	rawRows      *[]map[string][]byte
 	LastInsertId int64
 	RowsAffected int64
+	// TimeUsed returns milliseconds used by execute the SQL
+	TimeUsed int
+	SQL      string
 }
 
 func NewResultSet(rawRows *[]map[string][]byte) (rs *ResultSet) {
@@ -28,6 +31,7 @@ func NewResultSet(rawRows *[]map[string][]byte) (rs *ResultSet) {
 	}
 	return
 }
+
 func (rs *ResultSet) Len() int {
 	return len(*rs.rawRows)
 }

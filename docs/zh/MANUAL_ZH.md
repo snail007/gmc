@@ -946,9 +946,9 @@ GMC框架，为了降低使用者学习成本和加速开发，提供了开源GM
 工具链的使用，需要本机安装好git，配置好了GO环境，go版本1.12及以上即可，并设置 `GOPATH`环境变量。
 `PATH`环境变量包含`$GOPATH/bin`目录。环境变量配置不熟悉的同学可以先搜索学习一下配置系统环境变量。
 
-gmct工具链的安装有两种方式。一种是直接从源码编译。一种是下载编译好的二进制。
+gmct工具链的安装有下面3种方式，选择一个你喜欢的方式安装即可。
 
-### 1、从源码编译
+### 1、源码编译安装
 
 此方法需要确保你的网络可以正常的`go get`和`go mod`到各种依赖包，由于特殊原因，如不能下载依赖包，
 可以使用通过设置GOPROXY环境变量走代理下载依赖包。设置请参考 [设置GOPROXY环境变量](https://goproxy.io/) 。
@@ -975,7 +975,31 @@ go install
 gmct --help
 ```
 
-### 2、下载二进制
+### 2、go get 安装
+
+此方法需要确保你的网络可以正常的`go get`和`go mod`到各种依赖包，由于特殊原因，如不能下载依赖包，
+可以使用通过设置GOPROXY环境变量走代理下载依赖包。设置请参考 [设置GOPROXY环境变量](https://goproxy.io/) 。
+
+然后打开一个命令行，依次执行下面的命令，首次安装，需要下载比较多的依赖包，请同学确保网络正常，耐心等待。
+
+Linux系统：
+
+```shell
+export GO111MODULE=on 
+go get -v github.com/snail007/gmct/cmd/gmct
+gmct --help
+```
+
+Windows系统：
+
+```shell
+set GO111MODULE=on
+go get -v github.com/snail007/gmct/cmd/gmct
+gmct --help
+```
+
+### 3、下载二进制安装
+
 下载地址：[GMCT工具链](https://github.com/snail007/gmct/releases) ，需要根据你的操作系统平台，下载对应的二进制文件压缩包即可，然后解压得到gmct或者gmct.exe
 把它放在`$GOPATH/bin`目录即可,然后打开一个命令行，执行`gmct --help`如果有显示`gmct`的帮助信息，说明安装成功。
 

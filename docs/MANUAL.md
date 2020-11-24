@@ -997,7 +997,30 @@ go install
 gmct --help
 ```
 
-### 2. DOWNLOAD BINARY
+### 2. go get installation
+
+This method needs to ensure that your network can properly `go get` and `go mod` to various dependent packages. For special reasons, such as unable to download the dependent packages,
+You can use the proxy to download dependency packages by setting the `GOPROXY` environment variable via the proxy. Please refer to [setting the GOPROXY environment variable](https://goproxy.io/).
+
+Then open a command line and execute the following commands in turn. For the first installation, more dependent packages need to be downloaded. Please make sure that the network is normal and wait patiently.
+
+Linux:
+
+```shell
+export GO111MODULE=on 
+go get -v github.com/snail007/gmct/cmd/gmct
+gmct --help
+```
+
+Windows:
+
+```shell
+set GO111MODULE=on
+go get -v github.com/snail007/gmct/cmd/gmct
+gmct --help
+```
+
+### 3. DOWNLOAD BINARY
 
 Download address: [GMCT tool chain](https://github.com/snail007/gmct/releases), need according to your operating system platform, download the corresponding binary package, and then extract the `gmct` binary or `gmct.exe`
 Just put it in the `$GOPATH/bin` directory, then open a command line and execute `gmct -- Help`. If you have help information for `GMCT`, the installation is successful.

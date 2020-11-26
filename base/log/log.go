@@ -1,19 +1,20 @@
 package gmclog
 
 import (
+	"fmt"
 	"github.com/snail007/gmc/core"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
 
 type bufChnItem struct {
-	level    gmccore.LOG_LEVEL
-	isFormat bool
-	format   string
-	msg      []interface{}
+	level gmccore.LOG_LEVEL
+	msg   string
 }
 type GMCLog struct {
 	l         *log.Logger
@@ -27,7 +28,7 @@ type GMCLog struct {
 }
 
 func NewGMCLog() gmccore.Logger {
-	l := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds)
+	l := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
 	return &GMCLog{
 		l:         l,
 		level:     gmccore.LDEBUG,
@@ -49,11 +50,7 @@ func (g *GMCLog) asyncWriterInit() {
 	go func() {
 		for {
 			item := <-g.bufChn
-			if item.isFormat {
-				g.l.Printf(item.format, item.msg...)
-			} else {
-				g.l.Print(item.msg...)
-			}
+			g.output(item.msg)
 			g.asyncWG.Done()
 		}
 	}()
@@ -94,26 +91,31 @@ func (g *GMCLog) namespace() string {
 	return ""
 }
 
+func (g *GMCLog) Panicf(format string, v ...interface{}) {
+	if g.level > gmccore.LPANIC {
+		return
+	}
+	s := g.caller(fmt.Sprintf(g.namespace()+"PANIC "+format, v...))
+	g.Write(s)
+	panic(s)
+}
+
 func (g *GMCLog) Panic(v ...interface{}) {
 	if g.level > gmccore.LPANIC {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "PANIC "}
-	g.l.Panic(append(v0, v...)...)
-}
-
-func (g *GMCLog) Panicf(format string, v ...interface{}) {
-	if g.level > gmccore.LPANIC {
-		return
-	}
-	g.l.Panicf(g.namespace()+"PANIC "+format, v...)
+	s := g.caller(fmt.Sprint(append(v0, v...)...))
+	g.Write(s)
+	panic(s)
 }
 
 func (g *GMCLog) Errorf(format string, v ...interface{}) {
 	if g.level > gmccore.LERROR {
 		return
 	}
-	g.l.Fatalf(g.namespace()+"ERROR "+format, v...)
+	g.Write(g.caller(fmt.Sprintf(g.namespace()+"ERROR "+format, v...)))
+	os.Exit(1)
 }
 
 func (g *GMCLog) Error(v ...interface{}) {
@@ -121,14 +123,15 @@ func (g *GMCLog) Error(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "ERROR "}
-	g.l.Fatal(append(v0, v...)...)
+	g.Write(g.caller(fmt.Sprint(append(v0, v...)...)))
+	os.Exit(1)
 }
 
 func (g *GMCLog) Warnf(format string, v ...interface{}) {
 	if g.level > gmccore.LWARN {
 		return
 	}
-	g.Writef(g.namespace()+"WARN "+format, v...)
+	g.Write(g.caller(fmt.Sprintf(g.namespace()+"WARN "+format, v...)))
 }
 
 func (g *GMCLog) Warn(v ...interface{}) {
@@ -136,14 +139,15 @@ func (g *GMCLog) Warn(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "WARN "}
-	g.Write(append(v0, v...)...)
+	g.Write(g.caller(fmt.Sprint(append(v0, v...)...)))
 }
 
 func (g *GMCLog) Infof(format string, v ...interface{}) {
 	if g.level > gmccore.LINFO {
 		return
 	}
-	g.Writef(g.namespace()+"INFO "+format, v...)
+	g.Write(g.caller(fmt.Sprintf(g.namespace()+"INFO "+format, v...)))
+
 }
 
 func (g *GMCLog) Info(v ...interface{}) {
@@ -151,14 +155,14 @@ func (g *GMCLog) Info(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "INFO "}
-	g.Write(append(v0, v...)...)
+	g.Write(g.caller(fmt.Sprint(append(v0, v...)...)))
 }
 
 func (g *GMCLog) Debugf(format string, v ...interface{}) {
 	if g.level > gmccore.LDEBUG {
 		return
 	}
-	g.Writef(g.namespace()+"DEBUG "+format, v...)
+	g.Write(g.caller(fmt.Sprintf(g.namespace()+"DEBUG "+format, v...)))
 }
 
 func (g *GMCLog) Debug(v ...interface{}) {
@@ -166,14 +170,14 @@ func (g *GMCLog) Debug(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "DEBUG "}
-	g.Write(append(v0, v...)...)
+	g.Write(g.caller(fmt.Sprint(append(v0, v...)...)))
 }
 
 func (g *GMCLog) Tracef(format string, v ...interface{}) {
 	if g.level > gmccore.LTRACE {
 		return
 	}
-	g.Writef(g.namespace()+"TRACE "+format, v...)
+	g.Write(g.caller(fmt.Sprintf(g.namespace()+"TRACE "+format, v...)))
 }
 
 func (g *GMCLog) Trace(v ...interface{}) {
@@ -181,7 +185,7 @@ func (g *GMCLog) Trace(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{g.namespace() + "TRACE "}
-	g.Write(append(v0, v...)...)
+	g.Write(g.caller(fmt.Sprint(append(v0, v...)...)))
 }
 
 func (g *GMCLog) Writer() io.Writer {
@@ -196,35 +200,39 @@ func (g *GMCLog) SetFlags(f int) {
 	g.l.SetFlags(f)
 }
 
-func (g *GMCLog) Write(v ...interface{}) {
+func (g *GMCLog) Write(s string) {
 	if g.async {
 		select {
 		case g.bufChn <- bufChnItem{
-			isFormat: false,
-			msg:      v,
+			msg: s,
 		}:
 			g.asyncWG.Add(1)
 		default:
-			g.l.Print("WARN gmclog buf chan overflow")
+			g.output("WARN gmclog buf chan overflow")
 		}
 		return
 	}
-	g.l.Print(v...)
+	g.output(s)
 }
 
-func (g *GMCLog) Writef(format string, v ...interface{}) {
-	if g.async {
-		select {
-		case g.bufChn <- bufChnItem{
-			isFormat: true,
-			format:   format,
-			msg:      v,
-		}:
-			g.asyncWG.Add(1)
-		default:
-			g.l.Print("WARN gmclog buf chan overflow")
+func (g *GMCLog) output(s string) {
+	g.l.Print(s)
+}
+
+func (g *GMCLog) caller(msg string) string {
+	file := "unknown"
+	line := 0
+	if _, file0, line0, ok := runtime.Caller(2); ok {
+		file0=strings.Replace(file0,"\\","/",-1)
+  		p:="/github.com/snail007/gmc/"
+		if strings.Contains(file0, p) &&
+			!strings.Contains(file0, p+"demos") {
+			file = "[gmc]" + file0[strings.Index(file0,p)+len(p):]
+		} else {
+			file = filepath.Base(filepath.Dir(file0)) + "/" + filepath.Base(file0)
 		}
-		return
+		line = line0
 	}
-	g.l.Printf(format, v...)
+	msg = fmt.Sprintf("%s:%d: ", file, line) + msg
+	return msg
 }

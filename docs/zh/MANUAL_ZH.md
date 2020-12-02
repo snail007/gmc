@@ -1320,7 +1320,9 @@ gmct i18n --dir ../i18n
 [build]
 # ${DIR} is a placeholder presents current dir absolute path, no slash in the end.
 # you can using it in monitor_dirs, include_files, exclude_files, exclude_dirs.
+# "go" command will be called by default, but you can set "cmd" to overwrite it.
 monitor_dirs=["."]
+cmd=""
 args=["-ldflags","-s -w"]
 env=["CGO_ENABLED=1","GO111MODULE=on"]
 include_exts=[".go",".html",".htm",".tpl",".toml",".ini",".conf",".yaml"]
@@ -1332,12 +1334,17 @@ exclude_dirs=["vendor"]
 配置说明：
 
 1. `monitor_dirs` 监控目录，默认是当前目录，可以指定多个，数组形式。
+1. `cmd` 默认情况下，先执行`go build`构建项目，然后执行项目编译后的二进制，
+    但是可以设置`cmd`作为文件发生变化的时候执行的命令，设置了此命令后，文件发生变化，不会执行go build构建，而是直接调用`cmd`。
+    如果是脚本，这里写`bash`，执行`gmct run yourshell.sh`。
 1. `args` 额外传递给 `go build` 的参数，数组，多个参数分开写。
 1. `env` 设置`go build`执行时的环境变量，可以指定多个，数组形式。
 1. `include_exts` 监控的文件后缀，只监控此后缀文件的改动。可以指定多个，数组形式。
 1. `include_files` 设置额外监控的文件，支持相对路径和绝对路径，可以指定多个，数组形式。
 1. `exclude_files` 设置额外不监控的文件，支持相对路径和绝对路径，可以指定多个，数组形式。
 1. `exclude_dirs`  设置额外不监控的目录，支持相对路径和绝对路径，可以指定多个，数组形式。
+1. 所有传递给`gmct run`的参数和环境变量都将传递给你的项目二进制程序或者`cmd`设置的命令。
 
 在 `monitor_dirs`, `include_files`, `exclude_files`, `exclude_dirs`中可以使用
 变量`${DIR}`代表当前目录的绝对路径, 末尾没有`/`。
+

@@ -1337,7 +1337,9 @@ The default configuration is as follows:
 [build]
 # ${DIR} is a placeholder presents current dir absolute path, no slash in the end.
 # you can using it in monitor_dirs, include_files, exclude_files, exclude_dirs.
+# "go" command will be called by default, but you can set "cmd" to overwrite it.
 monitor_dirs=["."]
+cmd=""
 args=["-ldflags","-s -w"]
 env=["CGO_ENABLED=1","GO111MODULE=on"]
 include_exts=[".go",".html",".htm",".tpl",".toml",".ini",".conf",".yaml"]
@@ -1349,12 +1351,16 @@ exclude_dirs=["vendor"]
 Configuration description:
 
 1. `monitor_dirs` monitor directory, the default is the current directory, you can specify multiple, array form.
+1. By default, `cmd` executes `go build` to build the project, and then executes the compiled binary of the project.
+    But you can set `cmd` as a command to be executed when the file changes. After setting this command, the file changes and the build will not be executed, or `cmd` can be called directly.
+    If it is a script, write `bash` here and execute `gmct to run yourshell.sh`.
 1. `args`         extra parameter passed to` go build `, array, multiple parameters written separately.
 1. `env`          sets the environment variable at the time of` go build `execution. Multiple, array forms can be specified.
 1. `include_exts` monitor file suffix, only monitor changes to this suffix file. You can specify multiple arrays.
 1. `include_files` sets additional monitored files, supports relative path and absolute path, can specify multiple, array form.
 1. `exclude_files` sets additional unmonitored files, supports relative path and absolute path, can specify multiple, array form.
 1. `exclude_dirs`  sets additional unmonitored directories, supports relative path and absolute path, can specify multiple, array form.
+1. All parameters and environment variables passed to `gmct run` will be passed to your project binary program or commands set by `cmd`.
 
 `${DIR}` is available in `monitor_dirs`,` include_files`, `exclude_files`,` exclude_dirs`.
 

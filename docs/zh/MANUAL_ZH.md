@@ -389,6 +389,101 @@ gmc做了精简，精简后的全部介绍在：[template/sprig/docs](https://gi
 默认情况下，控制器里面使用`this.View,Render()`渲染模版，结果会被输出到浏览器。
 如果我们想获取渲染结果，而不是输出到浏览器，可以使用`this.View.RenderR()`渲染模版，它会把渲染结果返回。
 
+## 分页条
+
+在控制器里面可以方便的通过`this.Ctx.NewPager(10, 10000)`生成一个分页条。
+
+```go
+//page:=this.Ctx.GET("page")//当前页码
+perPage:=10 //每页多少条
+total:=10000 //总的多少条数据
+pager := this.Ctx.NewPager(perPage, total)
+this.View.Set("paginator", pager)//设置分页条对象到模版变量
+this.View.Render("list")
+```
+为了方便，我们单独把分页条放在一个视图文件夹里面(`views/paginator/pagebar.html`)，其它地方使用，包含它即可，本示例`views/list.html`就包含了它。
+假设视图文件夹是`views`
+
+`views/list.html`内容如下：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Paginator Demo</title>
+</head>
+<body>
+{{template "paginator/pagebar" .}}
+</body>
+</html>
+```
+
+`views/paginator/pagebar.html`内容如下：
+
+- 如果你使用的是`Bootstrap v3.x`那么，下面的内容可以直接使用，它是基于`Bootstrap v3.x`的。
+
+```html
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+{{ $pager := .paginator }}
+<ul class="pagination pagination-sm">
+    <li><span>共 {{$pager.Nums}} 条数据 </span></li>
+    {{if $pager.HasPrev}}
+        <li><a href="{{$pager.PageLinkFirst}}">首页</a></li>
+        <li><a href="{{$pager.PageLinkPrev}}"><span><i class="glyphicon glyphicon-backward"></i></span></a></li>
+    {{else}}
+        <li class="disabled"><a>首页</a></li>
+        <li class="disabled"><a><span><i class="glyphicon glyphicon-backward"></i></span></a></li>
+    {{end}}
+    {{range $index, $page := $pager.Pages}}
+        <li{{if $pager.IsActive .}} class="active"{{end}}>
+            <a href="{{$pager.PageLink $page}}">{{$page}}</a>
+        </li>
+    {{end}}
+    {{if $pager.HasNext}}
+        <li><a href="{{$pager.PageLinkNext}}"><span><i class="glyphicon glyphicon-forward"></i></span></a></li>
+        <li><a href="{{$pager.PageLinkLast}}">尾页</a></li>
+    {{else}}
+        <li class="disabled"><a><span><i class="glyphicon glyphicon-forward"></i></span></a></li>
+        <li class="disabled"><a>尾页</a></li>
+    {{end}}
+</ul>
+<form action="{{$pager.PageBaseLink}}" onsubmit="location=this.action+document.pager.page.value;return false;" name="pager"><input name="page"/><input type="submit" value="goto"></form>
+```
+
+- 如果你使用的是`Bootstrap v4.x`那么，下面的内容可以直接使用，它是基于`Bootstrap v4.x`的。
+
+```html
+{{ $pager := .paginator }}
+<ul class="pagination">
+    <li class="page-item"><span class="page-link">共 {{$pager.Nums}} 条数据 </span></li>
+    {{if $pager.HasPrev}}
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkFirst}}">首页</a></li>
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkPrev}}">上一页</a></li>
+    {{else}}
+        <li class="page-item disabled"><a class="page-link">首页</a></li>
+        <li class="page-item disabled"><a class="page-link">上一页</a></li>
+    {{end}}
+    {{range $index, $page := $pager.Pages}}
+        <li class="page-item {{if $pager.IsActive .}}active{{end}}">
+            <a class="page-link" href="{{$pager.PageLink $page}}">{{$page}}</a>
+        </li>
+    {{end}}
+    {{if $pager.HasNext}}
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkNext}}">下一页</a></li>
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkLast}}">尾页</a></li>
+    {{else}}
+        <li class="page-item disabled"><a class="page-link">下一页</a></li>
+        <li class="page-item disabled"><a class="page-link">尾页</a></li>
+    {{end}}
+</ul>
+```
+
+- 效果图如下
+    ![](/doc/images/pagebar.png)
+
+
+
 # Web 服务器
 
 GMC把Web开发有网页页面的网站，比如新闻站，管理后台这种归为Web服务， 对于这种项目，GMC专门设计了`Web服务`。

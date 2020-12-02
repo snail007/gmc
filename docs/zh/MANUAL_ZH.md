@@ -483,7 +483,7 @@ this.View.Render("list")
 
 - 效果图如下
 
-    ![](/doc/images/pagebar.png)
+    ![](https://github.com/snail007/gmc/blob/master/doc/images/pagebar.png?raw=true)
 
 # Web 服务器
 

@@ -507,7 +507,7 @@ For example the view folder is `views`.
 
 - The result as follows
 
-    ![](/doc/images/pagebar.png)
+    ![](https://github.com/snail007/gmc/blob/master/doc/images/pagebar.png?raw=true)
 
 # Web SERVER
 

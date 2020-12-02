@@ -413,7 +413,7 @@ Tip: The session is only enabled by calling `SessionStart()` in the controller.
 By default, the `this.View,Render()` Render template is used inside the controller and the result is output to the browser.
 If we want to get the render results instead of the output to the browser, we can use the `this.View.RenderR()` render template, which will return the render results.
 
-## Pagination
+## PAGINATION
 
 In the controller, you can easily generate a page bar through `this.Ctx.NewPager(10,10000)`.
 
@@ -452,7 +452,6 @@ For example the view folder is `views`.
 - If you are using `Bootstrap v3.x`, the following content can be used directly, it is based on `Bootstrap v3.x`.
 
 ```html
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 {{ $pager := .paginator }}
 <ul class="pagination pagination-sm">
     <li><span> {{$pager.Nums}} Total </span></li>
@@ -476,7 +475,6 @@ For example the view folder is `views`.
         <li class="disabled"><a>Last</a></li>
     {{end}}
 </ul>
-<form action="{{$pager.PageBaseLink}}" onsubmit="location=this.action+document.pager.page.value;return false;" name="pager"><input name="page"/><input type="submit" value="goto"></form>
 ```
 
 - If you are using `Bootstrap v4.x`, the following content can be used directly, it is based on `Bootstrap v4.x`.

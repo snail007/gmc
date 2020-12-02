@@ -428,7 +428,6 @@ this.View.Render("list")
 - 如果你使用的是`Bootstrap v3.x`那么，下面的内容可以直接使用，它是基于`Bootstrap v3.x`的。
 
 ```html
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 {{ $pager := .paginator }}
 <ul class="pagination pagination-sm">
     <li><span>共 {{$pager.Nums}} 条数据 </span></li>
@@ -452,7 +451,6 @@ this.View.Render("list")
         <li class="disabled"><a>尾页</a></li>
     {{end}}
 </ul>
-<form action="{{$pager.PageBaseLink}}" onsubmit="location=this.action+document.pager.page.value;return false;" name="pager"><input name="page"/><input type="submit" value="goto"></form>
 ```
 
 - 如果你使用的是`Bootstrap v4.x`那么，下面的内容可以直接使用，它是基于`Bootstrap v4.x`的。

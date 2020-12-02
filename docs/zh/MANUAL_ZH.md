@@ -393,6 +393,8 @@ gmc做了精简，精简后的全部介绍在：[template/sprig/docs](https://gi
 
 在控制器里面可以方便的通过`this.Ctx.NewPager(10, 10000)`生成一个分页条。
 
+示例代码：
+
 ```go
 //page:=this.Ctx.GET("page")//当前页码
 perPage:=10 //每页多少条
@@ -401,8 +403,10 @@ pager := this.Ctx.NewPager(perPage, total)
 this.View.Set("paginator", pager)//设置分页条对象到模版变量
 this.View.Render("list")
 ```
+
 为了方便，我们单独把分页条放在一个视图文件夹里面(`views/paginator/pagebar.html`)，其它地方使用，包含它即可，本示例`views/list.html`就包含了它。
-假设视图文件夹是`views`
+
+假设视图文件夹是`views`。
 
 `views/list.html`内容如下：
 
@@ -480,9 +484,8 @@ this.View.Render("list")
 ```
 
 - 效果图如下
+
     ![](/doc/images/pagebar.png)
-
-
 
 # Web 服务器
 

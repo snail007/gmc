@@ -413,6 +413,104 @@ Tip: The session is only enabled by calling `SessionStart()` in the controller.
 By default, the `this.View,Render()` Render template is used inside the controller and the result is output to the browser.
 If we want to get the render results instead of the output to the browser, we can use the `this.View.RenderR()` render template, which will return the render results.
 
+## Pagination
+
+In the controller, you can easily generate a page bar through `this.Ctx.NewPager(10,10000)`.
+
+Example：
+
+```go
+//page:=this.Ctx.GET("page")//current page
+perPage:=10 //counts per page
+total:=10000 // total counts
+pager := this.Ctx.NewPager(perPage, total)
+this.View.Set("paginator", pager)
+this.View.Render("list")
+```
+
+For example, we put the page bar separately in a view folder (`views/paginator/pagebar.html`), and use it elsewhere, just include it. This example `views/list.html` includes it.
+
+For example the view folder is `views`.
+
+`views/list.html` contents：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Paginator Demo</title>
+</head>
+<body>
+{{template "paginator/pagebar" .}}
+</body>
+</html>
+```
+
+`views/paginator/pagebar.html`contents：
+
+- If you are using `Bootstrap v3.x`, the following content can be used directly, it is based on `Bootstrap v3.x`.
+
+```html
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+{{ $pager := .paginator }}
+<ul class="pagination pagination-sm">
+    <li><span> {{$pager.Nums}} Total </span></li>
+    {{if $pager.HasPrev}}
+        <li><a href="{{$pager.PageLinkFirst}}">First</a></li>
+        <li><a href="{{$pager.PageLinkPrev}}"><span><i class="glyphicon glyphicon-backward"></i></span></a></li>
+    {{else}}
+        <li class="disabled"><a>First</a></li>
+        <li class="disabled"><a><span><i class="glyphicon glyphicon-backward"></i></span></a></li>
+    {{end}}
+    {{range $index, $page := $pager.Pages}}
+        <li{{if $pager.IsActive .}} class="active"{{end}}>
+            <a href="{{$pager.PageLink $page}}">{{$page}}</a>
+        </li>
+    {{end}}
+    {{if $pager.HasNext}}
+        <li><a href="{{$pager.PageLinkNext}}"><span><i class="glyphicon glyphicon-forward"></i></span></a></li>
+        <li><a href="{{$pager.PageLinkLast}}">Last</a></li>
+    {{else}}
+        <li class="disabled"><a><span><i class="glyphicon glyphicon-forward"></i></span></a></li>
+        <li class="disabled"><a>Last</a></li>
+    {{end}}
+</ul>
+<form action="{{$pager.PageBaseLink}}" onsubmit="location=this.action+document.pager.page.value;return false;" name="pager"><input name="page"/><input type="submit" value="goto"></form>
+```
+
+- If you are using `Bootstrap v4.x`, the following content can be used directly, it is based on `Bootstrap v4.x`.
+
+```html
+{{ $pager := .paginator }}
+<ul class="pagination">
+    <li class="page-item"><span class="page-link">{{$pager.Nums}} Total </span></li>
+    {{if $pager.HasPrev}}
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkFirst}}">First</a></li>
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkPrev}}">Prev</a></li>
+    {{else}}
+        <li class="page-item disabled"><a class="page-link">First</a></li>
+        <li class="page-item disabled"><a class="page-link">Prev</a></li>
+    {{end}}
+    {{range $index, $page := $pager.Pages}}
+        <li class="page-item {{if $pager.IsActive .}}active{{end}}">
+            <a class="page-link" href="{{$pager.PageLink $page}}">{{$page}}</a>
+        </li>
+    {{end}}
+    {{if $pager.HasNext}}
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkNext}}">Next</a></li>
+        <li class="page-item"><a class="page-link" href="{{$pager.PageLinkLast}}">Last</a></li>
+    {{else}}
+        <li class="page-item disabled"><a class="page-link">Next</a></li>
+        <li class="page-item disabled"><a class="page-link">Last</a></li>
+    {{end}}
+</ul>
+```
+
+- The result as follows
+
+    ![](/doc/images/pagebar.png)
+
 # Web SERVER
 
 GMC classifies Web development of Web sites with Web pages, such as news stations, and management background as Web services. For such projects, GMC specially designs` Web services`.

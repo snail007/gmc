@@ -1003,6 +1003,57 @@ The STOP in the figure corresponds to when the value returned by the middleware 
 
 <img src="https://github.com/snail007/gmc/blob/master/doc/images/http-and-api-server-architecture.png?raw=true" width="960" height="auto"/>  
 
+# OFFICIAL MIDDLEWARE
+
+## ACCESS LOG
+
+The `accesslog` middleware provides access log recording functions for API and WEB services, which can automatically divide files according to time and customize the log content format.
+
+Steps for usage:
+1. Put the following configuration into the project configuration file `app.toml`.
+
+```toml
+##############################################################
+# middleware configuration of Web & API access log
+##############################################################
+# 1.format is a logging line, useful placeholder are:
+# $host : host in url, include port. such as: domain:port.
+# $uri : request path in url.
+# $query : full of request query string.
+# $status_code : response http status code.
+# $time_used : milliseconds used by request.
+# $req_time : the time on request. format: 2020-10-55 15:33:55
+# $client_ip : the client real ip, search in X-Forwarded-For,
+#              X-Real-IP, request.RemoteAddr none port.
+# $remote_addr : remote address, request.RemoteAddr,
+#              maybe same as $client_ip but has port.
+# $local_addr : local address the client connect to.
+##############################################################
+[accesslog]
+dir="./logs"
+# filename in logs dir.
+# available placeholders are:
+# %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
+filename="access_%Y%m%d.log"
+gzip=true
+format="$req_time $host $uri?$query $status_code ${time_used}ms"
+```
+
+2. Add the following code where the route is initialized.
+
+```go
+import (
+ "github.com/snail007/gmc/middleware/accesslog"
+)
+
+func InitRouter(s *gmc.HTTPServer) {
+    //...
+    // middleware: accesslog
+    s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
+    // ...
+}
+```
+
 # HOT UPDATE & RESTART
 
 This feature is only available for Linux platforms, not Windows systems.

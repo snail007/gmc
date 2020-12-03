@@ -978,6 +978,59 @@ API 和 Web HTTP服务器工作流程架构图如下，它们执行的顺序和�
 
 <img src="https://github.com/snail007/gmc/blob/master/doc/images/http-and-api-server-architecture.png?raw=true" width="960" height="auto"/>  
 
+# 官方中间件
+
+GMC officially provides some middleware to meet the needs of different scenarios.
+
+## ACCESS LOG
+
+`accesslog`中间件，为API和WEB服务提供了访问日志记录功能，可以按照时间自动分割文件，自定义日志内容格式。
+
+使用步骤：
+1、把下面的配置放到项目配置文件`app.toml`中。
+
+```toml
+##############################################################
+# middleware configuration of Web & API access log
+##############################################################
+# 1.format is a logging line, useful placeholder are:
+# $host : host in url, include port. such as: domain:port.
+# $uri : request path in url.
+# $query : full of request query string.
+# $status_code : response http status code.
+# $time_used : milliseconds used by request.
+# $req_time : the time on request. format: 2020-10-55 15:33:55
+# $client_ip : the client real ip, search in X-Forwarded-For,
+#              X-Real-IP, request.RemoteAddr none port.
+# $remote_addr : remote address, request.RemoteAddr,
+#              maybe same as $client_ip but has port.
+# $local_addr : local address the client connect to.
+##############################################################
+[accesslog]
+dir="./logs"
+# filename in logs dir.
+# available placeholders are:
+# %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
+filename="access_%Y%m%d.log"
+gzip=true
+format="$req_time $host $uri?$query $status_code ${time_used}ms"
+```
+
+2、在路由初始化的地方加入如下代码。
+
+```go
+import (
+ "github.com/snail007/gmc/middleware/accesslog"
+)
+
+func InitRouter(s *gmc.HTTPServer) {
+    //...
+    // middleware: accesslog
+    s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
+    // ...
+}
+```
+
 # 平滑重启/热升级
 
 此功能只适用于Linux平台系统，不适用于Windows系统。

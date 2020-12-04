@@ -957,6 +957,30 @@ default="zh-cn"
 
 `default` is the default language. If the language of the user's HTTP request header is not found by the internationalization module, then the language set by `default` is used for translation.
 
+# 远程调试
+
+GMC基于go官方的`net/http/pprof`提供了方便的远程调试功能，只需要在初始化路由的地方绑定调试功能即可。
+
+示例代码如下：
+
+```go
+import (
+ "github.com/snail007/gmc/util/pprof"
+)
+
+func InitRouter(s *gmc.HTTPServer) {
+    // ...
+	//enable http pprof
+	httppprof.BindRouter(s.Router(),"/gmcdebug")
+    // ...
+}
+```
+
+- `httppprof.BindRouter`
+- 第一个参数是路由对象。
+- 第二个参数是调试功能在URL中的路径，为空默认是：`/debug/pprof/`。
+- 访问：`http://127.0.0.1:7080/gmcdebug/` 就能看见效果，接着用 `go tool` 就能对各种指标进行远程调试了。
+
 # 中间件
 
 GMC的Web和API服务器都支持中间件，当现有功能无法完成你的需求，你可以通过注册中间件，完成各种功能，比如：`权限认证`，`日志记录`，`数据埋点`，`修改请求`等等。
@@ -980,7 +1004,7 @@ API 和 Web HTTP服务器工作流程架构图如下，它们执行的顺序和�
 
 # 官方中间件
 
-GMC officially provides some middleware to meet the needs of different scenarios.
+GMC官方提供了一些常用功能的中间价，需要同学可以拿去使用。
 
 ## ACCESS LOG
 

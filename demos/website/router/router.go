@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/snail007/gmc/middleware/accesslog"
+	httppprof "github.com/snail007/gmc/util/pprof"
 	"strings"
 
 	"github.com/snail007/gmc"
@@ -10,6 +11,10 @@ import (
 )
 
 func InitRouter(s *gmc.HTTPServer) {
+
+	//enable http pprof
+	httppprof.BindRouter(s.Router(),"/gmcdebug")
+
 	// sets pre routing handler, it be called with any request.
 	s.AddMiddleware0(filterAll)
 

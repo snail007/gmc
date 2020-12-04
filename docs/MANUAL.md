@@ -981,6 +981,30 @@ default="zh-cn"
 
 `default` is the default language, used if the language of the user's HTTP request header and the internationalization module cannot find a matching language` default `is set to the language for translation.
 
+# REMOTE DEBUGGING
+
+GMC provides a convenient remote debugging function based on the official go's `net/http/pprof`. You only need to bind the debugging function where the route is initialized.
+
+The exampe code is as follows:
+
+```go
+import (
+ "github.com/snail007/gmc/util/pprof"
+)
+
+func InitRouter(s *gmc.HTTPServer) {
+    // ...
+	//enable http pprof
+	httppprof.BindRouter(s.Router(),"/gmcdebug")
+    // ...
+}
+```
+
+- `httppprof.BindRouter`
+- The first parameter is the route object.
+- The second parameter is the path of the debugging function in the URL. If it is empty, the default is: `/debug/pprof/`.
+- Visit: `http://127.0.0.1:7080/gmcdebug/` to see the effect, and then use `go tool` to remotely debug various indicators.
+
 # MIDDLEWARE
 
 Both THE Web and API servers of GMC support middleware. When existing functions cannot meet your requirements, you can complete various functions by registering middleware, such as: `authorization`, `logging`, `modification request` and so on.
@@ -1004,6 +1028,8 @@ The STOP in the figure corresponds to when the value returned by the middleware 
 <img src="https://github.com/snail007/gmc/blob/master/doc/images/http-and-api-server-architecture.png?raw=true" width="960" height="auto"/>  
 
 # OFFICIAL MIDDLEWARE
+
+GMC officially provides some middleware to meet the needs of different scenarios.
 
 ## ACCESS LOG
 

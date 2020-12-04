@@ -1,6 +1,6 @@
 # GMC 框架简介
 
-<img align="right" src="https://github.com/snail007/gmc/blob/master/doc/images/logo2.png?raw=true" width="200" height="auto"/>  
+<img align="right" src="https://gitee.com/snail/gmc/raw/master/doc/images/logo2.png" width="200" height="auto"/>  
 
 GMC 是Golang快速WEB开发框架，提供方便快捷的Web开发，API开发，目标是高性能，高生产力，轻量级。提供强大的配套工具链，让你一键生成各种项目，摆脱手动建立各种文件夹，文件的烦恼。
 
@@ -483,7 +483,7 @@ this.View.Render("list")
 
 - 效果图如下
 
-    ![](https://github.com/snail007/gmc/blob/master/doc/images/page-bar.png?raw=true)
+    ![](https://gitee.com/snail/gmc/raw/master/doc/images/page-bar.png)
 
 # Web 服务器
 
@@ -976,7 +976,7 @@ API 和 Web HTTP服务器工作流程架构图如下，它们执行的顺序和�
 
 图中的STOP对应的就是中间件function返回的值是true的时候。
 
-<img src="https://github.com/snail007/gmc/blob/master/doc/images/http-and-api-server-architecture.png?raw=true" width="960" height="auto"/>  
+<img src="https://gitee.com/snail/gmc/raw/master/doc/images/http-and-api-server-architecture.png" width="960" height="auto"/>  
 
 # 官方中间件
 

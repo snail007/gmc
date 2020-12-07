@@ -1097,7 +1097,7 @@ kill -USR2 11297
 
 In this example, `website` is the program name, and `11297` is the program's `PID`. Either way, you can choose your habits.
 
-# USEFUL PACKAGE
+# USEFUL GMC PACKAGES
 
 ## gpool
 
@@ -1110,6 +1110,14 @@ In this example, `website` is the program name, and `11297` is the program's `PI
 ## gmclog
 
 ## cast
+
+# MISC
+
+## DATA VALIDATION
+
+Because of many excellent projects have been completed separately for data validation, so GMC do not provide it.
+
+For data validation, GMC recommends using: [gookit/validate](https://github.com/gookit/validate/)
 
 # GMCT TOOL CHAIN
 

@@ -1072,7 +1072,7 @@ kill -USR2 11297
 
 本示例中 `website` 是程序名称，`11297`是程序的`pid`。两种方式都可以，自己看习惯选择。
 
-# 工具包
+# GMC 工具包
 
 ## gpool
 
@@ -1085,6 +1085,14 @@ kill -USR2 11297
 ## gmclog
 
 ## cast
+
+# 其它功能
+
+## 数据验证
+
+数据验证已经有很多优秀的项目单独做了，GMC不再单独提供数据校验功能。
+
+数据验证，GMC推荐使用：[gookit/validate](https://github.com/gookit/validate/blob/master/README.zh-CN.md)
 
 # GMCT 工具链
 

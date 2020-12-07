@@ -13,6 +13,20 @@ import (
 	"time"
 )
 
+//Change integer type to time type
+func ExampleInt64ToTime() {
+	l, _ := time.LoadLocation("PRC")
+	timeByInt := Int64ToTime(1600320027565) //milliSecond
+	fmt.Println(timeByInt.In(l))
+
+	timeByInt = Int64ToTime(1599546208) //second
+	fmt.Println(timeByInt.In(l))
+
+	//Output:
+	//2020-09-17 13:20:27.565 +0800 CST
+	//2020-09-08 14:23:28 +0800 CST
+}
+
 //Get the current time in seconds
 func ExampleUnix() {
 	second := Unix()
@@ -44,19 +58,6 @@ func ExampleTimeToMilliSeconds() {
 	//Output like : 1600320027565
 }
 
-//Change integer type to time type
-func ExampleInt64ToTime() {
-	timeByInt := Int64ToTime(1600320027565) //milliSecond
-	fmt.Println(timeByInt)
-
-	timeByInt = Int64ToTime(1599546208) //second
-	fmt.Println(timeByInt)
-
-	//Output:
-	//2020-09-17 13:20:27.565 +0800 CST
-	//2020-09-08 14:23:28 +0800 CST
-}
-
 //Acquire the time according to the string
 //@param s timString "2006-01-02","2006/01/02 15:04:05","2006/01/02 03:04:05"
 //@param isH true-24 hour clock false-12 hour clock
@@ -84,7 +85,8 @@ func ExampleStrToTime() {
 
 //Get the zero point of incoming time
 func ExampleZeroTimeOf() {
-	zeroTime := ZeroTimeOf(MustStrToTime("2020-09-17 00:00:00 +0800 CST"))
+	a,_:=parseAny("2020-09-17 00:00:01 +0800 CST")
+ 	zeroTime := ZeroTimeOf(a)
 	fmt.Println(zeroTime)
 
 	//Output:

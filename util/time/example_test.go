@@ -85,8 +85,8 @@ func ExampleStrToTime() {
 
 //Get the zero point of incoming time
 func ExampleZeroTimeOf() {
-	a,_:=parseAny("2020-09-17 00:00:01 +0800 CST")
- 	zeroTime := ZeroTimeOf(a)
+	a, _ := ParseAnyIn("2020-09-17 00:00:01 +0800 CST", "PRC")
+	zeroTime := ZeroTimeOf(a)
 	fmt.Println(zeroTime)
 
 	//Output:
@@ -104,7 +104,8 @@ func ExampleZeroTime() {
 //Get the first day of the month where the time is passed in.
 // That is the zero point on the first day of a month
 func ExampleMonthZeroTimeOf() {
-	firstDate := MonthZeroTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
+	t, _ := ParseAnyIn("2020-09-01 00:00:00 +0800 CST", "PRC")
+	firstDate := MonthZeroTimeOf(t)
 	fmt.Println(firstDate)
 
 	//Output:
@@ -114,7 +115,7 @@ func ExampleMonthZeroTimeOf() {
 //Get the last day of the month where the time is passed in
 //That is, 0 o'clock on the last day of a month
 func ExampleMonthLastTimeOf() {
-	lastDate := MonthLastTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
+	lastDate := MonthLastTimeOf(MustParseAnyIn("2020-09-01 00:00:00 +0800 CST","PRC"))
 	fmt.Println(lastDate)
 
 	//Output:
@@ -123,7 +124,7 @@ func ExampleMonthLastTimeOf() {
 
 //Start of this year
 func ExampleYearZeroTimeOf() {
-	firstData := YearZeroTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
+	firstData := YearZeroTimeOf(MustParseAnyIn("2020-09-01 00:00:00 +0800 CST","PRC"))
 	fmt.Println(firstData)
 
 	//Output:
@@ -132,7 +133,7 @@ func ExampleYearZeroTimeOf() {
 
 //End of this year
 func ExampleYearLastTimeOf() {
-	lastDate := YearLastTimeOf(MustStrToTime("2020-09-01 00:00:00 +0800 CST"))
+	lastDate := YearLastTimeOf(MustParseAnyIn("2020-09-01 00:00:00 +0800 CST","PRC"))
 	fmt.Println(lastDate)
 
 	//Output:

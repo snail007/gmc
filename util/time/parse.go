@@ -126,8 +126,38 @@ func unknownErr(datestr string) error {
 // ParseAny parse an unknown date format, detect the layout.
 // Normal parse.  Equivalent Timezone rules as time.Parse().
 // NOTE:  please see readme on mmdd vs ddmm ambiguous dates.
-func parseAny(datestr string) (time.Time, error) {
+func ParseAny(datestr string) (time.Time, error) {
 	p, err := parseTime(datestr, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return p.parse()
+}
+
+func MustParseAny(datestr string) (t time.Time) {
+	t, _ = ParseAny(datestr)
+	return
+}
+
+func MustParseAnyIn(datestr string, loc_ interface{}) (t time.Time) {
+	t, _ = ParseAnyIn(datestr, loc_)
+	return
+}
+
+func ParseAnyIn(datestr string, loc_ interface{}) (t time.Time, err error) {
+	var loc *time.Location
+	switch v := loc_.(type) {
+	case *time.Location:
+		loc = v
+	case string:
+		loc, err = time.LoadLocation(v)
+	default:
+		err = fmt.Errorf("error type of location")
+	}
+	if err != nil {
+		return time.Time{}, err
+	}
+	p, err := parseTime(datestr, loc)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -216,7 +246,6 @@ func parseStrict(datestr string) (time.Time, error) {
 }
 
 func parseTime(datestr string, loc *time.Location) (*parser, error) {
-
 	p := newParser(datestr, loc)
 	i := 0
 

@@ -59,13 +59,13 @@ func Int64ToTime(s int64) (r time.Time) {
 // That is, MST means one thing when using America/Denver and something else
 // in other locations.
 func StrToTime(s string) (time.Time, error) {
-	return parseAny(s)
+	return ParseAny(s)
 }
 
 // MustStrToTime  parse a date, and zero time.Time{} returned if it can't be parsed.  Used for testing.
 // Not recommended for most use-cases.
 func MustStrToTime(s string) (r time.Time) {
-	r, _ = parseAny(s)
+	r, _ = ParseAny(s)
 	r.In(time.Local)
 	return
 }

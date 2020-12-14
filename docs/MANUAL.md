@@ -1173,7 +1173,9 @@ Windows:
 ```shell
 set GO111MODULE=on
 git clone https://github.com/snail007/gmct.git
-cd gmct && go mod tidy
+cd gmct
+go mod tidy
+cd gmct/cmd/gmct
 go install
 gmct --help
 ```

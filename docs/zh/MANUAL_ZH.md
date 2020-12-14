@@ -1142,7 +1142,7 @@ Linux系统：
 export GO111MODULE=on 
 git clone https://github.com/snail007/gmct.git
 cd gmct && go mod tidy
-go install
+cd gmct/cmd/gmct && go install
 gmct --help
 ```
 
@@ -1151,7 +1151,9 @@ Windows系统：
 ```shell
 set GO111MODULE=on
 git clone https://github.com/snail007/gmct.git
-cd gmct && go mod tidy
+cd gmct
+go mod tidy
+cd gmct/cmd/gmct
 go install
 gmct --help
 ```

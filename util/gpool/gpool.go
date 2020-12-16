@@ -39,6 +39,9 @@ func New(workerCount int) (p *GPool) {
 		workerSig:   []chan bool{},
 		logger:      logutil.New(""),
 	}
+	for i := 0; i < p.workerCnt; i++ {
+		p.workerSig = append(p.workerSig, make(chan bool, 1))
+	}
 	p.init()
 	return
 }
@@ -51,15 +54,13 @@ func (s *GPool) init() {
 		})
 		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
-			sig := make(chan bool, 1)
-			s.workerSig = append(s.workerSig, sig)
 			go func(i int, sig chan bool) {
 				defer gmcerr.Recover(func(e interface{}) {
 					s.log("GPool: a worker stopped unexpectedly, err: %s", gmcerr.Stack(e))
 				})
-				// s.log("GPool: worker[%d] started ...", i)
-				ctx, cancle := context.WithCancel(s.ctx)
-				defer cancle()
+				//s.log("GPool: worker[%d] started ...", i)
+				ctx, cancel := context.WithCancel(s.ctx)
+				defer cancel()
 				var fn func()
 				for {
 					select {
@@ -68,15 +69,18 @@ func (s *GPool) init() {
 						// s.log("GPool: worker[%d] stopped.", i)
 						return
 					case <-sig:
-						if fn = s.pop(); fn != nil {
-							atomic.AddInt32(s.runningtCnt, 1)
-							s.run(fn)
-							atomic.AddInt32(s.runningtCnt, -1)
-							fn = nil
+						atomic.AddInt32(s.runningtCnt, 1)
+						for {
+							if fn = s.pop(); fn != nil {
+								s.run(fn)
+							} else {
+								break
+							}
 						}
+						atomic.AddInt32(s.runningtCnt, -1)
 					}
 				}
-			}(i, sig)
+			}(i, s.workerSig[i])
 		}
 	}()
 }
@@ -84,7 +88,7 @@ func (s *GPool) init() {
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
 	defer gmcerr.Recover(func(e interface{}) {
-		s.log("GPool: a task stopped unexceptedly, err: %s", gmcerr.Stack(e))
+		s.log("GPool: a task stopped unexpectedly, err: %s", gmcerr.Stack(e))
 	})
 	fn()
 }
@@ -94,11 +98,15 @@ func (s *GPool) Submit(task func()) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.tasks = append(s.tasks, task)
+	s.notifyAll()
+}
+
+// notify all workers, only idle workers be awakened
+func (s *GPool) notifyAll() {
 	for _, v := range s.workerSig {
 		select {
 		case v <- true:
 		default:
-			s.log("GPool: notify to workers fail")
 		}
 	}
 }

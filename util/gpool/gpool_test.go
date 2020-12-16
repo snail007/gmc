@@ -28,12 +28,8 @@ func TestSubmit(t *testing.T) {
 	p.Submit(func() {
 		a <- true
 	})
-	p.Submit(func() {
-
-	})
-	p.Submit(func() {
-
-	})
+	p.Submit(func() {})
+	p.Submit(func() {})
 	p.Submit(func() {
 		x := 0
 		_ = 10 / x
@@ -49,6 +45,7 @@ func TestStop(t *testing.T) {
 	p := New(3)
 	a := make(chan bool)
 	p.Submit(func() {
+		time.Sleep(time.Second)
 		a <- true
 	})
 	p.Stop()

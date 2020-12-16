@@ -23,6 +23,7 @@ type GPool struct {
 	logger      gmccore.Logger
 	workerCnt   int
 	workerSig   []chan bool
+	isStop      bool
 }
 
 //create a gpool object to using
@@ -71,6 +72,9 @@ func (s *GPool) init() {
 					case <-sig:
 						atomic.AddInt32(s.runningtCnt, 1)
 						for {
+							if s.isStop {
+								return
+							}
 							if fn = s.pop(); fn != nil {
 								s.run(fn)
 							} else {
@@ -130,6 +134,7 @@ func (s *GPool) pop() (fn func()) {
 
 //stop all workers in the pool
 func (s *GPool) Stop() {
+	s.isStop = true
 	s.cancel()
 }
 

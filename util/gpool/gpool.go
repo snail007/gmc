@@ -8,12 +8,10 @@ package gpool
 import (
 	"context"
 	gmccore "github.com/snail007/gmc/core"
+	gmcerr "github.com/snail007/gmc/error"
 	logutil "github.com/snail007/gmc/util/log"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	gmcerr "github.com/snail007/gmc/error"
 )
 
 type GPool struct {
@@ -24,6 +22,7 @@ type GPool struct {
 	runningtCnt *int32
 	logger      gmccore.Logger
 	workerCnt   int
+	workerSig   []chan bool
 }
 
 //create a gpool object to using
@@ -37,6 +36,7 @@ func New(workerCount int) (p *GPool) {
 		cancel:      cancel0,
 		runningtCnt: &cnt,
 		workerCnt:   workerCount,
+		workerSig:   []chan bool{},
 		logger:      logutil.New(""),
 	}
 	p.init()
@@ -51,7 +51,9 @@ func (s *GPool) init() {
 		})
 		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
-			go func(i int) {
+			sig := make(chan bool, 1)
+			s.workerSig = append(s.workerSig, sig)
+			go func(i int, sig chan bool) {
 				defer gmcerr.Recover(func(e interface{}) {
 					s.log("GPool: a worker stopped unexpectedly, err: %s", gmcerr.Stack(e))
 				})
@@ -65,19 +67,16 @@ func (s *GPool) init() {
 					case <-ctx.Done():
 						// s.log("GPool: worker[%d] stopped.", i)
 						return
-					default:
+					case <-sig:
 						if fn = s.pop(); fn != nil {
 							atomic.AddInt32(s.runningtCnt, 1)
 							s.run(fn)
 							atomic.AddInt32(s.runningtCnt, -1)
 							fn = nil
-						} else {
-							//no task to run, we sleep a while
-							time.Sleep(time.Second * 3)
 						}
 					}
 				}
-			}(i)
+			}(i, sig)
 		}
 	}()
 }
@@ -95,6 +94,13 @@ func (s *GPool) Submit(task func()) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.tasks = append(s.tasks, task)
+	for _, v := range s.workerSig {
+		select {
+		case v <- true:
+		default:
+			s.log("GPool: notify to workers fail")
+		}
+	}
 }
 
 //shift an element from array head

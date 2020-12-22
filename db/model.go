@@ -7,7 +7,6 @@ import (
 	"sync"
 )
 
-
 type Model struct {
 	db         Database
 	table      string
@@ -41,6 +40,29 @@ func Table(table string, db ...interface{}) *Model {
 	return m
 }
 
+func (s *Model) QuerySQL(sql string, values ...interface{}) (ret []map[string]string, error error) {
+	db := s.db
+	ar := db.AR().Raw(sql, values...)
+	rs, err := db.Query(ar)
+	if err != nil {
+		return nil, err
+	}
+	ret = rs.Rows()
+	return
+}
+
+func (s *Model) ExecSQL(sql string, values ...interface{}) (lastInsertID, rowsAffected int64, error error) {
+	db := s.db
+	ar := db.AR().Raw(sql, values...)
+	rs, err := db.Exec(ar)
+	if err != nil {
+		return 0, 0, err
+	}
+	rowsAffected = rs.RowsAffected
+	lastInsertID = rs.LastInsertId
+	return
+}
+
 func (s *Model) GetByID(id string) (ret map[string]string, error error) {
 	return s.GetByIDWithFields("*", id)
 }
@@ -71,11 +93,11 @@ func (s *Model) GetByWithFields(fields string, where map[string]interface{}) (re
 	return
 }
 
-func (s *Model) MGetByIDs(ids []string, orderBy ...interface{}) (ret map[string]string, error error) {
+func (s *Model) MGetByIDs(ids []string, orderBy ...interface{}) (ret []map[string]string, error error) {
 	return s.MGetByIDsWithFields("*", ids, orderBy)
 }
 
-func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...interface{}) (ret map[string]string, error error) {
+func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...interface{}) (ret []map[string]string, error error) {
 	db := s.db
 	ar := db.AR().Select(fields).From(s.table).Where(map[string]interface{}{
 		s.primaryKey: ids,
@@ -87,7 +109,7 @@ func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...inte
 	if err != nil {
 		return nil, err
 	}
-	ret = rs.Row()
+	ret = rs.Rows()
 	return
 }
 
@@ -105,7 +127,7 @@ func (s *Model) MGetBy(where map[string]interface{}, orderBy ...interface{}) (re
 
 func (s *Model) MGetByWithFields(fields string, where map[string]interface{}, orderBy ...interface{}) (ret []map[string]string, error error) {
 	db := s.db
-	ar := db.AR().Select(fields).From(s.table).Where(where).Limit(0, 1)
+	ar := db.AR().Select(fields).From(s.table).Where(where)
 	if col, by := s.OrderBy(orderBy...); col != "" {
 		ar.OrderBy(col, by)
 	}

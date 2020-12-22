@@ -706,6 +706,15 @@ GMC database operation support:
 1. Map result set to structure.
 1. Transaction support.
 
+## QUICK TABLE MODEL
+
+Under normal circumstances, if there is no very complicated operation on the data table, after initializing the database connection, we look at operating a data table through `gmc.Table("table_name")`,
+No need to write any table model classes to manipulate table data.
+
+The quick table model convention is as follows:
+1. `table_name` is the name of the database table. If `app.toml` is configured with a table prefix, here is the table name without prefix.
+1. By default, the table must have a primary key, and the name is: table name_id, such as table: `user`, then it is considered to have a primary key of `user_id`
+
 ## MySQL
 
 MySQL database supports connection pooling, various timeout configurations, and detailed configuration information in the `[database]` section of app.toml.

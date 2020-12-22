@@ -11,7 +11,18 @@ var (
 	cfg          *gmcconfig.Config
 )
 
-//RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
+//InitFromFile parse foo.toml database configuration, `cfg` is Config object of foo.toml
+func InitFromFile(cfgFile string) (err error) {
+	cfg := gmcconfig.New()
+	cfg.SetConfigFile(cfgFile)
+	err = cfg.ReadInConfig()
+	if err != nil {
+		return err
+	}
+	return Init(cfg)
+}
+
+//Init parse app.toml database configuration, `cfg` is Config object of app.toml
 func Init(cfg0 *gmcconfig.Config) (err error) {
 	cfg = cfg0
 	for k, v := range cfg.Sub("database").AllSettings() {

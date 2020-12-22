@@ -1,4 +1,4 @@
-package gmcmysql
+package gmcdb
 
 import (
 	"fmt"
@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	gmcdb "github.com/snail007/gmc/db"
 	"github.com/stretchr/testify/assert"
 )
 
-func ar() *ActiveRecord {
-	ar := new(ActiveRecord)
+func ar() *MySQLActiveRecord {
+	ar := new(MySQLActiveRecord)
 	ar.Reset()
 	return ar
 }
@@ -185,10 +184,10 @@ func TestUpdateBatch(t *testing.T) {
 	}
 }
 func Test(t *testing.T) {
-	group := NewDBGroup("default")
-	group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-	group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-	group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+	group := NewMySQLDBGroup("default")
+	group.Regist("default", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+	group.Regist("blog", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+	group.Regist("www", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
 	db := group.DB("www")
 	if db != nil {
 		rs, err := db.Query(db.AR().From("test"))
@@ -235,7 +234,7 @@ var rawRows = []map[string][]byte{
 
 func TestStruct(t *testing.T) {
 	assert := assert.New(t)
-	rs := gmcdb.NewResultSet(&rawRows)
+	rs := NewResultSet(&rawRows)
 	s, err := rs.Struct(User{})
 	assert.Nil(err)
 	assert.Equal("jack", s.(User).Name)
@@ -247,7 +246,7 @@ func TestStruct(t *testing.T) {
 }
 func TestStructs(t *testing.T) {
 	assert := assert.New(t)
-	rs := gmcdb.NewResultSet(&rawRows)
+	rs := NewResultSet(&rawRows)
 	sts, err := rs.Structs(User{})
 	assert.Nil(err)
 	for _, s := range sts {
@@ -261,7 +260,7 @@ func TestStructs(t *testing.T) {
 }
 func TestMapStructs(t *testing.T) {
 	assert := assert.New(t)
-	rs := gmcdb.NewResultSet(&rawRows)
+	rs := NewResultSet(&rawRows)
 	sts, err := rs.MapStructs("pid", User{})
 	assert.Nil(err)
 	for _, s := range sts {

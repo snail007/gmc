@@ -5,8 +5,6 @@ import (
 	gmcconfig "github.com/snail007/gmc/config"
 	gmccore "github.com/snail007/gmc/core"
 	gmcdb "github.com/snail007/gmc/db"
-	gmcmysql "github.com/snail007/gmc/db/mysql"
-	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	gmcerr "github.com/snail007/gmc/error"
 	gmccontroller "github.com/snail007/gmc/http/controller"
 	gmccookie "github.com/snail007/gmc/http/cookie"
@@ -33,14 +31,18 @@ type (
 	ResultSet = gmcdb.ResultSet
 	// Alias of type gmcdb.Cache
 	DBCache = gmcdb.Cache
-	// Alias of type gmcmysql.DB
-	MySQL = gmcmysql.DB
-	// Alias of type gmcsqlite3.DB
-	SQLite3 = gmcsqlite3.DB
-	// Alias of type gmcmysql.DB
-	MySQLG = gmcmysql.DBGroup
-	// Alias of type gmcsqlite3.DB
-	SQLite3G = gmcsqlite3.DBGroup
+	// Alias of type gmcdb.DatabaseGroup
+	DBGroup = gmcdb.DatabaseGroup
+	// Alias of type gmcdb.Database
+	Database = gmcdb.Database
+	// Alias of type gmcmysql.SQLite3DB
+	MySQL = gmcdb.MySQLDB
+	// Alias of type gmcsqlite3.SQLite3DB
+	SQLite3 = gmcdb.MySQLDB
+	// Alias of type gmcmysql.SQLite3DB
+	MySQLG = gmcdb.MySQLDBGroup
+	// Alias of type gmcsqlite3.SQLite3DB
+	SQLite3G = gmcdb.MySQLDBGroup
 	// Alias of type gmccontroller.Controller
 	Controller = gmccontroller.Controller
 	// Alias of type gmccookie.Cookies
@@ -101,7 +103,7 @@ var (
 
 	// Alias of gmcerr.Recover
 	// handle recover panic error in defer
-	Recover=gmcerr.Recover
+	Recover = gmcerr.Recover
 
 	// Alias of gmchttputil.StopE
 	// StopE will exit controller method if error is not nil.
@@ -115,4 +117,7 @@ var (
 	Tr = gmci18n.Tr
 	// Alias of gmci18n.Tr gmcrouter.ParamsFromContext
 	ParamsFromContext = gmcrouter.ParamsFromContext
+
+	// Alias of gmcdb.Model
+	Table = gmcdb.Table
 )

@@ -1,0 +1,12 @@
+[mysql]
+tables=[
+    "user",
+    "member",
+]
+
+#[sqlite3]
+#tables=[
+#    "user",
+#    "member",
+#]
+

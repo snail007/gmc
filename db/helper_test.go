@@ -1,11 +1,9 @@
-package gmcdbhelper
+package gmcdb
 
 import (
 	gmcconfig "github.com/snail007/gmc/config"
 	"os"
 	"testing"
-
-	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,18 +11,19 @@ import (
 func TestRegistMysql(t *testing.T) {
 	assert := assert.New(t)
 	cfg := gmcconfig.New()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	err = Init(cfg)
 	assert.Nil(err)
+	assert.NotNil(DBMySQL())
 	assert.EqualValues(1, DBMySQL().Stats().OpenConnections)
 }
 
 func TestRegistMysql_1(t *testing.T) {
 	assert := assert.New(t)
 	cfg := gmcconfig.New()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	err = Init(cfg)
@@ -36,35 +35,35 @@ func TestRegistMysql_1(t *testing.T) {
 	assert.Nil(err)
 	// fmt.Println(rs.Rows(), err)
 	// t.Fail()
-	//groupMySQL.DB().ConnPool.Close()
+	//groupMySQL.SQLite3DB().ConnPool.Close()
 }
 func TestRegistSQLite3(t *testing.T) {
 	os.Remove("test.db")
 	assert := assert.New(t)
-	cfg := gmcsqlite3.NewDBConfig()
-	cfg.OpenMode = gmcsqlite3.OPEN_MODE_READ_WRITE_CREATE
+	cfg := NewSQLite3DBConfig()
+	cfg.OpenMode = OPEN_MODE_READ_WRITE_CREATE
 	cfg.Password = "123"
 	cfg.Database = "test.db"
-	db, err := gmcsqlite3.NewDB(cfg)
+	db, err := NewSQLite3DB(cfg)
 	assert.Nil(err)
 	_, err = db.ExecSQL("create table test(id int)")
 	assert.Nil(err)
-	assert.True(gmcsqlite3.IsEncrypted("test.db"))
+	assert.True(IsEncrypted("test.db"))
 	db.ConnPool.Close()
 	os.Remove("test.db")
 }
 func TestRegistSQLite3_1(t *testing.T) {
 	os.Remove("test.db")
 	assert := assert.New(t)
-	cfg := gmcsqlite3.NewDBConfig()
-	cfg.OpenMode = gmcsqlite3.OPEN_MODE_READ_WRITE_CREATE
+	cfg := NewSQLite3DBConfig()
+	cfg.OpenMode = OPEN_MODE_READ_WRITE_CREATE
 	cfg.Password = ""
 	cfg.Database = "test.db"
-	db, err := gmcsqlite3.NewDB(cfg)
+	db, err := NewSQLite3DB(cfg)
 	assert.Nil(err)
 	_, err = db.ExecSQL("create table test(id int)")
 	assert.Nil(err)
-	assert.False(gmcsqlite3.IsEncrypted("test.db"))
+	assert.False(IsEncrypted("test.db"))
 	db.ConnPool.Close()
 	os.Remove("test.db")
 }

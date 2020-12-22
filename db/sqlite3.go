@@ -1,4 +1,4 @@
-package gmcsqlite3
+package gmcdb
 
 import (
 	"bytes"
@@ -6,41 +6,39 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"fmt"
+	makeutil "github.com/snail007/gmc/util/make"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
 
-	gmcdb "github.com/snail007/gmc/db"
-
-	"github.com/snail007/gmc/db/utils/makeleaky"
 	gosqlcipher "github.com/snail007/go-sqlcipher"
 )
 
-type DBGroup struct {
+type SQLite3DBGroup struct {
 	defaultConfigKey string
-	config           map[string]DBConfig
-	dbGroup          map[string]*DB
-	cache            gmcdb.Cache
+	config           map[string]SQLite3DBConfig
+	dbGroup          map[string]*SQLite3DB
+	cache            Cache
 }
 
-func NewDBGroupCache(defaultConfigName string, cache gmcdb.Cache) (group *DBGroup) {
-	group = &DBGroup{}
+func NewSQLite3DBGroupCache(defaultConfigName string, cache Cache) (group *SQLite3DBGroup) {
+	group = &SQLite3DBGroup{}
 	group.defaultConfigKey = defaultConfigName
-	group.config = map[string]DBConfig{}
-	group.dbGroup = map[string]*DB{}
+	group.config = map[string]SQLite3DBConfig{}
+	group.dbGroup = map[string]*SQLite3DB{}
 	group.cache = cache
 	return
 }
-func NewDBGroup(defaultConfigName string) (group *DBGroup) {
-	group = &DBGroup{}
+func NewSQLite3DBGroup(defaultConfigName string) (group *SQLite3DBGroup) {
+	group = &SQLite3DBGroup{}
 	group.defaultConfigKey = defaultConfigName
-	group.config = map[string]DBConfig{}
-	group.dbGroup = map[string]*DB{}
+	group.config = map[string]SQLite3DBConfig{}
+	group.dbGroup = map[string]*SQLite3DB{}
 	return
 }
-func (g *DBGroup) RegistGroup(cfg map[string]DBConfig) (err error) {
-	g.config = cfg
+func (g *SQLite3DBGroup) RegistGroup(cfg interface{}) (err error) {
+	g.config = cfg.(map[string]SQLite3DBConfig)
 	for name, config := range g.config {
 		if config.Cache == nil {
 			config.Cache = g.cache
@@ -52,12 +50,13 @@ func (g *DBGroup) RegistGroup(cfg map[string]DBConfig) (err error) {
 	}
 	return
 }
-func (g *DBGroup) Regist(name string, cfg DBConfig) (err error) {
-	var db DB
+func (g *SQLite3DBGroup) Regist(name string, cfgI interface{}) (err error) {
+	var db SQLite3DB
+	cfg := cfgI.(SQLite3DBConfig)
 	if cfg.Cache == nil {
 		cfg.Cache = g.cache
 	}
-	db, err = NewDB(cfg)
+	db, err = NewSQLite3DB(cfg)
 	if err != nil {
 		return
 	}
@@ -65,36 +64,39 @@ func (g *DBGroup) Regist(name string, cfg DBConfig) (err error) {
 	g.dbGroup[name] = &db
 	return
 }
-func (g *DBGroup) DB(name ...string) (db *DB) {
+func (g *SQLite3DBGroup) DB(name ...string) (db Database) {
 	key := ""
 	if len(name) == 0 {
 		key = g.defaultConfigKey
 	} else {
 		key = name[0]
 	}
-	db, _ = g.dbGroup[key]
+	db0, ok := g.dbGroup[key]
+	if ok {
+		return db0
+	}
 	return
 }
 
-type DB struct {
-	Config   DBConfig
+type SQLite3DB struct {
+	Config   SQLite3DBConfig
 	ConnPool *sql.DB
 	DSN      string
 }
 
-func NewDB(config DBConfig) (db DB, err error) {
-	db = DB{}
+func NewSQLite3DB(config SQLite3DBConfig) (db SQLite3DB, err error) {
+	db = SQLite3DB{}
 	err = db.init(config)
 	return
 }
-func (db *DB) init(config DBConfig) (err error) {
+func (db *SQLite3DB) init(config SQLite3DBConfig) (err error) {
 	db.Config = config
 	db.DSN = db.getDSN()
 	db.ConnPool, err = db.getDB()
 	return
 }
 
-func (db *DB) getDSN() string {
+func (db *SQLite3DB) getDSN() string {
 	//_pragma_key=x'%s'&_pragma_cipher_page_size=4096
 	if db.Config.Password == "" {
 		return fmt.Sprintf("file:%s?cache=%s&mode=%s",
@@ -111,7 +113,7 @@ func (db *DB) getDSN() string {
 		)
 	}
 }
-func (db *DB) getDB() (connPool *sql.DB, err error) {
+func (db *SQLite3DB) getDB() (connPool *sql.DB, err error) {
 	connPool, err = sql.Open("sqlite3", db.getDSN())
 	if err != nil {
 		return
@@ -120,41 +122,42 @@ func (db *DB) getDB() (connPool *sql.DB, err error) {
 	connPool.SetMaxOpenConns(0)
 	return
 }
-func (db *DB) md5(password string) string {
+func (db *SQLite3DB) md5(password string) string {
 	s := fmt.Sprintf("%x", md5.Sum([]byte(password)))
 	return strings.ToUpper(s + s)
 }
-func (db *DB) AR() (ar *ActiveRecord) {
-	ar = new(ActiveRecord)
+func (db *SQLite3DB) AR() ActiveRecord {
+	ar := new(SQLite3ActiveRecord)
 	ar.Reset()
 	ar.tablePrefix = db.Config.TablePrefix
 	ar.tablePrefixSqlIdentifier = db.Config.TablePrefixSqlIdentifier
-	return
+	return ar
 }
-func (db *DB) IsEncrypted() bool {
+func (db *SQLite3DB) IsEncrypted() bool {
 	ok, e := gosqlcipher.IsEncrypted(db.Config.Database)
 	if e != nil {
 		return false
 	}
 	return ok
 }
-func (db *DB) Stats() sql.DBStats {
+func (db *SQLite3DB) Stats() sql.DBStats {
 	return db.ConnPool.Stats()
 }
-func (db *DB) Begin() (tx *sql.Tx, err error) {
+func (db *SQLite3DB) Begin() (tx *sql.Tx, err error) {
 	return db.ConnPool.Begin()
 }
-func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) ExecTx(ar0 ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
+	ar := ar0.(*SQLite3ActiveRecord)
 	return db.execSQLTx(ar.SQL(), len(ar.arInsertBatch), tx, ar.values...)
 }
-func (db *DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
 	return db.execSQLTx(sqlStr, 0, tx, values...)
 }
-func (db *DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs *ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var stmt *sql.Stmt
 	var result sql.Result
-	rs = new(gmcdb.ResultSet)
+	rs = new(ResultSet)
 	stmt, err = tx.Prepare(sqlStr)
 	if err != nil {
 		return
@@ -178,17 +181,18 @@ func (db *DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values 
 	}
 	return
 }
-func (db *DB) Exec(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) Exec(ar0 ActiveRecord) (rs *ResultSet, err error) {
+	ar := ar0.(*SQLite3ActiveRecord)
 	return db.execSQL(ar.SQL(), len(ar.arInsertBatch), ar.values...)
 }
-func (db *DB) ExecSQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) ExecSQL(sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
 	return db.execSQL(sqlStr, 0, values...)
 }
-func (db *DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}) (rs *ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var stmt *sql.Stmt
 	var result sql.Result
-	rs = new(gmcdb.ResultSet)
+	rs = new(ResultSet)
 	stmt, err = db.ConnPool.Prepare(sqlStr)
 	if err != nil {
 		return
@@ -212,7 +216,7 @@ func (db *DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}
 	}
 	return
 }
-func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) QuerySQL(sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
@@ -235,7 +239,7 @@ func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSe
 
 	// scans := make([]interface{},closCnt)
 	var scans []interface{}
-	scans = makeleaky.GetX(scans, uint64(len(cols)), func() interface{} {
+	scans = makeutil.GetX(scans, uint64(len(cols)), func() interface{} {
 		a := make([]interface{}, closCnt)
 		for i := 0; i < closCnt; i++ {
 			a[i] = new([]byte)
@@ -246,7 +250,7 @@ func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSe
 		for i := 0; i < closCnt; i++ {
 			scans[i] = new([]byte)
 		}
-		makeleaky.PutX(scans, uint64(len(cols)))
+		makeutil.PutX(scans, uint64(len(cols)))
 	}()
 
 	for rows.Next() {
@@ -260,12 +264,13 @@ func (db *DB) QuerySQL(sqlStr string, values ...interface{}) (rs *gmcdb.ResultSe
 		}
 		results = append(results, row)
 	}
-	rs = gmcdb.NewResultSet(&results)
+	rs = NewResultSet(&results)
 	rs.TimeUsed = int((start - time.Now().UnixNano()) / 1e6)
 	rs.SQL = sqlStr
 	return
 }
-func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
+func (db *SQLite3DB) Query(ar0 ActiveRecord) (rs *ResultSet, err error) {
+	ar := ar0.(*SQLite3ActiveRecord)
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	if ar.cacheKey != "" {
@@ -302,7 +307,7 @@ func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
 
 		// scans := make([]interface{},closCnt)
 		var scans []interface{}
-		scans = makeleaky.GetX(scans, uint64(len(cols)), func() interface{} {
+		scans = makeutil.GetX(scans, uint64(len(cols)), func() interface{} {
 			a := make([]interface{}, closCnt)
 			for i := 0; i < closCnt; i++ {
 				a[i] = new([]byte)
@@ -313,7 +318,7 @@ func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
 			for i := 0; i < closCnt; i++ {
 				scans[i] = new([]byte)
 			}
-			makeleaky.PutX(scans, uint64(len(cols)))
+			makeutil.PutX(scans, uint64(len(cols)))
 		}()
 
 		for rows.Next() {
@@ -340,7 +345,7 @@ func (db *DB) Query(ar *ActiveRecord) (rs *gmcdb.ResultSet, err error) {
 			}
 		}
 	}
-	rs = gmcdb.NewResultSet(&results)
+	rs = NewResultSet(&results)
 	rs.TimeUsed = int((start - time.Now().UnixNano()) / 1e6)
 	rs.SQL = ar.SQL()
 	return
@@ -359,19 +364,19 @@ const (
 	SYNC_MODE_EXTRA             = 3
 )
 
-type DBConfig struct {
+type SQLite3DBConfig struct {
 	Database                 string
 	TablePrefix              string
 	TablePrefixSqlIdentifier string
-	Cache                    gmcdb.Cache
+	Cache                    Cache
 	SyncMode                 int
 	OpenMode                 string
 	CacheMode                string
 	Password                 string
 }
 
-func NewDBConfigWith(dbfilename, password, openMode, cacheMode string, syncMode int) (cfg DBConfig) {
-	cfg = NewDBConfig()
+func NewSQLite3DBConfigWith(dbfilename, password, openMode, cacheMode string, syncMode int) (cfg SQLite3DBConfig) {
+	cfg = NewSQLite3DBConfig()
 	cfg.Database = dbfilename
 	cfg.OpenMode = openMode
 	cfg.CacheMode = cacheMode
@@ -379,8 +384,8 @@ func NewDBConfigWith(dbfilename, password, openMode, cacheMode string, syncMode 
 	cfg.Password = password
 	return
 }
-func NewDBConfig() DBConfig {
-	return DBConfig{
+func NewSQLite3DBConfig() SQLite3DBConfig {
+	return SQLite3DBConfig{
 		OpenMode:                 OPEN_MODE_READ_WRITE,
 		CacheMode:                CACHE_MODE_SHARED,
 		SyncMode:                 SYNC_MODE_OFF,
@@ -391,7 +396,7 @@ func NewDBConfig() DBConfig {
 	}
 }
 
-type ActiveRecord struct {
+type SQLite3ActiveRecord struct {
 	arSelect                 [][]interface{}
 	arFrom                   []string
 	arJoin                   [][]string
@@ -414,15 +419,15 @@ type ActiveRecord struct {
 	cacheSeconds             uint
 }
 
-func (ar *ActiveRecord) Cache(key string, seconds uint) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Cache(key string, seconds uint) ActiveRecord {
 	ar.cacheKey = key
 	ar.cacheSeconds = seconds
 	return ar
 }
-func (ar *ActiveRecord) getValues() []interface{} {
+func (ar *SQLite3ActiveRecord) getValues() []interface{} {
 	return ar.values
 }
-func (ar *ActiveRecord) Reset() {
+func (ar *SQLite3ActiveRecord) Reset() {
 	ar.arSelect = [][]interface{}{}
 	ar.arFrom = []string{}
 	ar.arJoin = [][]string{}
@@ -443,24 +448,24 @@ func (ar *ActiveRecord) Reset() {
 	ar.cacheSeconds = 0
 }
 
-func (ar *ActiveRecord) Select(columns string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Select(columns string) ActiveRecord {
 	return ar._select(columns, true)
 }
-func (ar *ActiveRecord) SelectNoWrap(columns string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) SelectNoWrap(columns string) ActiveRecord {
 	return ar._select(columns, false)
 }
 
-func (ar *ActiveRecord) _select(columns string, wrap bool) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) _select(columns string, wrap bool) ActiveRecord {
 	for _, column := range strings.Split(columns, ",") {
 		ar.arSelect = append(ar.arSelect, []interface{}{column, wrap})
 	}
 	return ar
 }
-func (ar *ActiveRecord) From(from string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) From(from string) ActiveRecord {
 	ar.FromAs(from, "")
 	return ar
 }
-func (ar *ActiveRecord) FromAs(from, as string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) FromAs(from, as string) ActiveRecord {
 	ar.arFrom = []string{from, as}
 	if as != "" {
 		ar.asTable[as] = true
@@ -468,44 +473,44 @@ func (ar *ActiveRecord) FromAs(from, as string) *ActiveRecord {
 	return ar
 }
 
-func (ar *ActiveRecord) Join(table, as, on, type_ string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Join(table, as, on, type_ string) ActiveRecord {
 	ar.arJoin = append(ar.arJoin, []string{table, as, on, type_})
 	return ar
 }
-func (ar *ActiveRecord) Where(where map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Where(where map[string]interface{}) ActiveRecord {
 	if len(where) > 0 {
 		ar.WhereWrap(where, "AND", "")
 	}
 	return ar
 }
-func (ar *ActiveRecord) WhereWrap(where map[string]interface{}, leftWrap, rightWrap string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) WhereWrap(where map[string]interface{}, leftWrap, rightWrap string) ActiveRecord {
 	if len(where) > 0 {
 		ar.arWhere = append(ar.arWhere, []interface{}{where, leftWrap, rightWrap, len(ar.arWhere)})
 	}
 	return ar
 }
-func (ar *ActiveRecord) GroupBy(column string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) GroupBy(column string) ActiveRecord {
 	for _, column_ := range strings.Split(column, ",") {
 		ar.arGroupBy = append(ar.arGroupBy, strings.TrimSpace(column_))
 	}
 	return ar
 }
-func (ar *ActiveRecord) Having(having string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Having(having string) ActiveRecord {
 	ar.HavingWrap(having, "AND", "")
 	return ar
 }
-func (ar *ActiveRecord) HavingWrap(having, leftWrap, rightWrap string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) HavingWrap(having, leftWrap, rightWrap string) ActiveRecord {
 	ar.arHaving = append(ar.arHaving, []interface{}{having, leftWrap, rightWrap, len(ar.arHaving)})
 	return ar
 }
 
-func (ar *ActiveRecord) OrderBy(column, type_ string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) OrderBy(column, type_ string) ActiveRecord {
 	ar.arOrderBy[column] = type_
 	return ar
 }
 
 //Limit Limit(offset,count) or Limit(count)
-func (ar *ActiveRecord) Limit(limit ...int) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Limit(limit ...int) ActiveRecord {
 	if len(limit) == 1 {
 		ar.arLimit = fmt.Sprintf("%d", limit[0])
 
@@ -517,38 +522,38 @@ func (ar *ActiveRecord) Limit(limit ...int) *ActiveRecord {
 	return ar
 }
 
-func (ar *ActiveRecord) Insert(table string, data map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Insert(table string, data map[string]interface{}) ActiveRecord {
 	ar.sqlType = "insert"
 	ar.arInsert = data
 	ar.From(table)
 	return ar
 }
-func (ar *ActiveRecord) Replace(table string, data map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Replace(table string, data map[string]interface{}) ActiveRecord {
 	ar.sqlType = "replace"
 	ar.arInsert = data
 	ar.From(table)
 	return ar
 }
 
-func (ar *ActiveRecord) InsertBatch(table string, data []map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) InsertBatch(table string, data []map[string]interface{}) ActiveRecord {
 	ar.sqlType = "insertBatch"
 	ar.arInsertBatch = data
 	ar.From(table)
 	return ar
 }
-func (ar *ActiveRecord) ReplaceBatch(table string, data []map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) ReplaceBatch(table string, data []map[string]interface{}) ActiveRecord {
 	ar.InsertBatch(table, data)
 	ar.sqlType = "replaceBatch"
 	return ar
 }
 
-func (ar *ActiveRecord) Delete(table string, where map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Delete(table string, where map[string]interface{}) ActiveRecord {
 	ar.From(table)
 	ar.Where(where)
 	ar.sqlType = "delete"
 	return ar
 }
-func (ar *ActiveRecord) Update(table string, data, where map[string]interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Update(table string, data, where map[string]interface{}) ActiveRecord {
 	ar.From(table)
 	ar.Where(where)
 	for k, v := range data {
@@ -566,7 +571,7 @@ func (ar *ActiveRecord) Update(table string, data, where map[string]interface{})
 	}
 	return ar
 }
-func (ar *ActiveRecord) UpdateBatch(table string, values []map[string]interface{}, whereColumn []string) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) UpdateBatch(table string, values []map[string]interface{}, whereColumn []string) ActiveRecord {
 	ar.From(table)
 	ar.sqlType = "updateBatch"
 	ar.arUpdateBatch = []interface{}{values, whereColumn}
@@ -582,34 +587,34 @@ func (ar *ActiveRecord) UpdateBatch(table string, values []map[string]interface{
 	return ar
 }
 
-func (ar *ActiveRecord) Set(column string, value interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Set(column string, value interface{}) ActiveRecord {
 	ar.sqlType = "update"
 	ar.arSet[column] = []interface{}{value, true}
 	return ar
 }
-func (ar *ActiveRecord) SetNoWrap(column string, value interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) SetNoWrap(column string, value interface{}) ActiveRecord {
 	ar.sqlType = "update"
 	ar.arSet[column] = []interface{}{value, false}
 	return ar
 }
-func (ar *ActiveRecord) Wrap(v string) string {
+func (ar *SQLite3ActiveRecord) Wrap(v string) string {
 	columns := strings.Split(v, ".")
 	if len(columns) == 2 {
 		return ar.protectIdentifier(ar.checkPrefix(columns[0])) + "." + ar.checkPrefix(columns[1])
 	}
 	return ar.protectIdentifier(ar.checkPrefix(columns[0]))
 }
-func (ar *ActiveRecord) Raw(sql string, values ...interface{}) *ActiveRecord {
+func (ar *SQLite3ActiveRecord) Raw(sql string, values ...interface{}) ActiveRecord {
 	ar.currentSQL = sql
 	if len(values) > 0 {
 		ar.values = append(ar.values, values...)
 	}
 	return ar
 }
-func (ar *ActiveRecord) Values() []interface{} {
+func (ar *SQLite3ActiveRecord) Values() []interface{} {
 	return ar.values
 }
-func (ar *ActiveRecord) SQL() string {
+func (ar *SQLite3ActiveRecord) SQL() string {
 	if ar.currentSQL != "" {
 		return ar.currentSQL
 	}
@@ -633,7 +638,7 @@ func (ar *ActiveRecord) SQL() string {
 	}
 	return ar.currentSQL
 }
-func (ar *ActiveRecord) getUpdateSQL() string {
+func (ar *SQLite3ActiveRecord) getUpdateSQL() string {
 	SQL := []string{"UPDATE "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, "\nSET")
@@ -647,7 +652,7 @@ func (ar *ActiveRecord) getUpdateSQL() string {
 	return strings.Join(SQL, " ")
 }
 
-func (ar *ActiveRecord) getUpdateBatchSQL() string {
+func (ar *SQLite3ActiveRecord) getUpdateBatchSQL() string {
 	SQL := []string{"UPDATE "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, "\nSET")
@@ -655,31 +660,31 @@ func (ar *ActiveRecord) getUpdateBatchSQL() string {
 	SQL = append(SQL, ar.getWhere())
 	return strings.Join(SQL, " ")
 }
-func (ar *ActiveRecord) getInsertSQL() string {
+func (ar *SQLite3ActiveRecord) getInsertSQL() string {
 	SQL := []string{"INSERT INTO "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, ar.compileInsert())
 	return strings.Join(SQL, " ")
 }
-func (ar *ActiveRecord) getReplaceSQL() string {
+func (ar *SQLite3ActiveRecord) getReplaceSQL() string {
 	SQL := []string{"REPLACE INTO "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, ar.compileInsert())
 	return strings.Join(SQL, " ")
 }
-func (ar *ActiveRecord) getInsertBatchSQL() string {
+func (ar *SQLite3ActiveRecord) getInsertBatchSQL() string {
 	SQL := []string{"INSERT INTO "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, ar.compileInsertBatch())
 	return strings.Join(SQL, " ")
 }
-func (ar *ActiveRecord) getReplaceBatchSQL() string {
+func (ar *SQLite3ActiveRecord) getReplaceBatchSQL() string {
 	SQL := []string{"REPLACE INTO "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, ar.compileInsertBatch())
 	return strings.Join(SQL, " ")
 }
-func (ar *ActiveRecord) getDeleteSQL() string {
+func (ar *SQLite3ActiveRecord) getDeleteSQL() string {
 	SQL := []string{"DELETE FROM "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, ar.getWhere())
@@ -690,7 +695,7 @@ func (ar *ActiveRecord) getDeleteSQL() string {
 	SQL = append(SQL, ar.getLimit())
 	return strings.Join(SQL, " ")
 }
-func (ar *ActiveRecord) getSelectSQL() string {
+func (ar *SQLite3ActiveRecord) getSelectSQL() string {
 	from := ar.getFrom()
 	where := ar.getWhere()
 	having := ""
@@ -713,7 +718,7 @@ func (ar *ActiveRecord) getSelectSQL() string {
 	Select := ar.compileSelect()
 	return fmt.Sprintf("SELECT %s \nFROM %s %s %s %s %s %s", Select, from, where, groupBy, having, orderBy, limit)
 }
-func (ar *ActiveRecord) compileUpdateBatch() string {
+func (ar *SQLite3ActiveRecord) compileUpdateBatch() string {
 	_values, _index := ar.arUpdateBatch[0], ar.arUpdateBatch[1]
 	index := _index.([]string)
 	values := _values.([]map[string]interface{})
@@ -757,31 +762,8 @@ func (ar *ActiveRecord) compileUpdateBatch() string {
 	}
 	return strings.TrimRight(str, " ,")
 }
-func isArray(v interface{}) bool {
-	if v == nil {
-		return false
-	}
-	return reflect.TypeOf(v).Kind() == reflect.Slice || reflect.TypeOf(v).Kind() == reflect.Array
-}
-func isBool(v interface{}) bool {
-	if v == nil {
-		return false
-	}
-	return reflect.TypeOf(v).Kind() == reflect.Bool
-}
-func MapKey(v map[string]interface{}) string {
-	for k := range v {
-		return k
-	}
-	return ""
-}
-func MapCurrent(v map[string]interface{}) interface{} {
-	for _, val := range v {
-		return val
-	}
-	return ""
-}
-func (ar *ActiveRecord) compileInsert() string {
+
+func (ar *SQLite3ActiveRecord) compileInsert() string {
 	var columns = []string{}
 	var values = []string{}
 	for k, v := range ar.arInsert {
@@ -794,7 +776,7 @@ func (ar *ActiveRecord) compileInsert() string {
 	}
 	return ""
 }
-func (ar *ActiveRecord) compileInsertBatch() string {
+func (ar *SQLite3ActiveRecord) compileInsertBatch() string {
 	var columns []string
 	var values []string
 	for col := range ar.arInsertBatch[0] {
@@ -811,7 +793,7 @@ func (ar *ActiveRecord) compileInsertBatch() string {
 	}
 	return fmt.Sprintf("(%s) \nVALUES %s", strings.Join(columns, ","), strings.Join(values, ","))
 }
-func (ar *ActiveRecord) compileSet() string {
+func (ar *SQLite3ActiveRecord) compileSet() string {
 	set := []string{}
 	for key, _value := range ar.arSet {
 		value, wrap := _value[0], _value[1]
@@ -835,7 +817,7 @@ func (ar *ActiveRecord) compileSet() string {
 	}
 	return strings.Join(set, ",")
 }
-func (ar *ActiveRecord) compileGroupBy() string {
+func (ar *SQLite3ActiveRecord) compileGroupBy() string {
 	groupBy := []string{}
 	for _, key := range ar.arGroupBy {
 		_key := strings.Split(key, ".")
@@ -848,7 +830,7 @@ func (ar *ActiveRecord) compileGroupBy() string {
 	return strings.Join(groupBy, ",")
 }
 
-func (ar *ActiveRecord) compileOrderBy() string {
+func (ar *SQLite3ActiveRecord) compileOrderBy() string {
 	orderBy := []string{}
 	for key, Type := range ar.arOrderBy {
 		Type = strings.ToUpper(Type)
@@ -862,7 +844,7 @@ func (ar *ActiveRecord) compileOrderBy() string {
 	}
 	return strings.Join(orderBy, ",")
 }
-func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap string, index int) string {
+func (ar *SQLite3ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap string, index int) string {
 
 	_where := []string{}
 	if index == 0 {
@@ -935,7 +917,7 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 	}
 	return fmt.Sprintf(" %s %s %s ", leftWrap, strings.Join(_where, " AND "), rightWrap)
 }
-func (ar *ActiveRecord) interface2Slice(data interface{}) (arr *[]interface{}) {
+func (ar *SQLite3ActiveRecord) interface2Slice(data interface{}) (arr *[]interface{}) {
 	arr = &[]interface{}{}
 	val := reflect.ValueOf(data)
 	if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
@@ -946,7 +928,7 @@ func (ar *ActiveRecord) interface2Slice(data interface{}) (arr *[]interface{}) {
 	}
 	return
 }
-func (ar *ActiveRecord) compileSelect() string {
+func (ar *SQLite3ActiveRecord) compileSelect() string {
 	selects := ar.arSelect
 	columns := []string{}
 	if len(selects) == 0 {
@@ -975,7 +957,7 @@ func (ar *ActiveRecord) compileSelect() string {
 	return strings.Join(columns, ",")
 }
 
-func (ar *ActiveRecord) checkPrefix(v string) string {
+func (ar *SQLite3ActiveRecord) checkPrefix(v string) string {
 	if strings.Contains(v, "(") || strings.Contains(v, ")") || strings.TrimSpace(v) == "*" {
 		return v
 	}
@@ -986,7 +968,7 @@ func (ar *ActiveRecord) checkPrefix(v string) string {
 	}
 	return v
 }
-func (ar *ActiveRecord) protectIdentifier(v string) string {
+func (ar *SQLite3ActiveRecord) protectIdentifier(v string) string {
 	if strings.Contains(v, "(") || strings.Contains(v, ")") || strings.TrimSpace(v) == "*" {
 		return v
 	}
@@ -996,14 +978,14 @@ func (ar *ActiveRecord) protectIdentifier(v string) string {
 	}
 	return fmt.Sprintf("`%s`", v)
 }
-func (ar *ActiveRecord) compileFrom(from, as string) string {
+func (ar *SQLite3ActiveRecord) compileFrom(from, as string) string {
 	if as != "" {
 		ar.asTable[as] = true
 		as = " AS " + ar.protectIdentifier(as) + " "
 	}
 	return ar.protectIdentifier(ar.checkPrefix(from)) + as
 }
-func (ar *ActiveRecord) compileJoin(table, as, on, type_ string) string {
+func (ar *SQLite3ActiveRecord) compileJoin(table, as, on, type_ string) string {
 	table_ := ""
 	if as != "" {
 		ar.asTable[table] = true
@@ -1024,21 +1006,21 @@ func (ar *ActiveRecord) compileJoin(table, as, on, type_ string) string {
 	return fmt.Sprintf(" %s JOIN %s ON %s ", type_, table_, on)
 }
 
-func (ar *ActiveRecord) getFrom() string {
+func (ar *SQLite3ActiveRecord) getFrom() string {
 	table := ar.compileFrom(ar.arFrom[0], ar.arFrom[1])
 	for _, v := range ar.arJoin {
 		table += ar.compileJoin(v[0], v[1], v[2], v[3])
 	}
 	return table
 }
-func (ar *ActiveRecord) getLimit() string {
+func (ar *SQLite3ActiveRecord) getLimit() string {
 	limit := ar.arLimit
 	if limit != "" {
 		limit = fmt.Sprintf("\nLIMIT %s", limit)
 	}
 	return limit
 }
-func (ar *ActiveRecord) getWhere() string {
+func (ar *SQLite3ActiveRecord) getWhere() string {
 	where := []string{}
 	hasEmptyIn := false
 
@@ -1063,6 +1045,7 @@ func (ar *ActiveRecord) getWhere() string {
 	}
 	return allWhere
 }
+
 func IsEncrypted(file string) bool {
 	ok, e := gosqlcipher.IsEncrypted(file)
 	if e != nil {

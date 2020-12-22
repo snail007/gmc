@@ -1,21 +1,19 @@
-package gmcdbhelper
+package gmcdb
 
 import (
 	gmcconfig "github.com/snail007/gmc/config"
-	gmcmysql "github.com/snail007/gmc/db/mysql"
-	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
 	"github.com/snail007/gmc/util/cast"
 )
 
 var (
-	groupMySQL   = *gmcmysql.NewDBGroup("default")
-	groupSQLite3 = *gmcsqlite3.NewDBGroup("default")
-	cfg        *gmcconfig.Config
+	groupMySQL   = NewMySQLDBGroup("default")
+	groupSQLite3 = NewSQLite3DBGroup("default")
+	cfg          *gmcconfig.Config
 )
 
 //RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
 func Init(cfg0 *gmcconfig.Config) (err error) {
-	cfg=cfg0
+	cfg = cfg0
 	for k, v := range cfg.Sub("database").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {
 			continue
@@ -31,7 +29,7 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 				if db != nil {
 					return
 				}
-				err = groupMySQL.Regist(id, gmcmysql.DBConfig{
+				err = groupMySQL.Regist(id, MySQLDBConfig{
 					Charset:                  cast.ToString(vvv["charset"]),
 					Collate:                  cast.ToString(vvv["collate"]),
 					Host:                     cast.ToString(vvv["host"]),
@@ -55,7 +53,7 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 				if db != nil {
 					return
 				}
-				err = groupSQLite3.Regist(id, gmcsqlite3.DBConfig{
+				err = groupSQLite3.Regist(id, SQLite3DBConfig{
 					Database:                 cast.ToString(vvv["database"]),
 					Password:                 cast.ToString(vvv["password"]),
 					TablePrefix:              cast.ToString(vvv["prefix"]),
@@ -73,7 +71,7 @@ func Init(cfg0 *gmcconfig.Config) (err error) {
 	return
 }
 
-func DB(id ...string) interface{} {
+func DB(id ...string) Database {
 	switch cfg.GetString("database.default") {
 	case "mysql":
 		return DBMySQL(id...)
@@ -84,11 +82,11 @@ func DB(id ...string) interface{} {
 }
 
 //DBMySQL acquires a mysql db object associated the id, id default is : `default`
-func DBMySQL(id ...string) *gmcmysql.DB {
-	return groupMySQL.DB(id...)
+func DBMySQL(id ...string) *MySQLDB {
+	return groupMySQL.DB(id...).(*MySQLDB)
 }
 
 //DBSQLite3 acquires a sqlite3 db object associated the id, id default is : `default`
-func DBSQLite3(id ...string) *gmcsqlite3.DB {
-	return groupSQLite3.DB(id...)
+func DBSQLite3(id ...string) *SQLite3DB {
+	return groupSQLite3.DB(id...).(*SQLite3DB)
 }

@@ -7,6 +7,7 @@ package fileutil
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -55,7 +56,7 @@ func Exists(path string) bool {
 	return true
 }
 
-func IsEmptyDir(name string) (bool) {
+func IsEmptyDir(name string) bool {
 	f, err := os.Open(name)
 	if err != nil {
 		return false
@@ -66,4 +67,32 @@ func IsEmptyDir(name string) (bool) {
 		return true
 	}
 	return false
+}
+
+func GetString(file string) (str string, err error) {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return
+	}
+	str = string(b)
+	return
+}
+
+func MustGetString(file string) (str string) {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return
+	}
+	str = string(b)
+	return
+}
+
+func GetBytes(file string) (b []byte, err error) {
+	b, err = ioutil.ReadFile(file)
+	return
+}
+
+func MustGetBytes(file string) (b []byte) {
+	b, _ = ioutil.ReadFile(file)
+	return
 }

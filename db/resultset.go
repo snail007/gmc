@@ -8,10 +8,6 @@ import (
 	gmcerr "github.com/snail007/gmc/error"
 )
 
-type Cache interface {
-	Set(key string, val []byte, expire uint) (err error)
-	Get(key string) (data []byte, err error)
-}
 
 type ResultSet struct {
 	rawRows      *[]map[string][]byte
@@ -20,7 +16,7 @@ type ResultSet struct {
 	// TimeUsed milliseconds used by execute the SQL statement associated to the result set
 	TimeUsed int
 	// SQL statement associated to the result set
-	SQL      string
+	SQL string
 }
 
 func NewResultSet(rawRows *[]map[string][]byte) (rs *ResultSet) {
@@ -179,3 +175,4 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) 
 	}
 	return rv.Interface(), err
 }
+

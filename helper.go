@@ -5,9 +5,7 @@ import (
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmcconfig "github.com/snail007/gmc/config"
 	"github.com/snail007/gmc/core"
-	gmcdbhelper "github.com/snail007/gmc/db/helper"
-	gmcmysql "github.com/snail007/gmc/db/mysql"
-	gmcsqlite3 "github.com/snail007/gmc/db/sqlite3"
+	gmcdb "github.com/snail007/gmc/db"
 	gmcerr "github.com/snail007/gmc/error"
 	gmcrouter "github.com/snail007/gmc/http/router"
 	gmchttpserver "github.com/snail007/gmc/http/server"
@@ -19,7 +17,7 @@ import (
 var (
 	// New shortcut of New gmc stuff
 	New = &New0{}
-	// DB shortcut of gmc database stuff
+	// SQLite3DB shortcut of gmc database stuff
 	DB = &DB0{}
 	// Cache shortcut of gmc cache stuff
 	Cache = &Cache0{}
@@ -116,23 +114,23 @@ type DB0 struct {
 // Init initialize the db group objects from a config object
 // contains app.toml section [database].
 func (s *DB0) Init(cfg *gmcconfig.Config) error {
-	return gmcdbhelper.Init(cfg)
+	return gmcdb.Init(cfg)
 }
 
-// DB acquires the default db group object, you must be call Init firstly.
+// SQLite3DB acquires the default db group object, you must be call Init firstly.
 // And you must assert it to the correct type to use.
-func (s *DB0) DB(id ...string) interface{} {
-	return gmcdbhelper.DB(id...)
+func (s *DB0) DB(id ...string) gmcdb.Database {
+	return gmcdb.DB(id...)
 }
 
 // MySQL acquires the mysql db group object, you must be call Init firstly.
-func (s *DB0) MySQL(id ...string) *gmcmysql.DB {
-	return gmcdbhelper.DBMySQL(id...)
+func (s *DB0) MySQL(id ...string) *gmcdb.MySQLDB {
+	return gmcdb.DBMySQL(id...)
 }
 
 // SQLite3 acquires the sqlite3 db group object, you must be call Init firstly.
-func (s *DB0) SQLite3(id ...string) *gmcsqlite3.DB {
-	return gmcdbhelper.DBSQLite3(id...)
+func (s *DB0) SQLite3(id ...string) *gmcdb.SQLite3DB {
+	return gmcdb.DBSQLite3(id...)
 }
 
 // #################################################

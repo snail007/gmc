@@ -7,7 +7,7 @@ import (
 	gmccachehelper "github.com/snail007/gmc/cache/helper"
 	gmcconfig "github.com/snail007/gmc/config"
 	"github.com/snail007/gmc/core"
-	gmcdbhelper "github.com/snail007/gmc/db/helper"
+	gmcdb "github.com/snail007/gmc/db"
 	gmcerr "github.com/snail007/gmc/error"
 	gmci18n "github.com/snail007/gmc/i18n"
 	gmchook "github.com/snail007/gmc/process/hook"
@@ -79,7 +79,7 @@ func (s *GMCApp) initialize() (err error) {
 
 	// initialize database
 	if s.config.Sub("database") != nil {
-		err = gmcdbhelper.Init(s.config)
+		err = gmcdb.Init(s.config)
 		if err != nil {
 			return
 		}

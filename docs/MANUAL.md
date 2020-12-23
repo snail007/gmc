@@ -28,7 +28,7 @@ By default, the project directory file structure is as follows:
 │   └── app.toml
 ├── controller
 │   └── demo.go
-├── gmcrun.toml
+├── grun.toml
 ├── go.mod
 ├── go.sum
 ├── initialize
@@ -48,7 +48,7 @@ settings, session, cache, database, etc. It is the most commonly used file.
 
 1.`controller/demo.go`demo controller file, default for students to set up a sample controller, open it to have a look.
 
-1.`gmcrun.toml`is not a GMC project, but a configuration file of GMCT tool. Since I used GMCT Run to run the project, 
+1.`grun.toml`is not a GMC project, but a configuration file of GMCT tool. Since I used GMCT Run to run the project, 
 there is this file, please refer to [GMCT tool chain](#gmct-tool-chain) for specific use.
 
 1.`go.mod, go.sum`are the project go mod package dependency management files.
@@ -825,8 +825,8 @@ Due to a database that is more, detailed please reference [here](https://github.
 
 ## INTRODUCTION
 
-GMC Cache supports Redis, File and memory Cache. In order to adapt to different business scenarios, developers can also implement the `gmccore.Cache` interface by themselves.
-Then register your cache with `gmccacheheller.AddCacheU(id,cache)`. You can then get your registered cache object through `gmc.Cache.Cache(id)`.
+GMC Cache supports Redis, File and memory Cache. In order to adapt to different business scenarios, developers can also implement the `gcore.Cache` interface by themselves.
+Then register your cache with `gcacheheller.AddCacheU(id,cache)`. You can then get your registered cache object through `gmc.Cache.Cache(id)`.
 
 If you want to use the cache in the `GMC` project, you need to modify the `[cache]` section of the configuration file `app.toml`. First, set the default cache type, such as redis `default=redis`.
 You then need to modify the `enable=true` part of the corresponding cache driver `[[cache.redis]]`. Multiple caches can be configured for each driver type, each id must be unique, and an `id` of `default` will be used as the default.
@@ -1015,9 +1015,9 @@ They are executed in the order in which they were added, but when one of the mid
 
 A middleware is a function.
 
-In the API service it is defined as` func(ctx *gmcrouter.Ctx, Server *APIServer)(isStop bool) `.
+In the API service it is defined as` func(ctx gcore.Ctx, Server *APIServer)(isStop bool) `.
 
-In the Web service it is defined as` func(ctx *gmcrouter.Ctx, Server *HTTPServer)(isStop bool) `.
+In the Web service it is defined as` func(ctx gcore.Ctx, Server *HTTPServer)(isStop bool) `.
 
 The diagram of the API and Web HTTP server workflow architecture is shown below. The sequence and timing of their execution can help you quickly master the use of middleware.
 
@@ -1162,7 +1162,7 @@ Linux:
 
 ```shell
 export GO111MODULE=on 
-git clone https://github.com/snail007/gmct.git
+git clone https://github.com/snail007/gt.git
 cd gmct && go mod tidy
 go install
 gmct --help
@@ -1172,7 +1172,7 @@ Windows:
 
 ```shell
 set GO111MODULE=on
-git clone https://github.com/snail007/gmct.git
+git clone https://github.com/snail007/gt.git
 cd gmct
 go mod tidy
 cd gmct/cmd/gmct
@@ -1205,7 +1205,7 @@ gmct --help
 
 ### 3. DOWNLOAD BINARY
 
-Download address: [GMCT tool chain](https://github.com/snail007/gmct/releases), need according to your operating system platform, download the corresponding binary package, and then extract the `gmct` binary or `gmct.exe`
+Download address: [GMCT tool chain](https://github.com/snail007/gmct/releases), need according to your operating system platform, download the corresponding binary package, and then extract the `gmct` binary or `gt.exe`
 Just put it in the `$GOPATH/bin` directory, then open a command line and execute `gmct -- Help`. If you have help information for `GMCT`, the installation is successful.
 
 ## GENERATE WEB PROJECT
@@ -1341,7 +1341,7 @@ gmct tpl --dir ../views
 ```
 
 When you execute the command, you will notice that there is an extra go file in the initialize directory that is prefixed by `gmc_templates_bindata_`,
-For example: `gmc_templates_bindata_2630881503983182670.go`. There's an init method in this file, this is done automatically when the `initialize` package is referenced and view file binary data is injected into the GMC view module.
+For example: `g_templates_bindata_2630881503983182670.go`. There's an init method in this file, this is done automatically when the `initialize` package is referenced and view file binary data is injected into the GMC view module.
 
 When you go Build your project, avoid later development, run the code and always use the view data in the go file, the initialize execute on the directory is: `GMCT TPL -- Clean` to safely clean the go files generated above.
 
@@ -1416,7 +1416,7 @@ During the development of the project, we will constantly modify the go file or 
 In order to see the modified effect, which took a lot of time, in order to solve this problem, just need to execute `gmct run` in the project compile directory, 
 the GMCT tool detects changes you make to the project, automatically recompiles and runs the project, you change the project file, and just refresh the browser. You can see the latest changes.
 
-Executing `gmct run` will generate a configuration file named `gmcrun.toml` in the current directory. You can modify this file to customize `gmct run` `compile behavior.
+Executing `gmct run` will generate a configuration file named `grun.toml` in the current directory. You can modify this file to customize `gmct run` `compile behavior.
 
 The default configuration is as follows:
 
@@ -1431,7 +1431,7 @@ args=["-ldflags","-s -w"]
 env=["CGO_ENABLED=1","GO111MODULE=on"]
 include_exts=[".go",".html",".htm",".tpl",".toml",".ini",".conf",".yaml"]
 include_files=[]
-exclude_files=["gmcrun.toml"]
+exclude_files=["grun.toml"]
 exclude_dirs=["vendor"]
 ```
 

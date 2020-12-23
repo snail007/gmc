@@ -3,23 +3,23 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmcfilestore
+package gfilestore
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	gmcsession "github.com/snail007/gmc/http/session"
-	"github.com/snail007/gmc/util/file"
+	gsession "github.com/snail007/gmc/http/session"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	store gmcsession.Store
+	store gsession.Store
 )
 
 func TestNew(t *testing.T) {
@@ -27,13 +27,13 @@ func TestNew(t *testing.T) {
 	sid := "testaaaa"
 	_, ok := store.Load(sid)
 	assert.False(ok)
-	sess := gmcsession.NewSession().Touch()
+	sess := gsession.NewSession().Touch()
 	err := store.Save(sess)
 	assert.Nil(err)
 	_, ok = store.Load(sess.SessionID())
 	assert.True(ok)
 	for i := 0; i < 10; i++ {
-		err := store.Save(gmcsession.NewSession().Touch())
+		err := store.Save(gsession.NewSession().Touch())
 		assert.Nil(err)
 	}
 	time.Sleep(time.Second * 3)
@@ -56,7 +56,7 @@ func TestMkdir(t *testing.T) {
 	k := "testbbb"
 	f := s0.file(k)
 	dir := filepath.Dir(f)
-	if !fileutil.ExistsDir(dir) {
+	if !gutil.fileutil.ExistsDir(dir) {
 		os.MkdirAll(dir, 0700)
 	}
 	err := ioutil.WriteFile(f, []byte("\n"), 0700)
@@ -71,7 +71,7 @@ func TestDelete(t *testing.T) {
 	cfg := NewConfig()
 	store, err := New(cfg)
 	assert.Nil(err)
-	sess0 := gmcsession.NewSession()
+	sess0 := gsession.NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -86,7 +86,7 @@ func TestDelete_2(t *testing.T) {
 	cfg.TTL = 1
 	store, err := New(cfg)
 	assert.Nil(err)
-	sess0 := gmcsession.NewSession()
+	sess0 := gsession.NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())

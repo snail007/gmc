@@ -3,12 +3,13 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmcrouter
+package grouter
 
 import (
 	"bytes"
 	"fmt"
-	gmcerr "github.com/snail007/gmc/error"
+	"github.com/snail007/gmc"
+	gerr "github.com/snail007/gmc/gmc/error"
 	"io"
 	"net/http"
 	"os"
@@ -220,17 +221,17 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 		})
 	}
 	if method != "" && !allMethods[method] {
-		panic(gmcerr.New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
+		panic(gerr.New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
 	}
 }
 
 func (s *HTTPRouter) call(fn func()) {
 	func() {
-		defer gmcerr.Recover(func(e interface{}) {
+		defer gmc.Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
 				return
 			}
-			panic(gmcerr.Wrap(e))
+			panic(gerr.Wrap(e))
 		})
 		fn()
 	}()

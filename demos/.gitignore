@@ -4,7 +4,7 @@
 /*.tar.gz
 /new_web/conf/app.toml
 /new_data.txt
-gmcrun.toml
+grun.toml
 *_gmcrun
 /website/logs
 /api_app/go.sum

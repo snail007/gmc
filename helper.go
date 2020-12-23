@@ -1,16 +1,17 @@
 package gmc
 
 import (
-	gmcapp "github.com/snail007/gmc/app"
-	gmccachehelper "github.com/snail007/gmc/cache/helper"
-	gmcconfig "github.com/snail007/gmc/config"
+	"fmt"
+	gconfig "github.com/snail007/gmc/config"
 	"github.com/snail007/gmc/core"
-	gmcdb "github.com/snail007/gmc/db"
-	gmcerr "github.com/snail007/gmc/error"
-	gmcrouter "github.com/snail007/gmc/http/router"
-	gmchttpserver "github.com/snail007/gmc/http/server"
-	gmci18n "github.com/snail007/gmc/i18n"
-	gmccaptcha "github.com/snail007/gmc/util/captcha"
+	gapp "github.com/snail007/gmc/gmc/app"
+	gcachehelper "github.com/snail007/gmc/gmc/cache/helper"
+	gdb "github.com/snail007/gmc/gmc/db"
+	gerr "github.com/snail007/gmc/gmc/error"
+	gi18n "github.com/snail007/gmc/gmc/i18n"
+	grouter "github.com/snail007/gmc/http/router"
+	ghttpserver "github.com/snail007/gmc/http/server"
+	gcaptcha "github.com/snail007/gmc/util/captcha"
 	_map "github.com/snail007/gmc/util/map"
 )
 
@@ -32,35 +33,35 @@ type New0 struct {
 }
 
 // Config creates a new object of gmc.Config
-func (s *New0) Config() *gmcconfig.Config {
-	return gmcconfig.New()
+func (s *New0) Config() *gconfig.Config {
+	return gconfig.NewConfig()
 }
 
 // ConfigFile creates a new object of gmc.Config from a toml file.
-func (s *New0) ConfigFile(file string) (cfg *gmcconfig.Config, err error) {
-	return gmcconfig.NewFile(file)
+func (s *New0) ConfigFile(file string) (cfg *gconfig.Config, err error) {
+	return gconfig.NewConfigFile(file)
 }
 
 // App creates an new object of gmc.APP
 func (s *New0) App() *APP {
-	return gmcapp.New()
+	return gapp.New()
 }
 
 // Captcha creates an captcha object
-func (s *New0) Captcha() *gmccaptcha.Captcha {
-	return gmccaptcha.New()
+func (s *New0) Captcha() *gcaptcha.Captcha {
+	return gcaptcha.New()
 }
 
 // Captcha creates an captcha object, and sets default configuration
-func (s *New0) CaptchaDefault() *gmccaptcha.Captcha {
-	return gmccaptcha.NewDefault()
+func (s *New0) CaptchaDefault() *gcaptcha.Captcha {
+	return gcaptcha.NewDefault()
 }
 
-// Tr creates an new object of gmci18n.I18nTool
+// Tr creates an new object of gi18n.I18nTool
 // This only worked after gmc.I18n.Init() called.
 // lang is the language translation to.
-func (s *New0) Tr(lang string) *gmci18n.I18nTool {
-	tool := gmci18n.NewI18nTool(gmci18n.Tr)
+func (s *New0) Tr(lang string) *gi18n.I18nTool {
+	tool := gi18n.NewI18nTool(gi18n.Tr)
 	tool.Lang(lang)
 	return tool
 }
@@ -68,28 +69,28 @@ func (s *New0) Tr(lang string) *gmci18n.I18nTool {
 // AppDefault creates a new object of APP and search config file locations:
 // ./app.toml or ./conf/app.toml or ./config/app.toml
 func (s *New0) AppDefault() *APP {
-	return gmcapp.Default()
+	return gapp.Default()
 }
 
 // Router creates a new object of gmc.Router
-func (s *New0) Router() *gmcrouter.HTTPRouter {
-	return gmcrouter.NewHTTPRouter()
+func (s *New0) Router() *grouter.HTTPRouter {
+	return grouter.NewHTTPRouter()
 }
 
 // HTTPServer creates a new object of gmc.HTTPServer
-func (s *New0) HTTPServer() *gmchttpserver.HTTPServer {
-	return gmchttpserver.New()
+func (s *New0) HTTPServer() *ghttpserver.HTTPServer {
+	return ghttpserver.New()
 }
 
 // APIServer creates a new object of gmc.APIServer
-func (s *New0) APIServer(address string) *gmchttpserver.APIServer {
-	return gmchttpserver.NewAPIServer(address)
+func (s *New0) APIServer(address string) *ghttpserver.APIServer {
+	return ghttpserver.NewAPIServer(address)
 }
 
 // APIServer creates a new object of gmc.APIServer and initialized from app.toml [apiserver] section.
 // cfg is a gmc.Config object contains section [apiserver] in `app.toml`.
-func (s *New0) APIServerDefault(cfg *gmcconfig.Config) (api *gmchttpserver.APIServer, err error) {
-	return gmchttpserver.NewDefaultAPIServer(cfg)
+func (s *New0) APIServerDefault(cfg *gconfig.Config) (api *ghttpserver.APIServer, err error) {
+	return ghttpserver.NewDefaultAPIServer(cfg)
 }
 
 // Map creates a gmc.Map object, gmc.Map's keys are sequenced.
@@ -100,7 +101,7 @@ func (s *New0) Map() *_map.Map {
 // Error creates a gmc.Error from an error or string, the gmc.Error
 // keeps the full stack information.
 func (s *New0) Error(e interface{}) error {
-	return gmcerr.New(e)
+	return gerr.New(e)
 }
 
 // ##################################################
@@ -113,24 +114,24 @@ type DB0 struct {
 
 // Init initialize the db group objects from a config object
 // contains app.toml section [database].
-func (s *DB0) Init(cfg *gmcconfig.Config) error {
-	return gmcdb.Init(cfg)
+func (s *DB0) Init(cfg *gconfig.Config) error {
+	return gdb.Init(cfg)
 }
 
 // SQLite3DB acquires the default db group object, you must be call Init firstly.
 // And you must assert it to the correct type to use.
-func (s *DB0) DB(id ...string) gmcdb.Database {
-	return gmcdb.DB(id...)
+func (s *DB0) DB(id ...string) gcore.Database {
+	return gdb.DB(id...)
 }
 
 // MySQL acquires the mysql db group object, you must be call Init firstly.
-func (s *DB0) MySQL(id ...string) *gmcdb.MySQLDB {
-	return gmcdb.DBMySQL(id...)
+func (s *DB0) MySQL(id ...string) *gdb.MySQLDB {
+	return gdb.DBMySQL(id...)
 }
 
 // SQLite3 acquires the sqlite3 db group object, you must be call Init firstly.
-func (s *DB0) SQLite3(id ...string) *gmcdb.SQLite3DB {
-	return gmcdb.DBSQLite3(id...)
+func (s *DB0) SQLite3(id ...string) *gdb.SQLite3DB {
+	return gdb.DBSQLite3(id...)
 }
 
 // #################################################
@@ -143,28 +144,28 @@ type Cache0 struct {
 
 // Init initialize the cache group objects from a config object
 // contains app.toml section [cache].
-func (s *Cache0) Init(cfg *gmcconfig.Config) error {
-	return gmccachehelper.Init(cfg)
+func (s *Cache0) Init(cfg *gconfig.Config) error {
+	return gcachehelper.Init(cfg)
 }
 
 // Cache acquires the default cache object, you must be call Init firstly.
-func (s *Cache0) Cache(id ...string) gmccore.Cache {
-	return gmccachehelper.Cache(id...)
+func (s *Cache0) Cache(id ...string) gcore.Cache {
+	return gcachehelper.Cache(id...)
 }
 
 // Redis acquires the default redis cache object, you must be call Init firstly.
-func (s *Cache0) Redis(id ...string) gmccore.Cache {
-	return gmccachehelper.Redis(id...)
+func (s *Cache0) Redis(id ...string) gcore.Cache {
+	return gcachehelper.Redis(id...)
 }
 
 // File acquires the default file cache object, you must be call Init firstly.
-func (s *Cache0) File(id ...string) gmccore.Cache {
-	return gmccachehelper.File(id...)
+func (s *Cache0) File(id ...string) gcore.Cache {
+	return gcachehelper.File(id...)
 }
 
 // Memory acquires the default memory cache object, you must be call Init firstly.
-func (s *Cache0) Memory(id ...string) gmccore.Cache {
-	return gmccachehelper.Memory(id...)
+func (s *Cache0) Memory(id ...string) gcore.Cache {
+	return gcachehelper.Memory(id...)
 }
 
 // ##################################################
@@ -177,14 +178,38 @@ type I18n0 struct {
 
 // Init initialize the i18n object from a config object
 // contains app.toml section [i18n].
-func (s *I18n0) Init(cfg *gmcconfig.Config) error {
-	return gmci18n.Init(cfg)
+func (s *I18n0) Init(cfg *gconfig.Config) error {
+	return gi18n.Init(cfg)
 }
 
 // Tr search the key in the `lang` i18n file, if not found, then search the
 // `fallback` (default) lang file, if both fail `defaultMessage` will be returned. You must be call Init firstly.
 func (s *I18n0) Tr(lang, key string, defaultMessage ...string) string {
-	return gmci18n.Tr(lang, key, defaultMessage...)
+	return gi18n.Tr(lang, key, defaultMessage...)
 }
 
-
+func Recover(f ...interface{}) {
+	var f0 interface{}
+	var printStack bool
+	if len(f) == 0 {
+		return
+	}
+	if len(f) == 2 {
+		printStack = f[1].(bool)
+	}
+	if e := recover(); e != nil {
+		f0 = f[0]
+		switch v := f0.(type) {
+		case func(e interface{}):
+			v(e)
+		case string:
+			s := ""
+			if printStack {
+				s = fmt.Sprintf(",stack: %s", gerr.Wrap(e).ErrorStack())
+			}
+			fmt.Printf("\nrecover error, %s%s\n", f, s)
+		default:
+			fmt.Printf("\nrecover error %s\n", gerr.Wrap(e).ErrorStack())
+		}
+	}
+}

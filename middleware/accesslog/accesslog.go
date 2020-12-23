@@ -3,24 +3,24 @@ package accesslog
 import (
 	"fmt"
 	"github.com/snail007/gmc"
-	gmclog "github.com/snail007/gmc/base/log"
-	gmcconfig "github.com/snail007/gmc/config"
-	gmcrouter "github.com/snail007/gmc/http/router"
+	gconfig "github.com/snail007/gmc/config"
+	log2 "github.com/snail007/gmc/gmc/log"
+	grouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/util/cast"
 	"strings"
 	"time"
 )
 
 type accesslog struct {
-	logger *gmclog.GMCLog
+	logger *log2.GMCLog
 	format string
 }
 
-func newFromConfig(c *gmcconfig.Config) *accesslog {
+func newFromConfig(c *gconfig.Config) *accesslog {
 	cfg := c.Sub("accesslog")
-	logger := gmclog.NewGMCLog().(*gmclog.GMCLog)
+	logger := log2.NewGMCLog().(*log2.GMCLog)
 	logger.SetFlags(0)
- 	logger.SetOutput(gmclog.NewFileWriter(cfg.GetString("filename"),
+ 	logger.SetOutput(log2.NewFileWriter(cfg.GetString("filename"),
 		cfg.GetString("dir"), cfg.GetBool("gzip")))
 	logger.EnableAsync()
 	return &accesslog{
@@ -29,23 +29,23 @@ func newFromConfig(c *gmcconfig.Config) *accesslog {
 	}
 }
 
-func NewWebFromConfig(c *gmcconfig.Config) gmc.MiddlewareWeb {
+func NewWebFromConfig(c *gconfig.Config) gmc.MiddlewareWeb {
 	a := newFromConfig(c)
-	return func(ctx *gmcrouter.Ctx, server *gmc.HTTPServer) (isStop bool) {
+	return func(ctx gcore.Ctx, server *gmc.HTTPServer) (isStop bool) {
 		go log(ctx, a)
 		return false
 	}
 }
 
-func NewAPIFromConfig(c *gmcconfig.Config) gmc.MiddlewareAPI {
+func NewAPIFromConfig(c *gconfig.Config) gmc.MiddlewareAPI {
 	a := newFromConfig(c)
-	return func(ctx *gmcrouter.Ctx, server *gmc.APIServer) (isStop bool) {
+	return func(ctx gcore.Ctx, server *gmc.APIServer) (isStop bool) {
 		go log(ctx, a)
 		return false
 	}
 }
 
-func log(ctx *gmcrouter.Ctx, logger *accesslog) {
+func log(ctx gcore.Ctx, logger *accesslog) {
 	rule := [][]string{
 		[]string{"$host", ctx.Request.Host},
 		[]string{"$uri", ctx.Request.URL.RequestURI()},

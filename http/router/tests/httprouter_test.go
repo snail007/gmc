@@ -8,15 +8,15 @@ package router
 import (
 	"testing"
 
-	gmccontroller "github.com/snail007/gmc/http/controller"
+	gcontroller "github.com/snail007/gmc/http/controller"
 
 	"github.com/stretchr/testify/assert"
 
-	gmcrouter "github.com/snail007/gmc/http/router"
+	grouter "github.com/snail007/gmc/http/router"
 )
 
 type Controller struct {
-	gmccontroller.Controller
+	gcontroller.Controller
 }
 
 func (this *Controller) Before() {
@@ -33,14 +33,14 @@ func (this *Controller) TestMethod() {
 }
 func TestController(t *testing.T) {
 	assert := assert.New(t)
-	r := gmcrouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter()
 	r.Controller("/user/", new(Controller))
 	h, _, _ := r.Lookup("GET", "/user/method1")
 	assert.NotNil(h)
 }
 func TestControllerMethod(t *testing.T) {
 	assert := assert.New(t)
-	r := gmcrouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter()
 	r.ControllerMethod("/method/:name", new(Controller), "TestMethod")
 	//test Controller
 	h, _, _ := r.Lookup("GET", "/method/hello")
@@ -48,7 +48,7 @@ func TestControllerMethod(t *testing.T) {
 }
 func TestGroup_1(t *testing.T) {
 	assert := assert.New(t)
-	r := gmcrouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter()
 	r.Controller("/user", new(Controller))
 	g1 := r.Group("/v1")
 	g1.Controller("/user", new(Controller))
@@ -77,7 +77,7 @@ func TestGroup_1(t *testing.T) {
 }
 func TestGroup_2(t *testing.T) {
 	assert := assert.New(t)
-	r := gmcrouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter()
 	r.Controller("/user", new(Controller))
 	g1 := r.Group("/v1")
 	g1.Controller("/user", new(Controller))

@@ -3,53 +3,53 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmcredisstore
+package gredisstore
 
 import (
 	"github.com/snail007/gmc/core"
-	logutil "github.com/snail007/gmc/util/log"
+	"github.com/snail007/gmc/gmc/log"
 	"time"
 
-	gmcredis "github.com/snail007/gmc/cache/redis"
-	gmcsession "github.com/snail007/gmc/http/session"
+	gredis "github.com/snail007/gmc/gmc/cache/redis"
+	gsession "github.com/snail007/gmc/http/session"
 )
 
 type RedisStoreConfig struct {
 	TTL      int64 //seconds
-	RedisCfg *gmcredis.RedisCacheConfig
-	Logger   gmccore.Logger
+	RedisCfg *gredis.RedisCacheConfig
+	Logger   gcore.Logger
 }
 
 func NewRedisStoreConfig() RedisStoreConfig {
 	return RedisStoreConfig{
 		TTL:      3600,
-		Logger:   logutil.New("[redisstore]"),
-		RedisCfg: gmcredis.NewRedisCacheConfig(),
+		Logger:   log.NewGMCLog("[redisstore]"),
+		RedisCfg: gredis.NewRedisCacheConfig(),
 	}
 }
 
 type RedisStore struct {
-	gmcsession.Store
+	gsession.Store
 	cfg   RedisStoreConfig
-	cache gmccore.Cache
+	cache gcore.Cache
 }
 
-func New(config interface{}) (st gmcsession.Store, err error) {
+func New(config interface{}) (st gsession.Store, err error) {
 	cfg := config.(RedisStoreConfig)
 	s := &RedisStore{
 		cfg:   cfg,
-		cache: gmcredis.New(cfg.RedisCfg),
+		cache: gredis.New(cfg.RedisCfg),
 	}
 	st = s
 	return
 }
 
-func (s *RedisStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
+func (s *RedisStore) Load(sessionID string) (sess *gsession.Session, isExists bool) {
 	v, e := s.cache.Get(sessionID)
 	if v == "" || e != nil {
 		return
 	}
-	sess = gmcsession.NewSession()
+	sess = gsession.NewSession()
 	err := sess.Unserialize(v)
 	if err != nil {
 		sess = nil
@@ -64,7 +64,7 @@ func (s *RedisStore) Load(sessionID string) (sess *gmcsession.Session, isExists 
 	isExists = true
 	return
 }
-func (s *RedisStore) Save(sess *gmcsession.Session) (err error) {
+func (s *RedisStore) Save(sess *gsession.Session) (err error) {
 	str, err := sess.Serialize()
 	if err != nil {
 		return

@@ -1,123 +1,119 @@
 package gmc
 
 import (
-	gmcapp "github.com/snail007/gmc/app"
-	gmcconfig "github.com/snail007/gmc/config"
-	gmccore "github.com/snail007/gmc/core"
-	gmcdb "github.com/snail007/gmc/db"
-	gmcerr "github.com/snail007/gmc/error"
-	gmccontroller "github.com/snail007/gmc/http/controller"
-	gmccookie "github.com/snail007/gmc/http/cookie"
-	gmcrouter "github.com/snail007/gmc/http/router"
-	gmchttpserver "github.com/snail007/gmc/http/server"
-	gmcsession "github.com/snail007/gmc/http/session"
-	gmctemplate "github.com/snail007/gmc/http/template"
-	gmci18n "github.com/snail007/gmc/i18n"
-	gmchttputil "github.com/snail007/gmc/util/http"
-	gmcmap "github.com/snail007/gmc/util/map"
+	gconfig "github.com/snail007/gmc/config"
+	gcore "github.com/snail007/gmc/core"
+	gapp "github.com/snail007/gmc/gmc/app"
+	gdb "github.com/snail007/gmc/gmc/db"
+	gerr "github.com/snail007/gmc/gmc/error"
+	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gcontroller "github.com/snail007/gmc/http/controller"
+	gcookie "github.com/snail007/gmc/http/cookie"
+	grouter "github.com/snail007/gmc/http/router"
+	ghttpserver "github.com/snail007/gmc/http/server"
+	gsession "github.com/snail007/gmc/http/session"
+	gtemplate "github.com/snail007/gmc/http/template"
+	ghttputil "github.com/snail007/gmc/util/http"
+	gmap "github.com/snail007/gmc/util/map"
 	"net/http"
 )
 
 type (
-	// Alias of type gmcapp.GMCApp
-	APP = gmcapp.GMCApp
-	// Alias of type gmcapp.ServiceItem
-	ServiceItem = gmcapp.ServiceItem
-	// Alias of type gmccore.Service
-	Service = gmccore.Service
-	// Alias of type gmcconfig.Config
-	Config = gmcconfig.Config
-	// Alias of type gmcdb.ResultSet
-	ResultSet = gmcdb.ResultSet
-	// Alias of type gmcdb.Cache
-	DBCache = gmcdb.Cache
-	// Alias of type gmcdb.DatabaseGroup
-	DBGroup = gmcdb.DatabaseGroup
-	// Alias of type gmcdb.Database
-	Database = gmcdb.Database
-	// Alias of type gmcmysql.SQLite3DB
-	MySQL = gmcdb.MySQLDB
-	// Alias of type gmcsqlite3.SQLite3DB
-	SQLite3 = gmcdb.MySQLDB
-	// Alias of type gmcmysql.SQLite3DB
-	MySQLG = gmcdb.MySQLDBGroup
-	// Alias of type gmcsqlite3.SQLite3DB
-	SQLite3G = gmcdb.MySQLDBGroup
-	// Alias of type gmccontroller.Controller
-	Controller = gmccontroller.Controller
-	// Alias of type gmccookie.Cookies
-	Cookie = gmccookie.Cookies
-	// Alias of type gmccookie.Options
-	CookieOptions = gmccookie.Options
-	// Alias of type gmcrouter.HTTPRouter
-	Router = gmcrouter.HTTPRouter
-	// Alias of type gmcrouter.Handle
-	Handle = gmcrouter.Handle
-	// Alias of type gmcrouter.Params
-	P = gmcrouter.Params
-	// Alias of type gmchttpserver.HTTPServer
-	HTTPServer = gmchttpserver.HTTPServer
-	// Alias of type gmchttpserver.APIServer
-	APIServer = gmchttpserver.APIServer
-	// Alias of type gmcsession.Session
-	Session = gmcsession.Session
-	// Alias of type gmcsession.Store
-	SessionStore = gmcsession.Store
-	// Alias of type gmctemplate.Template
-	Template = gmctemplate.Template
+	// Alias of type gapp.GMCApp
+	APP = gapp.GMCApp
+	// Alias of type gapp.ServiceItem
+	ServiceItem = gapp.ServiceItem
+	// Alias of type gcore.Service
+	Service = gcore.Service
+	// Alias of type gconfig.Config
+	Config = gconfig.Config
+	// Alias of type gdb.ResultSet
+	ResultSet = gdb.ResultSet
+	// Alias of type gdb.DBCache
+	DBCache = gcore.DBCache
+	// Alias of type gdb.DatabaseGroup
+	DBGroup = gcore.DatabaseGroup
+	// Alias of type gdb.Database
+	Database = gcore.Database
+	// Alias of type gmysql.SQLite3DB
+	MySQL = gdb.MySQLDB
+	// Alias of type gsqlite3.SQLite3DB
+	SQLite3 = gdb.MySQLDB
+	// Alias of type gmysql.SQLite3DB
+	MySQLG = gdb.MySQLDBGroup
+	// Alias of type gsqlite3.SQLite3DB
+	SQLite3G = gdb.MySQLDBGroup
+	// Alias of type gcontroller.Controller
+	Controller = gcontroller.Controller
+	// Alias of type gcookie.Cookies
+	Cookie = gcookie.Cookies
+	// Alias of type gcookie.Options
+	CookieOptions = gcookie.Options
+	// Alias of type grouter.HTTPRouter
+	Router = grouter.HTTPRouter
+	// Alias of type grouter.Handle
+	Handle = grouter.Handle
+	// Alias of type grouter.Params
+	P = grouter.Params
+	// Alias of type ghttpserver.HTTPServer
+	HTTPServer = ghttpserver.HTTPServer
+	// Alias of type ghttpserver.APIServer
+	APIServer = ghttpserver.APIServer
+	// Alias of type gsession.Session
+	Session = gsession.Session
+	// Alias of type gsession.Store
+	SessionStore = gsession.Store
+	// Alias of type gtemplate.Template
+	Template = gtemplate.Template
 	// Alias of type http.ResponseWriter
 	W = http.ResponseWriter
 	// Alias of type *http.Request
 	R = *http.Request
-	// Alias of type *gmcrouter.Ctx
-	C = *gmcrouter.Ctx
-	// Alias of type gmcmap.Map
-	Map = gmcmap.Map
+	// Alias of type gcore.Ctx
+	C = gcore.Ctx
+	// Alias of type gmap.Map
+	Map = gmap.Map
 	// Alias of type map[string]interface{}
 	M = map[string]interface{}
 	// Alias of type map[interface{}]interface{}
 	Mii = map[interface{}]interface{}
 	// Alias of type map[string]string
 	Mss = map[string]string
-	// Alias of type gmcerr.Error
-	Error = gmcerr.Error
+	// Alias of type gerr.Error
+	Error = gerr.Error
 	// Alias of api middleware
-	MiddlewareAPI func(ctx *gmcrouter.Ctx, api *APIServer) (isStop bool)
+	MiddlewareAPI func(ctx gcore.Ctx, api *APIServer) (isStop bool)
 	// Alias of web middleware
-	MiddlewareWeb func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
+	MiddlewareWeb func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
 )
 
 var (
 
-	// Alias of gmcerr.Stack.
+	// Alias of gerr.Stack.
 	// Acquires the full stack, returns string.
-	StackE = gmcerr.Stack
+	StackE = gerr.Stack
 
-	// Alias of gmcerr.Errorf
-	// Create a gmcerr.Error with format string.
-	Errorf = gmcerr.Errorf
+	// Alias of gerr.Errorf
+	// Create a gerr.Error with format string.
+	Errorf = gerr.Errorf
 
-	// Alias of gmcerr.Wrap
+	// Alias of gerr.Wrap
 	// Wrap an error or string to a gmc.Error.
-	WrapE = gmcerr.Wrap
+	WrapE = gerr.Wrap
 
-	// Alias of gmcerr.Recover
-	// handle recover panic error in defer
-	Recover = gmcerr.Recover
-
-	// Alias of gmchttputil.StopE
+	// Alias of ghttputil.StopE
 	// StopE will exit controller method if error is not nil.
 	// First argument is an error.
 	// Secondary argument is fail function, it be called if error is not nil.
 	// Third argument is success function, it be called if error is nil.
-	StopE = gmchttputil.StopE
+	StopE = ghttputil.StopE
 
-	// Alias of gmci18n.Tr
-	// This only worked after gmci18n.Init called.
-	Tr = gmci18n.Tr
-	// Alias of gmci18n.Tr gmcrouter.ParamsFromContext
-	ParamsFromContext = gmcrouter.ParamsFromContext
+	// Alias of gi18n.Tr
+	// This only worked after gi18n.Init called.
+	Tr = gi18n.Tr
+	// Alias of gi18n.Tr grouter.ParamsFromContext
+	ParamsFromContext = grouter.ParamsFromContext
 
-	// Alias of gmcdb.Model
-	Table = gmcdb.Table
+	// Alias of gdb.Model
+	Table = gdb.Table
 )

@@ -22,7 +22,7 @@ GMC快速开始的最好方式是通过GMCT工具链，所以首先同学们要�
 │   └── app.toml
 ├── controller
 │   └── demo.go
-├── gmcrun.toml
+├── grun.toml
 ├── go.mod
 ├── go.sum
 ├── initialize
@@ -39,7 +39,7 @@ GMC快速开始的最好方式是通过GMCT工具链，所以首先同学们要�
 项目文件说明：
 1. `conf/app.toml` 是项目配置文件，几乎所有Web功能都在这里配置，比如：web监听设置，session，缓存，数据库等等，是最常用的文件。
 1. `controller/demo.go` demo控制器文件，默认为同学们建立好了一个示例控制器，快打开它看看吧。
-1. `gmcrun.toml`这个文件不是gmc项目的，是gmct工具的配置文件，因为我用了gmct run运行项目，所以会有此文件，具体使用可以参考[GMCT工具链](#GMCT-工具链)。
+1. `grun.toml`这个文件不是gmc项目的，是gmct工具的配置文件，因为我用了gmct run运行项目，所以会有此文件，具体使用可以参考[GMCT工具链](#GMCT-工具链)。
 1. `go.mod, go.sum` 这两个是项目go mod包依赖管理文件。
 1. `initialize/initialize.go` 是项目启动时，初始化的操作都单独在这一个文件里面，而不是所有东西都写在入口件里面，这种方法是GMC推荐的项目结构组织方式。
     示例项目默认情况下，这个文件的初始化方法里面调用了初始化了路由的配置。
@@ -802,8 +802,8 @@ cachemode="shared"
 
 ## 缓存介绍
 
-GMC缓存Cache支持Redis、File、内存缓存三种类型，为适应不同的业务场景，开发者也可以自己实现`gmccore.Cache`接口，
-然后通过`gmccachehelper.AddCacheU(id,cache)`注册自己的缓存，然后就可以通过`gmc.Cache.Cache(id)`获取自己注册的缓存对象。
+GMC缓存Cache支持Redis、File、内存缓存三种类型，为适应不同的业务场景，开发者也可以自己实现`gcore.Cache`接口，
+然后通过`gcachehelper.AddCacheU(id,cache)`注册自己的缓存，然后就可以通过`gmc.Cache.Cache(id)`获取自己注册的缓存对象。
 
 如果要在`gmc`项目里面使用缓存，需要修改配置文件`app.toml`里面的`[cache]`部分，首先设置默认缓存类型,比如使用redis `default="redis"`，
 然后需要修改对应缓存驱动`[[redis]]`部分的启用`enable=true`。每个驱动类型的缓存都可以配置多个，每个的id必须唯一，id是"default"的将作为默认使用。
@@ -990,9 +990,9 @@ GMC的Web和API服务器都支持中间件，当现有功能无法完成你的�
 
 一个中间件就是一个function。
 
-API服务中它的定义是`func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)`。
+API服务中它的定义是`func(ctx gcore.Ctx, server *APIServer) (isStop bool)`。
 
-Web服务中它的定义是`func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)`。
+Web服务中它的定义是`func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)`。
 
 API 和 Web HTTP服务器工作流程架构图如下，它们执行的顺序和时机，此图可以直观的帮助你快速掌握中间件的使用。
 
@@ -1140,7 +1140,7 @@ Linux系统：
 
 ```shell
 export GO111MODULE=on 
-git clone https://github.com/snail007/gmct.git
+git clone https://github.com/snail007/gt.git
 cd gmct && go mod tidy
 cd gmct/cmd/gmct && go install
 gmct --help
@@ -1150,7 +1150,7 @@ Windows系统：
 
 ```shell
 set GO111MODULE=on
-git clone https://github.com/snail007/gmct.git
+git clone https://github.com/snail007/gt.git
 cd gmct
 go mod tidy
 cd gmct/cmd/gmct
@@ -1183,7 +1183,7 @@ gmct --help
 
 ### 3、下载二进制安装
 
-下载地址：[GMCT工具链](https://github.com/snail007/gmct/releases) ，需要根据你的操作系统平台，下载对应的二进制文件压缩包即可，然后解压得到gmct或者gmct.exe
+下载地址：[GMCT工具链](https://github.com/snail007/gmct/releases) ，需要根据你的操作系统平台，下载对应的二进制文件压缩包即可，然后解压得到gmct或者gt.exe
 把它放在`$GOPATH/bin`目录即可,然后打开一个命令行，执行`gmct --help`如果有显示`gmct`的帮助信息，说明安装成功。
 
 ## 生成Web项目
@@ -1319,7 +1319,7 @@ gmct tpl --dir ../views
 ```
 
 执行了命令后，会发现目录initialize中多了一个前缀是`gmc_templates_bindata_`的go文件，
-比如：`gmc_templates_bindata_2630881503983182670.go`。此文件中有init方法，
+比如：`g_templates_bindata_2630881503983182670.go`。此文件中有init方法，
 会在`initialize`包被引用的时候自动执行，把视图文件二进制数据注入GMC视图模块中。
 
 当你go build编译了你的项目后，避免后面开发，运行代码一直使用这个go文件里面的视图数据，
@@ -1350,7 +1350,7 @@ gmct static --dir ../static
 ```
 
 执行了命令后，会发现目录initialize中多了一个前缀是`gmc_static_bindata_`的go文件，
-比如：`gmc_static_bindata_1780615241186372497.go`。此文件中有init方法，
+比如：`g_static_bindata_1780615241186372497.go`。此文件中有init方法，
 会在`initialize`包被引用的时候自动执行，把视图文件二进制数据注入GMC的HTTP静态文件服务模块中。
 
 当你go build编译了你的项目后，避免后面开发，运行代码一直使用这个go文件里面的静态文件数据，
@@ -1386,7 +1386,7 @@ gmct i18n --dir ../i18n
 ```
 
 执行了命令后，会发现目录initialize中多了一个前缀是`gmc_i18n_bindata_`的go文件，
-比如：`gmc_i18n_bindata_1780615241186372497.go`。此文件中有init方法，
+比如：`g_i18n_bindata_1780615241186372497.go`。此文件中有init方法，
 会在`initialize`包被引用的时候自动执行，把视图文件二进制数据注入GMC的`i18n`国际化模块中。
 
 当你go build编译了你的项目后，避免后面开发，运行代码一直使用这个go文件里面的国际化文件数据，
@@ -1399,7 +1399,7 @@ gmct i18n --dir ../i18n
 即可，GMCT工具可以侦测到你对项目做的修改，会自动重新编译并运行项目，你修改了项目文件，只要刷新浏览器
 就可以看见最新修改效果。
 
-执行`gmct run`后会在当前目录生成一个名称为`gmcrun.toml`的配置文件，你可以通过修改该文件，定制`gmct run`的编译行为。
+执行`gmct run`后会在当前目录生成一个名称为`grun.toml`的配置文件，你可以通过修改该文件，定制`gmct run`的编译行为。
 
 默认情况下配置如下：
 
@@ -1414,7 +1414,7 @@ args=["-ldflags","-s -w"]
 env=["CGO_ENABLED=1","GO111MODULE=on"]
 include_exts=[".go",".html",".htm",".tpl",".toml",".ini",".conf",".yaml"]
 include_files=[]
-exclude_files=["gmcrun.toml"]
+exclude_files=["grun.toml"]
 exclude_dirs=["vendor"]
 ```
 

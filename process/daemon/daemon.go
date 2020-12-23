@@ -3,18 +3,19 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmcdaemon
+package gdaemon
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/snail007/gmc"
 	logger "log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	gmcerr "github.com/snail007/gmc/error"
+	gerr "github.com/snail007/gmc/gmc/error"
 )
 
 var (
@@ -110,8 +111,8 @@ func Start() (err error) {
 	}
 	if isForever || flog != "" {
 		go func() {
-			defer gmcerr.Recover(func(e interface{}) {
-				fmt.Fprintf(w, "crashed, err: %s", gmcerr.Stack(e))
+			defer gmc.Recover(func(e interface{}) {
+				fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
 			})
 			for {
 				if cmd != nil {
@@ -136,16 +137,16 @@ func Start() (err error) {
 				scanner := bufio.NewScanner(cmdReader)
 				scannerStdErr := bufio.NewScanner(cmdReaderStderr)
 				go func() {
-					defer gmcerr.Recover(func(e interface{}) {
-						fmt.Fprintf(w, "crashed, err: %s", gmcerr.Stack(e))
+					defer gmc.Recover(func(e interface{}) {
+						fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
 					})
 					for scanner.Scan() {
 						fmt.Fprintf(w, scanner.Text()+"\n")
 					}
 				}()
 				go func() {
-					defer gmcerr.Recover(func(e interface{}) {
-						fmt.Fprintf(w, "crashed, err: %s", gmcerr.Stack(e))
+					defer gmc.Recover(func(e interface{}) {
+						fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
 					})
 					for scannerStdErr.Scan() {
 						fmt.Fprintf(w, scannerStdErr.Text()+"\n")

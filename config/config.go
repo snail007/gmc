@@ -1,4 +1,4 @@
-package gmcconfig
+package gconfig
 
 import (
 	"github.com/spf13/viper"
@@ -8,12 +8,12 @@ type Config struct {
 	*viper.Viper
 }
 
-func New() *Config {
+func NewConfig() *Config {
 	return &Config{
 		Viper: viper.New(),
 	}
 }
-func NewFile(file string) (c *Config ,err error){
+func NewConfigFile(file string) (c *Config,err error){
 	cfg:=viper.New()
 	cfg.SetConfigFile(file)
 	err=cfg.ReadInConfig()

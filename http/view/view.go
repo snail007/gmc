@@ -1,16 +1,16 @@
-package gmcview
+package gview
 
 import (
-	gmcerr "github.com/snail007/gmc/error"
-	gmctemplate "github.com/snail007/gmc/http/template"
-	gmchttputil "github.com/snail007/gmc/util/http"
+	gerr "github.com/snail007/gmc/gmc/error"
+	gtemplate "github.com/snail007/gmc/http/template"
+	ghttputil "github.com/snail007/gmc/util/http"
 	"io"
 	"strings"
 	"sync"
 )
 
 type View struct {
-	tpl       *gmctemplate.Template
+	tpl       *gtemplate.Template
 	data      map[string]interface{}
 	writer    io.Writer
 	layout    string
@@ -20,7 +20,7 @@ type View struct {
 	layoutDir string
 }
 
-func New(w io.Writer, tpl *gmctemplate.Template) *View {
+func New(w io.Writer, tpl *gtemplate.Template) *View {
 	return &View{
 		writer: w,
 		tpl:    tpl,
@@ -72,7 +72,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 	}
 	d, this.lasterr = this.tpl.Execute(tpl, data0)
 	if this.lasterr != nil {
-		gmchttputil.Stop(this.writer, gmcerr.Wrap(this.lasterr).ErrorStack())
+		ghttputil.Stop(this.writer, gerr.Wrap(this.lasterr).ErrorStack())
 		return
 	}
 	if this.layout != "" {
@@ -83,7 +83,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 		}
 		d, this.lasterr = this.tpl.Execute(layout, data0)
 		if this.lasterr != nil {
-			gmchttputil.Stop(this.writer, gmcerr.Wrap(this.lasterr).ErrorStack())
+			ghttputil.Stop(this.writer, gerr.Wrap(this.lasterr).ErrorStack())
 			return
 		}
 	}
@@ -98,7 +98,7 @@ func (this *View) Layout(l string) *View {
 
 // Stop exit controller method
 func (this *View) Stop() {
-	gmchttputil.Stop(this.writer)
+	ghttputil.Stop(this.writer)
 }
 
 // OnRenderOnce injects GPSC data

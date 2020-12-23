@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/snail007/gmc"
-	gmcrouter "github.com/snail007/gmc/http/router"
-	gmchttpserver "github.com/snail007/gmc/http/server"
+	grouter "github.com/snail007/gmc/http/router"
+	ghttpserver "github.com/snail007/gmc/http/server"
 	"github.com/snail007/gmc/util/time"
 	"time"
 )
 
-func initHanlder(api *gmchttpserver.APIServer) {
+func initHanlder(api *ghttpserver.APIServer) {
 
 	// URL: http://foo.com/
-	api.API("/", func(c *gmcrouter.Ctx) {
+	api.API("/", func(c gcore.Ctx) {
 		var out bytes.Buffer
 		out.WriteString("<title>Hello GMC!</title><h1>This is a GMC API Server!</h1>")
 		for k := range api.Router().RouteTable() {

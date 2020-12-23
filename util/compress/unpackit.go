@@ -4,7 +4,7 @@
 
 // Package unpackit allows you to easily unpack *.tar.gz, *.tar.bzip2, *.tar.xz, *.zip and *.tar files.
 // There are not CGO involved nor hard dependencies of any type.
-package gmccompress
+package gcompress
 
 import (
 	"archive/tar"

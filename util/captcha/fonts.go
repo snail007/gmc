@@ -1,4 +1,4 @@
-package gmccaptcha
+package gcaptcha
 
 import "encoding/base64"
 

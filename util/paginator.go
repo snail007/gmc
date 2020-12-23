@@ -1,4 +1,4 @@
-package gmcutil
+package gutil
 
 import (
 	"github.com/snail007/gmc/util/cast"
@@ -9,9 +9,9 @@ import (
 )
 
 type Paginator struct {
-	Request       *http.Request
-	PerPageNums   int
-	MaxPages      int
+	request       *http.Request
+	perPageNums   int
+	maxPages      int
 	nums          int64
 	pageRange     []int
 	pageNums      int
@@ -19,13 +19,37 @@ type Paginator struct {
 	pageParamName string
 }
 
+func (p *Paginator) MaxPages() int {
+	return p.maxPages
+}
+
+func (p *Paginator) SetMaxPages(maxPages int) {
+	p.maxPages = maxPages
+}
+
+func (p *Paginator) PerPageNums() int {
+	return p.perPageNums
+}
+
+func (p *Paginator) SetPerPageNums(perPageNums int) {
+	p.perPageNums = perPageNums
+}
+
+func (p *Paginator) Request() *http.Request {
+	return p.request
+}
+
+func (p *Paginator) SetRequest(request *http.Request) {
+	p.request = request
+}
+
 func (p *Paginator) PageNums() int {
 	if p.pageNums != 0 {
 		return p.pageNums
 	}
-	pageNums := math.Ceil(float64(p.nums) / float64(p.PerPageNums))
-	if p.MaxPages > 0 {
-		pageNums = math.Min(pageNums, float64(p.MaxPages))
+	pageNums := math.Ceil(float64(p.nums) / float64((*p).perPageNums))
+	if p.maxPages > 0 {
+		pageNums = math.Min(pageNums, float64(p.maxPages))
 	}
 	p.pageNums = int(pageNums)
 	return p.pageNums
@@ -43,10 +67,10 @@ func (p *Paginator) Page() int {
 	if p.page != 0 {
 		return p.page
 	}
-	if p.Request.Form == nil {
-		p.Request.ParseForm()
+	if p.request.Form == nil {
+		p.request.ParseForm()
 	}
-	p.page, _ = strconv.Atoi(p.Request.Form.Get(p.pageParamName))
+	p.page, _ = strconv.Atoi(p.request.Form.Get(p.pageParamName))
 	if p.page > p.PageNums() {
 		p.page = p.PageNums()
 	}
@@ -86,7 +110,7 @@ func (p *Paginator) Pages() []int {
 }
 
 func (p *Paginator) PageLink(page int) string {
-	link, _ := url.ParseRequestURI(p.Request.RequestURI)
+	link, _ := url.ParseRequestURI(p.request.RequestURI)
 	values := link.Query()
 	if page == 1 {
 		values.Del(p.pageParamName)
@@ -97,7 +121,7 @@ func (p *Paginator) PageLink(page int) string {
 	return link.String()
 }
 func (p *Paginator) PageBaseLink() string {
-	link, _ := url.ParseRequestURI(p.Request.RequestURI)
+	link, _ := url.ParseRequestURI(p.request.RequestURI)
 	values := link.Query()
 	values.Del(p.pageParamName)
 	values.Set(p.pageParamName, "")
@@ -139,7 +163,7 @@ func (p *Paginator) IsActive(page int) bool {
 }
 
 func (p *Paginator) Offset() int {
-	return (p.Page() - 1) * p.PerPageNums
+	return (p.Page() - 1) * p.perPageNums
 }
 
 func (p *Paginator) HasPages() bool {
@@ -148,12 +172,12 @@ func (p *Paginator) HasPages() bool {
 
 func NewPaginator(req *http.Request, per int, nums int64, pageKey string) *Paginator {
 	p := Paginator{}
-	p.Request = req
+	p.request = req
 	p.pageParamName = pageKey
 	if per <= 0 {
 		per = 10
 	}
-	p.PerPageNums = per
+	p.perPageNums = per
 	p.SetNums(nums)
 	return &p
 }

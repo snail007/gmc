@@ -3,13 +3,15 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmcfilestore
+package gfilestore
 
 import (
 	"crypto/md5"
 	"fmt"
-	gmccore "github.com/snail007/gmc/core"
-	logutil "github.com/snail007/gmc/util/log"
+	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/gmc/log"
+	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,16 +19,15 @@ import (
 	"sync"
 	"time"
 
-	gmcerr "github.com/snail007/gmc/error"
-	gmcsession "github.com/snail007/gmc/http/session"
-	"github.com/snail007/gmc/util/file"
+	gerr "github.com/snail007/gmc/gmc/error"
+	gsession "github.com/snail007/gmc/http/session"
 )
 
 type FileStoreConfig struct {
 	Dir    string
 	GCtime int //seconds
 	Prefix string
-	Logger gmccore.Logger
+	Logger gcore.Logger
 	TTL    int64 //seconds
 }
 
@@ -40,23 +41,23 @@ func NewConfig() FileStoreConfig {
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
-		Logger: logutil.New("[filestore]"),
+		Logger: log.NewGMCLog("[filestore]"),
 	}
 }
 
 type FileStore struct {
-	gmcsession.Store
+	gsession.Store
 	cfg  FileStoreConfig
 	lock *sync.RWMutex
 }
 
-func New(config interface{}) (st gmcsession.Store, err error) {
+func New(config interface{}) (st gsession.Store, err error) {
 	cfg := config.(FileStoreConfig)
 	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
 	if cfg.Dir==""{
 		cfg.Dir="."
 	}
-	if !fileutil.ExistsDir(cfg.Dir) {
+	if !gutil.ExistsDir(cfg.Dir) {
 		err = os.Mkdir(cfg.Dir, 0700)
 		if err != nil {
 			return
@@ -67,7 +68,7 @@ func New(config interface{}) (st gmcsession.Store, err error) {
 		return
 	}
 	cfg.Dir = filepath.Join(cfg.Dir, folder)
-	if !fileutil.ExistsDir(cfg.Dir){
+	if !gutil.ExistsDir(cfg.Dir){
 		os.Mkdir(cfg.Dir,0700)
 	}
 	if cfg.GCtime <= 0 {
@@ -82,11 +83,11 @@ func New(config interface{}) (st gmcsession.Store, err error) {
 	return
 }
 
-func (s *FileStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
+func (s *FileStore) Load(sessionID string) (sess *gsession.Session, isExists bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	f := s.file(sessionID)
-	if !fileutil.ExistsFile(f) {
+	if !gutil.ExistsFile(f) {
 		// s.cfg.Logger.Printf("filestore file not found: %s", f)
 		return
 	}
@@ -95,7 +96,7 @@ func (s *FileStore) Load(sessionID string) (sess *gmcsession.Session, isExists b
 		s.cfg.Logger.Warnf("filestore read file error: %s", err)
 		return
 	}
-	sess = gmcsession.NewSession()
+	sess = gsession.NewSession()
 	err = sess.Unserialize(string(str))
 	if err != nil {
 		sess = nil
@@ -110,7 +111,7 @@ func (s *FileStore) Load(sessionID string) (sess *gmcsession.Session, isExists b
 	isExists = true
 	return
 }
-func (s *FileStore) Save(sess *gmcsession.Session) (err error) {
+func (s *FileStore) Save(sess *gsession.Session) (err error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	str, err := sess.Serialize()
@@ -119,7 +120,7 @@ func (s *FileStore) Save(sess *gmcsession.Session) (err error) {
 	}
 	f := s.file(sess.SessionID())
 	dir := filepath.Dir(f)
-	if !fileutil.ExistsDir(dir) {
+	if !gutil.ExistsDir(dir) {
 		err = os.MkdirAll(dir, 0700)
 		if err != nil {
 			return
@@ -143,8 +144,8 @@ func (s *FileStore) file(sessionID string) string {
 	return path
 }
 func (s *FileStore) gc() {
-	defer gmcerr.Recover(func(e interface{}) {
-		fmt.Printf("filestore gc error: %s", gmcerr.Stack(e))
+	defer gmc.Recover(func(e interface{}) {
+		fmt.Printf("filestore gc error: %s", gerr.Stack(e))
 	})
 	var files []string
 	var err error

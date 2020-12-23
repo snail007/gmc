@@ -14,13 +14,13 @@ Unpack a file:
 
 ```go
     file, _ := os.Open(test.filepath)
-    destPath, err := gmccompress.Unpack(file, tempDir)
+    destPath, err := gcompress.Unpack(file, tempDir)
 ```
 
 Unpack a stream (such as a http.Response):
 
 ```go
     res, err := http.Get(url)
-    destPath, err := gmccompress.Unpack(res.Body, tempDir)
+    destPath, err := gcompress.Unpack(res.Body, tempDir)
 ```
 

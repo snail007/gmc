@@ -3,16 +3,16 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmchook
+package ghook
 
 import (
 	"fmt"
+	"github.com/snail007/gmc"
+	gerr "github.com/snail007/gmc/gmc/error"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-
-	gmcerr "github.com/snail007/gmc/error"
 )
 
 var (
@@ -24,8 +24,8 @@ func RegistShutdown(fn func()) {
 	shutdown = append(shutdown, fn)
 }
 func WaitShutdown() {
-	defer gmcerr.Recover(func(e interface{}) {
-		fmt.Printf("shutdown hook manager crashed, err: %s", gmcerr.Stack(e))
+	defer gmc.Recover(func(e interface{}) {
+		fmt.Printf("shutdown hook manager crashed, err: %s", gerr.Stack(e))
 	})
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan,
@@ -47,8 +47,8 @@ func MockShutdown() {
 }
 func runHooks() {
 	caller := func(fn func()) {
-		defer gmcerr.Recover(func(e interface{}) {
-			fmt.Printf("shutdown hook crashed, err: %s", gmcerr.Stack(e))
+		defer gmc.Recover(func(e interface{}) {
+			fmt.Printf("shutdown hook crashed, err: %s", gerr.Stack(e))
 		})
 		fn()
 	}

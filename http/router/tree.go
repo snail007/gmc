@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-package gmcrouter
+package grouter
 
 import (
+	gcore "github.com/snail007/gmc/core"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -78,7 +79,7 @@ type node struct {
 	nType     nodeType
 	priority  uint32
 	children  []*node
-	handle    Handle
+	handle    gcore.Handle
 }
 
 // Increments priority of the given child and reorders if necessary
@@ -106,7 +107,7 @@ func (n *node) incrementChildPrio(pos int) int {
 
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
-func (n *node) addRoute(path string, handle Handle) {
+func (n *node) addRoute(path string, handle gcore.Handle) {
 	fullPath := path
 	n.priority++
 
@@ -214,7 +215,7 @@ walk:
 	}
 }
 
-func (n *node) insertChild(path, fullPath string, handle Handle) {
+func (n *node) insertChild(path, fullPath string, handle gcore.Handle) {
 	for {
 		// Find prefix until first wildcard
 		wildcard, i, valid := findWildcard(path)
@@ -323,7 +324,7 @@ func (n *node) insertChild(path, fullPath string, handle Handle) {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, params func() *Params) (handle Handle, ps *Params, tsr bool) {
+func (n *node) getValue(path string, params func() gcore.Params) (handle gcore.Handle, ps gcore.Params, tsr bool) {
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -366,12 +367,9 @@ walk: // Outer loop for walking the tree
 							ps = params()
 						}
 						// Expand slice within preallocated capacity
-						i := len(*ps)
-						*ps = (*ps)[:i+1]
-						(*ps)[i] = Param{
-							Key:   n.path[1:],
-							Value: path[:end],
-						}
+						i := ps.Len()
+						ps.Truncate(i + 1)
+						ps.Set(i, NewParam(n.path[1:], path[:end]))
 					}
 
 					// We need to go deeper!
@@ -405,12 +403,9 @@ walk: // Outer loop for walking the tree
 							ps = params()
 						}
 						// Expand slice within preallocated capacity
-						i := len(*ps)
-						*ps = (*ps)[:i+1]
-						(*ps)[i] = Param{
-							Key:   n.path[2:],
-							Value: path,
-						}
+						i := ps.Len()
+						ps.Truncate(i+1)
+						ps.Set(i, NewParam(n.path[2:], path))
 					}
 
 					handle = n.handle

@@ -1,4 +1,4 @@
-package gmcmap
+package gmap
 
 import (
 	"testing"

@@ -2,15 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/snail007/gmc"
+	ghook "github.com/snail007/gmc/process/hook"
+	gutil "github.com/snail007/gmc/util"
 	"net"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/snail007/gmc/util/time"
-
-	"github.com/snail007/gmc"
-	gmchook "github.com/snail007/gmc/process/hook"
 )
 
 func main() {
@@ -47,8 +45,8 @@ func main() {
 		api.Logger().Infof("request %s", c.Request.RequestURI)
 		c.Write("hello world!")
 	}).API("/hi.:type", func(c gmc.C) {
-		c.Write("hi!"+c.Param.ByName("type"))
-	},"")
+		c.Write("hi!" + c.Param.ByName("type"))
+	}, "")
 	// trigger a panic error
 	api.API("/error", func(c gmc.C) {
 		a := 0
@@ -57,7 +55,7 @@ func main() {
 	// routing by group is supported
 	group1 := api.Group("/v1").Ext(".json")
 	group1.API("/time", func(c gmc.C) {
-		c.Write(timeutil.TimeToStr(time.Now()))
+		c.Write(gutil.Date("Y-m-d H:i:s", time.Now()))
 	})
 	api.PrintRouteTable(nil)
 	// start the api server
@@ -67,18 +65,18 @@ func main() {
 	}
 
 	// all path in router
-	_,port,_:=net.SplitHostPort(api.Listener().Addr().String())
+	_, port, _ := net.SplitHostPort(api.Listener().Addr().String())
 	fmt.Println("please visit:")
-	for path,_:=range api.Router().RouteTable(){
-		if strings.Contains(path,"*"){
+	for path, _ := range api.Router().RouteTable() {
+		if strings.Contains(path, "*") {
 			continue
 		}
-		if strings.Contains(path,":type"){
-			path="/hi.json"
+		if strings.Contains(path, ":type") {
+			path = "/hi.json"
 		}
-		fmt.Println("http://127.0.0.1:"+port+path)
+		fmt.Println("http://127.0.0.1:" + port + path)
 	}
 
 	// block main routine
-	gmchook.WaitShutdown()
+	ghook.WaitShutdown()
 }

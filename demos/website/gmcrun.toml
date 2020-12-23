@@ -1,0 +1,10 @@
+[build]
+# ${DIR} is a placeholder presents current dir absolute path, no slash in the end.
+# you can using it in monitor_dirs, include_files, exclude_files, exclude_dirs.
+monitor_dirs=["${DIR}","${DIR}/../../",]
+args=["-ldflags","-s -w"]
+env=["CGO_ENABLED=1","GO111MODULE=on"]
+include_exts=[".go",".html",".htm",".tpl",".toml",".ini",".conf",".yaml"]
+include_files=[]
+exclude_files=["grun.toml"]
+exclude_dirs=["vendor","demos"]

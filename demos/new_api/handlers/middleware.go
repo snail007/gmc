@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"github.com/snail007/gmc"
-	gmchttpserver "github.com/snail007/gmc/http/server"
+	ghttpserver "github.com/snail007/gmc/http/server"
 )
 
-func initMiddleware(api *gmchttpserver.APIServer) {
+func initMiddleware(api *ghttpserver.APIServer) {
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(middleware1)

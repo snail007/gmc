@@ -1,12 +1,13 @@
-package gmchttpserver
+package ghttpserver
 
 import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	gmccore "github.com/snail007/gmc/core"
-	logutil "github.com/snail007/gmc/util/log"
+	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	log2 "github.com/snail007/gmc/gmc/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,30 +19,30 @@ import (
 	"sync/atomic"
 	"time"
 
-	gmcconfig "github.com/snail007/gmc/config"
+	gconfig "github.com/snail007/gmc/config"
 
-	gmcerr "github.com/snail007/gmc/error"
-	gmcrouter "github.com/snail007/gmc/http/router"
-	gmchttputil "github.com/snail007/gmc/util/http"
+	gerr "github.com/snail007/gmc/gmc/error"
+	grouter "github.com/snail007/gmc/http/router"
+	ghttputil "github.com/snail007/gmc/util/http"
 )
 
 type APIServer struct {
 	listener          net.Listener
 	server            *http.Server
 	address           string
-	router            *gmcrouter.HTTPRouter
-	logger            gmccore.Logger
-	handle404         func(ctx *gmcrouter.Ctx)
-	handle500         func(ctx *gmcrouter.Ctx, err interface{})
+	router            *grouter.HTTPRouter
+	logger            gcore.Logger
+	handle404         func(ctx gcore.Ctx)
+	handle500         func(ctx gcore.Ctx, err interface{})
 	isShowErrorStack  bool
 	certFile, keyFile string
-	middleware0       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
-	middleware1       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
-	middleware2       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
-	middleware3       []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)
+	middleware0       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
+	middleware1       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
+	middleware2       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
+	middleware3       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
 	isShutdown        bool
 	ext               string
-	config            *gmcconfig.Config
+	config            *gconfig.Config
 	localaddr         *sync.Map
 	connCnt           *int64
 }
@@ -52,13 +53,13 @@ func NewAPIServer(address string) *APIServer {
 			TLSConfig: &tls.Config{},
 		},
 		address:          address,
-		logger:           logutil.New(""),
-		router:           gmcrouter.NewHTTPRouter(),
+		logger:           log2.NewGMCLog(),
+		router:           grouter.NewHTTPRouter(),
 		isShowErrorStack: true,
-		middleware0:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
-		middleware1:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
-		middleware2:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
-		middleware3:      []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool){},
+		middleware0:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
+		middleware1:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
+		middleware2:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
+		middleware3:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
 		localaddr:        &sync.Map{},
 	}
 	api.server.Handler = api
@@ -74,7 +75,7 @@ func NewAPIServer(address string) *APIServer {
 	return api
 }
 
-func NewDefaultAPIServer(config *gmcconfig.Config) (api *APIServer, err error) {
+func NewDefaultAPIServer(config *gconfig.Config) (api *APIServer, err error) {
 	api = NewAPIServer(config.GetString("apiserver.listen"))
 	if config.GetBool("apiserver.tlsenable") {
 		tlsCfg := &tls.Config{}
@@ -89,7 +90,7 @@ func NewDefaultAPIServer(config *gmcconfig.Config) (api *APIServer, err error) {
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
 			api = nil
-			err = gmcerr.New("failed to parse tls clients root certificate")
+			err = gerr.New("failed to parse tls clients root certificate")
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -101,8 +102,8 @@ func NewDefaultAPIServer(config *gmcconfig.Config) (api *APIServer, err error) {
 }
 
 func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w = gmchttputil.NewResponseWriter(w)
-	c0 := gmcrouter.NewCtx(w, r)
+	w = ghttputil.NewResponseWriter(w)
+	c0 := grouter.NewCtx(w, r)
 	defer func() {
 		// middleware3
 		this.callMiddleware(c0, this.middleware3)
@@ -149,41 +150,41 @@ func (this *APIServer) Address() string {
 func (this *APIServer) Server() *http.Server {
 	return this.server
 }
-func (this *APIServer) Router() *gmcrouter.HTTPRouter {
+func (this *APIServer) Router() *grouter.HTTPRouter {
 	return this.router
 }
 func (this *APIServer) SetTLSFile(certFile, keyFile string) *APIServer {
 	this.certFile, this.keyFile = certFile, keyFile
 	return this
 }
-func (this *APIServer) SetLogger(l gmccore.Logger) *APIServer {
+func (this *APIServer) SetLogger(l gcore.Logger) *APIServer {
 	this.logger = l
 	return this
 }
-func (this *APIServer) Logger() gmccore.Logger {
+func (this *APIServer) Logger() gcore.Logger {
 	return this.logger
 }
-func (this *APIServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware0(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware0 = append(this.middleware0, m)
 	return this
 }
-func (this *APIServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware1(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware1 = append(this.middleware1, m)
 	return this
 }
-func (this *APIServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware2(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware2 = append(this.middleware2, m)
 	return this
 }
-func (this *APIServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware3(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
 	this.middleware3 = append(this.middleware3, m)
 	return this
 }
-func (this *APIServer) Handle404(handle func(ctx *gmcrouter.Ctx)) *APIServer {
+func (this *APIServer) Handle404(handle func(ctx gcore.Ctx)) *APIServer {
 	this.handle404 = handle
 	return this
 }
-func (this *APIServer) Handle500(handle func(ctx *gmcrouter.Ctx, err interface{})) *APIServer {
+func (this *APIServer) Handle500(handle func(ctx gcore.Ctx, err interface{})) *APIServer {
 	this.handle500 = handle
 	return this
 }
@@ -197,15 +198,15 @@ func (this *APIServer) Ext(ext string) *APIServer {
 	return this
 }
 
-func (this *APIServer) API(path string, handle func(ctx *gmcrouter.Ctx), ext ...string) *APIServer {
+func (this *APIServer) API(path string, handle func(ctx gcore.Ctx), ext ...string) *APIServer {
 	// default
 	ext1 := this.ext
 	if len(ext) > 0 {
 		// cover
 		ext1 = ext[0]
 	}
-	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
-		handle(gmcrouter.NewCtx(w, r, ps))
+	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps grouter.Params) {
+		handle(grouter.NewCtx(w, r, ps))
 	})
 	return this
 }
@@ -270,7 +271,7 @@ func (s *APIServer) connState(c net.Conn, st http.ConnState) {
 		atomic.AddInt64(s.connCnt, -1)
 	}
 }
-func (this *APIServer) handler404(ctx *gmcrouter.Ctx) *APIServer {
+func (this *APIServer) handler404(ctx gcore.Ctx) *APIServer {
 	if this.handle404 == nil {
 		ctx.Response.WriteHeader(http.StatusNotFound)
 		ctx.Response.Write([]byte("Page not found"))
@@ -279,13 +280,13 @@ func (this *APIServer) handler404(ctx *gmcrouter.Ctx) *APIServer {
 	}
 	return this
 }
-func (this *APIServer) handler500(ctx *gmcrouter.Ctx, err interface{}) *APIServer {
+func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) *APIServer {
 	if this.handle500 == nil {
 		ctx.WriteHeader(http.StatusInternalServerError)
 		ctx.Response.Header().Set("Content-Type", "text/plain")
 		msg := fmt.Sprintf("Internal Server Error")
 		if err != nil && this.isShowErrorStack {
-			msg += "\n" + gmcerr.Stack(err)
+			msg += "\n" + gerr.Stack(err)
 		}
 		ctx.Write([]byte(msg))
 	} else {
@@ -295,18 +296,18 @@ func (this *APIServer) handler500(ctx *gmcrouter.Ctx, err interface{}) *APIServe
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gmcerr.Recover(func(e interface{}) {
-			err = gmcerr.Wrap(e)
+		defer gmc.Recover(func(e interface{}) {
+			err = gerr.Wrap(e)
 		})
 		fn()
 	}()
 	return
 }
-func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *APIServer) (isStop bool)) (isStop bool) {
+func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server *APIServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gmcerr.Recover(func(e interface{}) {
-				s.logger.Warn("middleware panic error : %s", gmcerr.Stack(e))
+			defer gmc.Recover(func(e interface{}) {
+				s.logger.Warn("middleware panic error : %s", gerr.Stack(e))
 				isStop = false
 			})
 			isStop = fn(ctx, s)
@@ -319,7 +320,7 @@ func (s *APIServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gm
 }
 
 //Init implements service.Service Init
-func (s *APIServer) Init(cfg *gmcconfig.Config) (err error) {
+func (s *APIServer) Init(cfg *gconfig.Config) (err error) {
 	return
 }
 
@@ -347,7 +348,7 @@ func (this *APIServer) GracefulStop() {
 }
 
 //SetLog implements service.Service SetLog
-func (this *APIServer) SetLog(l gmccore.Logger) {
+func (this *APIServer) SetLog(l gcore.Logger) {
 	this.logger = l
 }
 

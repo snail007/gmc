@@ -1,26 +1,11 @@
-package gmccookie
+package gcookie
 
 import (
 	"net/http"
 	"time"
 )
 
-// Options is used to setting cookie.
-type Options struct {
-	MaxAge   int    // optional
-	Path     string // optional, default to "/"
-	Domain   string // optional
-	Secure   bool   // optional
-	HTTPOnly bool   // optional, default to `true``
-}
 
-var defaultOptions = &Options{
-	MaxAge:   0,
-	Path:     "/",
-	Domain:   "",
-	Secure:   false,
-	HTTPOnly: true,
-}
 
 func New(w http.ResponseWriter, r *http.Request, keys ...string) (cookie *Cookies) {
 	c := &Cookies{

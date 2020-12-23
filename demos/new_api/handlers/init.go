@@ -1,8 +1,8 @@
 package handlers
 
-import gmchttpserver "github.com/snail007/gmc/http/server"
+import ghttpserver "github.com/snail007/gmc/http/server"
 
-func Init(api *gmchttpserver.APIServer)   {
+func Init(api *ghttpserver.APIServer)   {
 	initMiddleware(api)
 	initError(api)
 	initHanlder(api)

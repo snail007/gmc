@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"github.com/snail007/gmc"
-	gmchttpserver "github.com/snail007/gmc/http/server"
+	ghttpserver "github.com/snail007/gmc/http/server"
 	"net/http"
 )
 
-func initError(api *gmchttpserver.APIServer) {
+func initError(api *ghttpserver.APIServer) {
 	// sets a function to handle 404 requests.
 	api.Handle404(error404)
 	// sets a function to handle panic error.

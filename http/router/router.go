@@ -74,40 +74,75 @@
 //  // by the index of the parameter. This way you can also get the name (key)
 //  thirdKey   := ps[2].Key   // the name of the 3rd parameter
 //  thirdValue := ps[2].Value // the value of the 3rd parameter
-package gmcrouter
+package grouter
 
 import (
 	"context"
+	gcore "github.com/snail007/gmc/core"
 	"net/http"
 	"strings"
 	"sync"
 )
 
-// Handle is a function that can be registered to a route to handle HTTP
-// requests. Like http.HandlerFunc, but has a third parameter for the values of
-// wildcards (path variables).
-type Handle func(http.ResponseWriter, *http.Request, Params)
-
 // Param is a single URL parameter, consisting of a key and a value.
 type Param struct {
-	Key   string
-	Value string
+	key   string
+	value string
+}
+
+func NewParam(k, v string) *Param {
+	return &Param{
+		key:   k,
+		value: v,
+	}
+}
+func (p *Param) Key() string {
+	return p.key
+}
+
+func (p *Param) Value() string {
+	return p.value
 }
 
 // Params is a Param-slice, as returned by the router.
 // The slice is ordered, the first URL parameter is also the first slice value.
 // It is therefore safe to read values by the index.
-type Params []Param
+type Params []gcore.Param
+
+func (ps *Params) Truncate(end int) {
+	*ps = (*ps)[:end]
+}
+
+func (ps *Params) Set(i int, p gcore.Param) {
+	(*ps)[i] = p
+}
+
+func (ps *Params) Len() int {
+	return len(*ps)
+}
 
 // ByName returns the value of the first Param which key matches the given name.
 // If no matching Param is found, an empty string is returned.
-func (ps Params) ByName(name string) string {
-	for _, p := range ps {
-		if p.Key == name {
-			return p.Value
+func (ps *Params) ByName(name string) string {
+	for _, p := range *ps {
+		if p.Key() == name {
+			return p.Value()
 		}
 	}
 	return ""
+}
+
+func (ps *Params) SetParam(p gcore.Param) {
+	(*ps)[0] = p
+}
+
+func (ps *Params) First() gcore.Params {
+	p := (*ps)[0:1]
+	return &p
+}
+
+func (ps *Params) AppendParam(p gcore.Param) {
+	*ps = append(*ps, p)
 }
 
 type paramsKey struct{}
@@ -219,65 +254,65 @@ func New() *Router {
 	}
 }
 
-func (r *Router) getParams() *Params {
+func (r *Router) getParams() gcore.Params {
 	ps, _ := r.paramsPool.Get().(*Params)
 	*ps = (*ps)[0:0] // reset slice
 	return ps
 }
 
-func (r *Router) putParams(ps *Params) {
+func (r *Router) putParams(ps gcore.Params) {
 	if ps != nil {
 		r.paramsPool.Put(ps)
 	}
 }
 
-func (r *Router) saveMatchedRoutePath(path string, handle Handle) Handle {
-	return func(w http.ResponseWriter, req *http.Request, ps Params) {
+func (r *Router) saveMatchedRoutePath(path string, handle gcore.Handle) gcore.Handle {
+	return func(w http.ResponseWriter, req *http.Request, ps gcore.Params) {
 		if ps == nil {
 			psp := r.getParams()
-			ps = (*psp)[0:1]
-			ps[0] = Param{Key: MatchedRoutePathParam, Value: path}
+			ps = psp.First()
+			ps.SetParam(NewParam(MatchedRoutePathParam, path))
 			handle(w, req, ps)
 			r.putParams(psp)
 		} else {
-			ps = append(ps, Param{Key: MatchedRoutePathParam, Value: path})
+			ps.AppendParam(NewParam(MatchedRoutePathParam, path))
 			handle(w, req, ps)
 		}
 	}
 }
 
 // GET is a shortcut for router.Handle(http.MethodGet, path, handle)
-func (r *Router) GET(path string, handle Handle) {
+func (r *Router) GET(path string, handle gcore.Handle) {
 	r.Handle(http.MethodGet, path, handle)
 }
 
 // HEAD is a shortcut for router.Handle(http.MethodHead, path, handle)
-func (r *Router) HEAD(path string, handle Handle) {
+func (r *Router) HEAD(path string, handle gcore.Handle) {
 	r.Handle(http.MethodHead, path, handle)
 }
 
 // OPTIONS is a shortcut for router.Handle(http.MethodOptions, path, handle)
-func (r *Router) OPTIONS(path string, handle Handle) {
+func (r *Router) OPTIONS(path string, handle gcore.Handle) {
 	r.Handle(http.MethodOptions, path, handle)
 }
 
 // POST is a shortcut for router.Handle(http.MethodPost, path, handle)
-func (r *Router) POST(path string, handle Handle) {
+func (r *Router) POST(path string, handle gcore.Handle) {
 	r.Handle(http.MethodPost, path, handle)
 }
 
 // PUT is a shortcut for router.Handle(http.MethodPut, path, handle)
-func (r *Router) PUT(path string, handle Handle) {
+func (r *Router) PUT(path string, handle gcore.Handle) {
 	r.Handle(http.MethodPut, path, handle)
 }
 
 // PATCH is a shortcut for router.Handle(http.MethodPatch, path, handle)
-func (r *Router) PATCH(path string, handle Handle) {
+func (r *Router) PATCH(path string, handle gcore.Handle) {
 	r.Handle(http.MethodPatch, path, handle)
 }
 
 // DELETE is a shortcut for router.Handle(http.MethodDelete, path, handle)
-func (r *Router) DELETE(path string, handle Handle) {
+func (r *Router) DELETE(path string, handle gcore.Handle) {
 	r.Handle(http.MethodDelete, path, handle)
 }
 
@@ -289,7 +324,7 @@ func (r *Router) DELETE(path string, handle Handle) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Router) Handle(method, path string, handle Handle) {
+func (r *Router) Handle(method, path string, handle gcore.Handle) {
 	varsCount := uint16(0)
 
 	if method == "" {
@@ -340,8 +375,8 @@ func (r *Router) Handle(method, path string, handle Handle) {
 // The Params are available in the request context under ParamsKey.
 func (r *Router) Handler(method, path string, handler http.Handler) {
 	r.Handle(method, path,
-		func(w http.ResponseWriter, req *http.Request, p Params) {
-			if len(p) > 0 {
+		func(w http.ResponseWriter, req *http.Request, p gcore.Params) {
+			if p.Len() > 0 {
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, ParamsKey, p)
 				req = req.WithContext(ctx)
@@ -374,7 +409,7 @@ func (r *Router) ServeFiles(path string, root http.FileSystem) {
 
 	fileServer := http.FileServer(root)
 
-	r.GET(path, func(w http.ResponseWriter, req *http.Request, ps Params) {
+	r.GET(path, func(w http.ResponseWriter, req *http.Request, ps gcore.Params) {
 		req.URL.Path = ps.ByName("filepath")
 		fileServer.ServeHTTP(w, req)
 	})
@@ -391,9 +426,11 @@ func (r *Router) recv(w http.ResponseWriter, req *http.Request) {
 // If the path was found, it returns the handle function and the path parameter
 // values. Otherwise the third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
-func (r *Router) Lookup(method, path string) (Handle, Params, bool) {
+func (r *Router) Lookup(method, path string) (gcore.Handle, gcore.Params, bool) {
 	if root := r.trees[method]; root != nil {
-		handle, ps, tsr := root.getValue(path, r.getParams)
+		handle, ps, tsr := root.getValue(path, func() gcore.Params {
+			return  r.getParams()
+		})
 		if handle == nil {
 			r.putParams(ps)
 			return nil, nil, tsr
@@ -401,7 +438,7 @@ func (r *Router) Lookup(method, path string) (Handle, Params, bool) {
 		if ps == nil {
 			return handle, nil, tsr
 		}
-		return handle, *ps, tsr
+		return handle, ps, tsr
 	}
 	return nil, nil, false
 }
@@ -468,7 +505,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if root := r.trees[req.Method]; root != nil {
 		if handle, ps, tsr := root.getValue(path, r.getParams); handle != nil {
 			if ps != nil {
-				handle(w, req, *ps)
+				handle(w, req, ps)
 				r.putParams(ps)
 			} else {
 				handle(w, req, nil)

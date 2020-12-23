@@ -3,22 +3,23 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmcmemorystore
+package gmemorystore
 
 import (
 	"fmt"
-	gmccore "github.com/snail007/gmc/core"
-	logutil "github.com/snail007/gmc/util/log"
+	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/gmc/log"
 	"sync"
 	"time"
 
-	gmcerr "github.com/snail007/gmc/error"
-	gmcsession "github.com/snail007/gmc/http/session"
+	gerr "github.com/snail007/gmc/gmc/error"
+	gsession "github.com/snail007/gmc/http/session"
 )
 
 type MemoryStoreConfig struct {
 	GCtime int //seconds
-	Logger gmccore.Logger
+	Logger gcore.Logger
 	TTL    int64 //seconds
 }
 
@@ -26,17 +27,17 @@ func NewConfig() MemoryStoreConfig {
 	return MemoryStoreConfig{
 		GCtime: 300,
 		TTL:    15 * 60,
-		Logger: logutil.New("[memorystore]"),
+		Logger: log.NewGMCLog("[memorystore]"),
 	}
 }
 
 type MemoryStore struct {
-	gmcsession.Store
+	gsession.Store
 	cfg  MemoryStoreConfig
 	data sync.Map
 }
 
-func New(config interface{}) (st gmcsession.Store, err error) {
+func New(config interface{}) (st gsession.Store, err error) {
 	cfg := config.(MemoryStoreConfig)
 	s := &MemoryStore{
 		cfg:  cfg,
@@ -47,12 +48,12 @@ func New(config interface{}) (st gmcsession.Store, err error) {
 	return
 }
 
-func (s *MemoryStore) Load(sessionID string) (sess *gmcsession.Session, isExists bool) {
+func (s *MemoryStore) Load(sessionID string) (sess *gsession.Session, isExists bool) {
 	sess0, ok := s.data.Load(sessionID)
 	if !ok {
 		return
 	}
-	sess = sess0.(*gmcsession.Session)
+	sess = sess0.(*gsession.Session)
 	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
 		sess = nil
 		s.data.Delete(sessionID)
@@ -61,7 +62,7 @@ func (s *MemoryStore) Load(sessionID string) (sess *gmcsession.Session, isExists
 	isExists = true
 	return
 }
-func (s *MemoryStore) Save(sess *gmcsession.Session) (err error) {
+func (s *MemoryStore) Save(sess *gsession.Session) (err error) {
 	s.data.Store(sess.SessionID(), sess)
 	return
 }
@@ -72,8 +73,8 @@ func (s *MemoryStore) Delete(sessionID string) (err error) {
 }
 
 func (s *MemoryStore) gc() {
-	defer gmcerr.Recover(func(e interface{}) {
-		fmt.Printf("memorystore gc error: %s", gmcerr.Stack(e))
+	defer gmc.Recover(func(e interface{}) {
+		fmt.Printf("memorystore gc error: %s", gerr.Stack(e))
 	})
 	first := true
 	for {
@@ -83,7 +84,7 @@ func (s *MemoryStore) gc() {
 			time.Sleep(time.Second * time.Duration(s.cfg.GCtime))
 		}
 		s.data.Range(func(k, v interface{}) bool {
-			sess := v.(*gmcsession.Session)
+			sess := v.(*gsession.Session)
 			if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
 				s.data.Delete(k)
 			}

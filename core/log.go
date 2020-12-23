@@ -1,4 +1,4 @@
-package gmccore
+package gcore
 
 import "io"
 

@@ -1,10 +1,10 @@
-package gmchttpserver
+package ghttpserver
 
 import (
 	"testing"
 
-	gmcrouter "github.com/snail007/gmc/http/router"
-	gmchttputil "github.com/snail007/gmc/util/http"
+	grouter "github.com/snail007/gmc/http/router"
+	ghttputil "github.com/snail007/gmc/util/http"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,11 +18,11 @@ func TestNewAPIServer(t *testing.T) {
 func TestBefore(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.AddMiddleware0(func(c *gmcrouter.Ctx, s *APIServer) bool {
+	api.AddMiddleware0(func(c gcore.Ctx, s *APIServer) bool {
 		c.Write("okay")
 		return true
 	})
-	api.API("/hello", func(c *gmcrouter.Ctx) {
+	api.API("/hello", func(c gcore.Ctx) {
 		c.Write("a")
 	})
 	w, r := mockRequest("/hello")
@@ -35,7 +35,7 @@ func TestBefore(t *testing.T) {
 func TestAPI(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.API("/hello", func(c *gmcrouter.Ctx) {
+	api.API("/hello", func(c gcore.Ctx) {
 		c.Write("a")
 	})
 	w, r := mockRequest("/hello")
@@ -48,11 +48,11 @@ func TestAPI(t *testing.T) {
 func TestAfter(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.AddMiddleware2(func(c *gmcrouter.Ctx, s *APIServer) bool {
+	api.AddMiddleware2(func(c gcore.Ctx, s *APIServer) bool {
 		c.Write("okay")
 		return false
 	})
-	api.API("/hello", func(c *gmcrouter.Ctx) {
+	api.API("/hello", func(c gcore.Ctx) {
 		c.Write("a")
 	})
 	w, r := mockRequest("/hello")
@@ -64,9 +64,9 @@ func TestAfter(t *testing.T) {
 func TestStop(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.API("/hello", func(c *gmcrouter.Ctx) {
+	api.API("/hello", func(c gcore.Ctx) {
 		c.Write("a")
-		gmchttputil.Stop(c.Response, "c")
+		ghttputil.Stop(c.Response, "c")
 		c.Write("b")
 	})
 	w, r := mockRequest("/hello")
@@ -78,7 +78,7 @@ func TestStop(t *testing.T) {
 func TestHandle404(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Handle404(func(c *gmcrouter.Ctx) {
+	api.Handle404(func(c gcore.Ctx) {
 		c.Write("404")
 	})
 	w, r := mockRequest("/hello")
@@ -99,10 +99,10 @@ func TestHandle404_1(t *testing.T) {
 func TestHandle500(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":")
-	api.Handle500(func(c *gmcrouter.Ctx, err interface{}) {
+	api.Handle500(func(c gcore.Ctx, err interface{}) {
 		c.Write("500")
 	})
-	api.API("/hello", func(c *gmcrouter.Ctx) {
+	api.API("/hello", func(c gcore.Ctx) {
 		a := 0
 		a /= a
 	})
@@ -115,7 +115,7 @@ func TestHandle500(t *testing.T) {
 func TestHandle500_1(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(":").ShowErrorStack(false)
-	api.API("/hello", func(c *gmcrouter.Ctx) {
+	api.API("/hello", func(c gcore.Ctx) {
 		a := 0
 		a /= a
 	})

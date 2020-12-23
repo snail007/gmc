@@ -31,4 +31,4 @@ after using daemon package, execute your program can be like this:
 ./foobar -u root -forever -daemon -flog foobar.log
 
 */
-package gmcdaemon
+package gdaemon

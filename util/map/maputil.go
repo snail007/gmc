@@ -1,7 +1,7 @@
 /*
 Package maputil is a order map implements
 */
-package gmcmap
+package gmap
 
 import (
 	"container/list"

@@ -1,8 +1,8 @@
-package gmctemplate
+package gtemplate
 
 import (
+	gi18n "github.com/snail007/gmc/gmc/i18n"
 	"github.com/snail007/gmc/http/template/sprig"
-	gmci18n "github.com/snail007/gmc/i18n"
 	"github.com/snail007/gmc/util/cast"
 	"html/template"
 )
@@ -10,8 +10,8 @@ import (
 func addFunc() map[string]interface{} {
 	funcMap := sprig.FuncMap()
 	f2 := map[string]interface{}{
-		"tr":     gmci18n.TrV,
-		"trs":    gmci18n.Tr,
+		"tr":     gi18n.TrV,
+		"trs":    gi18n.Tr,
 		"string": anyTostring,
 		"tohtml": anyToTplHTML,
 		"val":    trimNoValue,

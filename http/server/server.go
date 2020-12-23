@@ -1,4 +1,4 @@
-package gmchttpserver
+package ghttpserver
 
 import (
 	"compress/gzip"
@@ -7,8 +7,9 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	gmccore "github.com/snail007/gmc/core"
-	logutil "github.com/snail007/gmc/util/log"
+	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	log2 "github.com/snail007/gmc/gmc/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,17 +22,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	gmcconfig "github.com/snail007/gmc/config"
-	gmcerr "github.com/snail007/gmc/error"
-	gmcsession "github.com/snail007/gmc/http/session"
-	gmcfilestore "github.com/snail007/gmc/http/session/filestore"
-	gmcmemorystore "github.com/snail007/gmc/http/session/memorystore"
-	gmcredisstore "github.com/snail007/gmc/http/session/redisstore"
-	gmctemplate "github.com/snail007/gmc/http/template"
+	gconfig "github.com/snail007/gmc/config"
+	gerr "github.com/snail007/gmc/gmc/error"
+	gsession "github.com/snail007/gmc/http/session"
+	gfilestore "github.com/snail007/gmc/http/session/filestore"
+	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
+	gredisstore "github.com/snail007/gmc/http/session/redisstore"
+	gtemplate "github.com/snail007/gmc/http/template"
 
-	gmcrouter "github.com/snail007/gmc/http/router"
+	grouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
-	gmchttputil "github.com/snail007/gmc/util/http"
+	ghttputil "github.com/snail007/gmc/util/http"
 )
 
 var (
@@ -50,44 +51,44 @@ func SetBinData(data map[string]string) {
 }
 
 type HTTPServer struct {
-	tpl          *gmctemplate.Template
-	sessionStore gmcsession.Store
-	router       *gmcrouter.HTTPRouter
-	logger       gmccore.Logger
+	tpl          *gtemplate.Template
+	sessionStore gsession.Store
+	router       *grouter.HTTPRouter
+	logger       gcore.Logger
 	addr         string
 	listener     net.Listener
 	server       *http.Server
 	connCnt      *int64
-	config       *gmcconfig.Config
-	handler40x   func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)
-	handler50x   func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template, err interface{})
+	config       *gconfig.Config
+	handler40x   func(ctx gcore.Ctx, tpl *gtemplate.Template)
+	handler50x   func(ctx gcore.Ctx, tpl *gtemplate.Template, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
-	middleware0          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
-	middleware1          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
-	middleware2          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
-	middleware3          []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)
+	middleware0          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
+	middleware1          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
+	middleware2          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
+	middleware3          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
 	isShutdown           bool
 	localaddr            *sync.Map
 }
 
 func New() *HTTPServer {
 	return &HTTPServer{
-		middleware0: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
-		middleware1: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
-		middleware2: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
-		middleware3: []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool){},
+		middleware0: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
+		middleware1: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
+		middleware2: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
+		middleware3: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
 		localaddr:   &sync.Map{},
 	}
 }
 
 //Init implements service.Service Init
-func (s *HTTPServer) Init(cfg *gmcconfig.Config) (err error) {
+func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
 	connCnt := int64(0)
 	s.server = &http.Server{}
-	s.logger = logutil.New("")
+	s.logger = log2.NewGMCLog()
 	s.connCnt = &connCnt
 	s.config = cfg
 	s.isTestNotClosedError = false
@@ -101,7 +102,7 @@ func (s *HTTPServer) Init(cfg *gmcconfig.Config) (err error) {
 func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init template
-	s.tpl, err = gmctemplate.New(s.config.GetString("template.dir"))
+	s.tpl, err = gtemplate.New(s.config.GetString("template.dir"))
 	if err != nil {
 		return
 	}
@@ -122,7 +123,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 
 	// init http server router
-	s.router = gmcrouter.NewHTTPRouter()
+	s.router = grouter.NewHTTPRouter()
 	s.addr = s.config.GetString("httpserver.listen")
 
 	// init static files handler, must be after router inited
@@ -139,11 +140,11 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Config:       s.config,
 		Logger:       s.logger,
 	})
-	w = gmchttputil.NewResponseWriter(w)
+	w = ghttputil.NewResponseWriter(w)
 	r = r.WithContext(rctx)
 
 	// init ctx
-	c0 := gmcrouter.NewCtx(w, r)
+	c0 := grouter.NewCtx(w, r)
 	addr, _ := s.localaddr.Load(r.RemoteAddr)
 	c0.LocalAddr, _ = addr.(string)
 
@@ -191,24 +192,24 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (s *HTTPServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gmcerr.Recover(func(e interface{}) {
-			err = gmcerr.Wrap(e)
+		defer gmc.Recover(func(e interface{}) {
+			err = gerr.Wrap(e)
 		})
 		fn()
 	}()
 	return
 }
-func (s *HTTPServer) SetHandler40x(fn func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template)) *HTTPServer {
+func (s *HTTPServer) SetHandler40x(fn func(ctx gcore.Ctx, tpl *gtemplate.Template)) *HTTPServer {
 	s.handler40x = fn
 	return s
 }
-func (s *HTTPServer) SetHandler50x(fn func(ctx *gmcrouter.Ctx, tpl *gmctemplate.Template, err interface{})) *HTTPServer {
+func (s *HTTPServer) SetHandler50x(fn func(ctx gcore.Ctx, tpl *gtemplate.Template, err interface{})) *HTTPServer {
 	s.handler50x = fn
 	return s
 }
 
 // called in httpserver
-func (s *HTTPServer) handle40x(ctx *gmcrouter.Ctx) {
+func (s *HTTPServer) handle40x(ctx gcore.Ctx) {
 	if s.handler40x == nil {
 		ctx.Response.WriteHeader(http.StatusNotFound)
 		ctx.Response.Write([]byte("Page not found"))
@@ -219,13 +220,13 @@ func (s *HTTPServer) handle40x(ctx *gmcrouter.Ctx) {
 }
 
 // called in httprouter
-func (s *HTTPServer) handle50x(c *gmcrouter.Ctx, err interface{}) {
+func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
 	if s.handler50x == nil {
 		c.WriteHeader(http.StatusInternalServerError)
 		c.Response.Header().Set("Content-Type", "text/plain")
 		c.Write([]byte("Internal Server Error"))
 		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
-			c.Write([]byte("\n" + gmcerr.Stack(err)))
+			c.Write([]byte("\n" + gerr.Stack(err)))
 		}
 	} else {
 		s.handler50x(c, s.tpl, err)
@@ -238,11 +239,11 @@ func (s *HTTPServer) AddFuncMap(f map[string]interface{}) *HTTPServer {
 	return s
 }
 
-func (s *HTTPServer) SetConfig(c *gmcconfig.Config) *HTTPServer {
+func (s *HTTPServer) SetConfig(c *gconfig.Config) *HTTPServer {
 	s.config = c
 	return s
 }
-func (s *HTTPServer) Config() *gmcconfig.Config {
+func (s *HTTPServer) Config() *gconfig.Config {
 	return s.config
 }
 
@@ -269,7 +270,7 @@ func (s *HTTPServer) InjectListeners(l []net.Listener) {
 func (s *HTTPServer) Server() *http.Server {
 	return s.server
 }
-func (s *HTTPServer) SetLogger(l gmccore.Logger) *HTTPServer {
+func (s *HTTPServer) SetLogger(l gcore.Logger) *HTTPServer {
 	s.logger = l
 	s.server.ErrorLog = func() *log.Logger {
 		ns := s.logger.Namespace()
@@ -281,43 +282,43 @@ func (s *HTTPServer) SetLogger(l gmccore.Logger) *HTTPServer {
 	}()
 	return s
 }
-func (s *HTTPServer) Logger() gmccore.Logger {
+func (s *HTTPServer) Logger() gcore.Logger {
 	return s.logger
 }
-func (s *HTTPServer) SetRouter(r *gmcrouter.HTTPRouter) *HTTPServer {
+func (s *HTTPServer) SetRouter(r *grouter.HTTPRouter) *HTTPServer {
 	s.router = r
 	return s
 }
-func (s *HTTPServer) Router() *gmcrouter.HTTPRouter {
+func (s *HTTPServer) Router() *grouter.HTTPRouter {
 	return s.router
 }
-func (s *HTTPServer) SetTpl(t *gmctemplate.Template) *HTTPServer {
+func (s *HTTPServer) SetTpl(t *gtemplate.Template) *HTTPServer {
 	s.tpl = t
 	return s
 }
-func (s *HTTPServer) Tpl() *gmctemplate.Template {
+func (s *HTTPServer) Tpl() *gtemplate.Template {
 	return s.tpl
 }
-func (s *HTTPServer) SetSessionStore(st gmcsession.Store) *HTTPServer {
+func (s *HTTPServer) SetSessionStore(st gsession.Store) *HTTPServer {
 	s.sessionStore = st
 	return s
 }
-func (s *HTTPServer) SessionStore() gmcsession.Store {
+func (s *HTTPServer) SessionStore() gsession.Store {
 	return s.sessionStore
 }
-func (s *HTTPServer) AddMiddleware0(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware0(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware0 = append(s.middleware0, m)
 	return s
 }
-func (s *HTTPServer) AddMiddleware1(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware1(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware1 = append(s.middleware1, m)
 	return s
 }
-func (s *HTTPServer) AddMiddleware2(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware2(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware2 = append(s.middleware2, m)
 	return s
 }
-func (s *HTTPServer) AddMiddleware3(m func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware3(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
 	s.middleware3 = append(s.middleware3, m)
 	return s
 }
@@ -431,7 +432,7 @@ func (s *HTTPServer) initTLSConfig() (err error) {
 		}
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
-			err = gmcerr.New("failed to parse tls clients root certificate")
+			err = gerr.New("failed to parse tls clients root certificate")
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -450,19 +451,19 @@ func (s *HTTPServer) initSessionStore() (err error) {
 	ttl := s.config.GetInt64("session.ttl")
 	switch typ {
 	case "file":
-		cfg := gmcfilestore.NewConfig()
+		cfg := gfilestore.NewConfig()
 		cfg.TTL = ttl
 		cfg.Dir = s.config.GetString("session.file.dir")
 		cfg.GCtime = s.config.GetInt("session.file.gctime")
 		cfg.Prefix = s.config.GetString("session.file.prefix")
-		s.sessionStore, err = gmcfilestore.New(cfg)
+		s.sessionStore, err = gfilestore.New(cfg)
 	case "memory":
-		cfg := gmcmemorystore.NewConfig()
+		cfg := gmemorystore.NewConfig()
 		cfg.TTL = ttl
 		cfg.GCtime = s.config.GetInt("session.memory.gctime")
-		s.sessionStore, err = gmcmemorystore.New(cfg)
+		s.sessionStore, err = gmemorystore.New(cfg)
 	case "redis":
-		cfg := gmcredisstore.NewRedisStoreConfig()
+		cfg := gredisstore.NewRedisStoreConfig()
 		cfg.RedisCfg.Addr = s.config.GetString("session.redis.address")
 		cfg.RedisCfg.Password = s.config.GetString("session.redis.password")
 		cfg.RedisCfg.Prefix = s.config.GetString("session.redis.prefix")
@@ -474,7 +475,7 @@ func (s *HTTPServer) initSessionStore() (err error) {
 		cfg.RedisCfg.MaxConnLifetime = time.Second * s.config.GetDuration("session.redis.maxconnlifetime")
 		cfg.RedisCfg.Wait = s.config.GetBool("session.redis.wait")
 		cfg.TTL = ttl
-		s.sessionStore, err = gmcredisstore.New(cfg)
+		s.sessionStore, err = gredisstore.New(cfg)
 	default:
 		err = fmt.Errorf("unknown session store type %s", typ)
 	}
@@ -483,7 +484,7 @@ func (s *HTTPServer) initSessionStore() (err error) {
 
 func (s *HTTPServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	pathA := strings.Split(r.URL.Path, "?")
-	path := gmcrouter.CleanPath(pathA[0])
+	path := grouter.CleanPath(pathA[0])
 	path = strings.TrimPrefix(path, s.staticUrlpath)
 	var b []byte
 	var ok bool
@@ -565,15 +566,15 @@ func (s *HTTPServer) GracefulStop() {
 }
 
 //SetLog implements service.Service SetLog
-func (s *HTTPServer) SetLog(l gmccore.Logger) {
+func (s *HTTPServer) SetLog(l gcore.Logger) {
 	s.logger = l
 	return
 }
-func (s *HTTPServer) callMiddleware(ctx *gmcrouter.Ctx, middleware []func(ctx *gmcrouter.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
+func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gmcerr.Recover(func(e interface{}) {
-				s.logger.Warnf("middleware panic error : %s", gmcerr.Stack(e))
+			defer gmc.Recover(func(e interface{}) {
+				s.logger.Warnf("middleware panic error : %s", gerr.Stack(e))
 				isStop = false
 			})
 			isStop = fn(ctx, s)

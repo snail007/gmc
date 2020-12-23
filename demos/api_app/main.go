@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
+	gutil "github.com/snail007/gmc/util"
 	"net"
 	"net/http"
 	"strings"
 	"time"
-
-	timeutil "github.com/snail007/gmc/util/time"
 
 	"github.com/snail007/gmc"
 )
@@ -58,7 +57,7 @@ func main() {
 	// routing by group is supported
 	group1 := api.Group("/v1")
 	group1.API("/time", func(c gmc.C) {
-		c.Write(timeutil.TimeToStr(time.Now()))
+		c.Write(gutil.DateFormat(time.Now(), "Y-m-d H:i:s"))
 	})
 
 	app := gmc.New.App()

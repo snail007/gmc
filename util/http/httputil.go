@@ -1,4 +1,4 @@
-package gmchttputil
+package ghttputil
 
 import (
 	"encoding/json"

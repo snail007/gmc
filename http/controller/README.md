@@ -37,7 +37,7 @@ These inside controller's methods, don't call them in your code.
 
 ## METHOD DEFINE
 
-Your controller extends gmccontroller.Controller, so you must not be defined methods above in your controller.
+Your controller extends gcontroller.Controller, so you must not be defined methods above in your controller.
 
 ## MEMBER DEFINE
 

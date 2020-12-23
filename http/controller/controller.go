@@ -3,43 +3,43 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmccontroller
+package gcontroller
 
 import (
 	"fmt"
-	gmcconfig "github.com/snail007/gmc/config"
-	gmccore "github.com/snail007/gmc/core"
-	gmcview "github.com/snail007/gmc/http/view"
-	gmci18n "github.com/snail007/gmc/i18n"
+	gconfig "github.com/snail007/gmc/config"
+	gcore "github.com/snail007/gmc/core"
+	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gview "github.com/snail007/gmc/http/view"
 	"github.com/snail007/gmc/util/cast"
-	gmchttputil "github.com/snail007/gmc/util/http"
+	ghttputil "github.com/snail007/gmc/util/http"
 	"net/http"
 
-	gmccookie "github.com/snail007/gmc/http/cookie"
-	gmcrouter "github.com/snail007/gmc/http/router"
+	gcookie "github.com/snail007/gmc/http/cookie"
+	grouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/server/ctxvalue"
-	gmcsession "github.com/snail007/gmc/http/session"
-	gmctemplate "github.com/snail007/gmc/http/template"
+	gsession "github.com/snail007/gmc/http/session"
+	gtemplate "github.com/snail007/gmc/http/template"
 )
 
 type Controller struct {
 	Response     http.ResponseWriter
 	Request      *http.Request
-	Param        gmcrouter.Params
-	Session      *gmcsession.Session
-	Tpl          *gmctemplate.Template
-	SessionStore gmcsession.Store
-	Router       *gmcrouter.HTTPRouter
-	Config       *gmcconfig.Config
-	Cookie       *gmccookie.Cookies
-	Ctx          *gmcrouter.Ctx
-	View         *gmcview.View
+	Param        grouter.Params
+	Session      *gsession.Session
+	Tpl          *gtemplate.Template
+	SessionStore gsession.Store
+	Router       *grouter.HTTPRouter
+	Config       *gconfig.Config
+	Cookie       *gcookie.Cookies
+	Ctx          gcore.Ctx
+	View         *gview.View
 	Lang         string
-	Logger       gmccore.Logger
+	Logger       gcore.Logger
 }
 
 //MethodCallPre called before controller method and Before() if have.
-func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps gmcrouter.Params) {
+func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps grouter.Params) {
 	// 1. init basic objects
 	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
 	this.Response = w
@@ -51,9 +51,9 @@ func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps
 	this.Config = ctxvalue.Config
 	this.Logger = ctxvalue.Logger
 
-	this.View = gmcview.New(w, ctxvalue.Tpl)
-	this.Cookie = gmccookie.New(w, r)
-	this.Ctx = gmcrouter.NewCtx(w, r, ps)
+	this.View = gview.New(w, ctxvalue.Tpl)
+	this.Cookie = gcookie.New(w, r)
+	this.Ctx = grouter.NewCtx(w, r, ps)
 
 	// 2.init stuff below
 	this.View.SetLayoutDir(this.Config.GetString("template.layout"))
@@ -71,7 +71,7 @@ func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps
 func (this *Controller) initLang() {
 	if this.Config.GetBool("i18n.enable") {
 		this.Lang = "none"
-		t, e := gmci18n.MatchAcceptLanguageT(this.Request)
+		t, e := gi18n.MatchAcceptLanguageT(this.Request)
 		if e == nil {
 			this.Lang = t.String()
 			this.View.Set("Lang", this.Lang)
@@ -159,17 +159,17 @@ func (this *Controller) MethodCallPost() {
 
 //Tr translates the key to `this.Lang's` text.
 func (this *Controller) Tr(key string, defaultText ...string) string {
-	return gmci18n.Tr(this.Lang, key, defaultText...)
+	return gi18n.Tr(this.Lang, key, defaultText...)
 }
 
 //Die will prevent to call After() if have, and MethodCallPost()
 func (this *Controller) Die(msg ...interface{}) {
-	gmchttputil.Die(this.Response, msg...)
+	ghttputil.Die(this.Response, msg...)
 }
 
 //Stop will exit controller method at once
 func (this *Controller) Stop(msg ...interface{}) {
-	gmchttputil.Stop(this.Response, msg...)
+	ghttputil.Stop(this.Response, msg...)
 }
 
 // StopE will exit controller method if error is not nil.
@@ -177,7 +177,7 @@ func (this *Controller) Stop(msg ...interface{}) {
 // Secondary argument is fail function, it be called if error is not nil.
 // Third argument is success function, it be called if error is nil.
 func (this *Controller) StopE(err interface{}, fn ...func()) {
-	gmchttputil.StopE(err, fn...)
+	ghttputil.StopE(err, fn...)
 }
 
 func (this *Controller) SessionStart() (err error) {
@@ -196,9 +196,9 @@ func (this *Controller) SessionStart() (err error) {
 		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
-		sess := gmcsession.NewSession()
+		sess := gsession.NewSession()
 		sess.Touch()
-		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gmccookie.Options{
+		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcookie.Options{
 			Path: "/",
 			MaxAge: this.Config.GetInt("session.ttl"),
 			HTTPOnly:true,
@@ -224,10 +224,10 @@ func (this *Controller) SessionDestroy() (err error) {
 }
 
 func (this *Controller) Write(data ...interface{}) (n int, err error) {
-	return gmchttputil.Write(this.Response, data...)
+	return ghttputil.Write(this.Response, data...)
 }
 
 func (this *Controller) WriteE(data ...interface{}) (n int, err error) {
 	this.Response.WriteHeader(http.StatusInternalServerError)
-	return gmchttputil.Write(this.Response, data...)
+	return ghttputil.Write(this.Response, data...)
 }

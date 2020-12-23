@@ -17,7 +17,7 @@ go get github.com/snail007/util/captcha
 #### 最简单的示例 sample use
 
 ```go
-cap = gmccaptcha.NewDefault()
+cap = gcaptcha.NewDefault()
 // 创建验证码 4个字符 captcha.NUM 字符模式数字类型
 // 返回验证码图像对象以及验证码字符串 后期可以对字符串进行对比 判断验证
 img,str := cap.Create(4,captcha.NUM)
@@ -26,26 +26,26 @@ img,str := cap.Create(4,captcha.NUM)
 #### 设置 set options
 
 ```go
-cap = gmccaptcha.New()
+cap = gcaptcha.New()
 // 可以设置多个字体 或使用cap.AddFont("xx.ttf")追加
 cap.SetFont("comic.ttf", "xxx.ttf")
 // 设置验证码大小
 cap.SetSize(128, 64)
 // 设置干扰强度
-cap.SetDisturbance(gmccaptcha.MEDIUM)
+cap.SetDisturbance(gcaptcha.MEDIUM)
 // 设置前景色 可以多个 随机替换文字颜色 默认黑色
 cap.SetFrontColor(color.RGBA{255, 255, 255, 255})
 // 设置背景色 可以多个 随机替换背景色 默认白色
 cap.SetBkgColor(color.RGBA{255, 0, 0, 255}, color.RGBA{0, 0, 255, 255}, color.RGBA{0, 153, 0, 255})
 
-img,str := cap.Create(4,gmccaptcha.NUM)
-img1,str1 := cap.Create(6,gmccaptcha.ALL)
+img,str := cap.Create(4,gcaptcha.NUM)
+img1,str1 := cap.Create(6,gcaptcha.ALL)
 ```
 
 #### 自定义字符串 custom captcha words
 
 ```go
-cap = gmccaptcha.New()
+cap = gcaptcha.New()
 // 设置字体
 cap.SetFont("comic.ttf")
 img := cap.CreateCustom("hello")

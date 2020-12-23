@@ -117,17 +117,16 @@ func (s *Session) SessionID() (sessionID string) {
 //Touchtime return the last access unix time seconds of session
 //
 //time: unix time seconds
-func (s *Session) Touchtime() (time int64) {
+func (s *Session) TouchTime() (time int64) {
 	return s.touchtime
 }
-func (s *Session) Touch() *Session {
+func (s *Session) Touch() {
 	if s.isDestroy {
-		return s
+		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.touch()
-	return s
 }
 func (s *Session) touch() {
 	s.touchtime = time.Now().Unix()

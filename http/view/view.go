@@ -1,8 +1,8 @@
 package gview
 
 import (
+	gcore "github.com/snail007/gmc/core"
 	gerr "github.com/snail007/gmc/gmc/error"
-	gtemplate "github.com/snail007/gmc/http/template"
 	ghttputil "github.com/snail007/gmc/util/http"
 	"io"
 	"strings"
@@ -10,7 +10,7 @@ import (
 )
 
 type View struct {
-	tpl       *gtemplate.Template
+	tpl       gcore.Template
 	data      map[string]interface{}
 	writer    io.Writer
 	layout    string
@@ -20,7 +20,7 @@ type View struct {
 	layoutDir string
 }
 
-func New(w io.Writer, tpl *gtemplate.Template) *View {
+func New(w io.Writer, tpl gcore.Template) gcore.View {
 	return &View{
 		writer: w,
 		tpl:    tpl,
@@ -34,13 +34,13 @@ func (this *View) Err() error {
 }
 
 // Set sets data apply to the template
-func (this *View) Set(key string, val interface{}) *View {
+func (this *View) Set(key string, val interface{}) gcore.View {
 	this.data[key] = val
 	return this
 }
 
 // SetMap sets mapped data apply to the template
-func (this *View) SetMap(d map[string]interface{}) *View {
+func (this *View) SetMap(d map[string]interface{}) gcore.View {
 	for k, v := range d {
 		this.data[k] = v
 	}
@@ -48,7 +48,7 @@ func (this *View) SetMap(d map[string]interface{}) *View {
 }
 
 //Render renders template `tpl` with `data`, and output.
-func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
+func (this *View) Render(tpl string, data ...map[string]interface{}) gcore.View {
 	d := this.RenderR(tpl, data...)
 	if this.lasterr != nil {
 		return this
@@ -60,7 +60,9 @@ func (this *View) Render(tpl string, data ...map[string]interface{}) *View {
 //Render renders template `tpl` with `data`, and returns render result.
 func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte) {
 	// init GPSC
-	this.once.Do(this.onceFn)
+	if this.onceFn != nil {
+		this.once.Do(this.onceFn)
+	}
 	data0 := this.data
 	for k, v := range this.data {
 		data0[k] = v
@@ -91,7 +93,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 }
 
 // Layout sets the views layout when render template.
-func (this *View) Layout(l string) *View {
+func (this *View) Layout(l string) gcore.View {
 	this.layout = l
 	return this
 }
@@ -102,7 +104,7 @@ func (this *View) Stop() {
 }
 
 // OnRenderOnce injects GPSC data
-func (this *View) OnRenderOnce(f func()) *View {
+func (this *View) OnRenderOnce(f func()) gcore.View {
 	this.onceFn = f
 	return this
 }

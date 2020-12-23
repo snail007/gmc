@@ -7,6 +7,7 @@ package gfilestore
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
@@ -19,7 +20,7 @@ import (
 )
 
 var (
-	store gsession.Store
+	store gcore.SessionStorage
 )
 
 func TestNew(t *testing.T) {
@@ -27,13 +28,16 @@ func TestNew(t *testing.T) {
 	sid := "testaaaa"
 	_, ok := store.Load(sid)
 	assert.False(ok)
-	sess := gsession.NewSession().Touch()
+	sess := gsession.NewSession()
+	sess.Touch()
 	err := store.Save(sess)
 	assert.Nil(err)
 	_, ok = store.Load(sess.SessionID())
 	assert.True(ok)
 	for i := 0; i < 10; i++ {
-		err := store.Save(gsession.NewSession().Touch())
+		s:=gsession.NewSession()
+		s.Touch()
+		err := store.Save(s)
 		assert.Nil(err)
 	}
 	time.Sleep(time.Second * 3)
@@ -56,7 +60,7 @@ func TestMkdir(t *testing.T) {
 	k := "testbbb"
 	f := s0.file(k)
 	dir := filepath.Dir(f)
-	if !gutil.fileutil.ExistsDir(dir) {
+	if !gutil.ExistsDir(dir) {
 		os.MkdirAll(dir, 0700)
 	}
 	err := ioutil.WriteFile(f, []byte("\n"), 0700)

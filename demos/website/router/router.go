@@ -1,7 +1,8 @@
 package router
 
 import (
-	"github.com/snail007/gmc/middleware/accesslog"
+	gcore "github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/gmc/middleware/accesslog"
 	httppprof "github.com/snail007/gmc/util/pprof"
 	"strings"
 
@@ -27,7 +28,8 @@ func InitRouter(s *gmc.HTTPServer) {
 	s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
 
 	// acquire router object
-	r := s.Router().Ext(".json")
+	r := s.Router()
+	r.Ext(".json")
 
 	// bind a controller, /demo is path of controller, after this you can visit http://127.0.0.1:7080/demo/hello
 	// "hello" is full lower case name of controller method.
@@ -39,13 +41,13 @@ func InitRouter(s *gmc.HTTPServer) {
 	s.Logger().Infof("router inited.")
 }
 
-func filterAll(c gmc.C, server *gmc.HTTPServer) bool {
-	server.Logger().Infof(c.Request.RequestURI)
+func filterAll(c gmc.C, server gcore.HTTPServer) bool {
+	server.Logger().Infof(c.Request().RequestURI)
 	return false
 }
 
-func filter(c gmc.C, server *gmc.HTTPServer) bool {
-	path := strings.TrimRight(c.Request.URL.Path, "/\\")
+func filter(c gmc.C, server gcore.HTTPServer) bool {
+	path := strings.TrimRight(c.Request().URL.Path, "/\\")
 
 	// we want to prevent user to access method `controller.Demo.Protected`
 	if strings.Contains(path, "protected") {
@@ -56,7 +58,7 @@ func filter(c gmc.C, server *gmc.HTTPServer) bool {
 	return false
 }
 
-func logging(c gmc.C, server *gmc.HTTPServer) bool {
-	server.Logger().Infof("after request %s %d %d %s %s", c.Request.Method, c.StatusCode(), c.WriteCount(), c.TimeUsed(), c.Request.RequestURI)
+func logging(c gmc.C, server gcore.HTTPServer) bool {
+	server.Logger().Infof("after request %s %d %d %s %s", c.Request().Method, c.StatusCode(), c.WriteCount(), c.TimeUsed(), c.Request().RequestURI)
 	return false
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	ghook "github.com/snail007/gmc/process/hook"
 	gutil "github.com/snail007/gmc/util"
 	"net"
@@ -12,22 +13,23 @@ import (
 )
 
 func main() {
-	api := gmc.New.APIServer(":8030").Ext(".html")
+	api := gmc.New.APIServer(":8030")
+	api.Ext(".html")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Infof("before request %s", c.Request.RequestURI)
+	api.AddMiddleware1(func(c gmc.C, s gcore.APIServer) (isStop bool) {
+		s.Logger().Infof("before request %s", c.Request().RequestURI)
 		return false
 	})
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
+	api.AddMiddleware2(func(c gmc.C, s gcore.APIServer) (isStop bool) {
 		s.Logger().Infof("after request %s %d %d %s %s",
-			c.Request.Method,
+			c.Request().Method,
 			c.StatusCode(),
 			c.WriteCount(),
 			c.TimeUsed(),
-			c.Request.RequestURI)
+			c.Request().RequestURI)
 		return false
 	})
 	// sets a function to handle 404 requests.
@@ -42,10 +44,11 @@ func main() {
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly
 	api.API("/hello", func(c gmc.C) {
-		api.Logger().Infof("request %s", c.Request.RequestURI)
+		api.Logger().Infof("request %s", c.Request().RequestURI)
 		c.Write("hello world!")
-	}).API("/hi.:type", func(c gmc.C) {
-		c.Write("hi!" + c.Param.ByName("type"))
+	})
+	api.API("/hi.:type", func(c gmc.C) {
+		c.Write("hi!" + c.Param().ByName("type"))
 	}, "")
 	// trigger a panic error
 	api.API("/error", func(c gmc.C) {
@@ -53,7 +56,8 @@ func main() {
 		a /= a
 	})
 	// routing by group is supported
-	group1 := api.Group("/v1").Ext(".json")
+	group1 := api.Group("/v1")
+	group1.Ext(".json")
 	group1.API("/time", func(c gmc.C) {
 		c.Write(gutil.Date("Y-m-d H:i:s", time.Now()))
 	})

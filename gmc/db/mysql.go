@@ -132,16 +132,16 @@ func (db *MySQLDB) Stats() sql.DBStats {
 func (db *MySQLDB) Begin() (tx *sql.Tx, err error) {
 	return db.ConnPool.Begin()
 }
-func (db *MySQLDB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
+func (db *MySQLDB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs gcore.ResultSet, err error) {
 	ar := ar0.(*MySQLActiveRecord)
 	return db.ExecSQLTx(tx, ar.SQL(), ar.values...)
 }
-func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
 	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSqlIdentifier, db.Config.TablePrefix, -1)
 	var stmt *sql.Stmt
 	var result sql.Result
-	rs = new(ResultSet)
+
 	stmt, err = tx.Prepare(sqlStr)
 	if err != nil {
 		return
@@ -151,24 +151,23 @@ func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (
 	if err != nil {
 		return
 	}
-	rs.rowsAffected, err = result.RowsAffected()
-	rs.lastInsertId, err = result.LastInsertId()
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = sqlStr
-	if err != nil {
-		return
-	}
+	rsRaw := new(ResultSet)
+	rsRaw.rowsAffected, err = result.RowsAffected()
+	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = sqlStr
+	rs = rsRaw
 	return
 }
-func (db *MySQLDB) Exec(ar gcore.ActiveRecord) (rs *ResultSet, err error) {
+func (db *MySQLDB) Exec(ar gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 	return db.ExecSQL(ar.SQL(), ar.(*MySQLActiveRecord).values...)
 }
-func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
 	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSqlIdentifier, db.Config.TablePrefix, -1)
 	var stmt *sql.Stmt
 	var result sql.Result
-	rs = new(ResultSet)
+
 	stmt, err = db.ConnPool.Prepare(sqlStr)
 	if err != nil {
 		return
@@ -178,16 +177,18 @@ func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs *ResultSet,
 	if err != nil {
 		return
 	}
-	rs.rowsAffected, err = result.RowsAffected()
-	rs.lastInsertId, err = result.LastInsertId()
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = sqlStr
+	rsRaw := new(ResultSet)
+	rsRaw.rowsAffected, err = result.RowsAffected()
+	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = sqlStr
 	if err != nil {
 		return
 	}
+	rs = rsRaw
 	return
 }
-func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
@@ -235,12 +236,13 @@ func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs *ResultSet
 		}
 		results = append(results, row)
 	}
-	rs = NewResultSet(&results)
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = sqlStr
+	rsRaw := NewResultSet(&results)
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = sqlStr
+	rs = rsRaw
 	return
 }
-func (db *MySQLDB) Query(ar0 gcore.ActiveRecord) (rs *ResultSet, err error) {
+func (db *MySQLDB) Query(ar0 gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 	ar := ar0.(*MySQLActiveRecord)
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
@@ -315,9 +317,10 @@ func (db *MySQLDB) Query(ar0 gcore.ActiveRecord) (rs *ResultSet, err error) {
 			}
 		}
 	}
-	rs = NewResultSet(&results)
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = ar.SQL()
+	rsRaw := NewResultSet(&results)
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = ar.SQL()
+	rs = rsRaw
 	return
 }
 

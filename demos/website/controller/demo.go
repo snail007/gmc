@@ -121,7 +121,7 @@ func (this *Demo) List() {
 	this.View.Render("list")
 }
 func (this *Demo) Layout() {
-	this.View.Layout("layout/page").Render("welcome", map[string]interface{}{
+	this.View.Layout("page").Render("welcome", map[string]interface{}{
 		"title":"welcome",
 	})
 }

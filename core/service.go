@@ -20,11 +20,9 @@ type Service interface {
 	Listeners() []net.Listener
 }
 
-type ServiceItem interface {
-	AfterInit() func(srv ServiceItem) (err error)
-	BeforeInit() func(srv Service, cfg *gconfig.Config) (err error)
-	SetBeforeInit(func(srv Service, cfg *gconfig.Config) (err error)) ServiceItem
-	SetAfterInit(func(srv ServiceItem) (err error)) ServiceItem
-	GetService() Service
-	GetConfigID() string
+type ServiceItem struct {
+	BeforeInit func(srv Service, cfg *gconfig.Config) (err error)
+	AfterInit  func(srv *ServiceItem) (err error)
+	Service    Service
+	ConfigID   string
 }

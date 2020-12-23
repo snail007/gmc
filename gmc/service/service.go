@@ -5,12 +5,7 @@ import (
 	gcore "github.com/snail007/gmc/core"
 )
 
-type ServiceItem struct {
-	beforeInit func(srv gcore.Service, cfg *gconfig.Config) (err error)
-	afterInit  func(srv gcore.ServiceItem) (err error)
-	service    gcore.Service
-	configID   string
-}
+
 
 func (s *ServiceItem) AfterInit() func(srv gcore.ServiceItem) (err error) {
 	return s.afterInit

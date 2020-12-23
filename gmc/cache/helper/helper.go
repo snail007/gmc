@@ -20,7 +20,7 @@ var (
 	groupRedis  = map[string]gcore.Cache{}
 	groupMemory = map[string]gcore.Cache{}
 	groupFile   = map[string]gcore.Cache{}
-	logger      = log.NewGMCLog()
+	logger      = glog.NewGMCLog()
 	cfg         *gconfig.Config
 )
 

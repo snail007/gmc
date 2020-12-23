@@ -22,7 +22,7 @@ type (
 	// Alias of type gapp.GMCApp
 	APP = gapp.GMCApp
 	// Alias of type gapp.ServiceItem
-	ServiceItem = gapp.ServiceItem
+	ServiceItem = gcore.ServiceItem
 	// Alias of type gcore.Service
 	Service = gcore.Service
 	// Alias of type gconfig.Config
@@ -48,21 +48,21 @@ type (
 	// Alias of type gcookie.Cookies
 	Cookie = gcookie.Cookies
 	// Alias of type gcookie.Options
-	CookieOptions = gcookie.Options
+	CookieOptions = gcore.CookieOptions
 	// Alias of type grouter.HTTPRouter
-	Router = grouter.HTTPRouter
+	Router = gcore.HTTPRouter
 	// Alias of type grouter.Handle
-	Handle = grouter.Handle
+	Handle = gcore.Handle
 	// Alias of type grouter.Params
-	P = grouter.Params
+	P = gcore.Params
 	// Alias of type ghttpserver.HTTPServer
 	HTTPServer = ghttpserver.HTTPServer
 	// Alias of type ghttpserver.APIServer
 	APIServer = ghttpserver.APIServer
 	// Alias of type gsession.Session
 	Session = gsession.Session
-	// Alias of type gsession.Store
-	SessionStore = gsession.Store
+	// Alias of type gsession.SessionStorage
+	SessionStore = gcore.SessionStorage
 	// Alias of type gtemplate.Template
 	Template = gtemplate.Template
 	// Alias of type http.ResponseWriter
@@ -81,10 +81,6 @@ type (
 	Mss = map[string]string
 	// Alias of type gerr.Error
 	Error = gerr.Error
-	// Alias of api middleware
-	MiddlewareAPI func(ctx gcore.Ctx, api *APIServer) (isStop bool)
-	// Alias of web middleware
-	MiddlewareWeb func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
 )
 
 var (

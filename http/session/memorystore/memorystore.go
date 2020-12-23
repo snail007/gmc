@@ -7,7 +7,6 @@ package gmemorystore
 
 import (
 	"fmt"
-	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/gmc/log"
 	"sync"
@@ -27,17 +26,17 @@ func NewConfig() MemoryStoreConfig {
 	return MemoryStoreConfig{
 		GCtime: 300,
 		TTL:    15 * 60,
-		Logger: log.NewGMCLog("[memorystore]"),
+		Logger: glog.NewGMCLog("[memorystore]"),
 	}
 }
 
 type MemoryStore struct {
-	gsession.Store
+	gcore.SessionStorage
 	cfg  MemoryStoreConfig
 	data sync.Map
 }
 
-func New(config interface{}) (st gsession.Store, err error) {
+func New(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(MemoryStoreConfig)
 	s := &MemoryStore{
 		cfg:  cfg,
@@ -48,13 +47,13 @@ func New(config interface{}) (st gsession.Store, err error) {
 	return
 }
 
-func (s *MemoryStore) Load(sessionID string) (sess *gsession.Session, isExists bool) {
+func (s *MemoryStore) Load(sessionID string) (sess gcore.Session, isExists bool) {
 	sess0, ok := s.data.Load(sessionID)
 	if !ok {
 		return
 	}
 	sess = sess0.(*gsession.Session)
-	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
+	if time.Now().Unix()-sess.TouchTime() > s.cfg.TTL {
 		sess = nil
 		s.data.Delete(sessionID)
 		return
@@ -62,7 +61,7 @@ func (s *MemoryStore) Load(sessionID string) (sess *gsession.Session, isExists b
 	isExists = true
 	return
 }
-func (s *MemoryStore) Save(sess *gsession.Session) (err error) {
+func (s *MemoryStore) Save(sess gcore.Session) (err error) {
 	s.data.Store(sess.SessionID(), sess)
 	return
 }
@@ -73,7 +72,7 @@ func (s *MemoryStore) Delete(sessionID string) (err error) {
 }
 
 func (s *MemoryStore) gc() {
-	defer gmc.Recover(func(e interface{}) {
+	defer gcore.Recover(func(e interface{}) {
 		fmt.Printf("memorystore gc error: %s", gerr.Stack(e))
 	})
 	first := true
@@ -85,7 +84,7 @@ func (s *MemoryStore) gc() {
 		}
 		s.data.Range(func(k, v interface{}) bool {
 			sess := v.(*gsession.Session)
-			if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
+			if time.Now().Unix()-sess.TouchTime() > s.cfg.TTL {
 				s.data.Delete(k)
 			}
 			return true

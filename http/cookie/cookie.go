@@ -1,11 +1,10 @@
 package gcookie
 
 import (
+	gcore "github.com/snail007/gmc/core"
 	"net/http"
 	"time"
 )
-
-
 
 func New(w http.ResponseWriter, r *http.Request, keys ...string) (cookie *Cookies) {
 	c := &Cookies{
@@ -35,8 +34,8 @@ func (c *Cookies) Get(name string, signed ...bool) (value string, err error) {
 
 // Set set the given cookie to the response and returns the current context to allow chaining.
 // If options omit, it will use default options.
-func (c *Cookies) Set(name, val string, options ...*Options) *Cookies {
-	opts := defaultOptions
+func (c *Cookies) Set(name, val string, options ...*gcore.CookieOptions) {
+	opts := gcore.DefaultCookieOptions
 	if len(options) > 0 {
 		opts = options[0]
 	}
@@ -57,12 +56,11 @@ func (c *Cookies) Set(name, val string, options ...*Options) *Cookies {
 		cookie.Expires = time.Unix(1, 0).UTC()
 	}
 	http.SetCookie(c.w, cookie)
-	return c
 }
 
 // Remove remove the given cookie
-func (c *Cookies) Remove(name string, options ...*Options) {
-	opts := *defaultOptions // should copy because we will change MaxAge
+func (c *Cookies) Remove(name string, options ...*gcore.CookieOptions) {
+	opts := *gcore.DefaultCookieOptions // should copy because we will change MaxAge
 	if len(options) > 0 {
 		opts = *options[0]
 	}

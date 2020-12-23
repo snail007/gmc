@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	log2 "github.com/snail007/gmc/gmc/log"
 	"io"
@@ -30,16 +29,16 @@ type APIServer struct {
 	listener          net.Listener
 	server            *http.Server
 	address           string
-	router            *grouter.HTTPRouter
+	router            gcore.HTTPRouter
 	logger            gcore.Logger
 	handle404         func(ctx gcore.Ctx)
 	handle500         func(ctx gcore.Ctx, err interface{})
 	isShowErrorStack  bool
 	certFile, keyFile string
-	middleware0       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
-	middleware1       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
-	middleware2       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
-	middleware3       []func(ctx gcore.Ctx, server *APIServer) (isStop bool)
+	middleware0       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
+	middleware1       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
+	middleware2       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
+	middleware3       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
 	isShutdown        bool
 	ext               string
 	config            *gconfig.Config
@@ -56,10 +55,10 @@ func NewAPIServer(address string) *APIServer {
 		logger:           log2.NewGMCLog(),
 		router:           grouter.NewHTTPRouter(),
 		isShowErrorStack: true,
-		middleware0:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
-		middleware1:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
-		middleware2:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
-		middleware3:      []func(ctx gcore.Ctx, server *APIServer) (isStop bool){},
+		middleware0:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware1:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware2:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware3:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		localaddr:        &sync.Map{},
 	}
 	api.server.Handler = api
@@ -150,68 +149,57 @@ func (this *APIServer) Address() string {
 func (this *APIServer) Server() *http.Server {
 	return this.server
 }
-func (this *APIServer) Router() *grouter.HTTPRouter {
+func (this *APIServer) Router() gcore.HTTPRouter {
 	return this.router
 }
-func (this *APIServer) SetTLSFile(certFile, keyFile string) *APIServer {
+func (this *APIServer) SetTLSFile(certFile, keyFile string) {
 	this.certFile, this.keyFile = certFile, keyFile
-	return this
 }
-func (this *APIServer) SetLogger(l gcore.Logger) *APIServer {
+func (this *APIServer) SetLogger(l gcore.Logger) {
 	this.logger = l
-	return this
 }
 func (this *APIServer) Logger() gcore.Logger {
 	return this.logger
 }
-func (this *APIServer) AddMiddleware0(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware0(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
 	this.middleware0 = append(this.middleware0, m)
-	return this
 }
-func (this *APIServer) AddMiddleware1(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware1(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
 	this.middleware1 = append(this.middleware1, m)
-	return this
 }
-func (this *APIServer) AddMiddleware2(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware2(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
 	this.middleware2 = append(this.middleware2, m)
-	return this
 }
-func (this *APIServer) AddMiddleware3(m func(ctx gcore.Ctx, server *APIServer) (isStop bool)) *APIServer {
+func (this *APIServer) AddMiddleware3(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
 	this.middleware3 = append(this.middleware3, m)
-	return this
 }
-func (this *APIServer) Handle404(handle func(ctx gcore.Ctx)) *APIServer {
+func (this *APIServer) Handle404(handle func(ctx gcore.Ctx)) {
 	this.handle404 = handle
-	return this
 }
-func (this *APIServer) Handle500(handle func(ctx gcore.Ctx, err interface{})) *APIServer {
+func (this *APIServer) Handle500(handle func(ctx gcore.Ctx, err interface{})) {
 	this.handle500 = handle
-	return this
 }
-func (this *APIServer) ShowErrorStack(isShow bool) *APIServer {
+func (this *APIServer) ShowErrorStack(isShow bool) {
 	this.isShowErrorStack = isShow
-	return this
 }
 
-func (this *APIServer) Ext(ext string) *APIServer {
+func (this *APIServer) Ext(ext string) {
 	this.ext = ext
-	return this
 }
 
-func (this *APIServer) API(path string, handle func(ctx gcore.Ctx), ext ...string) *APIServer {
+func (this *APIServer) API(path string, handle func(ctx gcore.Ctx), ext ...string) {
 	// default
 	ext1 := this.ext
 	if len(ext) > 0 {
 		// cover
 		ext1 = ext[0]
 	}
-	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps grouter.Params) {
+	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
 		handle(grouter.NewCtx(w, r, ps))
 	})
-	return this
 }
 
-func (this *APIServer) Group(path string) *APIServer {
+func (this *APIServer) Group(path string) gcore.APIServer {
 	newAPI := *this
 	newAPI.router = this.router.Group(path)
 	return &newAPI
@@ -271,19 +259,18 @@ func (s *APIServer) connState(c net.Conn, st http.ConnState) {
 		atomic.AddInt64(s.connCnt, -1)
 	}
 }
-func (this *APIServer) handler404(ctx gcore.Ctx) *APIServer {
+func (this *APIServer) handler404(ctx gcore.Ctx) {
 	if this.handle404 == nil {
-		ctx.Response.WriteHeader(http.StatusNotFound)
-		ctx.Response.Write([]byte("Page not found"))
+		ctx.Response().WriteHeader(http.StatusNotFound)
+		ctx.Response().Write([]byte("Page not found"))
 	} else {
 		this.handle404(ctx)
 	}
-	return this
 }
-func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) *APIServer {
+func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
 	if this.handle500 == nil {
 		ctx.WriteHeader(http.StatusInternalServerError)
-		ctx.Response.Header().Set("Content-Type", "text/plain")
+		ctx.Response().Header().Set("Content-Type", "text/plain")
 		msg := fmt.Sprintf("Internal Server Error")
 		if err != nil && this.isShowErrorStack {
 			msg += "\n" + gerr.Stack(err)
@@ -292,21 +279,20 @@ func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) *APIServer {
 	} else {
 		this.handle500(ctx, err)
 	}
-	return this
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gmc.Recover(func(e interface{}) {
+		defer gcore.Recover(func(e interface{}) {
 			err = gerr.Wrap(e)
 		})
 		fn()
 	}()
 	return
 }
-func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server *APIServer) (isStop bool)) (isStop bool) {
+func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gmc.Recover(func(e interface{}) {
+			defer gcore.Recover(func(e interface{}) {
 				s.logger.Warn("middleware panic error : %s", gerr.Stack(e))
 				isStop = false
 			})

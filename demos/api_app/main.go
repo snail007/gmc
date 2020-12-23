@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	gutil "github.com/snail007/gmc/util"
+	gcore "github.com/snail007/gmc/core"
+ 	gutil "github.com/snail007/gmc/util"
 	"net"
 	"net/http"
 	"strings"
@@ -15,14 +16,14 @@ func main() {
 	api := gmc.New.APIServer(":8030")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware1(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Infof("before request %s", c.Request.RequestURI)
+	api.AddMiddleware1(func(c gmc.C, s gcore.APIServer) (isStop bool) {
+		s.Logger().Infof("before request %s", c.Request().RequestURI)
 		return false
 	})
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware2(func(c gmc.C, s *gmc.APIServer) (isStop bool) {
-		s.Logger().Infof("after request %s %d %d %s", c.Request.Method, c.StatusCode(), c.WriteCount(), c.Request.RequestURI)
+	api.AddMiddleware2(func(c gmc.C, s gcore.APIServer) (isStop bool) {
+		s.Logger().Infof("after request %s %d %d %s", c.Request().Method, c.StatusCode(), c.WriteCount(), c.Request().RequestURI)
 		return false
 	})
 	// sets a function to handle 404 requests.
@@ -37,9 +38,10 @@ func main() {
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly
 	api.API("/hello", func(c gmc.C) {
-		api.Logger().Infof("request %s", c.Request.RequestURI)
+		api.Logger().Infof("request %s", c.Request().RequestURI)
 		c.Write("hello world!")
-	}).API("/hi", func(c gmc.C) {
+	})
+	api.API("/hi", func(c gmc.C) {
 		c.Write("hi!")
 	})
 	// trigger a panic error
@@ -62,7 +64,7 @@ func main() {
 
 	app := gmc.New.App()
 
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: api,
 		BeforeInit: func(s gmc.Service, cfg *gmc.Config) (err error) {
 			api.PrintRouteTable(nil)

@@ -10,38 +10,35 @@ import (
 	gconfig "github.com/snail007/gmc/config"
 	gcore "github.com/snail007/gmc/core"
 	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gcookie "github.com/snail007/gmc/http/cookie"
+	grouter "github.com/snail007/gmc/http/router"
+	gsession "github.com/snail007/gmc/http/session"
 	gview "github.com/snail007/gmc/http/view"
 	"github.com/snail007/gmc/util/cast"
 	ghttputil "github.com/snail007/gmc/util/http"
 	"net/http"
-
-	gcookie "github.com/snail007/gmc/http/cookie"
-	grouter "github.com/snail007/gmc/http/router"
-	"github.com/snail007/gmc/http/server/ctxvalue"
-	gsession "github.com/snail007/gmc/http/session"
-	gtemplate "github.com/snail007/gmc/http/template"
-)
+  )
 
 type Controller struct {
 	Response     http.ResponseWriter
 	Request      *http.Request
-	Param        grouter.Params
-	Session      *gsession.Session
-	Tpl          *gtemplate.Template
-	SessionStore gsession.Store
-	Router       *grouter.HTTPRouter
+	Param        gcore.Params
+	Session      gcore.Session
+	Tpl          gcore.Template
+	SessionStore gcore.SessionStorage
+	Router       gcore.HTTPRouter
 	Config       *gconfig.Config
-	Cookie       *gcookie.Cookies
+	Cookie       gcore.Cookies
 	Ctx          gcore.Ctx
-	View         *gview.View
+	View         gcore.View
 	Lang         string
 	Logger       gcore.Logger
 }
 
 //MethodCallPre called before controller method and Before() if have.
-func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps grouter.Params) {
+func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
 	// 1. init basic objects
-	ctxvalue := r.Context().Value(ctxvalue.CtxValueKey).(ctxvalue.CtxValue)
+	ctxvalue := r.Context().Value(gcore.CtxValueKey).(gcore.CtxValue)
 	this.Response = w
 	this.Request = r
 	this.Param = ps
@@ -198,7 +195,7 @@ func (this *Controller) SessionStart() (err error) {
 	if !isExists {
 		sess := gsession.NewSession()
 		sess.Touch()
-		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcookie.Options{
+		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcore.CookieOptions{
 			Path: "/",
 			MaxAge: this.Config.GetInt("session.ttl"),
 			HTTPOnly:true,

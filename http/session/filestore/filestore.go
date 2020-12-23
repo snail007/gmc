@@ -8,7 +8,6 @@ package gfilestore
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/gmc/log"
 	"github.com/snail007/gmc/util"
@@ -41,17 +40,17 @@ func NewConfig() FileStoreConfig {
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
-		Logger: log.NewGMCLog("[filestore]"),
+		Logger: glog.NewGMCLog("[filestore]"),
 	}
 }
 
 type FileStore struct {
-	gsession.Store
+	gcore.SessionStorage
 	cfg  FileStoreConfig
 	lock *sync.RWMutex
 }
 
-func New(config interface{}) (st gsession.Store, err error) {
+func New(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(FileStoreConfig)
 	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
 	if cfg.Dir==""{
@@ -83,7 +82,7 @@ func New(config interface{}) (st gsession.Store, err error) {
 	return
 }
 
-func (s *FileStore) Load(sessionID string) (sess *gsession.Session, isExists bool) {
+func (s *FileStore) Load(sessionID string) (sess gcore.Session, isExists bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	f := s.file(sessionID)
@@ -103,7 +102,7 @@ func (s *FileStore) Load(sessionID string) (sess *gsession.Session, isExists boo
 		s.cfg.Logger.Warnf("filestore unserialize error: %s", err)
 		return
 	}
-	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
+	if time.Now().Unix()-sess.TouchTime() > s.cfg.TTL {
 		sess = nil
 		os.Remove(s.file(sessionID))
 		return
@@ -111,7 +110,7 @@ func (s *FileStore) Load(sessionID string) (sess *gsession.Session, isExists boo
 	isExists = true
 	return
 }
-func (s *FileStore) Save(sess *gsession.Session) (err error) {
+func (s *FileStore) Save(sess gcore.Session) (err error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	str, err := sess.Serialize()
@@ -144,7 +143,7 @@ func (s *FileStore) file(sessionID string) string {
 	return path
 }
 func (s *FileStore) gc() {
-	defer gmc.Recover(func(e interface{}) {
+	defer gcore.Recover(func(e interface{}) {
 		fmt.Printf("filestore gc error: %s", gerr.Stack(e))
 	})
 	var files []string

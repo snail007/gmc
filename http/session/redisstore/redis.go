@@ -23,18 +23,18 @@ type RedisStoreConfig struct {
 func NewRedisStoreConfig() RedisStoreConfig {
 	return RedisStoreConfig{
 		TTL:      3600,
-		Logger:   log.NewGMCLog("[redisstore]"),
+		Logger:   glog.NewGMCLog("[redisstore]"),
 		RedisCfg: gredis.NewRedisCacheConfig(),
 	}
 }
 
 type RedisStore struct {
-	gsession.Store
+	gcore.SessionStorage
 	cfg   RedisStoreConfig
 	cache gcore.Cache
 }
 
-func New(config interface{}) (st gsession.Store, err error) {
+func New(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(RedisStoreConfig)
 	s := &RedisStore{
 		cfg:   cfg,
@@ -44,7 +44,7 @@ func New(config interface{}) (st gsession.Store, err error) {
 	return
 }
 
-func (s *RedisStore) Load(sessionID string) (sess *gsession.Session, isExists bool) {
+func (s *RedisStore) Load(sessionID string) (sess gcore.Session, isExists bool) {
 	v, e := s.cache.Get(sessionID)
 	if v == "" || e != nil {
 		return
@@ -56,7 +56,7 @@ func (s *RedisStore) Load(sessionID string) (sess *gsession.Session, isExists bo
 		s.cfg.Logger.Warnf("redisstore unserialize error: %s", err)
 		return
 	}
-	if time.Now().Unix()-sess.Touchtime() > s.cfg.TTL {
+	if time.Now().Unix()-sess.TouchTime() > s.cfg.TTL {
 		sess = nil
 		s.cache.Del(sessionID)
 		return
@@ -64,7 +64,7 @@ func (s *RedisStore) Load(sessionID string) (sess *gsession.Session, isExists bo
 	isExists = true
 	return
 }
-func (s *RedisStore) Save(sess *gsession.Session) (err error) {
+func (s *RedisStore) Save(sess gcore.Session) (err error) {
 	str, err := sess.Serialize()
 	if err != nil {
 		return

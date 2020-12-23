@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/snail007/gmc/core"
+	glog "github.com/snail007/gmc/gmc/log"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -29,19 +30,21 @@ func TestNew(t *testing.T) {
 	cfg := mockConfig()
 	s := New()
 	s.Init(cfg)
-	err := s.bind(":").Listen()
+	s.bind(":")
+	err := s.Listen()
 	assert.Nil(err)
 	addr := s.Listener().Addr().String()
 	s0 := New()
 	s0.Init(cfg)
-	err = s0.bind(addr).Listen()
+	s0.bind(addr)
+	err = s0.Listen()
 	assert.NotNil(err)
 }
 func TestRouting(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.AddMiddleware0(func(ctx gcore.Ctx, tpl *HTTPServer) (isStop bool) {
-		ctx.Response.Write([]byte("error"))
+	s.AddMiddleware0(func(ctx gcore.Ctx, tpl gcore.HTTPServer) (isStop bool) {
+		ctx.Response().Write([]byte("error"))
 		return true
 	})
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
@@ -56,8 +59,8 @@ func TestRouting(t *testing.T) {
 func TestRouting_1(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.AddMiddleware1(func(ctx gcore.Ctx, server *HTTPServer) (isStop bool) {
-		ctx.Response.Write([]byte("error"))
+	s.AddMiddleware1(func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool) {
+		ctx.Response().Write([]byte("error"))
 		return true
 	})
 	s.router.HandlerFunc("GET", "/routing", func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +81,7 @@ func Test_handle50x(t *testing.T) {
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := New()
 	s.Init(gconfig.NewConfig())
-	s.handle50x(grouter.NewCtx(w,objv.Request), fmt.Errorf("aaa"))
+	s.handle50x(grouter.NewCtx(w, objv.Request), fmt.Errorf("aaa"))
 
 	//response
 	resp := w.Result()
@@ -96,10 +99,10 @@ func Test_handle50x_1(t *testing.T) {
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := New()
 	s.Init(gconfig.NewConfig())
-	s.SetHandler50x(func(c gcore.Ctx,tpl *gtemplate.Template, err interface{}) {
+	s.SetHandler50x(func(c gcore.Ctx, tpl gcore.Template, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
-	c:=grouter.NewCtx(w,objv.Request)
+	c := grouter.NewCtx(w, objv.Request)
 	s.handle50x(c, fmt.Errorf("aaa"))
 
 	//response
@@ -146,7 +149,8 @@ func TestInit_0(t *testing.T) {
 	assert.Nil(err)
 	s := New()
 	s.Init(cfg)
-	err = s.bind(":").Listen()
+	s.bind(":")
+	err = s.Listen()
 	assert.Nil(err)
 }
 func TestInit_1(t *testing.T) {
@@ -158,7 +162,8 @@ func TestInit_1(t *testing.T) {
 	cfg.Set("session.store", "file")
 	s := New()
 	s.Init(cfg)
-	err = s.bind(":").Listen()
+	s.bind(":")
+	err = s.Listen()
 	assert.Nil(err)
 }
 func TestInit_2(t *testing.T) {
@@ -199,10 +204,11 @@ func TestHelper(t *testing.T) {
 	assert := assert.New(t)
 	s := New()
 	s.Init(gconfig.NewConfig())
-	err := s.bind(":").Listen()
+	s.bind(":")
+	err := s.Listen()
 	assert.Nil(err)
 	assert.NotNil(s.Server().Addr)
-	s.SetLogger(php.New(""))
+	s.SetLogger(glog.NewGMCLog())
 	assert.NotNil(s.logger)
 	r := grouter.NewHTTPRouter()
 	s.SetRouter(r)
@@ -329,8 +335,8 @@ func TestListen_2(t *testing.T) {
 func Test_handler40x(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.SetHandler40x(func(ctx gcore.Ctx, tpl *gtemplate.Template) {
-		ctx.Response.Write([]byte("404"))
+	s.SetHandler40x(func(ctx gcore.Ctx, tpl gcore.Template) {
+		ctx.Response().Write([]byte("404"))
 	})
 	w, r := mockRequest("/foo")
 	s.handle40x(grouter.NewCtx(w, r, nil))
@@ -355,8 +361,8 @@ func (this *User) Ps() {
 func Test_Handle(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.router.HandleAny("/user/url", func(w http.ResponseWriter, r *http.Request, params grouter.Params) {
-		c:=grouter.NewCtx(w,r)
+	s.router.HandleAny("/user/url", func(w http.ResponseWriter, r *http.Request, params gcore.Params) {
+		c := grouter.NewCtx(w, r)
 		c.Write("/user/url")
 	})
 	h, _, _ := s.router.Lookup("GET", "/user/url")
@@ -370,11 +376,11 @@ func Test_Handle(t *testing.T) {
 func Test_Handle500(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.router.HandlerFunc("GET","/user/url", func(w http.ResponseWriter, r *http.Request) {
-		a:=0
-		a/=a
+	s.router.HandlerFunc("GET", "/user/url", func(w http.ResponseWriter, r *http.Request) {
+		a := 0
+		a /= a
 	})
-	s.SetHandler50x(func(ctx gcore.Ctx, tpl *gtemplate.Template, err interface{}) {
+	s.SetHandler50x(func(ctx gcore.Ctx, tpl gcore.Template, err interface{}) {
 		ctx.Write("500")
 	})
 	h, _, _ := s.router.Lookup("GET", "/user/url")
@@ -515,7 +521,7 @@ func mockConfig() *gconfig.Config {
 	cfg := gconfig.NewConfig()
 	cfg.SetConfigFile("../../app/app.toml")
 	cfg.ReadInConfig()
-	cfg.Set("template.dir","")
+	cfg.Set("template.dir", "")
 	return cfg
 }
 func mockController(obj interface{}, s *HTTPServer, w http.ResponseWriter, r *http.Request) interface{} {
@@ -550,7 +556,7 @@ func mockHTTPServer(cfg ...*gconfig.Config) *HTTPServer {
 	s.Init(c)
 	s.bind(":")
 	s.SetRouter(grouter.NewHTTPRouter())
-	s.SetLogger(php.New(""))
+	s.SetLogger(glog.NewGMCLog())
 	st, _ := gmemorystore.New(gmemorystore.NewConfig())
 	s.SetSessionStore(st)
 	tpl, _ := gtemplate.New("../template/tests/views")

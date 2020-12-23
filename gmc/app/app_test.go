@@ -15,22 +15,22 @@ import (
 
 func Test_parseConfigFile(t *testing.T) {
 	assert := assert.New(t)
-	app := New()
+	app := New().(*GMCApp)
 	assert.Nil(app.parseConfigFile())
 }
 func TestRun(t *testing.T) {
 	assert := assert.New(t)
-	app := New().
-		Block(false).
-		SetConfigFile("app.toml")
-	app.AddService(ServiceItem{
-			Service: httpserver.New(),
-			BeforeInit: func(srv gcore.Service, cfg *gconfig.Config) (err error) {
-				cfg.Set("template.dir","../http/template/tests/views")
-				cfg.Set("httpserver.listen", ":")
-				return
-			},
-		})
+	app := New()
+	app.SetBlock(false)
+	app.SetConfigFile("app.toml")
+	app.AddService(gcore.ServiceItem{
+		Service: httpserver.New(),
+		BeforeInit: func(srv gcore.Service, cfg *gconfig.Config) (err error) {
+			cfg.Set("template.dir", "../../http/template/tests/views")
+			cfg.Set("httpserver.listen", ":")
+			return
+		},
+	})
 	err := app.Run()
 	assert.Nil(err)
 	app.OnShutdown(func() {})
@@ -40,13 +40,14 @@ func TestRun(t *testing.T) {
 
 func TestRun_1(t *testing.T) {
 	assert := assert.New(t)
-	app := New().Block(false)
+	app := New()
+	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.AttachConfigFile("007", "app.toml")
-	app.AddService(ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: httpserver.New(),
 	})
-	app.AddService(ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service:  httpserver.New(),
 		ConfigID: "007",
 	})
@@ -56,12 +57,13 @@ func TestRun_1(t *testing.T) {
 }
 func TestRun_2(t *testing.T) {
 	assert := assert.New(t)
-	app := New().Block(false)
+	app := New()
+	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	server := httpserver.New()
-	app.AddService(ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: server,
-		BeforeInit: func(srv gcore.Service,config *gconfig.Config) (err error) {
+		BeforeInit: func(srv gcore.Service, config *gconfig.Config) (err error) {
 			config.Set("session.store", "none")
 			return
 		},
@@ -73,11 +75,12 @@ func TestRun_2(t *testing.T) {
 
 func TestRun_3(t *testing.T) {
 	assert := assert.New(t)
-	app := New().Block(false)
+	app := New()
+	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
-	app.AddService(ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: httpserver.New(),
-		AfterInit: func(srv *ServiceItem) (err error) {
+		AfterInit: func(srv *gcore.ServiceItem) (err error) {
 			err = fmt.Errorf("error")
 			return
 		},
@@ -89,7 +92,8 @@ func TestRun_3(t *testing.T) {
 
 func TestSetConfig(t *testing.T) {
 	// assert := assert.New(t)
-	app := New().Block(false)
+	app := New().(*GMCApp)
+	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.parseConfigFile()
 	app.parseConfigFile()
@@ -98,13 +102,15 @@ func TestSetConfig(t *testing.T) {
 }
 func TestSetConfig_2(t *testing.T) {
 	// assert := assert.New(t)
-	app := New().Block(false)
+	app := New().(*GMCApp)
+	app.SetBlock(false)
 	app.SetConfigFile("none.toml")
 	app.parseConfigFile()
 }
 func TestSetExtraConfig(t *testing.T) {
 	assert := assert.New(t)
-	app := New().Block(false)
+	app := New().(*GMCApp)
+	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.AttachConfigFile("extra01", "extra.toml")
 	err := app.parseConfigFile()
@@ -114,7 +120,8 @@ func TestSetExtraConfig(t *testing.T) {
 }
 func TestSetExtraConfig_1(t *testing.T) {
 	assert := assert.New(t)
-	app := New().Block(false)
+	app := New().(*GMCApp)
+	app.SetBlock(false)
 	app.AttachConfigFile("001", "none.toml")
 	err := app.parseConfigFile()
 	assert.NotNil(err)
@@ -122,7 +129,7 @@ func TestSetExtraConfig_1(t *testing.T) {
 func TestBeforeRun(t *testing.T) {
 	assert := assert.New(t)
 	//run gmc app
-	app := New()
+	app := New().(*GMCApp)
 	assert.Nil(app.parseConfigFile())
 	app.OnRun(func(*gconfig.Config) error {
 		return fmt.Errorf("stop")
@@ -132,7 +139,8 @@ func TestBeforeRun(t *testing.T) {
 }
 func TestBeforeRun_1(t *testing.T) {
 	// assert := assert.New(t)
-	app := New().Block(false)
+	app := New()
+	app.SetBlock(false)
 	app.OnRun(func(*gconfig.Config) (err error) {
 		a := 0
 		_ = a / a
@@ -142,7 +150,8 @@ func TestBeforeRun_1(t *testing.T) {
 }
 func TestBeforeRun_2(t *testing.T) {
 	// assert := assert.New(t)
-	app := New().Block(false)
+	app := New()
+	app.SetBlock(false)
 	app.OnRun(func(*gconfig.Config) (err error) {
 		return fmt.Errorf(".")
 	})
@@ -151,7 +160,8 @@ func TestBeforeRun_2(t *testing.T) {
 func TestBeforeShutdown(t *testing.T) {
 	assert := assert.New(t)
 	//run gmc app
-	app := New().Block(false)
+	app := New().(*GMCApp)
+	app.SetBlock(false)
 	assert.Nil(app.parseConfigFile())
 	app.OnShutdown(func() {
 		a := 0

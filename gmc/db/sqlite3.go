@@ -147,18 +147,18 @@ func (db *SQLite3DB) Stats() sql.DBStats {
 func (db *SQLite3DB) Begin() (tx *sql.Tx, err error) {
 	return db.ConnPool.Begin()
 }
-func (db *SQLite3DB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
+func (db *SQLite3DB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs gcore.ResultSet, err error) {
 	ar := ar0.(*SQLite3ActiveRecord)
 	return db.execSQLTx(ar.SQL(), len(ar.arInsertBatch), tx, ar.values...)
 }
-func (db *SQLite3DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+func (db *SQLite3DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	return db.execSQLTx(sqlStr, 0, tx, values...)
 }
-func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs *ResultSet, err error) {
+func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var stmt *sql.Stmt
 	var result sql.Result
-	rs = new(ResultSet)
+
 	stmt, err = tx.Prepare(sqlStr)
 	if err != nil {
 		return
@@ -168,32 +168,34 @@ func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, 
 	if err != nil {
 		return
 	}
-	rs.rowsAffected, err = result.RowsAffected()
-	rs.lastInsertId, err = result.LastInsertId()
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = sqlStr
+	rsRaw := new(ResultSet)
+	rsRaw.rowsAffected, err = result.RowsAffected()
+	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = sqlStr
 	if err != nil {
 		return
 	}
 	l := int64(arInsertBatchCnt)
 	if l > 1 {
-		rs.lastInsertId = rs.lastInsertId - +1
-		rs.rowsAffected = l
+		rsRaw.lastInsertId = rsRaw.lastInsertId - +1
+		rsRaw.rowsAffected = l
 	}
+	rs = rsRaw
 	return
 }
-func (db *SQLite3DB) Exec(ar0 gcore.ActiveRecord) (rs *ResultSet, err error) {
+func (db *SQLite3DB) Exec(ar0 gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 	ar := ar0.(*SQLite3ActiveRecord)
 	return db.execSQL(ar.SQL(), len(ar.arInsertBatch), ar.values...)
 }
-func (db *SQLite3DB) ExecSQL(sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+func (db *SQLite3DB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	return db.execSQL(sqlStr, 0, values...)
 }
-func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}) (rs *ResultSet, err error) {
+func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var stmt *sql.Stmt
 	var result sql.Result
-	rs = new(ResultSet)
+
 	stmt, err = db.ConnPool.Prepare(sqlStr)
 	if err != nil {
 		return
@@ -203,21 +205,20 @@ func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...inte
 	if err != nil {
 		return
 	}
-	rs.rowsAffected, err = result.RowsAffected()
-	rs.lastInsertId, err = result.LastInsertId()
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = sqlStr
-	if err != nil {
-		return
-	}
+	rsRaw := new(ResultSet)
+	rsRaw.rowsAffected, err = result.RowsAffected()
+	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = sqlStr
 	l := int64(arInsertBatchCnt)
 	if l > 1 {
-		rs.lastInsertId = rs.lastInsertId - +1
-		rs.rowsAffected = l
+		rsRaw.lastInsertId = rsRaw.lastInsertId - +1
+		rsRaw.rowsAffected = l
 	}
+	rs = rsRaw
 	return
 }
-func (db *SQLite3DB) QuerySQL(sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+func (db *SQLite3DB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
@@ -265,12 +266,13 @@ func (db *SQLite3DB) QuerySQL(sqlStr string, values ...interface{}) (rs *ResultS
 		}
 		results = append(results, row)
 	}
-	rs = NewResultSet(&results)
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = sqlStr
+	rsRaw := NewResultSet(&results)
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = sqlStr
+	rs = rsRaw
 	return
 }
-func (db *SQLite3DB) Query(ar0 gcore.ActiveRecord) (rs *ResultSet, err error) {
+func (db *SQLite3DB) Query(ar0 gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 	ar := ar0.(*SQLite3ActiveRecord)
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
@@ -346,9 +348,10 @@ func (db *SQLite3DB) Query(ar0 gcore.ActiveRecord) (rs *ResultSet, err error) {
 			}
 		}
 	}
-	rs = NewResultSet(&results)
-	rs.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
-	rs.sql = ar.SQL()
+	rsRaw := NewResultSet(&results)
+	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.sql = ar.SQL()
+	rs = rsRaw
 	return
 }
 

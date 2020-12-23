@@ -7,7 +7,7 @@ package ghook
 
 import (
 	"fmt"
-	"github.com/snail007/gmc"
+	"github.com/snail007/gmc/core"
 	gerr "github.com/snail007/gmc/gmc/error"
 	"log"
 	"os"
@@ -24,7 +24,7 @@ func RegistShutdown(fn func()) {
 	shutdown = append(shutdown, fn)
 }
 func WaitShutdown() {
-	defer gmc.Recover(func(e interface{}) {
+	defer gcore.Recover(func(e interface{}) {
 		fmt.Printf("shutdown hook manager crashed, err: %s", gerr.Stack(e))
 	})
 	signalChan := make(chan os.Signal, 1)
@@ -47,7 +47,7 @@ func MockShutdown() {
 }
 func runHooks() {
 	caller := func(fn func()) {
-		defer gmc.Recover(func(e interface{}) {
+		defer gcore.Recover(func(e interface{}) {
 			fmt.Printf("shutdown hook crashed, err: %s", gerr.Stack(e))
 		})
 		fn()

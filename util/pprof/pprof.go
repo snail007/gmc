@@ -1,13 +1,13 @@
 package httppprof
 
 import (
-	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 )
 
-func BindRouter(r *gmc.Router, prefix string) {
+func BindRouter(r gcore.HTTPRouter, prefix string) {
 	if prefix == "" {
 		prefix = "/debug/pprof/"
 	}

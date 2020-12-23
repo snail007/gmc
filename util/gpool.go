@@ -7,7 +7,6 @@ package gutil
 
 import (
 	"context"
-	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	gerr "github.com/snail007/gmc/gmc/error"
 	"github.com/snail007/gmc/gmc/log"
@@ -39,7 +38,7 @@ func NewGPool(workerCount int) (p *GPool) {
 		runningtCnt: &cnt,
 		workerCnt:   workerCount,
 		workerSig:   []chan bool{},
-		logger:      log.NewGMCLog(),
+		logger:      glog.NewGMCLog(),
 	}
 	for i := 0; i < p.workerCnt; i++ {
 		p.workerSig = append(p.workerSig, make(chan bool, 1))
@@ -51,13 +50,13 @@ func NewGPool(workerCount int) (p *GPool) {
 //initialize workers to run tasks, a work is a goroutine
 func (s *GPool) init() {
 	go func() {
-		defer gmc.Recover(func(e interface{}) {
+		defer gcore.Recover(func(e interface{}) {
 			s.log("GPool stopped unexpectedly, err: %s", gerr.Stack(e))
 		})
 		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
 			go func(i int, sig chan bool) {
-				defer gmc.Recover(func(e interface{}) {
+				defer gcore.Recover(func(e interface{}) {
 					s.log("GPool: a worker stopped unexpectedly, err: %s", gerr.Stack(e))
 				})
 				//s.log("GPool: worker[%d] started ...", i)
@@ -92,7 +91,7 @@ func (s *GPool) init() {
 
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gmc.Recover(func(e interface{}) {
+	defer gcore.Recover(func(e interface{}) {
 		s.log("GPool: a task stopped unexpectedly, err: %s", gerr.Stack(e))
 	})
 	fn()

@@ -1,7 +1,6 @@
 package gi18n
 
 import (
-	gcore "github.com/snail007/gmc/core"
 	"strings"
 )
 
@@ -26,7 +25,7 @@ func (this *I18nTool) Tr(key string, defaultMessage ...string) string {
 }
 
 type I18n struct {
-	langs       map[string]map[string]string
+	langs        map[string]map[string]string
 	fallbackLang string
 }
 
@@ -36,14 +35,12 @@ func New() *I18n {
 	}
 }
 
-func (this *I18n) Add(lang string, data map[string]string) gcore.I18n {
+func (this *I18n) Add(lang string, data map[string]string) {
 	this.langs[strings.ToLower(lang)] = data
-	return this
 }
 
-func (this *I18n) Lang(lang string) gcore.I18n  {
+func (this *I18n) Lang(lang string) {
 	this.fallbackLang = strings.ToLower(lang)
-	return this
 }
 
 func (this *I18n) Tr(lang, key string, defaultMessage ...string) string {
@@ -65,7 +62,7 @@ func (this *I18n) Tr(lang, key string, defaultMessage ...string) string {
 }
 
 func (this *I18n) TrLangs(langs []string, key string, defaultMessage ...string) string {
-	langs=append(langs,this.fallbackLang)
+	langs = append(langs, this.fallbackLang)
 	msg := key
 	if len(defaultMessage) > 0 {
 		msg = defaultMessage[0]

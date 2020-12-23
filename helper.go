@@ -1,7 +1,6 @@
 package gmc
 
 import (
-	"fmt"
 	gconfig "github.com/snail007/gmc/config"
 	"github.com/snail007/gmc/core"
 	gapp "github.com/snail007/gmc/gmc/app"
@@ -43,7 +42,7 @@ func (s *New0) ConfigFile(file string) (cfg *gconfig.Config, err error) {
 }
 
 // App creates an new object of gmc.APP
-func (s *New0) App() *APP {
+func (s *New0) App() gcore.GMCApp {
 	return gapp.New()
 }
 
@@ -68,7 +67,7 @@ func (s *New0) Tr(lang string) *gi18n.I18nTool {
 
 // AppDefault creates a new object of APP and search config file locations:
 // ./app.toml or ./conf/app.toml or ./config/app.toml
-func (s *New0) AppDefault() *APP {
+func (s *New0) AppDefault() gcore.GMCApp {
 	return gapp.Default()
 }
 
@@ -121,7 +120,7 @@ func (s *DB0) Init(cfg *gconfig.Config) error {
 // InitFromFile initialize the db group objects from a foo.toml config file.
 // foo.toml must be contains section [database].
 func (s *DB0) InitFromFile(cfgFile string) error {
-	return gmcdb.InitFromFile(cfgFile)
+	return gdb.InitFromFile(cfgFile)
 }
 
 // SQLite3DB acquires the default db group object, you must be call Init firstly.
@@ -194,28 +193,3 @@ func (s *I18n0) Tr(lang, key string, defaultMessage ...string) string {
 	return gi18n.Tr(lang, key, defaultMessage...)
 }
 
-func Recover(f ...interface{}) {
-	var f0 interface{}
-	var printStack bool
-	if len(f) == 0 {
-		return
-	}
-	if len(f) == 2 {
-		printStack = f[1].(bool)
-	}
-	if e := recover(); e != nil {
-		f0 = f[0]
-		switch v := f0.(type) {
-		case func(e interface{}):
-			v(e)
-		case string:
-			s := ""
-			if printStack {
-				s = fmt.Sprintf(",stack: %s", gerr.Wrap(e).ErrorStack())
-			}
-			fmt.Printf("\nrecover error, %s%s\n", f, s)
-		default:
-			fmt.Printf("\nrecover error %s\n", gerr.Wrap(e).ErrorStack())
-		}
-	}
-}

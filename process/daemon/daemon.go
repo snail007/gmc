@@ -8,7 +8,7 @@ package gdaemon
 import (
 	"bufio"
 	"fmt"
-	"github.com/snail007/gmc"
+	"github.com/snail007/gmc/core"
 	logger "log"
 	"os"
 	"os/exec"
@@ -111,7 +111,7 @@ func Start() (err error) {
 	}
 	if isForever || flog != "" {
 		go func() {
-			defer gmc.Recover(func(e interface{}) {
+			defer gcore.Recover(func(e interface{}) {
 				fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
 			})
 			for {
@@ -137,7 +137,7 @@ func Start() (err error) {
 				scanner := bufio.NewScanner(cmdReader)
 				scannerStdErr := bufio.NewScanner(cmdReaderStderr)
 				go func() {
-					defer gmc.Recover(func(e interface{}) {
+					defer gcore.Recover(func(e interface{}) {
 						fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
 					})
 					for scanner.Scan() {
@@ -145,7 +145,7 @@ func Start() (err error) {
 					}
 				}()
 				go func() {
-					defer gmc.Recover(func(e interface{}) {
+					defer gcore.Recover(func(e interface{}) {
 						fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
 					})
 					for scannerStdErr.Scan() {

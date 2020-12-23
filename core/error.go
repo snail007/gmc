@@ -1,6 +1,10 @@
 package gcore
 
-import "runtime"
+import (
+	"fmt"
+	"github.com/snail007/gmc/gmc/error"
+	"runtime"
+)
 
 type StackFrame interface {
 	// The path to the file containing this ProgramCounter
@@ -30,4 +34,30 @@ type Error interface {
 	ErrorStack() string
 	StackFrames() []StackFrame
 	TypeName() string
+}
+
+func Recover(f ...interface{}) {
+	var f0 interface{}
+	var printStack bool
+	if len(f) == 0 {
+		return
+	}
+	if len(f) == 2 {
+		printStack = f[1].(bool)
+	}
+	if e := recover(); e != nil {
+		f0 = f[0]
+		switch v := f0.(type) {
+		case func(e interface{}):
+			v(e)
+		case string:
+			s := ""
+			if printStack {
+				s = fmt.Sprintf(",stack: %s", gerr.Wrap(e).ErrorStack())
+			}
+			fmt.Printf("\nrecover error, %s%s\n", f, s)
+		default:
+			fmt.Printf("\nrecover error %s\n", gerr.Wrap(e).ErrorStack())
+		}
+	}
 }

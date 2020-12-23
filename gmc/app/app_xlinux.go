@@ -4,6 +4,7 @@ package gapp
 
 import (
 	"encoding/json"
+	gcore "github.com/snail007/gmc/core"
 	"net"
 	"os"
 	"os/exec"
@@ -65,7 +66,7 @@ func (s *GMCApp) reload() {
 	g := sync.WaitGroup{}
 	g.Add(len(s.services))
 	for _, srvI := range s.services {
-		go func(s ServiceItem) {
+		go func(s gcore.ServiceItem) {
 			defer g.Add(-1)
 			s.Service.GracefulStop()
 		}(srvI)

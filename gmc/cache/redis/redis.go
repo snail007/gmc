@@ -31,7 +31,7 @@ func NewRedisCacheConfig() *RedisCacheConfig {
 	return &RedisCacheConfig{
 		Debug:           false,
 		Prefix:          "",
-		Logger:          log.NewGMCLog(),
+		Logger:          glog.NewGMCLog(),
 		Addr:            "127.0.0.1:6379",
 		Password:        "",
 		DBNum:           0,

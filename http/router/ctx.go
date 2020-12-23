@@ -52,7 +52,7 @@ func NewCtx(w http.ResponseWriter, r *http.Request, ps ...gcore.Params) *Ctx {
 	if len(ps) > 0 {
 		ps0 = ps[0]
 	} else {
-		ps0 = Params{}
+		ps0 = gcore.Params{}
 	}
 	return &Ctx{
 		response: w,
@@ -61,9 +61,9 @@ func NewCtx(w http.ResponseWriter, r *http.Request, ps ...gcore.Params) *Ctx {
 	}
 }
 
-func (this *Ctx) SetParam(param gcore.Params) *Ctx {
-	this.SetParam(param)
-	return this
+func (this *Ctx) SetParam(param gcore.Params) {
+	this.param = param
+	return
 }
 
 // acquires the method cost time, only for middleware2 and middleware3.
@@ -72,9 +72,8 @@ func (this *Ctx) TimeUsed() time.Duration {
 }
 
 // sets the method cost time, only for middleware2 and middleware3, do not call this.
-func (this *Ctx) SetTimeUsed(t time.Duration) *Ctx {
+func (this *Ctx) SetTimeUsed(t time.Duration) {
 	this.timeUsed = t
-	return this
 }
 
 // Write output data to response
@@ -170,7 +169,7 @@ func (this *Ctx) ClientIP() (ip string) {
 }
 
 // NewPager create a new paginator used for template
-func (this *Ctx) NewPager(perPage int, total int64) *gutil.Paginator {
+func (this *Ctx) NewPager(perPage int, total int64) gcore.Paginator {
 	return gutil.NewPaginator(this.Request(), perPage, total, "page")
 }
 

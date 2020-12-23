@@ -8,7 +8,7 @@ package grouter
 import (
 	"bytes"
 	"fmt"
-	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	gerr "github.com/snail007/gmc/gmc/error"
 	"io"
 	"net/http"
@@ -69,7 +69,7 @@ func NewHTTPRouter() *HTTPRouter {
 }
 
 //Group create a group in namespace ns
-func (s *HTTPRouter) Group(ns string) *HTTPRouter {
+func (s *HTTPRouter) Group(ns string) gcore.HTTPRouter {
 	if !strings.HasSuffix(ns, "/") {
 		ns += "/"
 	}
@@ -88,9 +88,8 @@ func (s *HTTPRouter) Namespace() string {
 }
 
 // Ext sets Controller()'s default ext
-func (this *HTTPRouter) Ext(ext string) *HTTPRouter {
+func (this *HTTPRouter) Ext(ext string) {
 	this.ext = ext
-	return this
 }
 
 // Controller binds a controller's methods to router
@@ -197,7 +196,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			path = p + strings.ToLower(objMethod) + ext1
 		}
 		objMethod0 := objMethod
-		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps Params) {
+		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
 			obj0 := reflect.ValueOf(obj)
 			var val reflect.Value
 			if obj0.Kind() == reflect.Ptr {
@@ -227,7 +226,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 
 func (s *HTTPRouter) call(fn func()) {
 	func() {
-		defer gmc.Recover(func(e interface{}) {
+		defer gcore.Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
 				return
 			}
@@ -251,14 +250,14 @@ func (s *HTTPRouter) path(path string) string {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (s *HTTPRouter) Handle(method, path string, handle Handle) {
+func (s *HTTPRouter) Handle(method, path string, handle gcore.Handle) {
 	p := s.path(path)
 	s.Router.Handle(method, p, handle)
 }
 
 // HandleAny registers a new request handle with the given path and all http methods,
 // GET, POST, PUT, PATCH, DELETE and OPTIONS
-func (s *HTTPRouter) HandleAny(path string, handle Handle) {
+func (s *HTTPRouter) HandleAny(path string, handle gcore.Handle) {
 	for _, method := range anyMethods {
 		s.Handle(method, path, handle)
 	}

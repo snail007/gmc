@@ -7,9 +7,13 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	log2 "github.com/snail007/gmc/gmc/log"
+	grouter "github.com/snail007/gmc/http/router"
+	gfilestore "github.com/snail007/gmc/http/session/filestore"
+	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
+	gredisstore "github.com/snail007/gmc/http/session/redisstore"
+	gtemplate "github.com/snail007/gmc/http/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,14 +28,7 @@ import (
 
 	gconfig "github.com/snail007/gmc/config"
 	gerr "github.com/snail007/gmc/gmc/error"
-	gsession "github.com/snail007/gmc/http/session"
-	gfilestore "github.com/snail007/gmc/http/session/filestore"
-	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
-	gredisstore "github.com/snail007/gmc/http/session/redisstore"
-	gtemplate "github.com/snail007/gmc/http/template"
 
-	grouter "github.com/snail007/gmc/http/router"
-	"github.com/snail007/gmc/http/server/ctxvalue"
 	ghttputil "github.com/snail007/gmc/util/http"
 )
 
@@ -51,35 +48,35 @@ func SetBinData(data map[string]string) {
 }
 
 type HTTPServer struct {
-	tpl          *gtemplate.Template
-	sessionStore gsession.Store
-	router       *grouter.HTTPRouter
+	tpl          gcore.Template
+	sessionStore gcore.SessionStorage
+	router       gcore.HTTPRouter
 	logger       gcore.Logger
 	addr         string
 	listener     net.Listener
 	server       *http.Server
 	connCnt      *int64
 	config       *gconfig.Config
-	handler40x   func(ctx gcore.Ctx, tpl *gtemplate.Template)
-	handler50x   func(ctx gcore.Ctx, tpl *gtemplate.Template, err interface{})
+	handler40x   func(ctx gcore.Ctx, tpl gcore.Template)
+	handler50x   func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
-	middleware0          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
-	middleware1          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
-	middleware2          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
-	middleware3          []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)
+	middleware0          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
+	middleware1          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
+	middleware2          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
+	middleware3          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
 	isShutdown           bool
 	localaddr            *sync.Map
 }
 
 func New() *HTTPServer {
 	return &HTTPServer{
-		middleware0: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
-		middleware1: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
-		middleware2: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
-		middleware3: []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool){},
+		middleware0: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware1: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware2: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware3: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
 		localaddr:   &sync.Map{},
 	}
 }
@@ -133,7 +130,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 
 func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rctx := r.Context()
-	rctx = context.WithValue(rctx, ctxvalue.CtxValueKey, ctxvalue.CtxValue{
+	rctx = context.WithValue(rctx, gcore.CtxValueKey, gcore.CtxValue{
 		Tpl:          s.tpl,
 		SessionStore: s.sessionStore,
 		Router:       s.router,
@@ -146,7 +143,9 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// init ctx
 	c0 := grouter.NewCtx(w, r)
 	addr, _ := s.localaddr.Load(r.RemoteAddr)
-	c0.LocalAddr, _ = addr.(string)
+	if v,ok:=addr.(string);ok {
+		c0.SetLocalAddr(v)
+	}
 
 	defer func() {
 		// middleware3
@@ -192,27 +191,25 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (s *HTTPServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gmc.Recover(func(e interface{}) {
+		defer gcore.Recover(func(e interface{}) {
 			err = gerr.Wrap(e)
 		})
 		fn()
 	}()
 	return
 }
-func (s *HTTPServer) SetHandler40x(fn func(ctx gcore.Ctx, tpl *gtemplate.Template)) *HTTPServer {
+func (s *HTTPServer) SetHandler40x(fn func(ctx gcore.Ctx, tpl gcore.Template)) {
 	s.handler40x = fn
-	return s
 }
-func (s *HTTPServer) SetHandler50x(fn func(ctx gcore.Ctx, tpl *gtemplate.Template, err interface{})) *HTTPServer {
+func (s *HTTPServer) SetHandler50x(fn func(ctx gcore.Ctx, tpl gcore.Template, err interface{})) {
 	s.handler50x = fn
-	return s
 }
 
 // called in httpserver
 func (s *HTTPServer) handle40x(ctx gcore.Ctx) {
 	if s.handler40x == nil {
-		ctx.Response.WriteHeader(http.StatusNotFound)
-		ctx.Response.Write([]byte("Page not found"))
+		ctx.Response().WriteHeader(http.StatusNotFound)
+		ctx.Response().Write([]byte("Page not found"))
 	} else {
 		s.handler40x(ctx, s.tpl)
 	}
@@ -223,7 +220,7 @@ func (s *HTTPServer) handle40x(ctx gcore.Ctx) {
 func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
 	if s.handler50x == nil {
 		c.WriteHeader(http.StatusInternalServerError)
-		c.Response.Header().Set("Content-Type", "text/plain")
+		c.Response().Header().Set("Content-Type", "text/plain")
 		c.Write([]byte("Internal Server Error"))
 		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
 			c.Write([]byte("\n" + gerr.Stack(err)))
@@ -234,14 +231,12 @@ func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
 }
 
 // AddFuncMap adds helper functions to template
-func (s *HTTPServer) AddFuncMap(f map[string]interface{}) *HTTPServer {
+func (s *HTTPServer) AddFuncMap(f map[string]interface{}) {
 	s.tpl.Funcs(f)
-	return s
 }
 
-func (s *HTTPServer) SetConfig(c *gconfig.Config) *HTTPServer {
+func (s *HTTPServer) SetConfig(c *gconfig.Config) {
 	s.config = c
-	return s
 }
 func (s *HTTPServer) Config() *gconfig.Config {
 	return s.config
@@ -250,9 +245,8 @@ func (s *HTTPServer) Config() *gconfig.Config {
 func (s *HTTPServer) ActiveConnCount() int64 {
 	return atomic.LoadInt64(s.connCnt)
 }
-func (s *HTTPServer) Close() *HTTPServer {
+func (s *HTTPServer) Close() {
 	s.server.Close()
-	return s
 }
 func (s *HTTPServer) Listener() net.Listener {
 	return s.listener
@@ -270,7 +264,7 @@ func (s *HTTPServer) InjectListeners(l []net.Listener) {
 func (s *HTTPServer) Server() *http.Server {
 	return s.server
 }
-func (s *HTTPServer) SetLogger(l gcore.Logger) *HTTPServer {
+func (s *HTTPServer) SetLogger(l gcore.Logger) {
 	s.logger = l
 	s.server.ErrorLog = func() *log.Logger {
 		ns := s.logger.Namespace()
@@ -280,53 +274,44 @@ func (s *HTTPServer) SetLogger(l gcore.Logger) *HTTPServer {
 		l := log.New(s.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
-	return s
 }
 func (s *HTTPServer) Logger() gcore.Logger {
 	return s.logger
 }
-func (s *HTTPServer) SetRouter(r *grouter.HTTPRouter) *HTTPServer {
+func (s *HTTPServer) SetRouter(r gcore.HTTPRouter) {
 	s.router = r
-	return s
 }
-func (s *HTTPServer) Router() *grouter.HTTPRouter {
+func (s *HTTPServer) Router() gcore.HTTPRouter {
 	return s.router
 }
-func (s *HTTPServer) SetTpl(t *gtemplate.Template) *HTTPServer {
+func (s *HTTPServer) SetTpl(t gcore.Template) {
 	s.tpl = t
-	return s
 }
-func (s *HTTPServer) Tpl() *gtemplate.Template {
+func (s *HTTPServer) Tpl() gcore.Template {
 	return s.tpl
 }
-func (s *HTTPServer) SetSessionStore(st gsession.Store) *HTTPServer {
+func (s *HTTPServer) SetSessionStore(st gcore.SessionStorage) {
 	s.sessionStore = st
-	return s
 }
-func (s *HTTPServer) SessionStore() gsession.Store {
+func (s *HTTPServer) SessionStore() gcore.SessionStorage {
 	return s.sessionStore
 }
-func (s *HTTPServer) AddMiddleware0(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware0(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
 	s.middleware0 = append(s.middleware0, m)
-	return s
 }
-func (s *HTTPServer) AddMiddleware1(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware1(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
 	s.middleware1 = append(s.middleware1, m)
-	return s
 }
-func (s *HTTPServer) AddMiddleware2(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware2(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
 	s.middleware2 = append(s.middleware2, m)
-	return s
 }
-func (s *HTTPServer) AddMiddleware3(m func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) *HTTPServer {
+func (s *HTTPServer) AddMiddleware3(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
 	s.middleware3 = append(s.middleware3, m)
-	return s
 }
 
 //just for testing
-func (s *HTTPServer) bind(addr string) *HTTPServer {
+func (s *HTTPServer) bind(addr string) {
 	s.addr = addr
-	return s
 }
 func (s *HTTPServer) createListener() (err error) {
 	if s.listener == nil {
@@ -484,7 +469,7 @@ func (s *HTTPServer) initSessionStore() (err error) {
 
 func (s *HTTPServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	pathA := strings.Split(r.URL.Path, "?")
-	path := grouter.CleanPath(pathA[0])
+	path := filepath.Clean(pathA[0])
 	path = strings.TrimPrefix(path, s.staticUrlpath)
 	var b []byte
 	var ok bool
@@ -570,10 +555,10 @@ func (s *HTTPServer) SetLog(l gcore.Logger) {
 	s.logger = l
 	return
 }
-func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)) (isStop bool) {
+func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gmc.Recover(func(e interface{}) {
+			defer gcore.Recover(func(e interface{}) {
 				s.logger.Warnf("middleware panic error : %s", gerr.Stack(e))
 				isStop = false
 			})

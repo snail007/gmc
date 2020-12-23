@@ -60,8 +60,8 @@ func (s *Model) ExecSQL(sql string, values ...interface{}) (lastInsertID, rowsAf
 	if err != nil {
 		return 0, 0, err
 	}
-	rowsAffected = rs.RowsAffected
-	lastInsertID = rs.LastInsertId
+	rowsAffected = rs.RowsAffected()
+	lastInsertID = rs.LastInsertId()
 	return
 }
 
@@ -147,7 +147,7 @@ func (s *Model) DeleteBy(where map[string]interface{}) (cnt int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	cnt = rs.RowsAffected
+	cnt = rs.RowsAffected()
 	return
 }
 
@@ -159,7 +159,7 @@ func (s *Model) DeleteByIDs(ids []string) (cnt int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	cnt = rs.RowsAffected
+	cnt = rs.RowsAffected()
 	return
 }
 
@@ -169,7 +169,7 @@ func (s *Model) Insert(data map[string]interface{}) (lastInsertID int64, err err
 	if err != nil {
 		return 0, err
 	}
-	lastInsertID = rs.LastInsertId
+	lastInsertID = rs.LastInsertId()
 	return
 }
 
@@ -179,8 +179,8 @@ func (s *Model) InsertBatch(data []map[string]interface{}) (cnt, lastInsertID in
 	if err != nil {
 		return 0, 0, err
 	}
-	lastInsertID = rs.LastInsertId
-	cnt = rs.RowsAffected
+	lastInsertID = rs.LastInsertId()
+	cnt = rs.RowsAffected()
 	return
 }
 
@@ -192,7 +192,7 @@ func (s *Model) UpdateByIDs(ids []string, data map[string]interface{}) (cnt int6
 	if err != nil {
 		return 0, err
 	}
-	cnt = rs.RowsAffected
+	cnt = rs.RowsAffected()
 	return
 }
 
@@ -202,7 +202,7 @@ func (s *Model) UpdateBy(where, data map[string]interface{}) (cnt int64, err err
 	if err != nil {
 		return 0, err
 	}
-	cnt = rs.RowsAffected
+	cnt = rs.RowsAffected()
 	return
 }
 

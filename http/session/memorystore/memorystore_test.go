@@ -7,6 +7,7 @@ package gmemorystore
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/core"
 	"os"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ import (
 )
 
 var (
-	store gsession.Store
+	store gcore.SessionStorage
 )
 
 func TestNew(t *testing.T) {

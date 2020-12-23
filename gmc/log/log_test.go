@@ -1,9 +1,9 @@
-package log_test
+package glog_test
 
 import (
 	"bytes"
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/gmc/log"
+	log "github.com/snail007/gmc/gmc/log"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
@@ -141,7 +141,7 @@ func TestGMCLog_Warnf(t *testing.T) {
 func TestGMCLog_Panic(t *testing.T) {
 	assert := assert2.New(t)
 	l := log.NewGMCLog()
-	assert.PanicsWithValue("[gmc]util/log_test.go:145: PANIC a", func() {
+	assert.PanicsWithValue("[gmc]gmc/log/log_test.go:145: PANIC a", func() {
 		l.Panic("a")
 	})
 }
@@ -149,7 +149,7 @@ func TestGMCLog_Panic(t *testing.T) {
 func TestGMCLog_Panicf(t *testing.T) {
 	assert := assert2.New(t)
 	l := log.NewGMCLog()
-	assert.PanicsWithValue("[gmc]util/log_test.go:153: PANIC a10", func() {
+	assert.PanicsWithValue("[gmc]gmc/log/log_test.go:153: PANIC a10", func() {
 		l.Panicf("a%d", 10)
 	})
 }

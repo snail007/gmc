@@ -97,7 +97,7 @@ func (s *MemCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := s.Get(key)
-		if e != nil && !gcore.IsNotExits(e) {
+		if e != nil && gcore.IsNotExits(e) {
 			return nil, e
 		}
 		d[key] = cast.ToString(v)

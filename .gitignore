@@ -6,10 +6,8 @@
 *.test
 *.out
 *.prof
-/gmc
-/*.html/*.html
+/*.html
 .idea
-.idea/
 /demos/website/website
 go.sum
-/app/logs
+/gmc/app/logs

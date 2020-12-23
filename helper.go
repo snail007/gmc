@@ -118,6 +118,12 @@ func (s *DB0) Init(cfg *gconfig.Config) error {
 	return gdb.Init(cfg)
 }
 
+// InitFromFile initialize the db group objects from a foo.toml config file.
+// foo.toml must be contains section [database].
+func (s *DB0) InitFromFile(cfgFile string) error {
+	return gmcdb.InitFromFile(cfgFile)
+}
+
 // SQLite3DB acquires the default db group object, you must be call Init firstly.
 // And you must assert it to the correct type to use.
 func (s *DB0) DB(id ...string) gcore.Database {

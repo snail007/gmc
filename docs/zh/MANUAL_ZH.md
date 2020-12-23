@@ -681,6 +681,16 @@ GMC 数据库操作支持：
 1. 方便的链式查询和更新。
 1. 映射结果集到结构体。
 1. 事务支持。
+1. 快速表模型，`gmc.Table("table_name")`可以对表进行各种常见的增删改查。
+
+## 快速表模型
+
+一般情况下，如果什么对数据表没有十分复杂的操作，在初始化数据库连接后，我们看通过`gmc.Table("table_name")`操作一个数据表，
+而不需要写任何表模型类来操作表数据。
+
+快速表模型约定如下:
+1. `table_name` 是数据库表的名称，如果`app.toml`配置了表前缀，这里是不带前缀的表名称。
+1. 默认认为，表一定有一个主键，而且名称是: 表名称_id, 比如表：`user`，那么就认为它有一个`user_id`的主键。
 
 ## MySQL 数据库
 
@@ -761,7 +771,7 @@ func main() {
 	// so gmc.DB.DB() equal to  gmc.DB.MySQL()
 	// we can connect to multiple cache drivers at same time, id is the unique name of driver
 	// gmc.DB.DB(id) to load `id` named default driver.
-	db := gmc.DB.DB().(*gmc.MySQL)
+	db := gmc.DB.DB()
 	//do something with db
 	db.AR()
 }
@@ -1290,8 +1300,6 @@ gmct model -n user
 参数说明：
 
 -n 是数据库表的名称，如果配置文件里面设置了表前缀，这里不需要写表前缀，比如表名称：`user`, `system_config`。
-
--t 默认生成的模型是 MySQL 类型，还支持 SQLite3类型，值可以是：`mysql`或者`sqlite3`。
 
 -f 如果将要生成的文件已经存在，默认不会覆盖，可以使用`-f`参数强制覆盖。
 

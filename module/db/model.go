@@ -220,7 +220,7 @@ func (s *Model) PageWithFields(fields string, where map[string]interface{}, offs
 	if err != nil {
 		return nil, 0, err
 	}
-	total = cast.ToInt(rs.Value("total"))
+	total = gcast.ToInt(rs.Value("total"))
 
 	ar = db.AR().Select(fields).From(s.table).Where(where).Limit(offset, length)
 	if len(where) > 0 {

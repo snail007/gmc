@@ -60,7 +60,7 @@ func (p *Paginator) Nums() int64 {
 }
 
 func (p *Paginator) SetNums(nums interface{}) {
-	p.nums = cast.ToInt64(nums)
+	p.nums = gcast.ToInt64(nums)
 }
 
 func (p *Paginator) Page() int {

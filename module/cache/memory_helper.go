@@ -49,7 +49,7 @@ func (s *MemCache) String() string {
 func (s *MemCache) Get(key string) (string, error) {
 	v, b := s.c.Get(key)
 	if b {
-		return cast.ToString(v), nil
+		return gcast.ToString(v), nil
 	}
 	return "", gcore.KEY_NOT_EXISTS
 }
@@ -65,7 +65,7 @@ func (s *MemCache) Incr(key string) (v int64, err error) {
 	err = s.c.Increment(key, 1)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = cast.ToInt64(n)
+		v = gcast.ToInt64(n)
 	}
 	return
 }
@@ -73,7 +73,7 @@ func (s *MemCache) Decr(key string) (v int64, err error) {
 	err = s.c.Decrement(key, 1)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = cast.ToInt64(n)
+		v = gcast.ToInt64(n)
 	}
 	return
 }
@@ -81,7 +81,7 @@ func (s *MemCache) IncrN(key string, n int64) (v int64, err error) {
 	err = s.c.Increment(key, n)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = cast.ToInt64(n)
+		v = gcast.ToInt64(n)
 	}
 	return
 }
@@ -89,7 +89,7 @@ func (s *MemCache) DecrN(key string, n int64) (v int64, err error) {
 	err = s.c.Decrement(key, n)
 	if nil == err {
 		n, _ := s.c.Get(key)
-		v = cast.ToInt64(n)
+		v = gcast.ToInt64(n)
 	}
 	return
 }
@@ -100,7 +100,7 @@ func (s *MemCache) GetMulti(keys []string) (map[string]string, error) {
 		if e != nil && gcore.IsNotExits(e) {
 			return nil, e
 		}
-		d[key] = cast.ToString(v)
+		d[key] = gcast.ToString(v)
 	}
 	return d, nil
 }

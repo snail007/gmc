@@ -33,30 +33,30 @@ func Init(cfg0 *gconfig.Config) (err error) {
 		}
 		for _, vv := range v.([]interface{}) {
 			vvv := vv.(map[string]interface{})
-			if !cast.ToBool(vvv["enable"]) {
+			if !gcast.ToBool(vvv["enable"]) {
 				continue
 			}
-			id := cast.ToString(vvv["id"])
+			id := gcast.ToString(vvv["id"])
 			if k == "mysql" {
 				db := groupMySQL.DB(id)
 				if db != nil {
 					return
 				}
 				err = groupMySQL.Regist(id, MySQLDBConfig{
-					Charset:                  cast.ToString(vvv["charset"]),
-					Collate:                  cast.ToString(vvv["collate"]),
-					Host:                     cast.ToString(vvv["host"]),
-					Port:                     cast.ToInt(vvv["port"]),
-					Database:                 cast.ToString(vvv["database"]),
-					Username:                 cast.ToString(vvv["username"]),
-					Password:                 cast.ToString(vvv["password"]),
-					TablePrefix:              cast.ToString(vvv["prefix"]),
-					TablePrefixSqlIdentifier: cast.ToString(vvv["prefix_sql_holder"]),
-					Timeout:                  cast.ToInt(vvv["timeout"]),
-					ReadTimeout:              cast.ToInt(vvv["readtimeout"]),
-					WriteTimeout:             cast.ToInt(vvv["writetimeout"]),
-					SetMaxIdleConns:          cast.ToInt(vvv["maxidle"]),
-					SetMaxOpenConns:          cast.ToInt(vvv["maxconns"]),
+					Charset:                  gcast.ToString(vvv["charset"]),
+					Collate:                  gcast.ToString(vvv["collate"]),
+					Host:                     gcast.ToString(vvv["host"]),
+					Port:                     gcast.ToInt(vvv["port"]),
+					Database:                 gcast.ToString(vvv["database"]),
+					Username:                 gcast.ToString(vvv["username"]),
+					Password:                 gcast.ToString(vvv["password"]),
+					TablePrefix:              gcast.ToString(vvv["prefix"]),
+					TablePrefixSqlIdentifier: gcast.ToString(vvv["prefix_sql_holder"]),
+					Timeout:                  gcast.ToInt(vvv["timeout"]),
+					ReadTimeout:              gcast.ToInt(vvv["readtimeout"]),
+					WriteTimeout:             gcast.ToInt(vvv["writetimeout"]),
+					SetMaxIdleConns:          gcast.ToInt(vvv["maxidle"]),
+					SetMaxOpenConns:          gcast.ToInt(vvv["maxconns"]),
 				})
 				if err != nil {
 					return
@@ -67,13 +67,13 @@ func Init(cfg0 *gconfig.Config) (err error) {
 					return
 				}
 				err = groupSQLite3.Regist(id, SQLite3DBConfig{
-					Database:                 cast.ToString(vvv["database"]),
-					Password:                 cast.ToString(vvv["password"]),
-					TablePrefix:              cast.ToString(vvv["prefix"]),
-					TablePrefixSqlIdentifier: cast.ToString(vvv["prefix_sql_holder"]),
-					SyncMode:                 cast.ToInt(vvv["syncmode"]),
-					OpenMode:                 cast.ToString(vvv["openmode"]),
-					CacheMode:                cast.ToString(vvv["cachemode"]),
+					Database:                 gcast.ToString(vvv["database"]),
+					Password:                 gcast.ToString(vvv["password"]),
+					TablePrefix:              gcast.ToString(vvv["prefix"]),
+					TablePrefixSqlIdentifier: gcast.ToString(vvv["prefix_sql_holder"]),
+					SyncMode:                 gcast.ToInt(vvv["syncmode"]),
+					OpenMode:                 gcast.ToString(vvv["openmode"]),
+					CacheMode:                gcast.ToString(vvv["cachemode"]),
 				})
 				if err != nil {
 					return

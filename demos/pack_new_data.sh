@@ -5,8 +5,8 @@ set -e
 PWD=`pwd`
 ADIR="${PWD}/../../mygmcadmin"
 
-cp -f ../gmc/app/web_new.toml new_web/conf/app.toml
-cp -f ../gmc/app/api_new.toml new_api/conf/app.toml
+cp -f ../module/app/web_new.toml new_web/conf/app.toml
+cp -f ../module/app/api_new.toml new_api/conf/app.toml
 
 rm -rf new_web/grun.toml
 rm -rf new_api/grun.toml

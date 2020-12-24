@@ -10,16 +10,16 @@ import (
 
 // toFloat64 converts 64-bit floats
 func toFloat64(v interface{}) float64 {
-	return cast.ToFloat64(v)
+	return gcast.ToFloat64(v)
 }
 
 func toInt(v interface{}) int {
-	return cast.ToInt(v)
+	return gcast.ToInt(v)
 }
 
 // toInt64 converts integer types to 64-bit integers
 func toInt64(v interface{}) int64 {
-	return cast.ToInt64(v)
+	return gcast.ToInt64(v)
 }
 
 func max(a interface{}, i ...interface{}) int64 {

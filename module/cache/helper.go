@@ -34,38 +34,38 @@ func Init(cfg0 *gconfig.Config) (err error) {
 		}
 		for _, vv := range v.([]interface{}) {
 			vvv := vv.(map[string]interface{})
-			if !cast.ToBool(vvv["enable"]) {
+			if !gcast.ToBool(vvv["enable"]) {
 				continue
 			}
-			id := cast.ToString(vvv["id"])
+			id := gcast.ToString(vvv["id"])
 			if k == "redis" {
 				if _, ok := groupRedis[id]; ok {
 					return
 				}
 				cfg := &RedisCacheConfig{
-					Debug:           cast.ToBool(vvv["debug"]),
-					Prefix:          cast.ToString(vvv["prefix"]),
+					Debug:           gcast.ToBool(vvv["debug"]),
+					Prefix:          gcast.ToString(vvv["prefix"]),
 					Logger:          logger,
-					Addr:            cast.ToString(vvv["address"]),
-					Password:        cast.ToString(vvv["password"]),
-					DBNum:           cast.ToInt(vvv["dbnum"]),
-					MaxIdle:         cast.ToInt(vvv["maxidle"]),
-					MaxActive:       cast.ToInt(vvv["maxactive"]),
-					IdleTimeout:     time.Duration(cast.ToInt(vvv["idletimeout"])) * time.Second,
-					Wait:            cast.ToBool(vvv["wait"]),
-					MaxConnLifetime: time.Duration(cast.ToInt(vvv["maxconnlifetime"])) * time.Second,
-					Timeout:         time.Duration(cast.ToInt(vvv["timeout"])) * time.Second,
+					Addr:            gcast.ToString(vvv["address"]),
+					Password:        gcast.ToString(vvv["password"]),
+					DBNum:           gcast.ToInt(vvv["dbnum"]),
+					MaxIdle:         gcast.ToInt(vvv["maxidle"]),
+					MaxActive:       gcast.ToInt(vvv["maxactive"]),
+					IdleTimeout:     time.Duration(gcast.ToInt(vvv["idletimeout"])) * time.Second,
+					Wait:            gcast.ToBool(vvv["wait"]),
+					MaxConnLifetime: time.Duration(gcast.ToInt(vvv["maxconnlifetime"])) * time.Second,
+					Timeout:         time.Duration(gcast.ToInt(vvv["timeout"])) * time.Second,
 				}
 				groupRedis[id] = New(cfg)
 			} else if k == "memory" {
 				cfg := &MemCacheConfig{
-					CleanupInterval: time.Duration(cast.ToInt(vvv["cleanupinterval"])) * time.Second,
+					CleanupInterval: time.Duration(gcast.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
 				groupMemory[id] = NewMemCache(cfg)
 			} else if k == "file" {
 				cfg := &FileCacheConfig{
-					Dir:             cast.ToString(vvv["dir"]),
-					CleanupInterval: time.Duration(cast.ToInt(vvv["cleanupinterval"])) * time.Second,
+					Dir:             gcast.ToString(vvv["dir"]),
+					CleanupInterval: time.Duration(gcast.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
 
 				groupFile[id],err = NewFileCache(cfg)

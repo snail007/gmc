@@ -39,7 +39,7 @@ func dateInZone(fmt string, date interface{}, zone string) string {
 	case int32:
 		t = time.Unix(int64(date), 0)
 	case string:
-		t = time.Unix(cast.ToInt64(date), 0)
+		t = time.Unix(gcast.ToInt64(date), 0)
 	}
 
 	loc, err := time.LoadLocation(zone)
@@ -79,7 +79,7 @@ func dateAgo(date interface{}) string {
 	case int:
 		t = time.Unix(int64(date), 0)
 	case string:
-		t = time.Unix(cast.ToInt64(date), 0)
+		t = time.Unix(gcast.ToInt64(date), 0)
 	}
 	// Drop resolution to seconds
 	duration := time.Since(t).Round(time.Second)

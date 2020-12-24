@@ -23,7 +23,7 @@ func addFunc() map[string]interface{} {
 }
 
 func anyTostring(v interface{}) string {
-	return cast.ToString(v)
+	return gcast.ToString(v)
 }
 
 func anyToTplHTML(v interface{}) template.HTML {

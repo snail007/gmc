@@ -48,8 +48,8 @@ func log(ctx gcore.Ctx, logger *accesslog) {
 	rule := [][]string{
 		{"$host", ctx.Request().Host},
 		{"$uri", ctx.Request().URL.RequestURI()},
-		{"$time_used", cast.ToString(int(ctx.TimeUsed() / time.Millisecond))},
-		{"$status_code", cast.ToString(ctx.StatusCode())},
+		{"$time_used", gcast.ToString(int(ctx.TimeUsed() / time.Millisecond))},
+		{"$status_code", gcast.ToString(ctx.StatusCode())},
 		{"$query", ctx.Request().URL.Query().Encode()},
 		{"$req_time", time.Now().Format("2006-01-02 15:04:05")},
 		{"$client_ip", ctx.ClientIP()},

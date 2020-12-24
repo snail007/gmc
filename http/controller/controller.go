@@ -102,7 +102,7 @@ func (this *Controller) initGPSC() {
 	// session
 	if this.SessionStore != nil && this.Session != nil {
 		for k, v := range this.Session.Values() {
-			s[cast.ToString(k)] = cast.ToString(v)
+			s[gcast.ToString(k)] = gcast.ToString(v)
 		}
 	}
 

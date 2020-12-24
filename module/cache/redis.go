@@ -152,7 +152,7 @@ func (c *RedisCache) GetMulti(keys []string) (map[string]string, error) {
 		if val==nil{
 			continue
 		}
-		values[keys[i]] = cast.ToString(val)
+		values[keys[i]] = gcast.ToString(val)
 	}
 
 	return values, nil

@@ -1,6 +1,6 @@
 // +build go1.13
 
-package gerr
+package gerror
 
 import (
 	baseErrors "errors"

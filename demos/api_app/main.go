@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
- 	gutil "github.com/snail007/gmc/util"
+	gerror "github.com/snail007/gmc/module/error"
+	gutil "github.com/snail007/gmc/util"
+	gconfig "github.com/snail007/gmc/util/config"
 	"net"
 	"net/http"
 	"strings"
@@ -66,7 +68,7 @@ func main() {
 
 	app.AddService(gcore.ServiceItem{
 		Service: api,
-		BeforeInit: func(s gmc.Service, cfg *gmc.Config) (err error) {
+		BeforeInit: func(s gcore.Service, cfg *gconfig.Config) (err error) {
 			api.PrintRouteTable(nil)
 			return
 		},
@@ -84,7 +86,7 @@ func main() {
 		}
 		fmt.Println("http://127.0.0.1:" + port + path)
 	}
-	if e := gmc.StackE(app.Run()); e != "" {
+	if e := gerror.Stack(app.Run()); e != "" {
 		app.Logger().Panic(e)
 	}
 }

@@ -200,7 +200,7 @@ r.HandlerAny("/hello",myHanlder)
 //...
 ```
 
-### BINDING `gmc.Handle`
+### BINDING `gcore.Handle`
 
 The following example USES the ways of binding a GMC Handle `Hello` to the URL path `/hello`, ` HandleAny ` is equivalent to a one-time binding ` GET, POST, DELETE, OPTIONS, PUT, PATCH, HEAD `.
 
@@ -517,7 +517,7 @@ By default, GMC Web services contain modules such as templates, static files, da
 
 For the Web project generated through the GMCT tool chain, the default configuration file is located at: `conf/app.toml`. App.toml is the core of the project, and almost all GMC functions are configured here.
 
-The corresponding Web server in GMC is: `gmc.HTTPWebServer`. We can also see that in the main file of the project, a Web service is launched through the object of `gmc.APP`.
+The corresponding Web server in GMC is: `gmc.HTTPWebServer`. We can also see that in the main file of the project, a Web service is launched through the object of `gcore.GMCApp`.
 
 You can also perform some of your own initialization and other operations before and after the service is initialized.
 
@@ -537,9 +537,9 @@ func main() {
 	app := gmc.New.AppDefault()
 
 	// 2. add a http server service to app.
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: gmc.New.HTTPServer(),
-		AfterInit: func(s *gmc.ServiceItem)(err error) {
+		AfterInit: func(s *gcore.ServiceItem)(err error) {
 			// do some initialize after http server initialized.
 			err = initialize.Initialize(s.Service.(*gmc.HTTPServer))
 			return
@@ -547,7 +547,7 @@ func main() {
 	})
 
 	// 3. run the app
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }
@@ -602,11 +602,11 @@ func main() {
 	// init api handlers
 	handlers.Init(api)
 	// 5. add service
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: api,
 	})
 	// 6. run app
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }
@@ -640,7 +640,7 @@ func main() {
 
 	api := gmc.New.APIServer(":7082")
 	api.API("/", func(c gmc.C) {
- 		c.Write(gmc.M{
+ 		c.Write(gmap.M{
  			"code":0,
  			"message":"Hello GMC!",
  			"data":nil,
@@ -648,15 +648,15 @@ func main() {
 	})
 
 	app := gmc.New.App()
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: api,
-		BeforeInit: func(s gmc.Service, cfg *gmc.Config)(err error) {
+		BeforeInit: func(s gcore.Service, cfg *gconfig.Config)(err error) {
 			api.PrintRouteTable(nil)
 			return
 		},
 	})
 
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }
@@ -677,13 +677,13 @@ func main() {
 
 	api := gmc.New.APIServer(":7082").Ext(".json")
 	api.API("/hello", func(c gmc.C) {
- 		c.Write(gmc.M{
+ 		c.Write(gmap.M{
  			"code":0,
  			"message":"Hello GMC!",
  			"data":nil,
 		})
 	})
-	if e := gmc.StackE(api.Run());e!=""{
+	if e := gerror.Stack(api.Run());e!=""{
 		panic(e)
 	}
 }
@@ -794,7 +794,7 @@ func main() {
 	// so gmc.DB.DB() equal to  gmc.DB.MySQL()
 	// we can connect to multiple cache drivers at same time, id is the unique name of driver
 	// gmc.DB.DB(id) to load`id`named default driver.
-	db := gmc.DB.DB().(*gmc.MySQL)
+	db := gmc.DB.DB().(*gdb.MySQLDB)
 	//do something with db
 	db.AR()
 }
@@ -854,7 +854,7 @@ default="redis" //Set default cache validation configuration items, such as redI
 [[cache.memory]]//Memory cache configuration item, where cleanupInterval is second for automatic garbage collection time
 ```
 
-Configure the cache of API or Web service, which is stared by `gmc.APP`. When you enable caching in the profile app.toml,
+Configure the cache of API or Web service, which is stared by `gcore.GMCApp`. When you enable caching in the profile app.toml,
 The Cache can then be used via `gmc.Cache.Cache()`.
 
 ### REDIS

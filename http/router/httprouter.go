@@ -94,7 +94,7 @@ func (this *HTTPRouter) Ext(ext string) {
 
 // Controller binds a controller's methods to router
 // ext is method's extension in url.
-func (s *HTTPRouter) Controller(urlPath string, obj interface{}, ext ...string) {
+func (s *HTTPRouter) Controller(urlPath string, obj gcore.Controller, ext ...string) {
 	s.controller(urlPath, obj, "", ext...)
 }
 
@@ -155,7 +155,7 @@ func (s *HTTPRouter) visit(n *node, prefix, m string, p *map[string][]string) {
 }
 
 // ControllerMethod binds a controller's method to router
-func (s *HTTPRouter) ControllerMethod(urlPath string, obj interface{}, method string) {
+func (s *HTTPRouter) ControllerMethod(urlPath string, obj gcore.Controller, method string) {
 	s.controller(urlPath, obj, method)
 }
 func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, ext ...string) {

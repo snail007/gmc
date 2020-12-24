@@ -7,14 +7,14 @@ A GMC APP boot your net/any service with hot reload , and auto manange many serv
 ## HOT RELOAD APP CODE
 
 ```golang
-// api is a object implements gmc.Service interface.
+// api is a object implements gcore.Service interface.
 api:=fooService
 
 // create a app, and set no real config file to parse.
 app := gmc.NewAPP()
 
 // add your service to app
-app.AddService(gmc.ServiceItem{
+app.AddService(gcore.ServiceItem{
     Service: api,
 })
 
@@ -26,7 +26,7 @@ panic(gmc.Stack(app.Run()))
 
 ```golang
 type Service interface {
-	Init(cfg *gmc.Config) error
+	Init(cfg *gconfig.Config) error
 	Start() error
 	Stop()
 	GracefulStop()

@@ -53,11 +53,11 @@ func Recover(f ...interface{}) {
 		case string:
 			s := ""
 			if printStack {
-				s = fmt.Sprintf(",stack: %s", gerr.Wrap(e).ErrorStack())
+				s = fmt.Sprintf(",stack: %s", gerror.Wrap(e).ErrorStack())
 			}
 			fmt.Printf("\nrecover error, %s%s\n", f, s)
 		default:
-			fmt.Printf("\nrecover error %s\n", gerr.Wrap(e).ErrorStack())
+			fmt.Printf("\nrecover error %s\n", gerror.Wrap(e).ErrorStack())
 		}
 	}
 }

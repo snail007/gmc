@@ -94,7 +94,7 @@ func main() {
 	// so gmc.DB.DB() equal to  gmc.DB.MySQL()
 	// we can connect to multiple cache drivers at same time, id is the unique name of driver
 	// gmc.DB.DB(id) to load `id` named default driver.
-	db := gmc.DB.DB().(*gmc.MySQL)
+	db := gmc.DB.DB().(*gdb.MySQLDB)
 	//do something with db
 }
 ```

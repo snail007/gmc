@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/snail007/gmc"
 	ghttpserver "github.com/snail007/gmc/http/server"
+	gerror "github.com/snail007/gmc/module/error"
 	"net/http"
 )
 
@@ -19,5 +20,5 @@ func error404(c gmc.C) {
 
 func error500(c gmc.C, err interface{}) {
 	c.WriteHeader(http.StatusInternalServerError)
-	c.Write(gmc.StackE(err))
+	c.Write(gerror.Stack(err))
 }

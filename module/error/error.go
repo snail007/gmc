@@ -1,4 +1,4 @@
-package gerr
+package gerror
 
 import (
 	"bytes"

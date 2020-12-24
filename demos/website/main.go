@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gogf/gf/errors/gerror"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/demos/website/initialize"
@@ -29,7 +30,7 @@ func main() {
 	app.SetConfigFile("../../module/app/app.toml")
 
 	// 2. add a http server service to app.
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: gmc.New.HTTPServer(),
 		AfterInit: func(s *gcore.ServiceItem) (err error) {
 			// do some initialize after http server initialized.
@@ -39,7 +40,7 @@ func main() {
 	})
 
 	// 3. run the app
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		panic(e)
 	}
 }

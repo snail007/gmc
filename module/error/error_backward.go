@@ -1,6 +1,6 @@
 // +build !go1.13
 
-package gerr
+package gerror
 
 // Is detects whether the error is equal to a given error. Errors
 // are considered equal by this function if they are the same object,

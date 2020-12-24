@@ -177,9 +177,9 @@ r.HandlerAny("/hello",myHanlder)
 //...
 ```
 
-### 绑定`gmc.Handle`
+### 绑定`gcore.Handle`
 
-下面示例中使用了各种方法绑定一个`gmc.Handle` `Hello` 到URL路径 `/hello` 上，
+下面示例中使用了各种方法绑定一个`gcore.Handle` `Hello` 到URL路径 `/hello` 上，
 `HandleAny`相当于一次性绑定`GET,POST,DELETE,OPTIONS,PUT,PATCH,HEAD`。
 
 ```go
@@ -493,7 +493,7 @@ GMC Web服务默认包含了模版，静态文件，数据库，session，缓存
 
 通过GMCT工具链生成的Web项目，默认配置文件位于：conf/app.toml，app.toml是项目的核心，几乎所有gmc功能都是这里配置。
 
-Web服务器在gmc中对应的是：`gmc.HTTPWebServer`，我们也可以看见，在项目的main文件，里面通过`gmc.APP`对象启动一个Web服务。
+Web服务器在gmc中对应的是：`gmc.HTTPWebServer`，我们也可以看见，在项目的main文件，里面通过`gcore.GMCApp`对象启动一个Web服务。
 
 还可以在服务初始化前后执行一些自己的初始化等操作。
 
@@ -513,9 +513,9 @@ func main() {
 	app := gmc.New.AppDefault()
 
 	// 2. add a http server service to app.
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: gmc.New.HTTPServer(),
-		AfterInit: func(s *gmc.ServiceItem) (err error) {
+		AfterInit: func(s *gcore.ServiceItem) (err error) {
 			// do some initialize after http server initialized.
 			err = initialize.Initialize(s.Service.(*gmc.HTTPServer))
 			return
@@ -523,7 +523,7 @@ func main() {
 	})
 
 	// 3. run the app
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }
@@ -532,7 +532,7 @@ func main() {
 
 主要做了三件事情：
 
-1. 创建一个默认gmc.APP对象，用来管理程序和服务的整个生命周期，默认APP对象会使用`conf/app.toml`作为配置文件。
+1. 创建一个默认gcore.GMCApp对象，用来管理程序和服务的整个生命周期，默认APP对象会使用`conf/app.toml`作为配置文件。
 1. 创建一个gmc.HTTPWebServer服务对象，添加到APP的服务列表中，并定义了服务初始化后执行的一些自己的初始化。
 1.  启动APP，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
 
@@ -578,11 +578,11 @@ func main() {
 	// init api handlers
 	handlers.Init(api)
 	// 5. add service
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: api,
 	})
 	// 6. run app
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }
@@ -590,7 +590,7 @@ func main() {
 ```
 主要做了以下事情：
 
-1. 创建一个默认gmc.APP对象，用来管理程序和服务的整个生命周期。
+1. 创建一个默认gcore.GMCApp对象，用来管理程序和服务的整个生命周期。
 1. 创建一个配置对象，设置使用`conf/app.toml`作为配置文件。
 1. 创建一个gmc.APIServer服务对象，并使用上面的配置对象。
 1. 初始化后执行的一些用到的功能，数据库，缓存，路由。
@@ -616,7 +616,7 @@ func main() {
 
 	api := gmc.New.APIServer(":7082")
 	api.API("/", func(c gmc.C) {
- 		c.Write(gmc.M{
+ 		c.Write(gmap.M{
  			"code":0,
  			"message":"Hello GMC!",
  			"data":nil,
@@ -624,15 +624,15 @@ func main() {
 	})
 
 	app := gmc.New.App()
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: api,
-		BeforeInit: func(s gmc.Service, cfg *gmc.Config) (err error) {
+		BeforeInit: func(s gcore.Service, cfg *gconfig.Config) (err error) {
 			api.PrintRouteTable(nil)
 			return
 		},
 	})
 
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }
@@ -653,13 +653,13 @@ func main() {
 
 	api := gmc.New.APIServer(":7082").Ext(".json")
 	api.API("/hello", func(c gmc.C) {
- 		c.Write(gmc.M{
+ 		c.Write(gmap.M{
  			"code":0,
  			"message":"Hello GMC!",
  			"data":nil,
 		})
 	})
-	if e := gmc.StackE(api.Run());e!=""{
+	if e := gerror.Stack(api.Run());e!=""{
 		panic(e)
 	}
 }
@@ -832,7 +832,7 @@ default="redis" //设置默认生效缓存配置项，比如项目默认为redis
 [[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
 ```
 
-通过gmc.APP启动的API或者Web服务，使用配置文件配置缓存，当你在配置文件app.toml启用了缓存，
+通过gcore.GMCApp启动的API或者Web服务，使用配置文件配置缓存，当你在配置文件app.toml启用了缓存，
 那么可以通过gmc.Cache.Cache()使用缓存。
 
 ### Redis缓存
@@ -1071,7 +1071,7 @@ func InitRouter(s *gmc.HTTPServer) {
 
 当我们的程序部署到线上的时候，就面临一个平滑重启/平滑升级的问题，也就是在不中断当前已有连接的保证服务一直可用的情况下，进行程序的重启升级。
 
-通过gmc.APP启动的Web和API服务都支持平滑重启/平滑升级，使用非常简单，当你需要重启的时候，使用pkill或者kill命令给程序发送`USR2`信号即可。
+通过gcore.GMCApp启动的Web和API服务都支持平滑重启/平滑升级，使用非常简单，当你需要重启的时候，使用pkill或者kill命令给程序发送`USR2`信号即可。
 
 比如：
 

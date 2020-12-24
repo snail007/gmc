@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
 	gutil "github.com/snail007/gmc/util"
 	ghook "github.com/snail007/gmc/util/process/hook"
 	"net"
@@ -39,7 +40,7 @@ func main() {
 	// sets a function to handle panic error.
 	api.Handle500(func(c gmc.C, err interface{}) {
 		c.WriteHeader(http.StatusInternalServerError)
-		c.Write("panic error : ", gmc.StackE(err))
+		c.Write("panic error : ", gerror.Stack(err))
 	})
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly

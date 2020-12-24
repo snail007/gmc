@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
 	"mygmcapi/handlers"
 )
 
@@ -26,11 +28,11 @@ func main() {
 	// init api handlers
 	handlers.Init(api)
 	// 5. add service
-	app.AddService(gmc.ServiceItem{
+	app.AddService(gcore.ServiceItem{
 		Service: api,
 	})
 	// 6. run app
-	if e := gmc.StackE(app.Run());e!=""{
+	if e := gerror.Stack(app.Run());e!=""{
 		app.Logger().Panic(e)
 	}
 }

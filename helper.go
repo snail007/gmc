@@ -31,17 +31,17 @@ var (
 type New0 struct {
 }
 
-// Config creates a new object of gmc.Config
+// Config creates a new object of gconfig.Config
 func (s *New0) Config() *gconfig.Config {
 	return gconfig.NewConfig()
 }
 
-// ConfigFile creates a new object of gmc.Config from a toml file.
+// ConfigFile creates a new object of gconfig.Config from a toml file.
 func (s *New0) ConfigFile(file string) (cfg *gconfig.Config, err error) {
 	return gconfig.NewConfigFile(file)
 }
 
-// App creates an new object of gmc.APP
+// App creates an new object of gcore.GMCApp
 func (s *New0) App() gcore.GMCApp {
 	return gapp.New()
 }
@@ -71,7 +71,7 @@ func (s *New0) AppDefault() gcore.GMCApp {
 	return gapp.Default()
 }
 
-// Router creates a new object of gmc.Router
+// Router creates a new object of gcore.HTTPRouter
 func (s *New0) Router() *grouter.HTTPRouter {
 	return grouter.NewHTTPRouter()
 }
@@ -87,12 +87,12 @@ func (s *New0) APIServer(address string) *ghttpserver.APIServer {
 }
 
 // APIServer creates a new object of gmc.APIServer and initialized from app.toml [apiserver] section.
-// cfg is a gmc.Config object contains section [apiserver] in `app.toml`.
+// cfg is a gconfig.Config object contains section [apiserver] in `app.toml`.
 func (s *New0) APIServerDefault(cfg *gconfig.Config) (api *ghttpserver.APIServer, err error) {
 	return ghttpserver.NewDefaultAPIServer(cfg)
 }
 
-// Map creates a gmc.Map object, gmc.Map's keys are sequenced.
+// Map creates a gmap.Map object, gmap.Map's keys are sequenced.
 func (s *New0) Map() *_map.Map {
 	return _map.NewMap()
 }

@@ -8,6 +8,15 @@ import (
 	"sync"
 )
 
+type (
+	// Alias of type map[string]interface{}
+	M = map[string]interface{}
+	// Alias of type map[interface{}]interface{}
+	Mii = map[interface{}]interface{}
+	// Alias of type map[string]string
+	Mss = map[string]string
+)
+
 type Map struct {
 	keys     *list.List
 	data     sync.Map

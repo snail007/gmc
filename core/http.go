@@ -165,10 +165,10 @@ type HTTPRouter interface {
 	Group(ns string) HTTPRouter
 	Namespace() string
 	Ext(ext string)
-	Controller(urlPath string, obj interface{}, ext ...string)
+	Controller(urlPath string, obj Controller, ext ...string)
 	PrintRouteTable(w io.Writer)
 	RouteTable() (table map[string][]string)
-	ControllerMethod(urlPath string, obj interface{}, method string)
+	ControllerMethod(urlPath string, obj Controller, method string)
 	Handle(method, path string, handle Handle)
 	HandleAny(path string, handle Handle)
 	Handler(method, path string, handler http.Handler)
@@ -236,6 +236,19 @@ type HTTPServer interface {
 }
 
 type paramsKey struct{}
-// ParamsKey is the request context key under which URL params are stored.
-var ParamsKey =  paramsKey{}
 
+// ParamsKey is the request context key under which URL params are stored.
+var ParamsKey = paramsKey{}
+
+type Controller interface {
+	MethodCallPre(w http.ResponseWriter, r *http.Request, ps Params)
+	MethodCallPost()
+	Tr(key string, defaultText ...string) string
+	Die(msg ...interface{})
+	Stop(msg ...interface{})
+	StopE(err interface{}, fn ...func())
+	SessionStart() (err error)
+	SessionDestroy() (err error)
+	Write(data ...interface{}) (n int, err error)
+	WriteE(data ...interface{}) (n int, err error)
+}

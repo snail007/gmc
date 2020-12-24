@@ -1,18 +1,18 @@
 package gmc
 
 import (
-	gconfig "github.com/snail007/gmc/config"
 	gcore "github.com/snail007/gmc/core"
-	gapp "github.com/snail007/gmc/gmc/app"
-	gdb "github.com/snail007/gmc/gmc/db"
-	gerr "github.com/snail007/gmc/gmc/error"
-	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gapp "github.com/snail007/gmc/module/app"
+	gdb "github.com/snail007/gmc/module/db"
+	gerr "github.com/snail007/gmc/module/error"
+	gi18n "github.com/snail007/gmc/module/i18n"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	gcookie "github.com/snail007/gmc/http/cookie"
 	grouter "github.com/snail007/gmc/http/router"
 	ghttpserver "github.com/snail007/gmc/http/server"
 	gsession "github.com/snail007/gmc/http/session"
 	gtemplate "github.com/snail007/gmc/http/template"
+	gconfig "github.com/snail007/gmc/util/config"
 	ghttputil "github.com/snail007/gmc/util/http"
 	gmap "github.com/snail007/gmc/util/map"
 	"net/http"

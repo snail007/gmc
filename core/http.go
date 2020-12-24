@@ -1,8 +1,8 @@
 package gcore
 
 import (
-	gconfig "github.com/snail007/gmc/config"
 	gtemplate "github.com/snail007/gmc/http/template"
+	gconfig "github.com/snail007/gmc/util/config"
 	"io"
 	"net"
 	"net/http"
@@ -58,10 +58,7 @@ type Ctx interface {
 	SetLocalAddr(localAddr string)
 	Param() Params
 	Request() *http.Request
-	SetRequest(request *http.Request)
 	Response() http.ResponseWriter
-	SetResponse(response http.ResponseWriter)
-	SetParam(param Params)
 	TimeUsed() time.Duration
 	SetTimeUsed(t time.Duration)
 	Write(data ...interface{}) (n int, err error)
@@ -237,3 +234,8 @@ type HTTPServer interface {
 	PrintRouteTable(w io.Writer)
 	SetLog(l Logger)
 }
+
+type paramsKey struct{}
+// ParamsKey is the request context key under which URL params are stored.
+var ParamsKey =  paramsKey{}
+

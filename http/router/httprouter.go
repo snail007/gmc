@@ -9,7 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
 	"io"
 	"net/http"
 	"os"

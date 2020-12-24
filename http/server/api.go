@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	log2 "github.com/snail007/gmc/gmc/log"
+	log2 "github.com/snail007/gmc/module/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,9 +18,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	gconfig "github.com/snail007/gmc/config"
+	gconfig "github.com/snail007/gmc/util/config"
 
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
 	grouter "github.com/snail007/gmc/http/router"
 	ghttputil "github.com/snail007/gmc/util/http"
 )

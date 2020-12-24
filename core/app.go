@@ -1,6 +1,6 @@
 package gcore
 
-import gconfig "github.com/snail007/gmc/config"
+import gconfig "github.com/snail007/gmc/util/config"
 
 type GMCApp interface {
 	SetConfigFile(file string)

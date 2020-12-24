@@ -3,7 +3,7 @@ package gcore
 import (
 	"net"
 
-	gconfig "github.com/snail007/gmc/config"
+	gconfig "github.com/snail007/gmc/util/config"
 )
 
 type Service interface {

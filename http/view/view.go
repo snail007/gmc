@@ -2,7 +2,7 @@ package gview
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
 	ghttputil "github.com/snail007/gmc/util/http"
 	"io"
 	"strings"

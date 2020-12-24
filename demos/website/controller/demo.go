@@ -125,3 +125,8 @@ func (this *Demo) Layout() {
 		"title":"welcome",
 	})
 }
+func (this *Demo) Layout2() {
+	this.View.Layout("page.html").Render("welcome.html", map[string]interface{}{
+		"title":"welcome",
+	})
+}

@@ -126,7 +126,14 @@ func (t *Template) Parse() (err error) {
 }
 func (t *Template) parseFromBinData() (err error) {
 	for k, v := range bindata {
+		// template without extension
 		html := fmt.Sprintf("{{define \"%s\"}}%s{{end}}", k, string(v))
+		_, err = t.tpl.Parse(html)
+		if err != nil {
+			return
+		}
+		// template with extension
+		html = fmt.Sprintf("{{define \"%s\"}}%s{{end}}", k+t.ext, string(v))
 		_, err = t.tpl.Parse(html)
 		if err != nil {
 			return
@@ -146,7 +153,13 @@ func (t *Template) parseFromDisk() (err error) {
 		if err != nil {
 			return
 		}
+
+		// template without extension
 		html := fmt.Sprintf("{{define \"%s\"}}%s{{end}}", v, string(b))
+		_, err = t.tpl.Parse(html)
+
+		// template with extension
+		html = fmt.Sprintf("{{define \"%s\"}}%s{{end}}", v+t.ext, string(b))
 		_, err = t.tpl.Parse(html)
 		if err != nil {
 			return

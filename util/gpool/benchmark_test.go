@@ -13,7 +13,7 @@ import (
 
 func BenchmarkSubmit(b *testing.B) {
 	b.StopTimer()
-	p := gutil.New(3)
+	p := gutil.NewGPool(3)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		p.Submit(func() {
@@ -24,7 +24,7 @@ func BenchmarkSubmit(b *testing.B) {
 }
 func BenchmarkWorker(b *testing.B) {
 	b.StopTimer()
-	p := gutil.New(4)
+	p := gutil.NewGPool(4)
 	g := sync.WaitGroup{}
 	g.Add(b.N)
 	for i := 0; i < b.N; i++ {

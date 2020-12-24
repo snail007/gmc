@@ -5,7 +5,7 @@ import (
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/demos/website/initialize"
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
 	"runtime/debug"
 )
 
@@ -26,7 +26,7 @@ func main() {
 
 	// 1. create an app to run.
 	app = gmc.New.App()
-	app.SetConfigFile("../../gmc/app/app.toml")
+	app.SetConfigFile("../../module/app/app.toml")
 
 	// 2. add a http server service to app.
 	app.AddService(gmc.ServiceItem{

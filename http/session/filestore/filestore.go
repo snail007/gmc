@@ -9,7 +9,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/gmc/log"
+	"github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
 	gsession "github.com/snail007/gmc/http/session"
 )
 

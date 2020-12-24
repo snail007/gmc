@@ -7,17 +7,17 @@ package gcontroller
 
 import (
 	"fmt"
-	gconfig "github.com/snail007/gmc/config"
 	gcore "github.com/snail007/gmc/core"
-	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gi18n "github.com/snail007/gmc/module/i18n"
 	gcookie "github.com/snail007/gmc/http/cookie"
 	grouter "github.com/snail007/gmc/http/router"
 	gsession "github.com/snail007/gmc/http/session"
 	gview "github.com/snail007/gmc/http/view"
 	"github.com/snail007/gmc/util/cast"
+	gconfig "github.com/snail007/gmc/util/config"
 	ghttputil "github.com/snail007/gmc/util/http"
 	"net/http"
-  )
+)
 
 type Controller struct {
 	Response     http.ResponseWriter

@@ -2,7 +2,7 @@ package gcore
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/gmc/error"
+	"github.com/snail007/gmc/module/error"
 	"runtime"
 )
 

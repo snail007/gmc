@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
 	gcompress "github.com/snail007/gmc/util/compress"
 	assert "github.com/stretchr/testify/assert"
 	"os"

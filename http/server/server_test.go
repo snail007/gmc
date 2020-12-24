@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/snail007/gmc/core"
-	glog "github.com/snail007/gmc/gmc/log"
+	glog "github.com/snail007/gmc/module/log"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"testing"
 
-	gconfig "github.com/snail007/gmc/config"
+	gconfig "github.com/snail007/gmc/util/config"
 
 	gcontroller "github.com/snail007/gmc/http/controller"
 	grouter "github.com/snail007/gmc/http/router"
@@ -144,7 +144,7 @@ func TestConnCount_2(t *testing.T) {
 func TestInit_0(t *testing.T) {
 	assert := assert.New(t)
 	cfg := gconfig.NewConfig()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../../module/app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	s := New()
@@ -156,7 +156,7 @@ func TestInit_0(t *testing.T) {
 func TestInit_1(t *testing.T) {
 	assert := assert.New(t)
 	cfg := gconfig.NewConfig()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../../module/app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	cfg.Set("session.store", "file")
@@ -169,7 +169,7 @@ func TestInit_1(t *testing.T) {
 func TestInit_2(t *testing.T) {
 	assert := assert.New(t)
 	cfg := gconfig.NewConfig()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../../module/app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	cfg.Set("session.store", "redis")
@@ -190,7 +190,7 @@ func TestInit_3(t *testing.T) {
 func TestInit_4(t *testing.T) {
 	assert := assert.New(t)
 	cfg := gconfig.NewConfig()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../../module/app/app.toml")
 	err := cfg.ReadInConfig()
 	assert.Nil(err)
 	cfg.Set("session.store", "")
@@ -519,7 +519,7 @@ func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 }
 func mockConfig() *gconfig.Config {
 	cfg := gconfig.NewConfig()
-	cfg.SetConfigFile("../../app/app.toml")
+	cfg.SetConfigFile("../../module/app/app.toml")
 	cfg.ReadInConfig()
 	cfg.Set("template.dir", "")
 	return cfg

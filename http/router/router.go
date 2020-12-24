@@ -85,15 +85,12 @@ import (
 )
 
 
-type paramsKey struct{}
 
-// ParamsKey is the request context key under which URL params are stored.
-var ParamsKey = paramsKey{}
 
 // ParamsFromContext pulls the URL parameters from a request context,
 // or returns nil if none are present.
 func ParamsFromContext(ctx context.Context) gcore.Params {
-	p, _ := ctx.Value(ParamsKey).(gcore.Params)
+	p, _ := ctx.Value(gcore.ParamsKey).(gcore.Params)
 	return p
 }
 
@@ -307,7 +304,7 @@ func (r *Router) Handler(method, path string, handler http.Handler) {
 		func(w http.ResponseWriter, req *http.Request, p gcore.Params) {
 			if len(p) > 0 {
 				ctx := req.Context()
-				ctx = context.WithValue(ctx, ParamsKey, p)
+				ctx = context.WithValue(ctx, gcore.ParamsKey, p)
 				req = req.WithContext(ctx)
 			}
 			handler.ServeHTTP(w, req)

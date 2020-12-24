@@ -1,0 +1,110 @@
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 10:57:07.188990 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:57523
+2020/12/24 10:57:07.189157 [gmc]gmc/app/app.go:190: INFO gmc app started done.
+2020/12/24 10:57:07.189267 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:57523
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:00:59.528706 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:57562
+2020/12/24 11:00:59.528840 [gmc]gmc/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:00:59.528936 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:57562
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:03:12.849388 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:57581
+2020/12/24 11:03:12.849509 [gmc]gmc/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:03:12.849633 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:57581
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:03:32.588924 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:57586
+2020/12/24 11:03:32.589179 [gmc]gmc/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:03:32.589309 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:57586
+2020/12/24 11:34:01.291779 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58203
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:34:01.292195 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:34:01.292301 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58203
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:34:22.706395 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58235
+2020/12/24 11:34:22.706472 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:34:22.706555 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58235
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:34:51.428658 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58267
+2020/12/24 11:34:51.428856 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:34:51.429018 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58267
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:36:36.222582 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58325
+2020/12/24 11:36:36.222690 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:36:36.222809 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58325
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:41:00.719262 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58363
+2020/12/24 11:41:00.719603 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:41:00.719750 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58363
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:41:10.884769 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58388
+2020/12/24 11:41:10.884854 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:41:10.884933 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58388
+
+:ROUTE TABLE
+| PATH              | METHOD
+| ----------------- | ---
+| /static/*filepath | GET
+| ----------------- | ---
+
+2020/12/24 11:41:52.909440 [gmc]http/server/server.go:350: INFO http server listen on http://[::]:58423
+2020/12/24 11:41:52.909700 [gmc]module/app/app.go:190: INFO gmc app started done.
+2020/12/24 11:41:52.909820 [gmc]http/server/server.go:338: INFO http server closed on http://[::]:58423

@@ -8,8 +8,8 @@ package gutil
 import (
 	"context"
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/gmc/error"
-	"github.com/snail007/gmc/gmc/log"
+	gerr "github.com/snail007/gmc/module/error"
+	"github.com/snail007/gmc/module/log"
 	"sync"
 	"sync/atomic"
 )

@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	log2 "github.com/snail007/gmc/gmc/log"
+	log2 "github.com/snail007/gmc/module/log"
 	grouter "github.com/snail007/gmc/http/router"
 	gfilestore "github.com/snail007/gmc/http/session/filestore"
 	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	gconfig "github.com/snail007/gmc/config"
-	gerr "github.com/snail007/gmc/gmc/error"
+	gerr "github.com/snail007/gmc/module/error"
+	gconfig "github.com/snail007/gmc/util/config"
 
 	ghttputil "github.com/snail007/gmc/util/http"
 )

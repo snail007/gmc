@@ -7,16 +7,16 @@ package gredisstore
 
 import (
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/gmc/log"
+	"github.com/snail007/gmc/module/cache"
+	"github.com/snail007/gmc/module/log"
 	"time"
 
-	gredis "github.com/snail007/gmc/gmc/cache/redis"
 	gsession "github.com/snail007/gmc/http/session"
 )
 
 type RedisStoreConfig struct {
 	TTL      int64 //seconds
-	RedisCfg *gredis.RedisCacheConfig
+	RedisCfg *gcache.RedisCacheConfig
 	Logger   gcore.Logger
 }
 
@@ -24,7 +24,7 @@ func NewRedisStoreConfig() RedisStoreConfig {
 	return RedisStoreConfig{
 		TTL:      3600,
 		Logger:   glog.NewGMCLog("[redisstore]"),
-		RedisCfg: gredis.NewRedisCacheConfig(),
+		RedisCfg: gcache.NewRedisCacheConfig(),
 	}
 }
 
@@ -38,7 +38,7 @@ func New(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(RedisStoreConfig)
 	s := &RedisStore{
 		cfg:   cfg,
-		cache: gredis.New(cfg.RedisCfg),
+		cache: gcache.New(cfg.RedisCfg),
 	}
 	st = s
 	return

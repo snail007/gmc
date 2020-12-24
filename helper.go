@@ -1,16 +1,16 @@
 package gmc
 
 import (
-	gconfig "github.com/snail007/gmc/config"
 	"github.com/snail007/gmc/core"
-	gapp "github.com/snail007/gmc/gmc/app"
-	gcachehelper "github.com/snail007/gmc/gmc/cache/helper"
-	gdb "github.com/snail007/gmc/gmc/db"
-	gerr "github.com/snail007/gmc/gmc/error"
-	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gapp "github.com/snail007/gmc/module/app"
+	"github.com/snail007/gmc/module/cache"
+	gdb "github.com/snail007/gmc/module/db"
+	gerr "github.com/snail007/gmc/module/error"
+	gi18n "github.com/snail007/gmc/module/i18n"
 	grouter "github.com/snail007/gmc/http/router"
 	ghttpserver "github.com/snail007/gmc/http/server"
 	gcaptcha "github.com/snail007/gmc/util/captcha"
+	gconfig "github.com/snail007/gmc/util/config"
 	_map "github.com/snail007/gmc/util/map"
 )
 
@@ -150,27 +150,27 @@ type Cache0 struct {
 // Init initialize the cache group objects from a config object
 // contains app.toml section [cache].
 func (s *Cache0) Init(cfg *gconfig.Config) error {
-	return gcachehelper.Init(cfg)
+	return gcache.Init(cfg)
 }
 
 // Cache acquires the default cache object, you must be call Init firstly.
 func (s *Cache0) Cache(id ...string) gcore.Cache {
-	return gcachehelper.Cache(id...)
+	return gcache.Cache(id...)
 }
 
 // Redis acquires the default redis cache object, you must be call Init firstly.
-func (s *Cache0) Redis(id ...string) gcore.Cache {
-	return gcachehelper.Redis(id...)
+func (s *Cache0) Redis(id ...string) *gcache.RedisCache {
+	return gcache.Redis(id...)
 }
 
 // File acquires the default file cache object, you must be call Init firstly.
-func (s *Cache0) File(id ...string) gcore.Cache {
-	return gcachehelper.File(id...)
+func (s *Cache0) File(id ...string) *gcache.FileCache {
+	return gcache.File(id...)
 }
 
 // Memory acquires the default memory cache object, you must be call Init firstly.
-func (s *Cache0) Memory(id ...string) gcore.Cache {
-	return gcachehelper.Memory(id...)
+func (s *Cache0) Memory(id ...string) *gcache.MemCache {
+	return gcache.Memory(id...)
 }
 
 // ##################################################
@@ -192,4 +192,3 @@ func (s *I18n0) Init(cfg *gconfig.Config) error {
 func (s *I18n0) Tr(lang, key string, defaultMessage ...string) string {
 	return gi18n.Tr(lang, key, defaultMessage...)
 }
-

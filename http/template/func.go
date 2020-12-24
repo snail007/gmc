@@ -1,7 +1,7 @@
 package gtemplate
 
 import (
-	gi18n "github.com/snail007/gmc/gmc/i18n"
+	gi18n "github.com/snail007/gmc/module/i18n"
 	"github.com/snail007/gmc/http/template/sprig"
 	"github.com/snail007/gmc/util/cast"
 	"html/template"

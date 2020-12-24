@@ -2,7 +2,7 @@ package router
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/gmc/middleware/accesslog"
+	"github.com/snail007/gmc/module/middleware/accesslog"
 	httppprof "github.com/snail007/gmc/util/pprof"
 	"strings"
 

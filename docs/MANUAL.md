@@ -1024,9 +1024,9 @@ They are executed in the order in which they were added, but when one of the mid
 
 A middleware is a function.
 
-In the API service it is defined as` func(ctx gcore.Ctx, Server *APIServer)(isStop bool) `.
+In the API service it is defined as` func(ctx gcore.Ctx, Server gcore.APIServer)(isStop bool) `.
 
-In the Web service it is defined as` func(ctx gcore.Ctx, Server *HTTPServer)(isStop bool) `.
+In the Web service it is defined as` func(ctx gcore.Ctx, Server gcore.HTTPServer)(isStop bool) `.
 
 The diagram of the API and Web HTTP server workflow architecture is shown below. The sequence and timing of their execution can help you quickly master the use of middleware.
 

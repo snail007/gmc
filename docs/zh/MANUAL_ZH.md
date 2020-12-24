@@ -1000,9 +1000,9 @@ GMC的Web和API服务器都支持中间件，当现有功能无法完成你的�
 
 一个中间件就是一个function。
 
-API服务中它的定义是`func(ctx gcore.Ctx, server *APIServer) (isStop bool)`。
+API服务中它的定义是`func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)`。
 
-Web服务中它的定义是`func(ctx gcore.Ctx, server *HTTPServer) (isStop bool)`。
+Web服务中它的定义是`func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)`。
 
 API 和 Web HTTP服务器工作流程架构图如下，它们执行的顺序和时机，此图可以直观的帮助你快速掌握中间件的使用。
 

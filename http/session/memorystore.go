@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmemorystore
+package gsession
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	gerr "github.com/snail007/gmc/module/error"
-	gsession "github.com/snail007/gmc/http/session"
 )
 
 type MemoryStoreConfig struct {
@@ -22,7 +21,7 @@ type MemoryStoreConfig struct {
 	TTL    int64 //seconds
 }
 
-func NewConfig() MemoryStoreConfig {
+func NewMemoryStoreConfig() MemoryStoreConfig {
 	return MemoryStoreConfig{
 		GCtime: 300,
 		TTL:    15 * 60,
@@ -36,7 +35,7 @@ type MemoryStore struct {
 	data sync.Map
 }
 
-func New(config interface{}) (st gcore.SessionStorage, err error) {
+func NewMemoryStore(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(MemoryStoreConfig)
 	s := &MemoryStore{
 		cfg:  cfg,
@@ -52,7 +51,7 @@ func (s *MemoryStore) Load(sessionID string) (sess gcore.Session, isExists bool)
 	if !ok {
 		return
 	}
-	sess = sess0.(*gsession.Session)
+	sess = sess0.(*Session)
 	if time.Now().Unix()-sess.TouchTime() > s.cfg.TTL {
 		sess = nil
 		s.data.Delete(sessionID)
@@ -72,7 +71,7 @@ func (s *MemoryStore) Delete(sessionID string) (err error) {
 }
 
 func (s *MemoryStore) gc() {
-	defer gcore.Recover(func(e interface{}) {
+	defer gerr.Recover(func(e interface{}) {
 		fmt.Printf("memorystore gc error: %s", gerr.Stack(e))
 	})
 	first := true
@@ -83,7 +82,7 @@ func (s *MemoryStore) gc() {
 			time.Sleep(time.Second * time.Duration(s.cfg.GCtime))
 		}
 		s.data.Range(func(k, v interface{}) bool {
-			sess := v.(*gsession.Session)
+			sess := v.(*Session)
 			if time.Now().Unix()-sess.TouchTime() > s.cfg.TTL {
 				s.data.Delete(k)
 			}

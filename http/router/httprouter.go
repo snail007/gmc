@@ -229,7 +229,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 
 func (s *HTTPRouter) call(fn func()) {
 	func() {
-		defer gcore.Recover(func(e interface{}) {
+		defer gerr.Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
 				return
 			}

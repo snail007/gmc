@@ -2,6 +2,7 @@ package ghttpserver
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	gctx "github.com/snail007/gmc/module/ctx"
 	"testing"
 
  	ghttputil "github.com/snail007/gmc/util/http"
@@ -11,13 +12,13 @@ import (
 
 func TestNewAPIServer(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	assert.NotNil(api.server)
 	assert.Equal(len(api.address), 1)
 }
 func TestBefore(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.AddMiddleware0(func(c gcore.Ctx, s gcore.APIServer) bool {
 		c.Write("okay")
 		return true
@@ -34,7 +35,7 @@ func TestBefore(t *testing.T) {
 
 func TestAPI(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.API("/hello", func(c gcore.Ctx) {
 		c.Write("a")
 	})
@@ -47,7 +48,7 @@ func TestAPI(t *testing.T) {
 
 func TestAfter(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.AddMiddleware2(func(c gcore.Ctx, s gcore.APIServer) bool {
 		c.Write("okay")
 		return false
@@ -63,7 +64,7 @@ func TestAfter(t *testing.T) {
 }
 func TestStop(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.API("/hello", func(c gcore.Ctx) {
 		c.Write("a")
 		ghttputil.Stop(c.Response(), "c")
@@ -77,7 +78,7 @@ func TestStop(t *testing.T) {
 }
 func TestHandle404(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.Handle404(func(c gcore.Ctx) {
 		c.Write("404")
 	})
@@ -89,7 +90,7 @@ func TestHandle404(t *testing.T) {
 }
 func TestHandle404_1(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	w, r := mockRequest("/hello")
 	api.ServeHTTP(w, r)
 	data, _, err := mockResponse(w)
@@ -98,7 +99,7 @@ func TestHandle404_1(t *testing.T) {
 }
 func TestHandle500(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.Handle500(func(c gcore.Ctx, err interface{}) {
 		c.Write("500")
 	})
@@ -114,7 +115,7 @@ func TestHandle500(t *testing.T) {
 }
 func TestHandle500_1(t *testing.T) {
 	assert := assert.New(t)
-	api := NewAPIServer(":")
+	api := NewAPIServer(gctx.NewCtx(),":")
 	api.ShowErrorStack(false)
 	api.API("/hello", func(c gcore.Ctx) {
 		a := 0

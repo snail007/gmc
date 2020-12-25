@@ -3,6 +3,7 @@ package glog_test
 import (
 	"bytes"
 	"github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/module/error"
 	log "github.com/snail007/gmc/module/log"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
@@ -141,7 +142,7 @@ func TestGMCLog_Warnf(t *testing.T) {
 func TestGMCLog_Panic(t *testing.T) {
 	assert := assert2.New(t)
 	l := log.NewGMCLog()
-	defer gcore.Recover(func(e interface{}) {
+	defer gerror.Recover(func(e interface{}) {
 		assert.Contains(e, "PANIC a")
 	})
 	l.Panic("a")
@@ -150,7 +151,7 @@ func TestGMCLog_Panic(t *testing.T) {
 func TestGMCLog_Panicf(t *testing.T) {
 	assert := assert2.New(t)
 	l := log.NewGMCLog()
-	defer gcore.Recover(func(e interface{}) {
+	defer gerror.Recover(func(e interface{}) {
 		assert.Contains(e, "PANIC a10")
 	})
 	l.Panicf("a%d", 10)

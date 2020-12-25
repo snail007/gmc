@@ -1,6 +1,7 @@
 package gerror
 
 import (
+	gcore "github.com/snail007/gmc/core"
 	"strconv"
 	"strings"
 )
@@ -19,7 +20,7 @@ func ParsePanic(text string) (*Error, error) {
 	state := "start"
 
 	var message string
-	var stack []StackFrame
+	var stack []gcore.StackFrame
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
@@ -59,7 +60,7 @@ func ParsePanic(text string) (*Error, error) {
 				return nil, err
 			}
 
-			stack = append(stack, *frame)
+			stack = append(stack, frame)
 			if createdBy {
 				state = "done"
 				break

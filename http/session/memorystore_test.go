@@ -3,51 +3,44 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gmemorystore
+package gsession
 
 import (
-	"fmt"
-	"github.com/snail007/gmc/core"
-	"os"
 	"testing"
 	"time"
 
-	gsession "github.com/snail007/gmc/http/session"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	store gcore.SessionStorage
-)
 
-func TestNew(t *testing.T) {
+func TestNewMemoryStore(t *testing.T) {
 	assert := assert.New(t)
 	sid := "testaaaa"
-	_, ok := store.Load(sid)
+	_, ok := memoryStore.Load(sid)
 	assert.False(ok)
 
-	sess := gsession.NewSession()
+	sess := NewSession()
 	sess.Touch()
-	assert.Nil(store.Save(sess))
+	assert.Nil(memoryStore.Save(sess))
 	time.Sleep(time.Second * 3)
-	_, ok = store.Load(sess.SessionID())
+	_, ok = memoryStore.Load(sess.SessionID())
 	assert.False(ok)
 }
 func TestLoad(t *testing.T) {
 	assert := assert.New(t)
-	cfg := NewConfig()
+	cfg := NewMemoryStoreConfig()
 	cfg.GCtime = 0
-	store, _ := New(cfg)
+	store, _ := NewMemoryStore(cfg)
 	k := "testbbb"
 	_, ok := store.Load(k)
 	assert.False(ok)
 }
-func TestDelete(t *testing.T) {
+func TestMemoryStoreConfigDelete(t *testing.T) {
 	assert := assert.New(t)
-	cfg := NewConfig()
-	store, err := New(cfg)
+	cfg := NewMemoryStoreConfig()
+	store, err := NewMemoryStore(cfg)
 	assert.Nil(err)
-	sess0 := gsession.NewSession()
+	sess0 := NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -58,26 +51,15 @@ func TestDelete(t *testing.T) {
 }
 func TestNoGC(t *testing.T) {
 	assert := assert.New(t)
-	cfg := NewConfig()
+	cfg := NewMemoryStoreConfig()
 	cfg.TTL = 1
 	cfg.GCtime = 100
-	store, _ := New(cfg)
-	sess0 := gsession.NewSession()
+	store, _ := NewMemoryStore(cfg)
+	sess0 := NewSession()
 	sid := sess0.SessionID()
 	sess0.Touch()
 	store.Save(sess0)
 	time.Sleep(time.Second * 2)
 	_, ok := store.Load(sid)
 	assert.False(ok)
-}
-func TestMain(m *testing.M) {
-	cfg := NewConfig()
-	cfg.GCtime = 1
-	cfg.TTL = 1
-	var err error
-	store, err = New(cfg)
-	if err != nil {
-		fmt.Println(err)
-	}
-	os.Exit(m.Run())
 }

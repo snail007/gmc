@@ -50,13 +50,13 @@ func NewGPool(workerCount int) (p *GPool) {
 //initialize workers to run tasks, a work is a goroutine
 func (s *GPool) init() {
 	go func() {
-		defer gcore.Recover(func(e interface{}) {
+		defer gerr.Recover(func(e interface{}) {
 			s.log("GPool stopped unexpectedly, err: %s", gerr.Stack(e))
 		})
 		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
 			go func(i int, sig chan bool) {
-				defer gcore.Recover(func(e interface{}) {
+				defer gerr.Recover(func(e interface{}) {
 					s.log("GPool: a worker stopped unexpectedly, err: %s", gerr.Stack(e))
 				})
 				//s.log("GPool: worker[%d] started ...", i)
@@ -91,7 +91,7 @@ func (s *GPool) init() {
 
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gcore.Recover(func(e interface{}) {
+	defer gerr.Recover(func(e interface{}) {
 		s.log("GPool: a task stopped unexpectedly, err: %s", gerr.Stack(e))
 	})
 	fn()

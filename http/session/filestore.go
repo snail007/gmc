@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gfilestore
+package gsession
 
 import (
 	"crypto/md5"
@@ -19,7 +19,6 @@ import (
 	"time"
 
 	gerr "github.com/snail007/gmc/module/error"
-	gsession "github.com/snail007/gmc/http/session"
 )
 
 type FileStoreConfig struct {
@@ -34,7 +33,7 @@ var (
 	folder = ".gmcsessions"
 )
 
-func NewConfig() FileStoreConfig {
+func NewFileStoreConfig() FileStoreConfig {
 	return FileStoreConfig{
 		Dir:    os.TempDir(),
 		GCtime: 300,
@@ -50,7 +49,7 @@ type FileStore struct {
 	lock *sync.RWMutex
 }
 
-func New(config interface{}) (st gcore.SessionStorage, err error) {
+func NewFileStore(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(FileStoreConfig)
 	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
 	if cfg.Dir==""{
@@ -95,7 +94,7 @@ func (s *FileStore) Load(sessionID string) (sess gcore.Session, isExists bool) {
 		s.cfg.Logger.Warnf("filestore read file error: %s", err)
 		return
 	}
-	sess = gsession.NewSession()
+	sess = NewSession()
 	err = sess.Unserialize(string(str))
 	if err != nil {
 		sess = nil
@@ -143,7 +142,7 @@ func (s *FileStore) file(sessionID string) string {
 	return path
 }
 func (s *FileStore) gc() {
-	defer gcore.Recover(func(e interface{}) {
+	defer gerr.Recover(func(e interface{}) {
 		fmt.Printf("filestore gc error: %s", gerr.Stack(e))
 	})
 	var files []string

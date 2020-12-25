@@ -170,7 +170,7 @@ func (s *GMCApp) callRunE(fns []func(*gconfig.Config) error) (err error) {
 	hasError := false
 	for _, fn := range fns {
 		func() {
-			defer gcore.Recover(func(e interface{}) {
+			defer gerr.Recover(func(e interface{}) {
 				hasError = true
 				err = gerr.Wrap(e)
 			})
@@ -218,7 +218,7 @@ func (s *GMCApp) Run() (err error) {
 func (s *GMCApp) Stop() {
 	for _, fn := range s.onShutdown {
 		func() {
-			defer gcore.Recover(func(e interface{}) {
+			defer gerr.Recover(func(e interface{}) {
 				s.logger.Infof("run beforeShutdown hook fail, error : %s", gerr.Stack(e))
 			})
 			fn()
@@ -289,7 +289,7 @@ func (s *GMCApp) run() (err error) {
 		}
 
 		//init service
-		err = srv.Init(cfg, s.ctx)
+		err = srv.Init(cfg)
 		if err != nil {
 			return
 		}

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/http/session"
 	"github.com/snail007/gmc/module/ctx"
 	glog "github.com/snail007/gmc/module/log"
 	"io/ioutil"
@@ -19,7 +20,6 @@ import (
 
 	gcontroller "github.com/snail007/gmc/http/controller"
 	grouter "github.com/snail007/gmc/http/router"
-	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
 	gtemplate "github.com/snail007/gmc/http/template"
 	"github.com/stretchr/testify/assert"
 )
@@ -82,7 +82,7 @@ func Test_handle50x(t *testing.T) {
 	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
 	s := NewHTTPServer(gctx.NewCtx())
 	s.Init(gconfig.NewConfig())
-	s.handle50x(ctx.NewCtx(w, objv.Request), fmt.Errorf("aaa"))
+	s.handle50x(gctx.NewCtx().CloneWithHTTP(w, objv.Request), fmt.Errorf("aaa"))
 
 	//response
 	resp := w.Result()
@@ -103,7 +103,7 @@ func Test_handle50x_1(t *testing.T) {
 	s.SetHandler50x(func(c gcore.Ctx, tpl gcore.Template, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
-	c := ctx.NewCtx(w, objv.Request)
+	c := gctx.NewCtx().CloneWithHTTP(w, objv.Request)
 	s.handle50x(c, fmt.Errorf("aaa"))
 
 	//response
@@ -211,14 +211,14 @@ func TestHelper(t *testing.T) {
 	assert.NotNil(s.Server().Addr)
 	s.SetLogger(glog.NewGMCLog())
 	assert.NotNil(s.logger)
-	r := grouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter(s.ctx)
 	s.SetRouter(r)
 	assert.NotNil(s.router)
 	tpl, err := gtemplate.New("views")
 	assert.Nil(err)
 	s.SetTpl(tpl)
 	assert.NotNil(s.tpl)
-	st, err := gmemorystore.New(gmemorystore.NewConfig())
+	st, err := gsession.NewMemoryStore(gsession.NewMemoryStoreConfig())
 	assert.Nil(err)
 	s.SetSessionStore(st)
 	assert.NotNil(s.sessionStore)
@@ -340,7 +340,7 @@ func Test_handler40x(t *testing.T) {
 		ctx.Response().Write([]byte("404"))
 	})
 	w, r := mockRequest("/foo")
-	s.handle40x(ctx.NewCtx(w, r, nil))
+	s.handle40x(gctx.NewCtx().CloneWithHTTP(w, r, nil))
 	str, _ := result(w)
 	assert.Equal("404", str)
 }
@@ -363,7 +363,7 @@ func Test_Handle(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
 	s.router.HandleAny("/user/url", func(w http.ResponseWriter, r *http.Request, params gcore.Params) {
-		c := ctx.NewCtx(w, r)
+		c := gctx.NewCtx().CloneWithHTTP(w, r)
 		c.Write("/user/url")
 	})
 	h, _, _ := s.router.Lookup("GET", "/user/url")
@@ -556,9 +556,9 @@ func mockHTTPServer(cfg ...*gconfig.Config) *HTTPServer {
 	s := NewHTTPServer(gctx.NewCtx())
 	s.Init(c)
 	s.bind(":")
-	s.SetRouter(grouter.NewHTTPRouter())
+	s.SetRouter(grouter.NewHTTPRouter(s.ctx))
 	s.SetLogger(glog.NewGMCLog())
-	st, _ := gmemorystore.New(gmemorystore.NewConfig())
+	st, _ := gsession.NewMemoryStore(gsession.NewMemoryStoreConfig())
 	s.SetSessionStore(st)
 	tpl, _ := gtemplate.New("../template/tests/views")
 	s.SetTpl(tpl)

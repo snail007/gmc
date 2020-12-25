@@ -12,7 +12,6 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
 	"io"
 	"sync"
 	"time"

@@ -285,7 +285,7 @@ func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gcore.Recover(func(e interface{}) {
+		defer gerr.Recover(func(e interface{}) {
 			err = gerr.Wrap(e)
 		})
 		fn()
@@ -295,7 +295,7 @@ func (s *APIServer) call(fn func()) (err interface{}) {
 func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gcore.Recover(func(e interface{}) {
+			defer gerr.Recover(func(e interface{}) {
 				s.logger.Warn("middleware panic error : %s", gerr.Stack(e))
 				isStop = false
 			})
@@ -309,9 +309,8 @@ func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ct
 }
 
 //Init implements service.Service Init
-func (s *APIServer) Init(cfg *gconfig.Config, ctx gcore.Ctx) (err error) {
-	ctx.SetApiServer(s)
-	s.ctx = ctx
+func (s *APIServer) Init(cfg *gconfig.Config) (err error) {
+
 	return
 }
 

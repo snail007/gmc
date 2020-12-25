@@ -2,7 +2,6 @@ package gcore
 
 import (
 	"context"
-	gtemplate "github.com/snail007/gmc/http/template"
 	gconfig "github.com/snail007/gmc/util/config"
 	"io"
 	"net"
@@ -13,7 +12,7 @@ type (
 	// Handle is a function that can be registered to a route to handle HTTP
 	// requests. Like http.HandlerFunc, but has a third parameter for the values of
 	// wildcards (path variables).
-	Handle func(http.ResponseWriter, *http.Request, Params)
+	Handle        func(http.ResponseWriter, *http.Request, Params)
 	MiddlewareAPI func(ctx Ctx, api APIServer) (isStop bool)
 	MiddlewareWeb func(ctx Ctx, server HTTPServer) (isStop bool)
 )
@@ -99,10 +98,10 @@ type Session interface {
 }
 
 type Template interface {
-	Delims(left, right string) *gtemplate.Template
-	Funcs(funcMap map[string]interface{}) *gtemplate.Template
+	Delims(left, right string)
+	Funcs(funcMap map[string]interface{})
 	String() string
-	Extension(ext string) *gtemplate.Template
+	Extension(ext string)
 	Execute(name string, data interface{}) (output []byte, err error)
 	Parse() (err error)
 }

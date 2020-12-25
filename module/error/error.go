@@ -3,6 +3,7 @@ package gerror
 import (
 	"bytes"
 	"fmt"
+	gcore "github.com/snail007/gmc/core"
 	"reflect"
 	"runtime"
 )
@@ -15,7 +16,7 @@ var MaxStackDepth = 50
 type Error struct {
 	Err    error
 	stack  []uintptr
-	frames []StackFrame
+	frames []gcore.StackFrame
 	prefix string
 }
 
@@ -163,9 +164,9 @@ func (err *Error) ErrorStack() string {
 
 // StackFrames returns an array of frames containing information about the
 // stack.
-func (err *Error) StackFrames() []StackFrame {
+func (err *Error) StackFrames() []gcore.StackFrame {
 	if err.frames == nil {
-		err.frames = make([]StackFrame, len(err.stack))
+		err.frames = make([]gcore.StackFrame, len(err.stack))
 
 		for i, pc := range err.stack {
 			err.frames[i] = NewStackFrame(pc)
@@ -183,3 +184,28 @@ func (err *Error) TypeName() string {
 	return reflect.TypeOf(err.Err).String()
 }
 
+func Recover(f ...interface{}) {
+	var f0 interface{}
+	var printStack bool
+	if len(f) == 0 {
+		return
+	}
+	if len(f) == 2 {
+		printStack = f[1].(bool)
+	}
+	if e := recover(); e != nil {
+		f0 = f[0]
+		switch v := f0.(type) {
+		case func(e interface{}):
+			v(e)
+		case string:
+			s := ""
+			if printStack {
+				s = fmt.Sprintf(",stack: %s", Wrap(e).ErrorStack())
+			}
+			fmt.Printf("\nrecover error, %s%s\n", f, s)
+		default:
+			fmt.Printf("\nrecover error %s\n", Wrap(e).ErrorStack())
+		}
+	}
+}

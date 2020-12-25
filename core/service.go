@@ -8,7 +8,7 @@ import (
 
 type Service interface {
 	// init servcie
-	Init(cfg *gconfig.Config,ctx Ctx) error
+	Init(cfg *gconfig.Config) error
 	//nonblocking, called After Init -> InjectListeners (when reload) -> Start
 	Start() error
 	Stop()

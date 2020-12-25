@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	gcore "github.com/snail007/gmc/core"
 	"os"
 	"runtime"
 	"strings"
@@ -25,9 +26,9 @@ type StackFrame struct {
 }
 
 // NewStackFrame popoulates a stack frame object from the program counter.
-func NewStackFrame(pc uintptr) (frame StackFrame) {
+func NewStackFrame(pc uintptr) (frameI gcore.StackFrame) {
 
-	frame = StackFrame{ProgramCounter: pc}
+	frame := &StackFrame{ProgramCounter: pc}
 	if frame.Func() == nil {
 		return
 	}
@@ -36,7 +37,8 @@ func NewStackFrame(pc uintptr) (frame StackFrame) {
 	// pc -1 because the program counters we use are usually return addresses,
 	// and we want to show the line that corresponds to the function call
 	frame.File, frame.LineNumber = frame.Func().FileLine(pc - 1)
-	return
+
+	return frame
 
 }
 func (frame *StackFrame) GetFile() string {
@@ -58,6 +60,7 @@ func (frame *StackFrame) GetPackage() string {
 func (frame *StackFrame) GetProgramCounter() uintptr {
 	return frame.ProgramCounter
 }
+
 // Func returns the function that contained this frame.
 func (frame *StackFrame) Func() *runtime.Func {
 	if frame.ProgramCounter == 0 {

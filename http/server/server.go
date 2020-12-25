@@ -9,9 +9,7 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	grouter "github.com/snail007/gmc/http/router"
-	gfilestore "github.com/snail007/gmc/http/session/filestore"
-	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
-	gredisstore "github.com/snail007/gmc/http/session/redisstore"
+	"github.com/snail007/gmc/http/session"
 	gtemplate "github.com/snail007/gmc/http/template"
 	log2 "github.com/snail007/gmc/module/log"
 	"io"
@@ -84,17 +82,15 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 }
 
 //Init implements service.Service Init
-func (s *HTTPServer) Init(cfg *gconfig.Config, ctx gcore.Ctx) (err error) {
+func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
 	connCnt := int64(0)
-	ctx.SetWebServer(s)
-	s.server = &http.Server{}
+ 	s.server = &http.Server{}
 	s.logger = log2.NewGMCLog()
 	s.connCnt = &connCnt
 	s.config = cfg
 	s.isTestNotClosedError = false
 	s.server.ConnState = s.connState
 	s.server.Handler = s
-	s.ctx = ctx
 
 	//init base objects
 	err = s.initBaseObjets()
@@ -108,8 +104,8 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 		return
 	}
 	s.tpl.Delims(s.config.GetString("template.delimiterleft"),
-		s.config.GetString("template.delimiterright")).
-		Extension(s.config.GetString("template.ext"))
+		s.config.GetString("template.delimiterright"))
+	s.tpl.Extension(s.config.GetString("template.ext"))
 
 	// init session store
 	err = s.initSessionStore()
@@ -185,7 +181,7 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (s *HTTPServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gcore.Recover(func(e interface{}) {
+		defer gerr.Recover(func(e interface{}) {
 			err = gerr.Wrap(e)
 		})
 		fn()
@@ -430,19 +426,19 @@ func (s *HTTPServer) initSessionStore() (err error) {
 	ttl := s.config.GetInt64("session.ttl")
 	switch typ {
 	case "file":
-		cfg := gfilestore.NewConfig()
+		cfg := gsession.NewFileStoreConfig()
 		cfg.TTL = ttl
 		cfg.Dir = s.config.GetString("session.file.dir")
 		cfg.GCtime = s.config.GetInt("session.file.gctime")
 		cfg.Prefix = s.config.GetString("session.file.prefix")
-		s.sessionStore, err = gfilestore.New(cfg)
+		s.sessionStore, err = gsession.NewFileStore(cfg)
 	case "memory":
-		cfg := gmemorystore.NewConfig()
+		cfg := gsession.NewMemoryStoreConfig()
 		cfg.TTL = ttl
 		cfg.GCtime = s.config.GetInt("session.memory.gctime")
-		s.sessionStore, err = gmemorystore.New(cfg)
+		s.sessionStore, err = gsession.NewMemoryStore(cfg)
 	case "redis":
-		cfg := gredisstore.NewRedisStoreConfig()
+		cfg := gsession.NewRedisStoreConfig()
 		cfg.RedisCfg.Addr = s.config.GetString("session.redis.address")
 		cfg.RedisCfg.Password = s.config.GetString("session.redis.password")
 		cfg.RedisCfg.Prefix = s.config.GetString("session.redis.prefix")
@@ -454,7 +450,7 @@ func (s *HTTPServer) initSessionStore() (err error) {
 		cfg.RedisCfg.MaxConnLifetime = time.Second * s.config.GetDuration("session.redis.maxconnlifetime")
 		cfg.RedisCfg.Wait = s.config.GetBool("session.redis.wait")
 		cfg.TTL = ttl
-		s.sessionStore, err = gredisstore.New(cfg)
+		s.sessionStore, err = gsession.NewRedisStore(cfg)
 	default:
 		err = fmt.Errorf("unknown session store type %s", typ)
 	}
@@ -552,7 +548,7 @@ func (s *HTTPServer) SetLog(l gcore.Logger) {
 func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gcore.Recover(func(e interface{}) {
+			defer gerr.Recover(func(e interface{}) {
 				s.logger.Warnf("middleware panic error : %s", gerr.Stack(e))
 				isStop = false
 			})

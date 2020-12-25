@@ -3,11 +3,9 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gfilestore
+package gsession
 
 import (
-	"fmt"
-	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
@@ -15,46 +13,42 @@ import (
 	"testing"
 	"time"
 
-	gsession "github.com/snail007/gmc/http/session"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	store gcore.SessionStorage
-)
 
-func TestNew(t *testing.T) {
+func TestNewFileStore(t *testing.T) {
 	assert := assert.New(t)
 	sid := "testaaaa"
-	_, ok := store.Load(sid)
+	_, ok := fileStore.Load(sid)
 	assert.False(ok)
-	sess := gsession.NewSession()
+	sess :=NewSession()
 	sess.Touch()
-	err := store.Save(sess)
+	err := fileStore.Save(sess)
 	assert.Nil(err)
-	_, ok = store.Load(sess.SessionID())
+	_, ok = fileStore.Load(sess.SessionID())
 	assert.True(ok)
 	for i := 0; i < 10; i++ {
-		s:=gsession.NewSession()
+		s:=NewSession()
 		s.Touch()
-		err := store.Save(s)
+		err := fileStore.Save(s)
 		assert.Nil(err)
 	}
 	time.Sleep(time.Second * 3)
-	_, ok = store.Load(sess.SessionID())
+	_, ok = fileStore.Load(sess.SessionID())
 	assert.False(ok)
 
 }
 func TestMkdir(t *testing.T) {
 	assert := assert.New(t)
-	cfg := NewConfig()
+	cfg := NewFileStoreConfig()
 	cfg.GCtime = 0
 	cfg.Dir = ".gmcsess"
 	os.RemoveAll(cfg.Dir)
 	ioutil.WriteFile(cfg.Dir, []byte("."), 0700)
-	New(cfg)
+	NewFileStore(cfg)
 	os.Remove(cfg.Dir)
-	store, _ := New(cfg)
+	store, _ := NewFileStore(cfg)
 	s0 := store.(*FileStore)
 	assert.DirExists(cfg.Dir)
 	k := "testbbb"
@@ -72,10 +66,10 @@ func TestMkdir(t *testing.T) {
 }
 func TestDelete(t *testing.T) {
 	assert := assert.New(t)
-	cfg := NewConfig()
-	store, err := New(cfg)
+	cfg := NewFileStoreConfig()
+	store, err := NewFileStore(cfg)
 	assert.Nil(err)
-	sess0 := gsession.NewSession()
+	sess0 :=NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -86,11 +80,11 @@ func TestDelete(t *testing.T) {
 }
 func TestDelete_2(t *testing.T) {
 	assert := assert.New(t)
-	cfg := NewConfig()
+	cfg := NewFileStoreConfig()
 	cfg.TTL = 1
-	store, err := New(cfg)
+	store, err := NewFileStore(cfg)
 	assert.Nil(err)
-	sess0 := gsession.NewSession()
+	sess0 :=NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -98,16 +92,4 @@ func TestDelete_2(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	_, ok = store.Load(sess0.SessionID())
 	assert.False(ok)
-}
-func TestMain(m *testing.M) {
-	cfg := NewConfig()
-	cfg.GCtime = 1
-	cfg.TTL = 1
-	// fmt.Println(">>>", cfg)
-	var err error
-	store, err = New(cfg)
-	if err != nil {
-		fmt.Println(err)
-	}
-	os.Exit(m.Run())
 }

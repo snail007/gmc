@@ -6,6 +6,7 @@
 package router
 
 import (
+	gctx "github.com/snail007/gmc/module/ctx"
 	"testing"
 
 	gcontroller "github.com/snail007/gmc/http/controller"
@@ -33,14 +34,14 @@ func (this *Controller) TestMethod() {
 }
 func TestController(t *testing.T) {
 	assert := assert.New(t)
-	r := grouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter(gctx.NewCtx())
 	r.Controller("/user/", new(Controller))
 	h, _, _ := r.Lookup("GET", "/user/method1")
 	assert.NotNil(h)
 }
 func TestControllerMethod(t *testing.T) {
 	assert := assert.New(t)
-	r := grouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter(gctx.NewCtx())
 	r.ControllerMethod("/method/:name", new(Controller), "TestMethod")
 	//test Controller
 	h, _, _ := r.Lookup("GET", "/method/hello")
@@ -48,7 +49,7 @@ func TestControllerMethod(t *testing.T) {
 }
 func TestGroup_1(t *testing.T) {
 	assert := assert.New(t)
-	r := grouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter(gctx.NewCtx())
 	r.Controller("/user", new(Controller))
 	g1 := r.Group("/v1")
 	g1.Controller("/user", new(Controller))
@@ -77,7 +78,7 @@ func TestGroup_1(t *testing.T) {
 }
 func TestGroup_2(t *testing.T) {
 	assert := assert.New(t)
-	r := grouter.NewHTTPRouter()
+	r := grouter.NewHTTPRouter(gctx.NewCtx())
 	r.Controller("/user", new(Controller))
 	g1 := r.Group("/v1")
 	g1.Controller("/user", new(Controller))

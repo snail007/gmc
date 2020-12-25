@@ -61,9 +61,8 @@ func New(rootDir string) (t *Template, err error) {
 // definitions will inherit the settings. An empty delimiter stands for the
 // corresponding default: {{ or }}.
 // The return value is the template, so calls can be chained.
-func (t *Template) Delims(left, right string) *Template {
+func (t *Template) Delims(left, right string) {
 	t.tpl.Delims(left, right)
-	return t
 }
 
 // Funcs adds the elements of the argument map to the template's function map.
@@ -72,9 +71,8 @@ func (t *Template) Delims(left, right string) *Template {
 // type or if the name cannot be used syntactically as a function in a template.
 // It is legal to overwrite elements of the map. The return value is the template,
 // so calls can be chained.
-func (t *Template) Funcs(funcMap map[string]interface{}) *Template {
+func (t *Template) Funcs(funcMap map[string]interface{}) {
 	t.tpl.Funcs(funcMap)
-	return t
 }
 
 func (t *Template) String() string {
@@ -83,9 +81,8 @@ func (t *Template) String() string {
 
 //Extension sets template file extension, default is : .html
 //only files have the extension will be parsed.
-func (t *Template) Extension(ext string) *Template {
+func (t *Template) Extension(ext string) {
 	t.ext = ext
-	return t
 }
 
 // Execute applies the view file associated with t that has the given name

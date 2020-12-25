@@ -3,15 +3,13 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gredisstore
+package gsession
 
 import (
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/module/cache"
 	"github.com/snail007/gmc/module/log"
 	"time"
-
-	gsession "github.com/snail007/gmc/http/session"
 )
 
 type RedisStoreConfig struct {
@@ -34,7 +32,7 @@ type RedisStore struct {
 	cache gcore.Cache
 }
 
-func New(config interface{}) (st gcore.SessionStorage, err error) {
+func NewRedisStore(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(RedisStoreConfig)
 	s := &RedisStore{
 		cfg:   cfg,
@@ -49,7 +47,7 @@ func (s *RedisStore) Load(sessionID string) (sess gcore.Session, isExists bool) 
 	if v == "" || e != nil {
 		return
 	}
-	sess = gsession.NewSession()
+	sess = NewSession()
 	err := sess.Unserialize(v)
 	if err != nil {
 		sess = nil

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
+	gctx "github.com/snail007/gmc/module/ctx"
 	gerror "github.com/snail007/gmc/module/error"
 	gconfig "github.com/snail007/gmc/util/config"
 	gmap "github.com/snail007/gmc/util/map"
@@ -10,7 +11,7 @@ import (
 
 func main() {
 
-	api := gmc.New.APIServer(":7082")
+	api := gmc.New.APIServer(gctx.NewCtx(),":7082")
 	api.API("/", func(c gmc.C) {
  		c.Write(gmap.M{
  			"code":0,

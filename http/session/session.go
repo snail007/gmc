@@ -12,6 +12,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	gcore "github.com/snail007/gmc/core"
 	"io"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ type sData struct {
 	Values    map[interface{}]interface{}
 	Touchtime int64
 }
+
 type Session struct {
 	id        string
 	values    map[interface{}]interface{}

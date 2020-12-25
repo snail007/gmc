@@ -8,11 +8,10 @@ package gcontroller
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gi18n "github.com/snail007/gmc/module/i18n"
 	gcookie "github.com/snail007/gmc/http/cookie"
-	grouter "github.com/snail007/gmc/http/router"
 	gsession "github.com/snail007/gmc/http/session"
 	gview "github.com/snail007/gmc/http/view"
+ 	gi18n "github.com/snail007/gmc/module/i18n"
 	"github.com/snail007/gmc/util/cast"
 	gconfig "github.com/snail007/gmc/util/config"
 	ghttputil "github.com/snail007/gmc/util/http"
@@ -36,21 +35,20 @@ type Controller struct {
 }
 
 //MethodCallPre called before controller method and Before() if have.
-func (this *Controller) MethodCallPre(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 	// 1. init basic objects
-	ctxvalue := r.Context().Value(gcore.CtxValueKey).(gcore.CtxValue)
-	this.Response = w
-	this.Request = r
-	this.Param = ps
-	this.Tpl = ctxvalue.Tpl
-	this.SessionStore = ctxvalue.SessionStore
-	this.Router = ctxvalue.Router
-	this.Config = ctxvalue.Config
-	this.Logger = ctxvalue.Logger
+	this.Ctx = ctx
+ 	this.Response = ctx.Response()
+	this.Request = ctx.Request()
+	this.Param = ctx.Param()
+	this.Tpl = ctx.WebServer().Tpl()
+	this.SessionStore = ctx.WebServer().SessionStore()
+	this.Router = ctx.WebServer().Router()
+	this.Config = ctx.WebServer().Config()
+	this.Logger = ctx.WebServer().Logger()
+	this.View = gview.New(this.Response, this.Tpl)
+	this.Cookie = gcookie.New(this.Response, this.Request )
 
-	this.View = gview.New(w, ctxvalue.Tpl)
-	this.Cookie = gcookie.New(w, r)
-	this.Ctx = grouter.NewCtx(w, r, ps)
 
 	// 2.init stuff below
 	this.View.SetLayoutDir(this.Config.GetString("template.layout"))

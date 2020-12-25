@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/module/cache"
+	gctx "github.com/snail007/gmc/module/ctx"
 	gdb "github.com/snail007/gmc/module/db"
 	gerr "github.com/snail007/gmc/module/error"
 	gi18n "github.com/snail007/gmc/module/i18n"
@@ -26,10 +27,19 @@ type GMCApp struct {
 	logger            gcore.Logger
 	configFile        string
 	config            *gconfig.Config
+	ctx               gcore.Ctx
+}
+
+func (s *GMCApp) Ctx() gcore.Ctx {
+	return s.ctx
+}
+
+func (s *GMCApp) SetCtx(ctx gcore.Ctx) {
+	s.ctx = ctx
 }
 
 func New() gcore.GMCApp {
-	return &GMCApp{
+	app := &GMCApp{
 		isBlock:           true,
 		onRun:             []func(*gconfig.Config) error{},
 		onShutdown:        []func(){},
@@ -38,6 +48,10 @@ func New() gcore.GMCApp {
 		attachConfig:      map[string]*gconfig.Config{},
 		attachConfigfiles: map[string]string{},
 	}
+	c := gctx.NewCtx()
+	c.SetApp(app)
+	app.ctx = c
+	return app
 }
 
 func Default() gcore.GMCApp {
@@ -49,6 +63,9 @@ func Default() gcore.GMCApp {
 	cfg.AddConfigPath("config")
 	a := New()
 	a.SetConfig(cfg)
+	c := gctx.NewCtx()
+	c.SetApp(a)
+	a.(*GMCApp).ctx = c
 	return a
 }
 func (s *GMCApp) initialize() (err error) {
@@ -272,7 +289,7 @@ func (s *GMCApp) run() (err error) {
 		}
 
 		//init service
-		err = srv.Init(cfg)
+		err = srv.Init(cfg, s.ctx)
 		if err != nil {
 			return
 		}

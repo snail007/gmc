@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/gogf/gf/errors/gerror"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/demos/website/initialize"
-	gerr "github.com/snail007/gmc/module/error"
+	"github.com/snail007/gmc/module/error"
 	"runtime/debug"
 )
 
@@ -16,7 +15,7 @@ var (
 
 func main() {
 	defer gcore.Recover(func(e interface{}) {
-		fmt.Printf("main exited, %s\n", gerr.Wrap(e))
+		fmt.Printf("main exited, %s\n", gerror.Wrap(e))
 		debug.PrintStack()
 	})
 	defer func() {
@@ -40,7 +39,7 @@ func main() {
 	})
 
 	// 3. run the app
-	if e := gerror.Stack(app.Run());e!=""{
+	if e := gerror.Stack(app.Run()); e != "" {
 		panic(e)
 	}
 }

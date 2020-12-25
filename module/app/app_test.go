@@ -3,6 +3,7 @@ package gapp
 import (
 	"fmt"
 	"github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/module/ctx"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func TestRun(t *testing.T) {
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: httpserver.New(),
+		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
 		BeforeInit: func(srv gcore.Service, cfg *gconfig.Config) (err error) {
 			cfg.Set("template.dir", "../../http/template/tests/views")
 			cfg.Set("httpserver.listen", ":")
@@ -45,10 +46,10 @@ func TestRun_1(t *testing.T) {
 	app.SetConfigFile("app.toml")
 	app.AttachConfigFile("007", "app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: httpserver.New(),
+		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
 	})
 	app.AddService(gcore.ServiceItem{
-		Service:  httpserver.New(),
+		Service:  httpserver.NewHTTPServer(gctx.NewCtx()),
 		ConfigID: "007",
 	})
 	err := app.Run()
@@ -60,7 +61,7 @@ func TestRun_2(t *testing.T) {
 	app := New()
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
-	server := httpserver.New()
+	server := httpserver.NewHTTPServer(gctx.NewCtx())
 	app.AddService(gcore.ServiceItem{
 		Service: server,
 		BeforeInit: func(srv gcore.Service, config *gconfig.Config) (err error) {
@@ -79,7 +80,7 @@ func TestRun_3(t *testing.T) {
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: httpserver.New(),
+		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
 		AfterInit: func(srv *gcore.ServiceItem) (err error) {
 			err = fmt.Errorf("error")
 			return

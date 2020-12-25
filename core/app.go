@@ -16,4 +16,5 @@ type GMCApp interface {
 	SetLogger(logger Logger)
 	Logger() Logger
 	Stop()
+	Ctx() Ctx
 }

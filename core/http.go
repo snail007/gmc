@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"time"
 )
 
 type (
@@ -15,9 +14,7 @@ type (
 	// requests. Like http.HandlerFunc, but has a third parameter for the values of
 	// wildcards (path variables).
 	Handle func(http.ResponseWriter, *http.Request, Params)
-	// Alias of api middleware
 	MiddlewareAPI func(ctx Ctx, api APIServer) (isStop bool)
-	// Alias of web middleware
 	MiddlewareWeb func(ctx Ctx, server HTTPServer) (isStop bool)
 )
 
@@ -26,6 +23,10 @@ type Param struct {
 	Key   string
 	Value string
 }
+type paramsKey struct{}
+
+// ParamsKey is the request context key under which URL params are stored.
+var ParamsKey = paramsKey{}
 
 // Params is a Param-slice, as returned by the router.
 // The slice is ordered, the first URL parameter is also the first slice value.
@@ -53,51 +54,6 @@ var MatchedRoutePathParam = "$matchedRoutePath"
 func (ps Params) MatchedRoutePath() string {
 	return ps.ByName(MatchedRoutePathParam)
 }
-
-type Ctx interface {
-	LocalAddr() string
-	SetLocalAddr(localAddr string)
-	Param() Params
-	Request() *http.Request
-	Response() http.ResponseWriter
-	TimeUsed() time.Duration
-	SetTimeUsed(t time.Duration)
-	Write(data ...interface{}) (n int, err error)
-	WriteE(data ...interface{}) (n int, err error)
-	WriteHeader(statusCode int)
-	StatusCode() int
-	WriteCount() int64
-	IsPOST() bool
-	IsGET() bool
-	IsPUT() bool
-	IsDELETE() bool
-	IsPATCH() bool
-	IsHEAD() bool
-	IsOPTIONS() bool
-	IsAJAX() bool
-	Stop(msg ...interface{})
-	ClientIP() (ip string)
-	NewPager(perPage int, total int64) Paginator
-	GET(key string, Default ...string) (val string)
-	POST(key string, Default ...string) (val string)
-	Redirect(url string) (val string)
-}
-
-type CtxValue struct {
-	Tpl          Template
-	SessionStore SessionStorage
-	Router       HTTPRouter
-	Config       *gconfig.Config
-	AppConfig    *gconfig.Config
-	Logger       Logger
-}
-
-type (
-	ctxValueKey struct{}
-)
-
-// CtxValueKey is the request context key under which global HTTP Server object are stored.
-var CtxValueKey = ctxValueKey{}
 
 // Options is used to setting cookie.
 type CookieOptions struct {
@@ -236,13 +192,8 @@ type HTTPServer interface {
 	SetLog(l Logger)
 }
 
-type paramsKey struct{}
-
-// ParamsKey is the request context key under which URL params are stored.
-var ParamsKey = paramsKey{}
-
 type Controller interface {
-	MethodCallPre(w http.ResponseWriter, r *http.Request, ps Params)
+	MethodCallPre(ctx Ctx)
 	MethodCallPost()
 	Tr(key string, defaultText ...string) string
 	Die(msg ...interface{})

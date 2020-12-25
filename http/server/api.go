@@ -20,8 +20,8 @@ import (
 
 	gconfig "github.com/snail007/gmc/util/config"
 
-	gerr "github.com/snail007/gmc/module/error"
 	grouter "github.com/snail007/gmc/http/router"
+	gerr "github.com/snail007/gmc/module/error"
 	ghttputil "github.com/snail007/gmc/util/http"
 )
 
@@ -44,23 +44,26 @@ type APIServer struct {
 	config            *gconfig.Config
 	localaddr         *sync.Map
 	connCnt           *int64
+	ctx               gcore.Ctx
 }
 
-func NewAPIServer(address string) *APIServer {
+func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 	api := &APIServer{
 		server: &http.Server{
 			TLSConfig: &tls.Config{},
 		},
 		address:          address,
 		logger:           log2.NewGMCLog(),
-		router:           grouter.NewHTTPRouter(),
+		router:           grouter.NewHTTPRouter(ctx),
 		isShowErrorStack: true,
 		middleware0:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		middleware1:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		middleware2:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		middleware3:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		localaddr:        &sync.Map{},
+		ctx: ctx,
 	}
+	ctx.SetApiServer(api)
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
 	api.server.ErrorLog = func() *log.Logger {
@@ -74,8 +77,8 @@ func NewAPIServer(address string) *APIServer {
 	return api
 }
 
-func NewDefaultAPIServer(config *gconfig.Config) (api *APIServer, err error) {
-	api = NewAPIServer(config.GetString("apiserver.listen"))
+func NewDefaultAPIServer(ctx gcore.Ctx, config *gconfig.Config) (api *APIServer, err error) {
+	api = NewAPIServer(ctx, config.GetString("apiserver.listen"))
 	if config.GetBool("apiserver.tlsenable") {
 		tlsCfg := &tls.Config{}
 		if config.GetBool("apiserver.tlsclientauth") {
@@ -102,7 +105,7 @@ func NewDefaultAPIServer(config *gconfig.Config) (api *APIServer, err error) {
 
 func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w = ghttputil.NewResponseWriter(w)
-	c0 := grouter.NewCtx(w, r)
+	c0 := this.ctx.CloneWithHTTP(w, r)
 	defer func() {
 		// middleware3
 		this.callMiddleware(c0, this.middleware3)
@@ -195,7 +198,7 @@ func (this *APIServer) API(path string, handle func(ctx gcore.Ctx), ext ...strin
 		ext1 = ext[0]
 	}
 	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
-		handle(grouter.NewCtx(w, r, ps))
+		handle(this.ctx.CloneWithHTTP(w, r, ps))
 	})
 }
 
@@ -306,7 +309,9 @@ func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ct
 }
 
 //Init implements service.Service Init
-func (s *APIServer) Init(cfg *gconfig.Config) (err error) {
+func (s *APIServer) Init(cfg *gconfig.Config, ctx gcore.Ctx) (err error) {
+	ctx.SetApiServer(s)
+	s.ctx = ctx
 	return
 }
 

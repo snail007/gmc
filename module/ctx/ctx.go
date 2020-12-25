@@ -1,8 +1,9 @@
-package grouter
+package gctx
 
 import (
 	gcore "github.com/snail007/gmc/core"
 	gutil "github.com/snail007/gmc/util"
+	gconfig "github.com/snail007/gmc/util/config"
 	"net"
 	"net/http"
 	"strings"
@@ -17,6 +18,83 @@ type Ctx struct {
 	param     gcore.Params
 	timeUsed  time.Duration
 	localAddr string
+	apiServer gcore.APIServer
+	webServer gcore.HTTPServer
+	app       gcore.GMCApp
+	logger    gcore.Logger
+	config    *gconfig.Config
+}
+
+func (this *Ctx) Config() *gconfig.Config {
+	return this.config
+}
+
+func (this *Ctx) SetConfig(config *gconfig.Config) {
+	this.config = config
+}
+
+func (this *Ctx) Logger() gcore.Logger {
+	return this.logger
+}
+
+func (this *Ctx) SetLogger(logger gcore.Logger) {
+	this.logger = logger
+}
+
+func (this *Ctx) App() gcore.GMCApp {
+	return this.app
+}
+
+func (this *Ctx) SetApp(app gcore.GMCApp) {
+	this.app = app
+}
+
+func (this *Ctx) Clone() gcore.Ctx {
+	ps := this.param
+	if ps == nil {
+		ps = gcore.Params{}
+	}
+	return &Ctx{
+		app:       this.app,
+		apiServer: this.apiServer,
+		webServer: this.webServer,
+		response:  this.response,
+		request:   this.request,
+		param:     ps,
+	}
+}
+
+func (this *Ctx) CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...gcore.Params) gcore.Ctx {
+	var ps0 gcore.Params
+	if len(ps) > 0 && ps[0] != nil {
+		ps0 = ps[0]
+	} else {
+		ps0 = gcore.Params{}
+	}
+	return &Ctx{
+		app:       this.app,
+		apiServer: this.apiServer,
+		webServer: this.webServer,
+		response:  w,
+		request:   r,
+		param:     ps0,
+	}
+}
+
+func (this *Ctx) ApiServer() gcore.APIServer {
+	return this.apiServer
+}
+
+func (this *Ctx) SetApiServer(apiServer gcore.APIServer) {
+	this.apiServer = apiServer
+}
+
+func (this *Ctx) WebServer() gcore.HTTPServer {
+	return this.webServer
+}
+
+func (this *Ctx) SetWebServer(webServer gcore.HTTPServer) {
+	this.webServer = webServer
 }
 
 func (this *Ctx) LocalAddr() string {
@@ -45,20 +123,6 @@ func (this *Ctx) Response() http.ResponseWriter {
 
 func (this *Ctx) SetResponse(response http.ResponseWriter) {
 	this.response = response
-}
-
-func NewCtx(w http.ResponseWriter, r *http.Request, ps ...gcore.Params) *Ctx {
-	var ps0 gcore.Params
-	if len(ps) > 0 {
-		ps0 = ps[0]
-	} else {
-		ps0 = gcore.Params{}
-	}
-	return &Ctx{
-		response: w,
-		request:  r,
-		param:    ps0,
-	}
 }
 
 func (this *Ctx) SetParam(param gcore.Params) {
@@ -196,4 +260,10 @@ func (this *Ctx) Redirect(url string) (val string) {
 	http.Redirect(this.Response(), this.Request(), url, http.StatusFound)
 	ghttputil.JustDie()
 	return
+}
+
+func NewCtx() *Ctx {
+	return &Ctx{
+		param: gcore.Params{},
+	}
 }

@@ -15,7 +15,7 @@ func main() {
 
 	// 2. add a http server service to app.
 	app.AddService(gcore.ServiceItem{
-		Service: ghttpserver.New(),
+		Service: ghttpserver.NewHTTPServer(app.Ctx()),
 		AfterInit: func(s *gcore.ServiceItem) (err error) {
 			// do some initialize after http server initialized.
 			err = initialize.Initialize(s.Service.(*ghttpserver.HTTPServer))
@@ -24,7 +24,7 @@ func main() {
 	})
 
 	// 3. run the app
-	if e := gerror.Stack(app.Run());e!=""{
+	if e := gerror.Stack(app.Run()); e != "" {
 		app.Logger().Panic(e)
 	}
 }

@@ -52,9 +52,10 @@ type HTTPRouter struct {
 	//namespace of current group
 	ns  string
 	ext string
+	ctx gcore.Ctx
 }
 
-func NewHTTPRouter() *HTTPRouter {
+func NewHTTPRouter(ctx gcore.Ctx) *HTTPRouter {
 	hr := &HTTPRouter{
 		Router: &Router{
 			RedirectTrailingSlash:  false,
@@ -63,7 +64,8 @@ func NewHTTPRouter() *HTTPRouter {
 			HandleOPTIONS:          true,
 			SaveMatchedRoutePath:   true, //if true this.Args in controller is always not be nil, if false it maybe nil.
 		},
-		ns: "/",
+		ns:  "/",
+		ctx: ctx,
 	}
 	return hr
 }
@@ -77,6 +79,7 @@ func (s *HTTPRouter) Group(ns string) gcore.HTTPRouter {
 		Router: s.Router,
 		hr:     s,
 		ns:     ns,
+		ctx:    s.ctx,
 	}
 }
 func (s *HTTPRouter) Namespace() string {
@@ -209,7 +212,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			objv := vp.Interface()
 
 			defer invoke(objv, "MethodCallPost")
-			invoke(objv, "MethodCallPre", w, r, ps)
+			invoke(objv, "MethodCallPre", s.ctx.CloneWithHTTP(w, r, ps))
 			if beforeIsFound {
 				invoke(objv, "Before")
 			}

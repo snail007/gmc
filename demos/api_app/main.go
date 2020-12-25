@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	gctx "github.com/snail007/gmc/module/ctx"
 	gerror "github.com/snail007/gmc/module/error"
 	gutil "github.com/snail007/gmc/util"
 	gconfig "github.com/snail007/gmc/util/config"
@@ -15,7 +16,7 @@ import (
 )
 
 func main() {
-	api := gmc.New.APIServer(":8030")
+	api := gmc.New.APIServer(gctx.NewCtx(),":8030")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(func(c gmc.C, s gcore.APIServer) (isStop bool) {

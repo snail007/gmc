@@ -8,12 +8,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	log2 "github.com/snail007/gmc/module/log"
 	grouter "github.com/snail007/gmc/http/router"
 	gfilestore "github.com/snail007/gmc/http/session/filestore"
 	gmemorystore "github.com/snail007/gmc/http/session/memorystore"
 	gredisstore "github.com/snail007/gmc/http/session/redisstore"
 	gtemplate "github.com/snail007/gmc/http/template"
+	log2 "github.com/snail007/gmc/module/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -28,8 +28,6 @@ import (
 
 	gerr "github.com/snail007/gmc/module/error"
 	gconfig "github.com/snail007/gmc/util/config"
-
-	ghttputil "github.com/snail007/gmc/util/http"
 )
 
 var (
@@ -69,21 +67,26 @@ type HTTPServer struct {
 	middleware3          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
 	isShutdown           bool
 	localaddr            *sync.Map
+	ctx                  gcore.Ctx
 }
 
-func New() *HTTPServer {
-	return &HTTPServer{
+func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
+	s := &HTTPServer{
+		ctx:         ctx,
 		middleware0: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
 		middleware1: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
 		middleware2: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
 		middleware3: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
 		localaddr:   &sync.Map{},
 	}
+	ctx.SetWebServer(s)
+	return s
 }
 
 //Init implements service.Service Init
-func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
+func (s *HTTPServer) Init(cfg *gconfig.Config, ctx gcore.Ctx) (err error) {
 	connCnt := int64(0)
+	ctx.SetWebServer(s)
 	s.server = &http.Server{}
 	s.logger = log2.NewGMCLog()
 	s.connCnt = &connCnt
@@ -91,6 +94,7 @@ func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
 	s.isTestNotClosedError = false
 	s.server.ConnState = s.connState
 	s.server.Handler = s
+	s.ctx = ctx
 
 	//init base objects
 	err = s.initBaseObjets()
@@ -120,7 +124,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 
 	// init http server router
-	s.router = grouter.NewHTTPRouter()
+	s.router = grouter.NewHTTPRouter(s.ctx)
 	s.addr = s.config.GetString("httpserver.listen")
 
 	// init static files handler, must be after router inited
@@ -129,21 +133,11 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 }
 
 func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rctx := r.Context()
-	rctx = context.WithValue(rctx, gcore.CtxValueKey, gcore.CtxValue{
-		Tpl:          s.tpl,
-		SessionStore: s.sessionStore,
-		Router:       s.router,
-		Config:       s.config,
-		Logger:       s.logger,
-	})
-	w = ghttputil.NewResponseWriter(w)
-	r = r.WithContext(rctx)
 
 	// init ctx
-	c0 := grouter.NewCtx(w, r)
+	c0 := s.ctx.CloneWithHTTP(w, r)
 	addr, _ := s.localaddr.Load(r.RemoteAddr)
-	if v,ok:=addr.(string);ok {
+	if v, ok := addr.(string); ok {
 		c0.SetLocalAddr(v)
 	}
 

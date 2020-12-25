@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
+	gctx "github.com/snail007/gmc/module/ctx"
 	gerror "github.com/snail007/gmc/module/error"
 	"mygmcapi/handlers"
 )
@@ -16,7 +17,7 @@ func main() {
 		app.Logger().Error(err)
 	}
 	// 3. create api server
-	api, err := gmc.New.APIServerDefault(cfg)
+	api, err := gmc.New.APIServerDefault(gctx.NewCtx(),cfg)
 	if err != nil {
 		app.Logger().Error(err)
 	}

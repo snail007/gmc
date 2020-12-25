@@ -572,7 +572,7 @@ func TestRouterParamsFromContext(t *testing.T) {
 	wantParams := gcore.Params{gcore.Param{"name", "gopher"}}
 	handlerFunc := func(_ http.ResponseWriter, req *http.Request) {
 		// get params from request context
-		params := ParamsFromContext(req.Context())
+		params := gcore.ParamsFromContext(req.Context())
 
 		if !reflect.DeepEqual(params, wantParams) {
 			t.Fatalf("Wrong parameter values: want %v, got %v", wantParams, params)
@@ -584,7 +584,7 @@ func TestRouterParamsFromContext(t *testing.T) {
 	var nilParams gcore.Params
 	handlerFuncNil := func(_ http.ResponseWriter, req *http.Request) {
 		// get params from request context
-		params := ParamsFromContext(req.Context())
+		params := gcore.ParamsFromContext(req.Context())
 
 		if !reflect.DeepEqual(params, nilParams) {
 			t.Fatalf("Wrong parameter values: want %v, got %v", nilParams, params)

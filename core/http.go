@@ -1,6 +1,7 @@
 package gcore
 
 import (
+	"context"
 	gtemplate "github.com/snail007/gmc/http/template"
 	gconfig "github.com/snail007/gmc/util/config"
 	"io"
@@ -251,4 +252,11 @@ type Controller interface {
 	SessionDestroy() (err error)
 	Write(data ...interface{}) (n int, err error)
 	WriteE(data ...interface{}) (n int, err error)
+}
+
+// ParamsFromContext pulls the URL parameters from a request context,
+// or returns nil if none are present.
+func ParamsFromContext(ctx context.Context) Params {
+	p, _ := ctx.Value(ParamsKey).(Params)
+	return p
 }

@@ -84,16 +84,6 @@ import (
 	"sync"
 )
 
-
-
-
-// ParamsFromContext pulls the URL parameters from a request context,
-// or returns nil if none are present.
-func ParamsFromContext(ctx context.Context) gcore.Params {
-	p, _ := ctx.Value(gcore.ParamsKey).(gcore.Params)
-	return p
-}
-
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {

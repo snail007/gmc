@@ -10,7 +10,6 @@ import (
 	gcore "github.com/snail007/gmc/core"
 	grouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/session"
-	gtemplate "github.com/snail007/gmc/http/template"
 	log2 "github.com/snail007/gmc/module/log"
 	"io"
 	"io/ioutil"
@@ -84,7 +83,7 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 //Init implements service.Service Init
 func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
 	connCnt := int64(0)
- 	s.server = &http.Server{}
+	s.server = &http.Server{}
 	s.logger = log2.NewGMCLog()
 	s.connCnt = &connCnt
 	s.config = cfg
@@ -99,16 +98,15 @@ func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
 func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init template
-	s.tpl, err = gtemplate.New(s.config.GetString("template.dir"))
+	s.tpl, err = gcore.Providers.Template("")(s.ctx)
 	if err != nil {
 		return
 	}
-	s.tpl.Delims(s.config.GetString("template.delimiterleft"),
-		s.config.GetString("template.delimiterright"))
-	s.tpl.Extension(s.config.GetString("template.ext"))
 
 	// init session store
-	err = s.initSessionStore()
+
+	s.sessionStore, err = gcore.Providers.SessionStorage("")(s.ctx)
+	//err = s.initSessionStore()
 	if err != nil {
 		return
 	}

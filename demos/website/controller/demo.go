@@ -110,7 +110,7 @@ func (this *Demo) I18n3() {
 }
 
 func (this *Demo) Cache() {
-	gmc.Cache.Redis().Set("test", "aaa", time.Second)
+	gmc.Cache.Cache().Set("test", "aaa", time.Second)
 	v, _ := gmc.Cache.Redis().Get("test")
 	this.Write(v)
 }

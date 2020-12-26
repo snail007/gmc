@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	t, err := template.New("views")
+	t, err := template.NewTemplate("views")
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -38,9 +38,9 @@ type Template struct {
 	ext     string
 }
 
-// New create a template object, and config it.
+// NewTemplate create a template object, and config it.
 // rootDir is root path of view files folder.
-func New(rootDir string) (t *Template, err error) {
+func NewTemplate(rootDir string) (t *Template, err error) {
 	absRootDir, err := filepath.Abs(rootDir)
 	if err != nil {
 		return

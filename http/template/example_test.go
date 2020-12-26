@@ -8,7 +8,7 @@ package gtemplate
 import "fmt"
 
 func Example() {
-	tpl, err := New("tests/views")
+	tpl, err := NewTemplate("tests/views")
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -214,7 +214,7 @@ func TestHelper(t *testing.T) {
 	r := grouter.NewHTTPRouter(s.ctx)
 	s.SetRouter(r)
 	assert.NotNil(s.router)
-	tpl, err := gtemplate.New("views")
+	tpl, err := gtemplate.NewTemplate("views")
 	assert.Nil(err)
 	s.SetTpl(tpl)
 	assert.NotNil(s.tpl)
@@ -560,7 +560,7 @@ func mockHTTPServer(cfg ...*gconfig.Config) *HTTPServer {
 	s.SetLogger(glog.NewGMCLog())
 	st, _ := gsession.NewMemoryStore(gsession.NewMemoryStoreConfig())
 	s.SetSessionStore(st)
-	tpl, _ := gtemplate.New("../template/tests/views")
+	tpl, _ := gtemplate.NewTemplate("../template/tests/views")
 	s.SetTpl(tpl)
 	return s
 }

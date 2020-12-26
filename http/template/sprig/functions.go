@@ -16,7 +16,7 @@ import (
 //
 // Use this to pass the functions into the template engine:
 //
-// 	tpl := template.New("foo").Funcs(sprig.FuncMap()))
+// 	tpl := template.NewTemplate("foo").Funcs(sprig.FuncMap()))
 //
 func FuncMap() template.FuncMap {
 	return HtmlFuncMap()

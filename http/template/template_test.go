@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	tpl, _ = New("tests/views")
+	tpl, _ = NewTemplate("tests/views")
 )
 
 func TestParse(t *testing.T) {

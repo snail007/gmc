@@ -9,9 +9,7 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gcookie "github.com/snail007/gmc/http/cookie"
-	gsession "github.com/snail007/gmc/http/session"
-	gview "github.com/snail007/gmc/http/view"
- 	gi18n "github.com/snail007/gmc/module/i18n"
+	gi18n "github.com/snail007/gmc/module/i18n"
 	"github.com/snail007/gmc/util/cast"
 	gconfig "github.com/snail007/gmc/util/config"
 	ghttputil "github.com/snail007/gmc/util/http"
@@ -38,17 +36,16 @@ type Controller struct {
 func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 	// 1. init basic objects
 	this.Ctx = ctx
- 	this.Response = ctx.Response()
+	this.Response = ctx.Response()
 	this.Request = ctx.Request()
 	this.Param = ctx.Param()
-	this.Tpl = ctx.WebServer().Tpl()
-	this.SessionStore = ctx.WebServer().SessionStore()
+	this.Tpl =ctx.WebServer().Tpl()
+	this.SessionStore =ctx.WebServer().SessionStore()
 	this.Router = ctx.WebServer().Router()
 	this.Config = ctx.WebServer().Config()
 	this.Logger = ctx.WebServer().Logger()
-	this.View = gview.New(this.Response, this.Tpl)
-	this.Cookie = gcookie.New(this.Response, this.Request )
-
+	this.View, _ = gcore.Providers.View("")(ctx)
+	this.Cookie = gcookie.New(this.Response, this.Request)
 
 	// 2.init stuff below
 	this.View.SetLayoutDir(this.Config.GetString("template.layout"))
@@ -144,9 +141,9 @@ func (this *Controller) MethodCallPost() {
 		if this.Session.IsDestroy() {
 			this.SessionStore.Delete(this.Session.SessionID())
 		} else {
-			err:=this.SessionStore.Save(this.Session)
-			if err!=nil{
-				this.Logger.Warnf("save session fail, %s",err)
+			err := this.SessionStore.Save(this.Session)
+			if err != nil {
+				this.Logger.Warnf("save session fail, %s", err)
 			}
 		}
 	}
@@ -180,7 +177,7 @@ func (this *Controller) SessionStart() (err error) {
 		err = fmt.Errorf("session is disabled")
 		return
 	}
-	if this.Session!=nil{
+	if this.Session != nil {
 		//already started
 		return
 	}
@@ -191,12 +188,12 @@ func (this *Controller) SessionStart() (err error) {
 		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
-		sess := gsession.NewSession()
+		sess, _ := gcore.Providers.Session("")(this.Ctx)
 		sess.Touch()
 		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcore.CookieOptions{
-			Path: "/",
-			MaxAge: this.Config.GetInt("session.ttl"),
-			HTTPOnly:true,
+			Path:     "/",
+			MaxAge:   this.Config.GetInt("session.ttl"),
+			HTTPOnly: true,
 		})
 		err = this.SessionStore.Save(sess)
 		this.Session = sess

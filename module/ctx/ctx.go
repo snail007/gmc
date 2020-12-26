@@ -26,7 +26,16 @@ type Ctx struct {
 }
 
 func (this *Ctx) Config() *gconfig.Config {
-	return this.config
+	if this.config != nil {
+		return this.config
+	}
+	if this.app != nil {
+		return this.app.Config()
+	}
+	if this.webServer != nil {
+		return this.webServer.Config()
+	}
+	return nil
 }
 
 func (this *Ctx) SetConfig(config *gconfig.Config) {
@@ -266,4 +275,23 @@ func NewCtx() *Ctx {
 	return &Ctx{
 		param: gcore.Params{},
 	}
+}
+
+func NewCtxFromConfig(c *gconfig.Config) *Ctx {
+	return &Ctx{
+		config: c,
+		param:  gcore.Params{},
+	}
+}
+
+func NewCtxFromConfigFile(file string) (ctx *Ctx, err error) {
+	cfg, err := gconfig.NewConfigFile(file)
+	if err != nil {
+		return
+	}
+	ctx = &Ctx{
+		config: cfg,
+		param:  gcore.Params{},
+	}
+	return
 }

@@ -36,7 +36,7 @@ func TestView_Layout(t *testing.T) {
 	assert.Equal( "abc",b.String())
 }
 func mockTpl() *gtemplate.Template {
-	t, _ := gtemplate.New("tests")
+	t, _ := gtemplate.NewTemplate("tests")
 	t.Parse()
 	return t
 }

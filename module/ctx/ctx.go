@@ -90,11 +90,11 @@ func (this *Ctx) CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...gco
 	}
 }
 
-func (this *Ctx) ApiServer() gcore.APIServer {
+func (this *Ctx) APIServer() gcore.APIServer {
 	return this.apiServer
 }
 
-func (this *Ctx) SetApiServer(apiServer gcore.APIServer) {
+func (this *Ctx) SetAPIServer(apiServer gcore.APIServer) {
 	this.apiServer = apiServer
 }
 

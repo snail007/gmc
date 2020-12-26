@@ -105,14 +105,13 @@ func (db *SQLite3DB) getDSN() string {
 			url.QueryEscape(db.Config.CacheMode),
 			url.QueryEscape(db.Config.OpenMode),
 		)
-	} else {
-		return fmt.Sprintf("file:%s?cache=%s&mode=%s&_pragma_key=x'%s'&_pragma_cipher_page_size=4096",
-			url.QueryEscape(db.Config.Database),
-			url.QueryEscape(db.Config.CacheMode),
-			url.QueryEscape(db.Config.OpenMode),
-			url.QueryEscape(db.md5(db.Config.Password)),
-		)
 	}
+	return fmt.Sprintf("file:%s?cache=%s&mode=%s&_pragma_key=x'%s'&_pragma_cipher_page_size=4096",
+		url.QueryEscape(db.Config.Database),
+		url.QueryEscape(db.Config.CacheMode),
+		url.QueryEscape(db.Config.OpenMode),
+		url.QueryEscape(db.md5(db.Config.Password)),
+	)
 }
 func (db *SQLite3DB) getDB() (connPool *sql.DB, err error) {
 	connPool, err = sql.Open("sqlite3", db.getDSN())
@@ -131,7 +130,7 @@ func (db *SQLite3DB) AR() gcore.ActiveRecord {
 	ar := new(SQLite3ActiveRecord)
 	ar.Reset()
 	ar.tablePrefix = db.Config.TablePrefix
-	ar.tablePrefixSqlIdentifier = db.Config.TablePrefixSqlIdentifier
+	ar.tablePrefixSQLIdentifier = db.Config.TablePrefixSQLIdentifier
 	return ar
 }
 func (db *SQLite3DB) IsEncrypted() bool {
@@ -170,7 +169,7 @@ func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, 
 	}
 	rsRaw := new(ResultSet)
 	rsRaw.rowsAffected, err = result.RowsAffected()
-	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.lastInsertID, err = result.LastInsertId()
 	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
 	rsRaw.sql = sqlStr
 	if err != nil {
@@ -178,7 +177,7 @@ func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, 
 	}
 	l := int64(arInsertBatchCnt)
 	if l > 1 {
-		rsRaw.lastInsertId = rsRaw.lastInsertId - +1
+		rsRaw.lastInsertID = rsRaw.lastInsertID - +1
 		rsRaw.rowsAffected = l
 	}
 	rs = rsRaw
@@ -207,12 +206,12 @@ func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...inte
 	}
 	rsRaw := new(ResultSet)
 	rsRaw.rowsAffected, err = result.RowsAffected()
-	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.lastInsertID, err = result.LastInsertId()
 	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
 	rsRaw.sql = sqlStr
 	l := int64(arInsertBatchCnt)
 	if l > 1 {
-		rsRaw.lastInsertId = rsRaw.lastInsertId - +1
+		rsRaw.lastInsertID = rsRaw.lastInsertID - +1
 		rsRaw.rowsAffected = l
 	}
 	rs = rsRaw
@@ -356,22 +355,22 @@ func (db *SQLite3DB) Query(ar0 gcore.ActiveRecord) (rs gcore.ResultSet, err erro
 }
 
 const (
-	OPEN_MODE_READ_ONLY         = "ro"
-	OPEN_MODE_READ_WRITE        = "rw"
-	OPEN_MODE_READ_WRITE_CREATE = "rwc"
-	OPEN_MODE_MEMORY            = "memory"
-	CACHE_MODE_SHARED           = "shared"
-	CACHE_MODE_PRIVATE          = "private"
-	SYNC_MODE_OFF               = 0
-	SYNC_MODE_NORMAL            = 1
-	SYNC_MODE_FULL              = 2
-	SYNC_MODE_EXTRA             = 3
+	OpenModeReadOnly        = "ro"
+	OpenModeReadWrite       = "rw"
+	OpenModeReadWriteCreate = "rwc"
+	OpenModeMemory          = "memory"
+	CacheModeShared         = "shared"
+	CacheModePrivate        = "private"
+	SyncModeOff             = 0
+	SyncModeNormal          = 1
+	SyncModeFull            = 2
+	SyncModeExtra           = 3
 )
 
 type SQLite3DBConfig struct {
 	Database                 string
 	TablePrefix              string
-	TablePrefixSqlIdentifier string
+	TablePrefixSQLIdentifier string
 	Cache                    gcore.DBCache
 	SyncMode                 int
 	OpenMode                 string
@@ -390,12 +389,12 @@ func NewSQLite3DBConfigWith(dbfilename, password, openMode, cacheMode string, sy
 }
 func NewSQLite3DBConfig() SQLite3DBConfig {
 	return SQLite3DBConfig{
-		OpenMode:                 OPEN_MODE_READ_WRITE,
-		CacheMode:                CACHE_MODE_SHARED,
-		SyncMode:                 SYNC_MODE_OFF,
+		OpenMode:                 OpenModeReadWrite,
+		CacheMode:                CacheModeShared,
+		SyncMode:                 SyncModeOff,
 		Database:                 "test",
 		TablePrefix:              "",
-		TablePrefixSqlIdentifier: "",
+		TablePrefixSQLIdentifier: "",
 		Password:                 "passwd",
 	}
 }
@@ -418,7 +417,7 @@ type SQLite3ActiveRecord struct {
 	sqlType                  string
 	currentSQL               string
 	tablePrefix              string
-	tablePrefixSqlIdentifier string
+	tablePrefixSQLIdentifier string
 	cacheKey                 string
 	cacheSeconds             uint
 }
@@ -477,8 +476,8 @@ func (ar *SQLite3ActiveRecord) FromAs(from, as string) gcore.ActiveRecord {
 	return ar
 }
 
-func (ar *SQLite3ActiveRecord) Join(table, as, on, type_ string) gcore.ActiveRecord {
-	ar.arJoin = append(ar.arJoin, []string{table, as, on, type_})
+func (ar *SQLite3ActiveRecord) Join(table, as, on, typ string) gcore.ActiveRecord {
+	ar.arJoin = append(ar.arJoin, []string{table, as, on, typ})
 	return ar
 }
 func (ar *SQLite3ActiveRecord) Where(where map[string]interface{}) gcore.ActiveRecord {
@@ -494,8 +493,8 @@ func (ar *SQLite3ActiveRecord) WhereWrap(where map[string]interface{}, leftWrap,
 	return ar
 }
 func (ar *SQLite3ActiveRecord) GroupBy(column string) gcore.ActiveRecord {
-	for _, column_ := range strings.Split(column, ",") {
-		ar.arGroupBy = append(ar.arGroupBy, strings.TrimSpace(column_))
+	for _, columnCurrent := range strings.Split(column, ",") {
+		ar.arGroupBy = append(ar.arGroupBy, strings.TrimSpace(columnCurrent))
 	}
 	return ar
 }
@@ -508,8 +507,8 @@ func (ar *SQLite3ActiveRecord) HavingWrap(having, leftWrap, rightWrap string) gc
 	return ar
 }
 
-func (ar *SQLite3ActiveRecord) OrderBy(column, type_ string) gcore.ActiveRecord {
-	ar.arOrderBy[column] = type_
+func (ar *SQLite3ActiveRecord) OrderBy(column, typ string) gcore.ActiveRecord {
+	ar.arOrderBy[column] = typ
 	return ar
 }
 
@@ -989,13 +988,13 @@ func (ar *SQLite3ActiveRecord) compileFrom(from, as string) string {
 	}
 	return ar.protectIdentifier(ar.checkPrefix(from)) + as
 }
-func (ar *SQLite3ActiveRecord) compileJoin(table, as, on, type_ string) string {
-	table_ := ""
+func (ar *SQLite3ActiveRecord) compileJoin(table, as, on, typ string) string {
+	tableUsed := ""
 	if as != "" {
 		ar.asTable[table] = true
-		table_ = ar.protectIdentifier(ar.checkPrefix(table)) + " AS " + ar.protectIdentifier(as)
+		tableUsed = ar.protectIdentifier(ar.checkPrefix(table)) + " AS " + ar.protectIdentifier(as)
 	} else {
-		table_ = ar.protectIdentifier(ar.checkPrefix(table))
+		tableUsed = ar.protectIdentifier(ar.checkPrefix(table))
 	}
 	a := strings.Split(on, "=")
 	if len(a) == 2 {
@@ -1007,7 +1006,7 @@ func (ar *SQLite3ActiveRecord) compileJoin(table, as, on, type_ string) string {
 		right[1] = ar.protectIdentifier(right[1])
 		on = strings.Join(left, ".") + "=" + strings.Join(right, ".")
 	}
-	return fmt.Sprintf(" %s JOIN %s ON %s ", type_, table_, on)
+	return fmt.Sprintf(" %s JOIN %s ON %s ", typ, tableUsed, on)
 }
 
 func (ar *SQLite3ActiveRecord) getFrom() string {

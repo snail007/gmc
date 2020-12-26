@@ -39,12 +39,12 @@ func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 	this.Response = ctx.Response()
 	this.Request = ctx.Request()
 	this.Param = ctx.Param()
-	this.Tpl =ctx.WebServer().Tpl()
-	this.SessionStore =ctx.WebServer().SessionStore()
+	this.Tpl = ctx.WebServer().Tpl()
+	this.SessionStore = ctx.WebServer().SessionStore()
 	this.Router = ctx.WebServer().Router()
 	this.Config = ctx.WebServer().Config()
 	this.Logger = ctx.WebServer().Logger()
-	this.View, _ = gcore.Providers.View("")(ctx)
+	this.View = gcore.Providers.View("")(ctx)
 	this.Cookie = gcookie.New(this.Response, this.Request)
 
 	// 2.init stuff below
@@ -188,7 +188,7 @@ func (this *Controller) SessionStart() (err error) {
 		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
-		sess, _ := gcore.Providers.Session("")(this.Ctx)
+		sess := gcore.Providers.Session("")(this.Ctx)
 		sess.Touch()
 		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcore.CookieOptions{
 			Path:     "/",

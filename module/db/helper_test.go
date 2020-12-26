@@ -41,7 +41,7 @@ func TestRegistSQLite3(t *testing.T) {
 	os.Remove("test.db")
 	assert := assert.New(t)
 	cfg := NewSQLite3DBConfig()
-	cfg.OpenMode = OPEN_MODE_READ_WRITE_CREATE
+	cfg.OpenMode = OpenModeReadWriteCreate
 	cfg.Password = "123"
 	cfg.Database = "test.db"
 	db, err := NewSQLite3DB(cfg)
@@ -56,7 +56,7 @@ func TestRegistSQLite3_1(t *testing.T) {
 	os.Remove("test.db")
 	assert := assert.New(t)
 	cfg := NewSQLite3DBConfig()
-	cfg.OpenMode = OPEN_MODE_READ_WRITE_CREATE
+	cfg.OpenMode = OpenModeReadWriteCreate
 	cfg.Password = ""
 	cfg.Database = "test.db"
 	db, err := NewSQLite3DB(cfg)

@@ -123,7 +123,7 @@ func (db *MySQLDB) AR() (ar gcore.ActiveRecord) {
 	ar0 := new(MySQLActiveRecord)
 	ar0.Reset()
 	ar0.tablePrefix = db.Config.TablePrefix
-	ar0.tablePrefixSqlIdentifier = db.Config.TablePrefixSqlIdentifier
+	ar0.tablePrefixSQLIdentifier = db.Config.TablePrefixSQLIdentifier
 	return ar0
 }
 func (db *MySQLDB) Stats() sql.DBStats {
@@ -138,7 +138,7 @@ func (db *MySQLDB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs gcore.ResultSe
 }
 func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
-	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSqlIdentifier, db.Config.TablePrefix, -1)
+	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	var stmt *sql.Stmt
 	var result sql.Result
 
@@ -153,7 +153,7 @@ func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (
 	}
 	rsRaw := new(ResultSet)
 	rsRaw.rowsAffected, err = result.RowsAffected()
-	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.lastInsertID, err = result.LastInsertId()
 	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
 	rsRaw.sql = sqlStr
 	rs = rsRaw
@@ -164,7 +164,7 @@ func (db *MySQLDB) Exec(ar gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 }
 func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
-	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSqlIdentifier, db.Config.TablePrefix, -1)
+	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	var stmt *sql.Stmt
 	var result sql.Result
 
@@ -179,7 +179,7 @@ func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.Resul
 	}
 	rsRaw := new(ResultSet)
 	rsRaw.rowsAffected, err = result.RowsAffected()
-	rsRaw.lastInsertId, err = result.LastInsertId()
+	rsRaw.lastInsertID, err = result.LastInsertId()
 	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
 	rsRaw.sql = sqlStr
 	if err != nil {
@@ -333,7 +333,7 @@ type MySQLDBConfig struct {
 	Username                 string
 	Password                 string
 	TablePrefix              string
-	TablePrefixSqlIdentifier string
+	TablePrefixSQLIdentifier string
 	Timeout                  int
 	ReadTimeout              int
 	WriteTimeout             int
@@ -361,7 +361,7 @@ func NewMySQLDBConfig() MySQLDBConfig {
 		Username:                 "root",
 		Password:                 "",
 		TablePrefix:              "",
-		TablePrefixSqlIdentifier: "",
+		TablePrefixSQLIdentifier: "",
 		Timeout:                  3000,
 		ReadTimeout:              5000,
 		WriteTimeout:             5000,
@@ -388,7 +388,7 @@ type MySQLActiveRecord struct {
 	sqlType                  string
 	currentSQL               string
 	tablePrefix              string
-	tablePrefixSqlIdentifier string
+	tablePrefixSQLIdentifier string
 	cacheKey                 string
 	cacheSeconds             uint
 }
@@ -447,8 +447,8 @@ func (ar *MySQLActiveRecord) FromAs(from, as string) gcore.ActiveRecord {
 	return ar
 }
 
-func (ar *MySQLActiveRecord) Join(table, as, on, type_ string) gcore.ActiveRecord {
-	ar.arJoin = append(ar.arJoin, []string{table, as, on, type_})
+func (ar *MySQLActiveRecord) Join(table, as, on, typ string) gcore.ActiveRecord {
+	ar.arJoin = append(ar.arJoin, []string{table, as, on, typ})
 	return ar
 }
 func (ar *MySQLActiveRecord) Where(where map[string]interface{}) gcore.ActiveRecord {
@@ -464,8 +464,8 @@ func (ar *MySQLActiveRecord) WhereWrap(where map[string]interface{}, leftWrap, r
 	return ar
 }
 func (ar *MySQLActiveRecord) GroupBy(column string) gcore.ActiveRecord {
-	for _, column_ := range strings.Split(column, ",") {
-		ar.arGroupBy = append(ar.arGroupBy, strings.TrimSpace(column_))
+	for _, columnCurrent := range strings.Split(column, ",") {
+		ar.arGroupBy = append(ar.arGroupBy, strings.TrimSpace(columnCurrent))
 	}
 	return ar
 }
@@ -478,8 +478,8 @@ func (ar *MySQLActiveRecord) HavingWrap(having, leftWrap, rightWrap string) gcor
 	return ar
 }
 
-func (ar *MySQLActiveRecord) OrderBy(column, type_ string) gcore.ActiveRecord {
-	ar.arOrderBy[column] = type_
+func (ar *MySQLActiveRecord) OrderBy(column, typ string) gcore.ActiveRecord {
+	ar.arOrderBy[column] = typ
 	return ar
 }
 
@@ -611,7 +611,7 @@ func (ar *MySQLActiveRecord) SQL() string {
 	case "delete":
 		ar.currentSQL = ar.getDeleteSQL()
 	}
-	ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSqlIdentifier, ar.tablePrefix, -1)
+	ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
 	return ar.currentSQL
 }
 func (ar *MySQLActiveRecord) getUpdateSQL() string {
@@ -961,13 +961,13 @@ func (ar *MySQLActiveRecord) compileFrom(from, as string) string {
 	}
 	return ar.protectIdentifier(ar.checkPrefix(from)) + as
 }
-func (ar *MySQLActiveRecord) compileJoin(table, as, on, type_ string) string {
-	table_ := ""
+func (ar *MySQLActiveRecord) compileJoin(table, as, on, typ string) string {
+	tableUsed := ""
 	if as != "" {
 		ar.asTable[table] = true
-		table_ = ar.protectIdentifier(ar.checkPrefix(table)) + " AS " + ar.protectIdentifier(as)
+		tableUsed = ar.protectIdentifier(ar.checkPrefix(table)) + " AS " + ar.protectIdentifier(as)
 	} else {
-		table_ = ar.protectIdentifier(ar.checkPrefix(table))
+		tableUsed = ar.protectIdentifier(ar.checkPrefix(table))
 	}
 	a := strings.Split(on, "=")
 	if len(a) == 2 {
@@ -979,7 +979,7 @@ func (ar *MySQLActiveRecord) compileJoin(table, as, on, type_ string) string {
 		right[1] = ar.protectIdentifier(right[1])
 		on = strings.Join(left, ".") + "=" + strings.Join(right, ".")
 	}
-	return fmt.Sprintf(" %s JOIN %s ON %s ", type_, table_, on)
+	return fmt.Sprintf(" %s JOIN %s ON %s ", typ, tableUsed, on)
 }
 
 func (ar *MySQLActiveRecord) getFrom() string {

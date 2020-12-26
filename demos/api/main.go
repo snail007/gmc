@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	api := gmc.New.APIServer(gctx.NewCtx(),":8030")
+	api := gmc.New.APIServer(gctx.NewCtx(), ":8030")
 	api.Ext(".html")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
@@ -73,7 +73,7 @@ func main() {
 	// all path in router
 	_, port, _ := net.SplitHostPort(api.Listener().Addr().String())
 	fmt.Println("please visit:")
-	for path, _ := range api.Router().RouteTable() {
+	for path := range api.Router().RouteTable() {
 		if strings.Contains(path, "*") {
 			continue
 		}

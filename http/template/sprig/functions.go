@@ -19,7 +19,7 @@ import (
 // 	tpl := template.NewTemplate("foo").Funcs(sprig.FuncMap()))
 //
 func FuncMap() template.FuncMap {
-	return HtmlFuncMap()
+	return HTMLFuncMap()
 }
 
 // HermeticTxtFuncMap returns a 'text/template'.FuncMap with only repeatable functions.
@@ -31,9 +31,9 @@ func HermeticTxtFuncMap() ttemplate.FuncMap {
 	return r
 }
 
-// HermeticHtmlFuncMap returns an 'html/template'.Funcmap with only repeatable functions.
-func HermeticHtmlFuncMap() template.FuncMap {
-	r := HtmlFuncMap()
+// HermeticHTMLFuncMap returns an 'html/template'.Funcmap with only repeatable functions.
+func HermeticHTMLFuncMap() template.FuncMap {
+	r := HTMLFuncMap()
 	for _, name := range nonhermeticFunctions {
 		delete(r, name)
 	}
@@ -45,8 +45,8 @@ func TxtFuncMap() ttemplate.FuncMap {
 	return ttemplate.FuncMap(GenericFuncMap())
 }
 
-// HtmlFuncMap returns an 'html/template'.Funcmap
-func HtmlFuncMap() template.FuncMap {
+// HTMLFuncMap returns an 'html/template'.Funcmap
+func HTMLFuncMap() template.FuncMap {
 	return template.FuncMap(GenericFuncMap())
 }
 
@@ -200,12 +200,12 @@ var genericMap = map[string]interface{}{
 	"coalesce":         coalesce,
 	"compact":          compact,
 	"mustCompact":      mustCompact,
-	"toJson":           toJson,
-	"toPrettyJson":     toPrettyJson,
-	"toRawJson":        toRawJson,
-	"mustToJson":       mustToJson,
-	"mustToPrettyJson": mustToPrettyJson,
-	"mustToRawJson":    mustToRawJson,
+	"toJSON":           toJSON,
+	"toPrettyJSON":     toPrettyJSON,
+	"toRawJSON":        toRawJSON,
+	"mustToJSON":       mustToJSON,
+	"mustToPrettyJSON": mustToPrettyJSON,
+	"mustToRawJSON":    mustToRawJSON,
 	"ternary":          ternary,
 
 

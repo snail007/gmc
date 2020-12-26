@@ -10,7 +10,7 @@ import (
 
 type ResultSet struct {
 	rawRows      *[]map[string][]byte
-	lastInsertId int64
+	lastInsertID int64
 	rowsAffected int64
 	// TimeUsed milliseconds used by execute the SQL statement associated to the result set
 	timeUsed int
@@ -36,8 +36,8 @@ func (rs *ResultSet) Len() int {
 	return len(*rs.rawRows)
 }
 
-func (rs *ResultSet) LastInsertId() int64 {
-	return rs.lastInsertId
+func (rs *ResultSet) LastInsertID() int64 {
+	return rs.lastInsertID
 }
 
 func (rs *ResultSet) RowsAffected() int64 {

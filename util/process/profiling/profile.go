@@ -42,10 +42,10 @@ func StartArg(argName string) {
 //Start's arguments is store floder path,
 //
 //all profiling files will be stored in "storePath" folder, folder must be exists
-func Start(storePath_ string) {
-	start("", storePath_)
+func Start(storePath string) {
+	start("", storePath)
 }
-func start(cliName string, storePath_ ...string) {
+func start(cliName string, storePathArg ...string) {
 	storePath := ""
 	if cliName != "" {
 		if !inited {
@@ -53,8 +53,8 @@ func start(cliName string, storePath_ ...string) {
 			_init()
 		}
 		storePath = argv
-	} else if len(storePath_) > 0 {
-		storePath = storePath_[0]
+	} else if len(storePathArg) > 0 {
+		storePath = storePathArg[0]
 	} else {
 		return
 	}

@@ -31,38 +31,38 @@ func MilliSecondsOf(t ...time.Time) int64 {
 }
 
 //Get the zero point of incoming time
-func ZeroMinuteOf(t_ ...time.Time) time.Time {
-	t := getTime(t_...)
+func ZeroMinuteOf(theTime ...time.Time) time.Time {
+	t := getTime(theTime...)
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
 }
 
 //Get the zero point of incoming time
-func ZeroHourOf(t_ ...time.Time) time.Time {
-	t := getTime(t_...)
+func ZeroHourOf(theTime ...time.Time) time.Time {
+	t := getTime(theTime...)
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, t.Location())
 }
 
 //Get the zero point of incoming time
-func ZeroDayOf(t_ ...time.Time) time.Time {
-	t := getTime(t_...)
+func ZeroDayOf(theTime ...time.Time) time.Time {
+	t := getTime(theTime...)
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
 //Get the zero point of incoming time
-func ZeroMonthOf(t_ ...time.Time) time.Time {
-	t := getTime(t_...)
+func ZeroMonthOf(theTime ...time.Time) time.Time {
+	t := getTime(theTime...)
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
 }
 
 //Get the zero point of incoming time
-func ZeroYearOf(t_ ...time.Time) time.Time {
-	t := getTime(t_...)
+func ZeroYearOf(theTime ...time.Time) time.Time {
+	t := getTime(theTime...)
 	return time.Date(t.Year(), 1, 1, 0, 0, 0, 0, t.Location())
 }
 
 //Get the day of the week for the incoming time
-func WeekdayOf(t_ ...time.Time) int {
-	t := getTime(t_...)
+func WeekdayOf(theTime ...time.Time) int {
+	t := getTime(theTime...)
 	week := int(t.Weekday())
 	if week == 0 {
 		week = 7
@@ -71,16 +71,16 @@ func WeekdayOf(t_ ...time.Time) int {
 }
 
 //Get the month of the year
-func MonthOf(t_ ...time.Time) int {
-	t := getTime(t_...)
+func MonthOf(theTime ...time.Time) int {
+	t := getTime(theTime...)
 	return int(t.Month())
 }
 
-func parseAny(datestr string, loc_ ...interface{}) (t time.Time, err error) {
+func parseAny(dateStr string, location ...interface{}) (t time.Time, err error) {
 	var loc0 interface{}
 	var loc *time.Location
-	if len(loc_) == 1 {
-		loc0 = loc_[0]
+	if len(location) == 1 {
+		loc0 = location[0]
 	}
 	switch v := loc0.(type) {
 	case *time.Location:
@@ -93,7 +93,7 @@ func parseAny(datestr string, loc_ ...interface{}) (t time.Time, err error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	p, err := parseTime(datestr, loc)
+	p, err := parseTime(dateStr, loc)
 	if err != nil {
 		return time.Time{}, err
 	}

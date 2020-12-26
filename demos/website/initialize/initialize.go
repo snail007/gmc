@@ -26,7 +26,7 @@ func Initialize(s *gmc.HTTPServer) (err error) {
 
 	// initialize i18n if needed
 	// for testing
-	s.Config().Set("i18n.enable",true)
+	s.Config().Set("i18n.enable", true)
 	gmc.I18n.Init(s.Config())
 
 	// initialize router
@@ -44,11 +44,11 @@ func Initialize(s *gmc.HTTPServer) (err error) {
 	_, port, _ := net.SplitHostPort(s.Config().GetString("httpserver.listen"))
 	var buf bytes.Buffer
 	buf.WriteString("please visit:\n")
-	for path, _ := range s.Router().RouteTable() {
+	for path := range s.Router().RouteTable() {
 		if strings.Contains(path, "*") {
 			continue
 		}
-		buf.WriteString("http://127.0.0.1:" + port + path+"\n")
+		buf.WriteString("http://127.0.0.1:" + port + path + "\n")
 	}
 	s.Logger().Writer().Write(buf.Bytes())
 	return

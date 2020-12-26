@@ -51,7 +51,7 @@ func (s *MemCache) Get(key string) (string, error) {
 	if b {
 		return gcast.ToString(v), nil
 	}
-	return "", gcore.KEY_NOT_EXISTS
+	return "", gcore.ErrKeyNotExists
 }
 func (s *MemCache) Set(key string, value string, ttl time.Duration) error {
 	s.c.Set(key, value, ttl)

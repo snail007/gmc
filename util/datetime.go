@@ -27,13 +27,13 @@ func Microtime() float64 {
 // Returns a timestamp on success, -1 on failure.
 //
 // Note that this function does not fully cover PHP's strtotime function yet
-func Strtotime(str string, l_ ...*time.Location) (t time.Time, err error) {
-	t, err = parseAny(str, location(l_...))
+func Strtotime(str string, loc ...*time.Location) (t time.Time, err error) {
+	t, err = parseAny(str, location(loc...))
 	return
 }
 
-func MustStrtotime(str string, l_ ...*time.Location) (t time.Time) {
-	t, err := parseAny(str, location(l_...))
+func MustStrtotime(str string, loc ...*time.Location) (t time.Time) {
+	t, err := parseAny(str, location(loc...))
 	if err != nil {
 		t = time.Time{}.UTC()
 	}

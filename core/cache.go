@@ -35,10 +35,10 @@ type Cache interface {
 }
 
 var (
-	// KEY_NOT_EXISTS is the error of key not exists
-	KEY_NOT_EXISTS = fmt.Errorf("key not exists")
+	// ErrKeyNotExists is the error of key not exists
+	ErrKeyNotExists = fmt.Errorf("key not exists")
 )
 
 func IsNotExits(err error) bool {
-	return KEY_NOT_EXISTS == err
+	return ErrKeyNotExists == err
 }

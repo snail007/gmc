@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	grouter "github.com/snail007/gmc/http/router"
 	"github.com/snail007/gmc/http/session"
 	log2 "github.com/snail007/gmc/module/log"
 	"io"
@@ -118,7 +117,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 
 	// init http server router
-	s.router = grouter.NewHTTPRouter(s.ctx)
+	s.router = gcore.Providers.HTTPRouter("")(s.ctx)
 	s.addr = s.config.GetString("httpserver.listen")
 
 	// init static files handler, must be after router inited

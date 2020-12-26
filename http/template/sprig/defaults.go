@@ -63,13 +63,13 @@ func coalesce(v ...interface{}) interface{} {
 	return nil
 }
 
-// toJson encodes an item into a JSON string
-func toJson(v interface{}) string {
+// toJSON encodes an item into a JSON string
+func toJSON(v interface{}) string {
 	output, _ := json.Marshal(v)
 	return string(output)
 }
 
-func mustToJson(v interface{}) (string, error) {
+func mustToJSON(v interface{}) (string, error) {
 	output, err := json.Marshal(v)
 	if err != nil {
 		return "", err
@@ -77,13 +77,13 @@ func mustToJson(v interface{}) (string, error) {
 	return string(output), nil
 }
 
-// toPrettyJson encodes an item into a pretty (indented) JSON string
-func toPrettyJson(v interface{}) string {
+// toPrettyJSON encodes an item into a pretty (indented) JSON string
+func toPrettyJSON(v interface{}) string {
 	output, _ := json.MarshalIndent(v, "", "  ")
 	return string(output)
 }
 
-func mustToPrettyJson(v interface{}) (string, error) {
+func mustToPrettyJSON(v interface{}) (string, error) {
 	output, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return "", err
@@ -91,17 +91,17 @@ func mustToPrettyJson(v interface{}) (string, error) {
 	return string(output), nil
 }
 
-// toRawJson encodes an item into a JSON string with no escaping of HTML characters.
-func toRawJson(v interface{}) string {
-	output, err := mustToRawJson(v)
+// toRawJSON encodes an item into a JSON string with no escaping of HTML characters.
+func toRawJSON(v interface{}) string {
+	output, err := mustToRawJSON(v)
 	if err != nil {
 		panic(err)
 	}
 	return string(output)
 }
 
-// mustToRawJson encodes an item into a JSON string with no escaping of HTML characters.
-func mustToRawJson(v interface{}) (string, error) {
+// mustToRawJSON encodes an item into a JSON string with no escaping of HTML characters.
+func mustToRawJSON(v interface{}) (string, error) {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)

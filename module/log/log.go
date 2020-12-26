@@ -13,14 +13,14 @@ import (
 )
 
 type bufChnItem struct {
-	level gcore.LOG_LEVEL
+	level gcore.LogLevel
 	msg   string
 }
 type GMCLog struct {
 	l         *log.Logger
 	parent    *GMCLog
 	ns        string
-	level     gcore.LOG_LEVEL
+	level     gcore.LogLevel
 	async     bool
 	asyncOnce *sync.Once
 	bufChn    chan bufChnItem
@@ -67,7 +67,7 @@ func (s *GMCLog) EnableAsync() {
 	})
 }
 
-func (s *GMCLog) SetLevel(i gcore.LOG_LEVEL) {
+func (s *GMCLog) SetLevel(i gcore.LogLevel) {
 	s.level = i
 }
 

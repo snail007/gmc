@@ -2,13 +2,14 @@ package gcore
 
 var Providers = NewProvider()
 
-type SessionProvider func(ctx Ctx) (Session, error)
+type SessionProvider func(ctx Ctx) Session
 type SessionStorageProvider func(ctx Ctx) (SessionStorage, error)
 type CacheProvider func(ctx Ctx) (Cache, error)
 type TemplateProvider func(ctx Ctx) (Template, error)
-type ViewProvider func(ctx Ctx) (View, error)
+type ViewProvider func(ctx Ctx) View
 type DatabaseProvider func(ctx Ctx) (Database, error)
 type DatabaseGroupProvider func(ctx Ctx) (DatabaseGroup, error)
+type HTTPRouterProvider func(ctx Ctx) HTTPRouter
 
 type ProviderFactory struct {
 	session        map[string]SessionProvider
@@ -18,6 +19,7 @@ type ProviderFactory struct {
 	view           map[string]ViewProvider
 	database       map[string]DatabaseProvider
 	databaseGroup  map[string]DatabaseGroupProvider
+	httpRouter     map[string]HTTPRouterProvider
 }
 
 func (p *ProviderFactory) RegisterSession(key string, session SessionProvider) {
@@ -76,6 +78,14 @@ func (p *ProviderFactory) DatabaseGroup(key string) DatabaseGroupProvider {
 	return p.databaseGroup[key]
 }
 
+func (p *ProviderFactory) RegisterHTTPRouter(key string, router HTTPRouterProvider) {
+	p.httpRouter[key] = router
+}
+
+func (p *ProviderFactory) HTTPRouter(key string) HTTPRouterProvider {
+	return p.httpRouter[key]
+}
+
 func NewProvider() *ProviderFactory {
 	return &ProviderFactory{
 		session:        map[string]SessionProvider{},
@@ -85,5 +95,6 @@ func NewProvider() *ProviderFactory {
 		view:           map[string]ViewProvider{},
 		database:       map[string]DatabaseProvider{},
 		databaseGroup:  map[string]DatabaseGroupProvider{},
+		httpRouter:     map[string]HTTPRouterProvider{},
 	}
 }

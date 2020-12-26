@@ -61,7 +61,7 @@ func (s *Model) ExecSQL(sql string, values ...interface{}) (lastInsertID, rowsAf
 		return 0, 0, err
 	}
 	rowsAffected = rs.RowsAffected()
-	lastInsertID = rs.LastInsertId()
+	lastInsertID = rs.LastInsertID()
 	return
 }
 
@@ -169,7 +169,7 @@ func (s *Model) Insert(data map[string]interface{}) (lastInsertID int64, err err
 	if err != nil {
 		return 0, err
 	}
-	lastInsertID = rs.LastInsertId()
+	lastInsertID = rs.LastInsertID()
 	return
 }
 
@@ -179,7 +179,7 @@ func (s *Model) InsertBatch(data []map[string]interface{}) (cnt, lastInsertID in
 	if err != nil {
 		return 0, 0, err
 	}
-	lastInsertID = rs.LastInsertId()
+	lastInsertID = rs.LastInsertID()
 	cnt = rs.RowsAffected()
 	return
 }

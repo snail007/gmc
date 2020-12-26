@@ -111,14 +111,14 @@ func (c *FileCache) Get(key string) (val string, err error) {
 	item, err := c.read(key)
 	if err != nil {
 		if os.IsNotExist(err){
-			err= gcore.KEY_NOT_EXISTS
+			err= gcore.ErrKeyNotExists
 		}
 		return
 	}
 
 	if item.hasExpired() {
 		os.Remove(c.filepath(key))
-		err= gcore.KEY_NOT_EXISTS
+		err= gcore.ErrKeyNotExists
 		return
 	}
 	return gcast.ToString(item.Val), nil

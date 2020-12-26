@@ -11,7 +11,7 @@ const (
 	LPANIC
 )
 
-type LOG_LEVEL int
+type LogLevel int
 
 type Logger interface {
 	Panic(v ...interface{})
@@ -32,7 +32,7 @@ type Logger interface {
 	Trace(v ...interface{})
 	Tracef(format string, v ...interface{})
 
-	SetLevel(LOG_LEVEL)
+	SetLevel(LogLevel)
 
 	With(name string) Logger
 	Namespace() string

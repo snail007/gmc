@@ -19,9 +19,9 @@ type ActiveRecord interface {
 	HavingWrap(having, leftWrap, rightWrap string) ActiveRecord
 	Insert(table string, data map[string]interface{}) ActiveRecord
 	InsertBatch(table string, data []map[string]interface{}) ActiveRecord
-	Join(table, as, on, type_ string) ActiveRecord
+	Join(table, as, on, typ string) ActiveRecord
 	Limit(limit ...int) ActiveRecord
-	OrderBy(column, type_ string) ActiveRecord
+	OrderBy(column, typ string) ActiveRecord
 	Raw(sql string, values ...interface{}) ActiveRecord
 	Replace(table string, data map[string]interface{}) ActiveRecord
 	ReplaceBatch(table string, data []map[string]interface{}) ActiveRecord
@@ -60,7 +60,7 @@ type DatabaseGroup interface {
 type ResultSet interface {
 	SQL() string
 	Len() int
-	LastInsertId() int64
+	LastInsertID() int64
 	RowsAffected() int64
 	TimeUsed() int
 	MapRows(keyColumn string) (rowsMap map[string]map[string]string)

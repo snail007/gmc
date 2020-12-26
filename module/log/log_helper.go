@@ -14,7 +14,7 @@ import (
 func NewFromConfig(c *gconfig.Config) (l gcore.Logger) {
 	l = NewGMCLog()
 	cfg := c.Sub("log")
-	l.SetLevel(gcore.LOG_LEVEL(cfg.GetInt("level")))
+	l.SetLevel(gcore.LogLevel(cfg.GetInt("level")))
 	if cfg.GetBool("async") {
 		l.EnableAsync()
 	}

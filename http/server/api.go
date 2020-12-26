@@ -20,7 +20,6 @@ import (
 
 	gconfig "github.com/snail007/gmc/util/config"
 
-	grouter "github.com/snail007/gmc/http/router"
 	gerr "github.com/snail007/gmc/module/error"
 	ghttputil "github.com/snail007/gmc/util/http"
 )
@@ -48,22 +47,22 @@ type APIServer struct {
 }
 
 func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
-	api := &APIServer{
+ 	api := &APIServer{
 		server: &http.Server{
 			TLSConfig: &tls.Config{},
 		},
 		address:          address,
 		logger:           log2.NewGMCLog(),
-		router:           grouter.NewHTTPRouter(ctx),
+		router:           gcore.Providers.HTTPRouter("")(ctx),
 		isShowErrorStack: true,
 		middleware0:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		middleware1:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		middleware2:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		middleware3:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
 		localaddr:        &sync.Map{},
-		ctx: ctx,
+		ctx:              ctx,
 	}
-	ctx.SetApiServer(api)
+	ctx.SetAPIServer(api)
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
 	api.server.ErrorLog = func() *log.Logger {

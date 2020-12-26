@@ -15,8 +15,8 @@ type Ctx interface {
 	SetApp(app GMCApp)
 	Clone() Ctx
 	CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...Params) Ctx
-	ApiServer() APIServer
-	SetApiServer(apiServer APIServer)
+	APIServer() APIServer
+	SetAPIServer(apiServer APIServer)
 	WebServer() HTTPServer
 	SetWebServer(webServer HTTPServer)
 	LocalAddr() string

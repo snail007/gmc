@@ -154,7 +154,7 @@ func TestBeforeRun_2(t *testing.T) {
 	app := New()
 	app.SetBlock(false)
 	app.OnRun(func(*gconfig.Config) (err error) {
-		return fmt.Errorf(".")
+		return fmt.Errorf("_")
 	})
 	app.Run()
 }

@@ -75,7 +75,7 @@ func TestOrderBy(t *testing.T) {
 	want2 := "SELECT * \nFROM `test`    \nORDER BY `name` ASC,`id` DESC"
 	got := strings.TrimSpace(ar().From("test").OrderBy("id", "desc").OrderBy("name", "asc").SQL())
 	if (want1 != got) && (want2 != got) {
-		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
+		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want1, got)
 	}
 }
 func TestLimit(t *testing.T) {

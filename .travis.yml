@@ -21,6 +21,7 @@ before_install:
 
 before_script:
   - mysql -u root --password="" < .ci/tests.db.sql
+
 script:
   - go test -v -coverprofile=coverage.txt -covermode=atomic ./...
 

@@ -4,6 +4,7 @@
 <img align="right" src="/doc/images/logo2.png" width="200" height="auto"/>  
 
 [![Build Status](https://travis-ci.com/snail007/gmc.svg?branch=master)](https://travis-ci.com/snail007/gmc)
+[![codecov](https://codecov.io/gh/snail007/gmc/branch/master/graph/badge.svg)](https://codecov.io/gh/snail007/gmc)
 
 GMC is a smart and flexible golang web and api development framework. GMC goal is high performance, good productivity and write less code to do more things.
 

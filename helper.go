@@ -17,7 +17,7 @@ import (
 var (
 	// New shortcut of New gmc stuff
 	New = &NewAssistant{}
-	// SQLite3DB shortcut of gmc database stuff
+	// DB shortcut of gmc database stuff
 	DB = &DBAssistant{}
 	// Cache shortcut of gmc cache stuff
 	Cache = &CacheAssistant{}

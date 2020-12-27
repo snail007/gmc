@@ -45,7 +45,7 @@ func TestNew_2(t *testing.T) {
 	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
-	cfg.Password = "123"
+	//cfg.Password = "123"
 	cfg.Prefix = "__pre__"
 	rd := NewRedisCache(cfg)
 	//Set

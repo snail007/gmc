@@ -12,7 +12,7 @@ env:
 sudo: required
 
 before_install:
-  - sudo go mod tidy
+  - go get ./...
 
 script:
   - go test -v ./...

@@ -13,7 +13,7 @@ func TestNew(t *testing.T) {
 	assert := assert.New(t)
 	cfg := NewRedisCacheConfig()
 	cfg.Addr = redisServer.Addr()
-	rd := New(cfg)
+	rd := NewRedisCache(cfg)
 	//Set
 	err := rd.Set("k3", "aaa", time.Minute)
 	assert.Nil(err)
@@ -47,7 +47,7 @@ func TestNew_2(t *testing.T) {
 	cfg.Debug = true
 	cfg.Password = "123"
 	cfg.Prefix = "__pre__"
-	rd := New(cfg)
+	rd := NewRedisCache(cfg)
 	//Set
 	err := rd.Set("k3", "aaa", time.Minute)
 	assert.Nil(err)
@@ -61,7 +61,7 @@ func TestReisIncr(t *testing.T) {
 	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
-	rd := New(cfg)
+	rd := NewRedisCache(cfg)
 	// Set
 	err := rd.Set("k3", "1", time.Minute)
 	assert.Nil(err)
@@ -91,7 +91,7 @@ func Test_RedisMulti(t *testing.T) {
 	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
-	rd := New(cfg)
+	rd := NewRedisCache(cfg)
 	//SetMulti
 	err := rd.SetMulti(map[string]string{
 		"k1": "111",

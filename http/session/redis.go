@@ -36,7 +36,7 @@ func NewRedisStore(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(RedisStoreConfig)
 	s := &RedisStore{
 		cfg:   cfg,
-		cache: gcache.New(cfg.RedisCfg),
+		cache: gcache.NewRedisCache(cfg.RedisCfg),
 	}
 	st = s
 	return

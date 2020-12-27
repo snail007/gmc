@@ -56,7 +56,7 @@ func Init(cfg0 *gconfig.Config) (err error) {
 					MaxConnLifetime: time.Duration(gcast.ToInt(vvv["maxconnlifetime"])) * time.Second,
 					Timeout:         time.Duration(gcast.ToInt(vvv["timeout"])) * time.Second,
 				}
-				groupRedis[id] = New(cfg)
+				groupRedis[id] = NewRedisCache(cfg)
 			} else if k == "memory" {
 				cfg := &MemCacheConfig{
 					CleanupInterval: time.Duration(gcast.ToInt(vvv["cleanupinterval"])) * time.Second,

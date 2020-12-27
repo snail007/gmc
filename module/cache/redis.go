@@ -51,7 +51,7 @@ type RedisCache struct {
 }
 
 // New redis cache
-func New(cfg interface{}) *RedisCache {
+func NewRedisCache(cfg interface{}) *RedisCache {
 	cfg0 := cfg.(*RedisCacheConfig)
 	rc := &RedisCache{
 		cfg:         cfg0,

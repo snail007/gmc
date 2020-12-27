@@ -1,5 +1,7 @@
 language: go
-
+services:
+  - mysql
+  - redis
 go:
   - 1.12.x
   - 1.13.x
@@ -13,6 +15,11 @@ sudo: required
 
 before_install:
   - go get ./...
+
+before_script:
+  - mysql -u root -e 'CREATE DATABASE test;'
+  - mysql -u root -e "CREATE USER 'user'@'%' IDENTIFIED BY 'user';"
+  - mysql -u root -e "GRANT ALL ON *.* TO 'user'@'%';"
 
 script:
   - go test -v ./...

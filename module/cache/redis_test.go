@@ -12,7 +12,7 @@ import (
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
 	cfg := NewRedisCacheConfig()
-	cfg.Addr = redisServer.Addr()
+	cfg.Addr = "127.0.0.1:6379"
 	rd := NewRedisCache(cfg)
 	//Set
 	err := rd.Set("k3", "aaa", time.Minute)
@@ -43,7 +43,7 @@ func TestNew_2(t *testing.T) {
 	assert := assert.New(t)
 	redisServer.RequireAuth("123")
 	cfg := NewRedisCacheConfig()
-	cfg.Addr = redisServer.Addr()
+	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
 	cfg.Password = "123"
 	cfg.Prefix = "__pre__"

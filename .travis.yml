@@ -15,8 +15,6 @@ dist: xenial
 
 os:
   - linux
-  - windows
-  - osx
 
 before_install:
   - go get -t -v ./...

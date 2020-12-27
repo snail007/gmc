@@ -52,8 +52,8 @@ type FileStore struct {
 func NewFileStore(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg := config.(FileStoreConfig)
 	cfg.Dir = strings.Replace(cfg.Dir, "{tmp}", os.TempDir(), 1)
-	if cfg.Dir==""{
-		cfg.Dir="."
+	if cfg.Dir == "" {
+		cfg.Dir = "."
 	}
 	if !gutil.ExistsDir(cfg.Dir) {
 		err = os.Mkdir(cfg.Dir, 0700)
@@ -66,8 +66,11 @@ func NewFileStore(config interface{}) (st gcore.SessionStorage, err error) {
 		return
 	}
 	cfg.Dir = filepath.Join(cfg.Dir, folder)
-	if !gutil.ExistsDir(cfg.Dir){
-		os.Mkdir(cfg.Dir,0700)
+	if !gutil.ExistsDir(cfg.Dir) {
+		err = os.MkdirAll(cfg.Dir, 0700)
+	}
+	if err != nil {
+		return
 	}
 	if cfg.GCtime <= 0 {
 		cfg.GCtime = 300

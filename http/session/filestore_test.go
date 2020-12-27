@@ -16,20 +16,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestNewFileStore(t *testing.T) {
 	assert := assert.New(t)
 	sid := "testaaaa"
 	_, ok := fileStore.Load(sid)
 	assert.False(ok)
-	sess :=NewSession()
+	sess := NewSession()
 	sess.Touch()
 	err := fileStore.Save(sess)
 	assert.Nil(err)
 	_, ok = fileStore.Load(sess.SessionID())
 	assert.True(ok)
 	for i := 0; i < 10; i++ {
-		s:=NewSession()
+		s := NewSession()
 		s.Touch()
 		err := fileStore.Save(s)
 		assert.Nil(err)
@@ -48,7 +47,8 @@ func TestMkdir(t *testing.T) {
 	ioutil.WriteFile(cfg.Dir, []byte("."), 0700)
 	NewFileStore(cfg)
 	os.Remove(cfg.Dir)
-	store, _ := NewFileStore(cfg)
+	store, err := NewFileStore(cfg)
+	assert.Nil(err)
 	s0 := store.(*FileStore)
 	assert.DirExists(cfg.Dir)
 	k := "testbbb"
@@ -57,7 +57,7 @@ func TestMkdir(t *testing.T) {
 	if !gutil.ExistsDir(dir) {
 		os.MkdirAll(dir, 0700)
 	}
-	err := ioutil.WriteFile(f, []byte("\n"), 0700)
+	err = ioutil.WriteFile(f, []byte("\n"), 0700)
 	assert.Nil(err)
 	_, ok := store.Load(k)
 	assert.False(ok)
@@ -69,7 +69,7 @@ func TestDelete(t *testing.T) {
 	cfg := NewFileStoreConfig()
 	store, err := NewFileStore(cfg)
 	assert.Nil(err)
-	sess0 :=NewSession()
+	sess0 := NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())
@@ -84,7 +84,7 @@ func TestDelete_2(t *testing.T) {
 	cfg.TTL = 1
 	store, err := NewFileStore(cfg)
 	assert.Nil(err)
-	sess0 :=NewSession()
+	sess0 := NewSession()
 	sess0.Touch()
 	store.Save(sess0)
 	_, ok := store.Load(sess0.SessionID())

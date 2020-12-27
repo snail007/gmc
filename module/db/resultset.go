@@ -181,8 +181,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) 
 			}
 		case reflect.Struct:
 			if structField.Type.Name() == "Time" {
-				local, _ := time.LoadLocation("Local")
-				val, err := time.ParseInLocation("2006-01-02 15:04:05", mapData[name], local)
+				val, err := time.ParseInLocation("2006-01-02 15:04:05", mapData[name], time.UTC)
 				if err == nil {
 					fieldVal.Set(reflect.ValueOf(val))
 				}

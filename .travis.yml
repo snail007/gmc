@@ -11,7 +11,10 @@ go:
 env:
   - GO111MODULE=on
 
-sudo: required
+dist: xenial
+
+os:
+  - linux
 
 before_install:
   - go get ./...

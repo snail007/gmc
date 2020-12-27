@@ -1171,7 +1171,7 @@ Linux:
 
 ```shell
 export GO111MODULE=on 
-git clone https://github.com/snail007/gt.git
+git clone https://github.com/snail007/gmct.git
 cd gmct && go mod tidy
 go install
 gmct --help
@@ -1181,7 +1181,7 @@ Windows:
 
 ```shell
 set GO111MODULE=on
-git clone https://github.com/snail007/gt.git
+git clone https://github.com/snail007/gmct.git
 cd gmct
 go mod tidy
 cd gmct/cmd/gmct
@@ -1214,7 +1214,7 @@ gmct --help
 
 ### 3. DOWNLOAD BINARY
 
-Download address: [GMCT tool chain](https://github.com/snail007/gmct/releases), need according to your operating system platform, download the corresponding binary package, and then extract the `gmct` binary or `gt.exe`
+Download address: [GMCT tool chain](https://github.com/snail007/gmct/releases), need according to your operating system platform, download the corresponding binary package, and then extract the `gmct` binary or `gmct.exe`
 Just put it in the `$GOPATH/bin` directory, then open a command line and execute `gmct -- Help`. If you have help information for `GMCT`, the installation is successful.
 
 ## GENERATE WEB PROJECT

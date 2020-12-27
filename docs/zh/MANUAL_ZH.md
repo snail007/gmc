@@ -1150,7 +1150,7 @@ Linux系统：
 
 ```shell
 export GO111MODULE=on 
-git clone https://github.com/snail007/gt.git
+git clone https://github.com/snail007/gmct.git
 cd gmct && go mod tidy
 cd gmct/cmd/gmct && go install
 gmct --help
@@ -1160,7 +1160,7 @@ Windows系统：
 
 ```shell
 set GO111MODULE=on
-git clone https://github.com/snail007/gt.git
+git clone https://github.com/snail007/gmct.git
 cd gmct
 go mod tidy
 cd gmct/cmd/gmct
@@ -1179,7 +1179,7 @@ Linux系统：
 
 ```shell
 export GO111MODULE=on 
-go get -v github.com/snail007/gmct/cmd/gmct
+go get -u -v github.com/snail007/gmct/cmd/gmct@master
 gmct --help
 ```
 
@@ -1193,7 +1193,7 @@ gmct --help
 
 ### 3、下载二进制安装
 
-下载地址：[GMCT工具链](https://github.com/snail007/gmct/releases) ，需要根据你的操作系统平台，下载对应的二进制文件压缩包即可，然后解压得到gmct或者gt.exe
+下载地址：[GMCT工具链](https://github.com/snail007/gmct/releases) ，需要根据你的操作系统平台，下载对应的二进制文件压缩包即可，然后解压得到gmct或者gmct.exe
 把它放在`$GOPATH/bin`目录即可,然后打开一个命令行，执行`gmct --help`如果有显示`gmct`的帮助信息，说明安装成功。
 
 ## 生成Web项目

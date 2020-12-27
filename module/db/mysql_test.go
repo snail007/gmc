@@ -242,7 +242,7 @@ func TestStruct(t *testing.T) {
 	assert.Equal(uint(60), s.(User).Weight)
 	assert.Equal(float32(160.3), s.(User).Height)
 	assert.True(s.(User).Sex)
-	assert.Equal("2017-10-10 17:00:09 +0800 UTC", s.(User).CreateTime.In(time.FixedZone("CST", 3600*8)).String())
+	assert.Equal("2017-10-10 17:00:09 +0800 CST", s.(User).CreateTime.In(time.FixedZone("CST", 3600*8)).String())
 }
 func TestStructs(t *testing.T) {
 	assert := assert.New(t)

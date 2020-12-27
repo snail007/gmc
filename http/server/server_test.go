@@ -244,8 +244,9 @@ func TestListenTLS(t *testing.T) {
 	s.config.Set("httpserver.tlsenable", true)
 	s.config.Set("httpserver.tlsclientauth", true)
 	s.config.Set("httpserver.tlsclientsca", "server.crt")
-	s.initTLSConfig()
-	err := s.ListenTLS()
+	err := s.initTLSConfig()
+	assert.Nil(err)
+	err = s.ListenTLS()
 	assert.Nil(err)
 	s.Close()
 }
@@ -259,8 +260,9 @@ func TestListenTLS_0(t *testing.T) {
 	s.config.Set("httpserver.tlsenable", true)
 	s.config.Set("httpserver.tlsclientauth", true)
 	s.config.Set("httpserver.tlsclientsca", "server.crt")
-	s.initTLSConfig()
-	err := s.ListenTLS()
+	err := s.initTLSConfig()
+	assert.Nil(err)
+	err = s.ListenTLS()
 	assert.Nil(err)
 	s.isTestNotClosedError = true
 	s.Close()

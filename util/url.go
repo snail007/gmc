@@ -18,8 +18,8 @@ var (
 	httpClient = http.Client{
 		Timeout: time.Second * 15,
 		Transport: &http.Transport{
-			DisableKeepAlives:true,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			DisableKeepAlives: true,
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 )
@@ -45,7 +45,11 @@ func GetHeaders(url string) (http.Header, error) {
 	}
 	resp.Header.Set("status", resp.Status)
 	defer resp.Body.Close()
-	return resp.Header.Clone(), nil
+	h := http.Header{}
+	for k, v := range resp.Header {
+		h[k] = v
+	}
+	return h, nil
 }
 
 // GetMetaTags extracts all meta tag content attributes from http content and returns an array

@@ -17,9 +17,6 @@ before_install:
   - go get ./...
 
 before_script:
-  - mysql -u root -e 'CREATE DATABASE test;'
-  - mysql -u root -e "CREATE USER 'user'@'%' IDENTIFIED BY 'user';"
-  - mysql -u root -e "GRANT ALL ON *.* TO 'user'@'%';"
-
+  - mysql -u root --password="" < .ci/tests.db.sql
 script:
   - go test -v ./...

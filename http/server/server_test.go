@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	gconfig "github.com/snail007/gmc/util/config"
 
@@ -127,6 +128,7 @@ func TestConnCount(t *testing.T) {
 	resp, err := client.Get("http://127.0.0.1:" + port)
 	client.CloseIdleConnections()
 	transport.CloseIdleConnections()
+	time.Sleep(time.Millisecond*100)
 	assert.Equal(int64(0), s.ActiveConnCount())
 	assert.Nil(err)
 	b, _ := ioutil.ReadAll(resp.Body)

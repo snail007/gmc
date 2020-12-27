@@ -371,11 +371,11 @@ func (s *HTTPServer) ListenTLS() (err error) {
 func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
-		s.localaddr.Store(c.RemoteAddr().String(), c.LocalAddr().String())
 		atomic.AddInt64(s.connCnt, 1)
+		s.localaddr.Store(c.RemoteAddr().String(), c.LocalAddr().String())
 	case http.StateClosed:
-		s.localaddr.Delete(c.RemoteAddr().String())
 		atomic.AddInt64(s.connCnt, -1)
+		s.localaddr.Delete(c.RemoteAddr().String())
 	}
 }
 

@@ -555,7 +555,7 @@ func (c *cache) Decrement(k string, n int64) error {
 		c.mu.Unlock()
 		return fmt.Errorf("MemoryCacheItem not found")
 	}
-	switch val:=v.Object.(type) {
+	switch val := v.Object.(type) {
 	case string:
 		v.Object = gcast.ToInt64(v.Object.(string)) - int64(n)
 	case int:
@@ -571,13 +571,13 @@ func (c *cache) Decrement(k string, n int64) error {
 	case uint:
 		v.Object = val - uint(n)
 	case uintptr:
-		v.Object = val- uintptr(n)
+		v.Object = val - uintptr(n)
 	case uint8:
 		v.Object = val - uint8(n)
 	case uint16:
 		v.Object = val - uint16(n)
 	case uint32:
-		v.Object = val- uint32(n)
+		v.Object = val - uint32(n)
 	case uint64:
 		v.Object = val - uint64(n)
 	case float32:

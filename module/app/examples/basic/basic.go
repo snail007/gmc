@@ -2,8 +2,7 @@ package main
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/log"
-	gconfig "github.com/snail007/gmc/util/config"
+ 	"github.com/snail007/gmc/module/log"
 	"net"
 
 	"github.com/snail007/gmc"
@@ -19,7 +18,7 @@ type MyService struct {
 func NewMyService() gcore.Service {
 	return &MyService{}
 }
-func (s *MyService) Init(cfg *gconfig.Config) error {
+func (s *MyService) Init(cfg gcore.Config) error {
 	s.address = cfg.GetString("listen")
 	s.log = glog.NewGMCLog()
 	return nil
@@ -59,7 +58,7 @@ func main() {
 	app := gmc.New.App()
 	app.AttachConfig("mycfg", cfg)
 	app.AddService(gcore.ServiceItem{
-		Service:      NewMyService(),
+		Service:  NewMyService(),
 		ConfigID: "mycfg",
 	})
 	app.Logger().Panic(app.Run())

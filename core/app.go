@@ -1,15 +1,13 @@
 package gcore
 
-import gconfig "github.com/snail007/gmc/util/config"
-
-type GMCApp interface {
+type App interface {
 	SetConfigFile(file string)
-	SetConfig(cfg *gconfig.Config)
+	SetConfig(cfg Config)
 	AttachConfigFile(id, file string)
-	AttachConfig(id string, cfg *gconfig.Config)
-	Config(id ...string) *gconfig.Config
+	AttachConfig(id string, cfg Config)
+	Config(id ...string) Config
 	Run() (err error)
-	OnRun(fn func(*gconfig.Config) (err error))
+	OnRun(fn func(Config) (err error))
 	OnShutdown(fn func())
 	SetBlock(isBlockRun bool)
 	AddService(item ServiceItem)

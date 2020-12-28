@@ -109,20 +109,20 @@ var genericMap = map[string]interface{}{
 	"unixEpoch":        unixEpoch,
 
 	// Strings
-	"trunc":      trunc,
-	"trim":       strings.TrimSpace,
-	"upper":      strings.ToUpper,
-	"lower":      strings.ToLower,
-	"title":      strings.Title,
-	"substr":     substring,
+	"trunc":  trunc,
+	"trim":   strings.TrimSpace,
+	"upper":  strings.ToUpper,
+	"lower":  strings.ToLower,
+	"title":  strings.Title,
+	"substr": substring,
 	// Switch order so that "foo" | repeat 5
 	"repeat": func(count int, str string) string { return strings.Repeat(str, count) },
 	// Deprecated: Use trimAll.
 	"trimall": func(a, b string) string { return strings.Trim(b, a) },
 	// Switch order so that "$foo" | trimall "$"
-	"trimAll":      func(a, b string) string { return strings.Trim(b, a) },
-	"trimSuffix":   func(a, b string) string { return strings.TrimSuffix(b, a) },
-	"trimPrefix":   func(a, b string) string { return strings.TrimPrefix(b, a) },
+	"trimAll":    func(a, b string) string { return strings.Trim(b, a) },
+	"trimSuffix": func(a, b string) string { return strings.TrimSuffix(b, a) },
+	"trimPrefix": func(a, b string) string { return strings.TrimPrefix(b, a) },
 
 	// Switch order so that "foobar" | contains "foo"
 	"contains":   func(substr string, str string) bool { return strings.Contains(str, substr) },
@@ -207,7 +207,6 @@ var genericMap = map[string]interface{}{
 	"mustToPrettyJSON": mustToPrettyJSON,
 	"mustToRawJSON":    mustToRawJSON,
 	"ternary":          ternary,
-
 
 	// Reflection
 	"typeOf":     typeOf,

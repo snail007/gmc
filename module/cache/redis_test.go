@@ -25,7 +25,7 @@ func TestNew(t *testing.T) {
 	err = rd.Del("k3")
 	assert.Nil(err)
 	data, err = redis.String(rd.Get("k3"))
-	assert.Equal("redigo: nil returned",err.Error())
+	assert.Equal("redigo: nil returned", err.Error())
 	assert.Equal("", data)
 
 	//Clear
@@ -41,8 +41,7 @@ func TestNew(t *testing.T) {
 }
 func TestNew_2(t *testing.T) {
 	assert := assert.New(t)
-	redisServer.RequireAuth("123")
-	cfg := NewRedisCacheConfig()
+ 	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
 	//cfg.Password = "123"
@@ -67,19 +66,19 @@ func TestReisIncr(t *testing.T) {
 	assert.Nil(err)
 	// incr
 	data, err := rd.Incr("k3")
-	assert.EqualValues(2,data)
+	assert.EqualValues(2, data)
 	assert.Nil(err)
 	// decr
 	data, err = rd.Decr("k3")
-	assert.EqualValues(1,data)
+	assert.EqualValues(1, data)
 	assert.Nil(err)
 	// incr N
-	data, err = rd.IncrN("k3",3)
-	assert.EqualValues(4,data)
+	data, err = rd.IncrN("k3", 3)
+	assert.EqualValues(4, data)
 	assert.Nil(err)
 	// decr N
-	data, err = rd.DecrN("k3",3)
-	assert.EqualValues(1,data)
+	data, err = rd.DecrN("k3", 3)
+	assert.EqualValues(1, data)
 	assert.Nil(err)
 	//Get
 	d, err := rd.Get("k3")
@@ -110,10 +109,9 @@ func Test_RedisMulti(t *testing.T) {
 
 	_data, err := rd.GetMulti([]string{"k1", "k2"})
 
-	_,ok:=_data["k1"]
+	_, ok := _data["k1"]
 	assert.False(ok)
-	_,ok=_data["k2"]
+	_, ok = _data["k2"]
 	assert.False(ok)
 
 }
-

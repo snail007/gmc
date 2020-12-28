@@ -8,9 +8,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/http/session"
-	log2 "github.com/snail007/gmc/module/log"
-	"io"
+ 	"io"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -21,9 +19,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	gerr "github.com/snail007/gmc/module/error"
-	gconfig "github.com/snail007/gmc/util/config"
 )
 
 var (
@@ -42,6 +37,7 @@ func SetBinData(data map[string]string) {
 }
 
 type HTTPServer struct {
+	i18n         gcore.I18n
 	tpl          gcore.Template
 	sessionStore gcore.SessionStorage
 	router       gcore.HTTPRouter
@@ -50,7 +46,7 @@ type HTTPServer struct {
 	listener     net.Listener
 	server       *http.Server
 	connCnt      *int64
-	config       *gconfig.Config
+	config       gcore.Config
 	handler40x   func(ctx gcore.Ctx, tpl gcore.Template)
 	handler50x   func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
 	//just for testing
@@ -80,10 +76,10 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 }
 
 //Init implements service.Service Init
-func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
+func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	connCnt := int64(0)
 	s.server = &http.Server{}
-	s.logger = log2.NewGMCLog()
+	s.logger = gcore.Providers.Logger("")(s.ctx,"")
 	s.connCnt = &connCnt
 	s.config = cfg
 	s.isTestNotClosedError = false
@@ -96,6 +92,14 @@ func (s *HTTPServer) Init(cfg *gconfig.Config) (err error) {
 }
 func (s *HTTPServer) initBaseObjets() (err error) {
 
+	// init i18n
+	if s.config.GetBool("i18n.enable") {
+		s.i18n, err = gcore.Providers.I18n("")(s.ctx)
+		if err != nil {
+			return
+		}
+	}
+
 	// init template
 	s.tpl, err = gcore.Providers.Template("")(s.ctx)
 	if err != nil {
@@ -105,8 +109,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	// init session store
 
 	s.sessionStore, err = gcore.Providers.SessionStorage("")(s.ctx)
-	//err = s.initSessionStore()
-	if err != nil {
+ 	if err != nil {
 		return
 	}
 
@@ -178,8 +181,8 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (s *HTTPServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gerr.Recover(func(e interface{}) {
-			err = gerr.Wrap(e)
+		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+			err = gcore.Providers.Error("")().Wrap(e)
 		})
 		fn()
 	}()
@@ -210,7 +213,7 @@ func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
 		c.Response().Header().Set("Content-Type", "text/plain")
 		c.Write([]byte("Internal Server Error"))
 		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
-			c.Write([]byte("\n" + gerr.Stack(err)))
+			c.Write([]byte("\n" + gcore.Providers.Error("")().StackError(err)))
 		}
 	} else {
 		s.handler50x(c, s.tpl, err)
@@ -222,10 +225,10 @@ func (s *HTTPServer) AddFuncMap(f map[string]interface{}) {
 	s.tpl.Funcs(f)
 }
 
-func (s *HTTPServer) SetConfig(c *gconfig.Config) {
+func (s *HTTPServer) SetConfig(c gcore.Config) {
 	s.config = c
 }
-func (s *HTTPServer) Config() *gconfig.Config {
+func (s *HTTPServer) Config() gcore.Config {
 	return s.config
 }
 
@@ -404,52 +407,11 @@ func (s *HTTPServer) initTLSConfig() (err error) {
 		}
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
-			err = gerr.New("failed to parse tls clients root certificate")
+			err = gcore.Providers.Error("")().New(("failed to parse tls clients root certificate"))
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
 		s.server.TLSConfig = tlsCfg
-	}
-	return
-}
-func (s *HTTPServer) initSessionStore() (err error) {
-	if !s.config.GetBool("session.enable") {
-		return
-	}
-	typ := s.config.GetString("session.store")
-	if typ == "" {
-		typ = "memory"
-	}
-	ttl := s.config.GetInt64("session.ttl")
-	switch typ {
-	case "file":
-		cfg := gsession.NewFileStoreConfig()
-		cfg.TTL = ttl
-		cfg.Dir = s.config.GetString("session.file.dir")
-		cfg.GCtime = s.config.GetInt("session.file.gctime")
-		cfg.Prefix = s.config.GetString("session.file.prefix")
-		s.sessionStore, err = gsession.NewFileStore(cfg)
-	case "memory":
-		cfg := gsession.NewMemoryStoreConfig()
-		cfg.TTL = ttl
-		cfg.GCtime = s.config.GetInt("session.memory.gctime")
-		s.sessionStore, err = gsession.NewMemoryStore(cfg)
-	case "redis":
-		cfg := gsession.NewRedisStoreConfig()
-		cfg.RedisCfg.Addr = s.config.GetString("session.redis.address")
-		cfg.RedisCfg.Password = s.config.GetString("session.redis.password")
-		cfg.RedisCfg.Prefix = s.config.GetString("session.redis.prefix")
-		cfg.RedisCfg.Debug = s.config.GetBool("session.redis.debug")
-		cfg.RedisCfg.Timeout = time.Second * s.config.GetDuration("session.redis.timeout")
-		cfg.RedisCfg.DBNum = s.config.GetInt("session.redis.dbnum")
-		cfg.RedisCfg.MaxIdle = s.config.GetInt("session.redis.maxidle")
-		cfg.RedisCfg.MaxActive = s.config.GetInt("session.redis.maxactive")
-		cfg.RedisCfg.MaxConnLifetime = time.Second * s.config.GetDuration("session.redis.maxconnlifetime")
-		cfg.RedisCfg.Wait = s.config.GetBool("session.redis.wait")
-		cfg.TTL = ttl
-		s.sessionStore, err = gsession.NewRedisStore(cfg)
-	default:
-		err = fmt.Errorf("unknown session store type %s", typ)
 	}
 	return
 }
@@ -545,8 +507,8 @@ func (s *HTTPServer) SetLog(l gcore.Logger) {
 func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gerr.Recover(func(e interface{}) {
-				s.logger.Warnf("middleware panic error : %s", gerr.Stack(e))
+			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+				s.logger.Warnf("middleware panic error : %s", gcore.Providers.Error("")().StackError(e))
 				isStop = false
 			})
 			isStop = fn(ctx, s)

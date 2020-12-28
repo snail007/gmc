@@ -635,7 +635,7 @@ func TestInLocation(t *testing.T) {
 
 	// Now lets set to denver(mst/mdt)
 	time.Local = denverLoc
-	ts = MustStrtotime("Mon Jan  2 15:04:05 MST 2006",denverLoc)
+	ts = MustStrtotime("Mon Jan  2 15:04:05 MST 2006", denverLoc)
 
 	// this time is different from one above parsed with time.Local set to UTC
 	_, offset = ts.Zone()
@@ -653,7 +653,7 @@ func TestInLocation(t *testing.T) {
 
 	// Now lets set to denver
 	time.Local = denverLoc
-	ts = MustStrtotime("Monday, 02-Jan-06 15:04:05 MST",denverLoc)
+	ts = MustStrtotime("Monday, 02-Jan-06 15:04:05 MST", denverLoc)
 	_, offset = ts.Zone()
 	assert.NotEqual(t, 0, offset, "Should have found offset %v", offset)
 	assert.Equal(t, "2006-01-02 22:04:05 +0000 UTC", fmt.Sprintf("%v", ts.In(time.UTC)))

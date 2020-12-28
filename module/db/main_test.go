@@ -1,23 +1,19 @@
-package ghttpserver
+package gdb
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gcontroller "github.com/snail007/gmc/http/controller"
 	grouter "github.com/snail007/gmc/http/router"
 	gsession "github.com/snail007/gmc/http/session"
 	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
 	gconfig "github.com/snail007/gmc/module/config"
-	gctx "github.com/snail007/gmc/module/ctx"
-	gerror "github.com/snail007/gmc/module/error"
-	gi18n "github.com/snail007/gmc/module/i18n"
-	gutil "github.com/snail007/gmc/util"
 	"io"
 	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
+
 	providers := gcore.Providers
 
 	providers.RegisterSession("", func() gcore.Session {
@@ -42,26 +38,6 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterConfig("", func() gcore.Config {
 		return gconfig.NewConfig()
-	})
-
-	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
-		var err error
-		gutil.OnceDo("gmc-i18n-init", func() {
-			err = gi18n.Init(ctx.Config())
-		})
-		return gi18n.I18N, err
-	})
-
-	providers.RegisterError("", func() gcore.Error {
-		return gerror.New()
-	})
-
-	providers.RegisterCtx("", func() gcore.Ctx {
-		return gctx.NewCtx()
-	})
-
-	providers.RegisterController("", func() gcore.Controller {
-		return &gcontroller.Controller{}
 	})
 
 	os.Exit(m.Run())

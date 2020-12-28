@@ -8,11 +8,8 @@ package gsession
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/log"
 	"sync"
 	"time"
-
-	gerr "github.com/snail007/gmc/module/error"
 )
 
 type MemoryStoreConfig struct {
@@ -25,7 +22,7 @@ func NewMemoryStoreConfig() MemoryStoreConfig {
 	return MemoryStoreConfig{
 		GCtime: 300,
 		TTL:    15 * 60,
-		Logger: glog.NewGMCLog("[memorystore]"),
+		Logger: gcore.Providers.Logger("")(nil, "[memorystore]"),
 	}
 }
 
@@ -71,8 +68,8 @@ func (s *MemoryStore) Delete(sessionID string) (err error) {
 }
 
 func (s *MemoryStore) gc() {
-	defer gerr.Recover(func(e interface{}) {
-		fmt.Printf("memorystore gc error: %s", gerr.Stack(e))
+	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+		fmt.Printf("memorystore gc error: %s", gcore.Providers.Error("")().StackError(e))
 	})
 	first := true
 	for {

@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gctx "github.com/snail007/gmc/module/ctx"
+ 	gctx "github.com/snail007/gmc/module/ctx"
 	gerror "github.com/snail007/gmc/module/error"
 	gutil "github.com/snail007/gmc/util"
-	gconfig "github.com/snail007/gmc/util/config"
 	"net"
 	"net/http"
 	"strings"
@@ -69,7 +68,7 @@ func main() {
 
 	app.AddService(gcore.ServiceItem{
 		Service: api,
-		BeforeInit: func(s gcore.Service, cfg *gconfig.Config) (err error) {
+		BeforeInit: func(s gcore.Service, cfg gcore.Config) (err error) {
 			api.PrintRouteTable(nil)
 			return
 		},

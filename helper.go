@@ -7,10 +7,8 @@ import (
 	gapp "github.com/snail007/gmc/module/app"
 	"github.com/snail007/gmc/module/cache"
 	gdb "github.com/snail007/gmc/module/db"
-	gerr "github.com/snail007/gmc/module/error"
 	gi18n "github.com/snail007/gmc/module/i18n"
 	gcaptcha "github.com/snail007/gmc/util/captcha"
-	gconfig "github.com/snail007/gmc/util/config"
 	_map "github.com/snail007/gmc/util/map"
 )
 
@@ -32,17 +30,24 @@ type NewAssistant struct {
 }
 
 // Config creates a new object of gconfig.Config
-func (s *NewAssistant) Config() *gconfig.Config {
-	return gconfig.NewConfig()
+func (s *NewAssistant) Config() gcore.Config {
+	return gcore.Providers.Config("")()
 }
 
 // ConfigFile creates a new object of gconfig.Config from a toml file.
-func (s *NewAssistant) ConfigFile(file string) (cfg *gconfig.Config, err error) {
-	return gconfig.NewConfigFile(file)
+func (s *NewAssistant) ConfigFile(file string) (cfg gcore.Config, err error) {
+	v := s.Config()
+	v.SetConfigFile(file)
+	err = v.ReadInConfig()
+	if err != nil {
+		return
+	}
+	cfg = v
+	return
 }
 
-// App creates an new object of gcore.GMCApp
-func (s *NewAssistant) App() gcore.GMCApp {
+// App creates an new object of gcore.App
+func (s *NewAssistant) App() gcore.App {
 	return gapp.New()
 }
 
@@ -59,15 +64,15 @@ func (s *NewAssistant) CaptchaDefault() *gcaptcha.Captcha {
 // Tr creates an new object of gi18n.I18nTool
 // This only worked after gmc.I18n.Init() called.
 // lang is the language translation to.
-func (s *NewAssistant) Tr(lang string) *gi18n.I18nTool {
-	tool := gi18n.NewI18nTool(gi18n.Tr)
-	tool.Lang(lang)
-	return tool
+func (s *NewAssistant) Tr(lang string)(tr  gcore.I18n) {
+	tr, _ = gcore.Providers.I18n("")(nil)
+	tr.Lang(lang)
+	return
 }
 
 // AppDefault creates a new object of APP and search config file locations:
 // ./app.toml or ./conf/app.toml or ./config/app.toml
-func (s *NewAssistant) AppDefault() gcore.GMCApp {
+func (s *NewAssistant) AppDefault() gcore.App {
 	return gapp.Default()
 }
 
@@ -88,7 +93,7 @@ func (s *NewAssistant) APIServer(ctx gcore.Ctx, address string) *ghttpserver.API
 
 // APIServer creates a new object of gmc.APIServer and initialized from app.toml [apiserver] section.
 // cfg is a gconfig.Config object contains section [apiserver] in `app.toml`.
-func (s *NewAssistant) APIServerDefault(ctx gcore.Ctx, cfg *gconfig.Config) (api *ghttpserver.APIServer, err error) {
+func (s *NewAssistant) APIServerDefault(ctx gcore.Ctx, cfg gcore.Config) (api *ghttpserver.APIServer, err error) {
 	return ghttpserver.NewDefaultAPIServer(ctx, cfg)
 }
 
@@ -100,7 +105,7 @@ func (s *NewAssistant) Map() *_map.Map {
 // Error creates a gmc.Error from an error or string, the gmc.Error
 // keeps the full stack information.
 func (s *NewAssistant) Error(e interface{}) error {
-	return gerr.New(e)
+	return gcore.Providers.Error("")().New((e))
 }
 
 // ##################################################
@@ -113,7 +118,7 @@ type DBAssistant struct {
 
 // Init initialize the db group objects from a config object
 // contains app.toml section [database].
-func (s *DBAssistant) Init(cfg *gconfig.Config) error {
+func (s *DBAssistant) Init(cfg gcore.Config) error {
 	return gdb.Init(cfg)
 }
 
@@ -154,7 +159,7 @@ type CacheAssistant struct {
 
 // Init initialize the cache group objects from a config object
 // contains app.toml section [cache].
-func (s *CacheAssistant) Init(cfg *gconfig.Config) error {
+func (s *CacheAssistant) Init(cfg gcore.Config) error {
 	return gcache.Init(cfg)
 }
 
@@ -188,12 +193,11 @@ type I18nAssistant struct {
 
 // Init initialize the i18n object from a config object
 // contains app.toml section [i18n].
-func (s *I18nAssistant) Init(cfg *gconfig.Config) error {
-	return gi18n.Init(cfg)
-}
-
-// Tr search the key in the `lang` i18n file, if not found, then search the
-// `fallback` (default) lang file, if both fail `defaultMessage` will be returned. You must be call Init firstly.
-func (s *I18nAssistant) Tr(lang, key string, defaultMessage ...string) string {
-	return gi18n.Tr(lang, key, defaultMessage...)
+func (s *I18nAssistant) Init(cfg gcore.Config) (i18n gcore.I18n,err error) {
+	 err= gi18n.Init(cfg)
+	 if err!=nil{
+	 	return
+	 }
+	 i18n=gi18n.I18N
+	 return
 }

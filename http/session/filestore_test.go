@@ -45,7 +45,8 @@ func TestMkdir(t *testing.T) {
 	cfg.Dir = ".gmcsess"
 	os.RemoveAll(cfg.Dir)
 	ioutil.WriteFile(cfg.Dir, []byte("."), 0700)
-	NewFileStore(cfg)
+	_,err := NewFileStore(cfg)
+	assert.NotNil(err)
 	os.Remove(cfg.Dir)
 	store, err := NewFileStore(cfg)
 	assert.Nil(err)

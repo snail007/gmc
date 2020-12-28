@@ -3,16 +3,15 @@ package glog
 import (
 	"compress/gzip"
 	gcore "github.com/snail007/gmc/core"
-	gconfig "github.com/snail007/gmc/util/config"
-	"io"
+ 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-func NewFromConfig(c *gconfig.Config) (l gcore.Logger) {
-	l = NewGMCLog()
+func NewFromConfig(c gcore.Config, prefix string) (l gcore.Logger) {
+	l = NewGMCLog(prefix)
 	cfg := c.Sub("log")
 	l.SetLevel(gcore.LogLevel(cfg.GetInt("level")))
 	if cfg.GetBool("async") {

@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/module/error"
 	"io"
 	"net/http"
 	"os"
@@ -223,17 +222,17 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 		})
 	}
 	if method != "" && !allMethods[method] {
-		panic(gerr.New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
+		panic(gcore.Providers.Error("")().New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
 	}
 }
 
 func (s *HTTPRouter) call(fn func()) {
 	func() {
-		defer gerr.Recover(func(e interface{}) {
+		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
 				return
 			}
-			panic(gerr.Wrap(e))
+			panic(gcore.Providers.Error("")().Wrap(e))
 		})
 		fn()
 	}()

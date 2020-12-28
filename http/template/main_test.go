@@ -1,15 +1,12 @@
-package ghttpserver
+package gtemplate
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gcontroller "github.com/snail007/gmc/http/controller"
 	grouter "github.com/snail007/gmc/http/router"
 	gsession "github.com/snail007/gmc/http/session"
-	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
-	gerror "github.com/snail007/gmc/module/error"
 	gi18n "github.com/snail007/gmc/module/i18n"
 	gutil "github.com/snail007/gmc/util"
 	"io"
@@ -17,7 +14,13 @@ import (
 	"testing"
 )
 
+var (
+	tpl *Template
+)
+
 func TestMain(m *testing.M) {
+
+
 	providers := gcore.Providers
 
 	providers.RegisterSession("", func() gcore.Session {
@@ -33,7 +36,7 @@ func TestMain(m *testing.M) {
 	})
 
 	providers.RegisterTemplate("", func(ctx gcore.Ctx) (gcore.Template, error) {
-		return gtemplate.Init(ctx)
+		return  Init(ctx)
 	})
 
 	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
@@ -52,17 +55,14 @@ func TestMain(m *testing.M) {
 		return gi18n.I18N, err
 	})
 
-	providers.RegisterError("", func() gcore.Error {
-		return gerror.New()
-	})
-
 	providers.RegisterCtx("", func() gcore.Ctx {
 		return gctx.NewCtx()
 	})
 
-	providers.RegisterController("", func() gcore.Controller {
-		return &gcontroller.Controller{}
-	})
-
+	ctx := gcore.Providers.Ctx("")()
+	ctx.SetConfig(gcore.Providers.Config("")())
+	tpl,_=NewTemplate(ctx,"tests/views")
+	tpl.Delims("{{", "}}")
+	tpl.Parse()
 	os.Exit(m.Run())
 }

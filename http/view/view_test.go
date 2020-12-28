@@ -2,8 +2,8 @@ package gview_test
 
 import (
 	"bytes"
+	gcore "github.com/snail007/gmc/core"
 	gtemplate "github.com/snail007/gmc/http/template"
-	gview "github.com/snail007/gmc/http/view"
 	assert2 "github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -11,32 +11,34 @@ import (
 func TestNew(t *testing.T) {
 	assert := assert2.New(t)
 	b := new(bytes.Buffer)
-	tpl := mockTpl()
-	v := gview.New(b, tpl)
+	tpl,_ := mockTpl()
+	v := gcore.Providers.View("")(b, tpl)
 	assert.NotNil(v)
 }
 func TestView_Render(t *testing.T) {
 	assert := assert2.New(t)
 	b := new(bytes.Buffer)
-	tpl := mockTpl()
-	v := gview.New(b, tpl)
+	tpl,_ := mockTpl()
+	v := gcore.Providers.View("")(b, tpl)
 	v.SetMap(map[string]interface{}{
-		"name":"b",
+		"name": "b",
 	})
 	v.Render("user/profile")
-	assert.Equal( "b",b.String())
+	assert.Equal("b", b.String())
 }
 func TestView_Layout(t *testing.T) {
 	assert := assert2.New(t)
 	b := new(bytes.Buffer)
-	tpl := mockTpl()
-	v := gview.New(b, tpl).Layout("layout/page")
+	tpl ,_:= mockTpl()
+	v := gcore.Providers.View("")(b, tpl).Layout("layout/page")
 	v.Set("name", "b")
 	v.Render("user/profile")
-	assert.Equal( "abc",b.String())
+	assert.Equal("abc", b.String())
 }
-func mockTpl() *gtemplate.Template {
-	t, _ := gtemplate.NewTemplate("tests")
+func mockTpl() (t *gtemplate.Template,ctx gcore.Ctx) {
+	ctx = gcore.Providers.Ctx("")()
+	ctx.SetConfig(gcore.Providers.Config("")())
+	t, _ = gtemplate.NewTemplate(ctx,"tests")
 	t.Parse()
-	return t
+	return
 }

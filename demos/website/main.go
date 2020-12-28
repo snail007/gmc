@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	app gcore.GMCApp
+	app gcore.App
 )
 
 func main() {

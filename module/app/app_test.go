@@ -3,11 +3,9 @@ package gapp
 import (
 	"fmt"
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/ctx"
+ 	"github.com/snail007/gmc/module/ctx"
 	"testing"
 	"time"
-
-	gconfig "github.com/snail007/gmc/util/config"
 
 	httpserver "github.com/snail007/gmc/http/server"
 
@@ -26,7 +24,7 @@ func TestRun(t *testing.T) {
 	app.SetConfigFile("app.toml")
 	app.AddService(gcore.ServiceItem{
 		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
-		BeforeInit: func(srv gcore.Service, cfg *gconfig.Config) (err error) {
+		BeforeInit: func(srv gcore.Service, cfg gcore.Config) (err error) {
 			cfg.Set("template.dir", "../../http/template/tests/views")
 			cfg.Set("httpserver.listen", ":")
 			return
@@ -64,7 +62,7 @@ func TestRun_2(t *testing.T) {
 	server := httpserver.NewHTTPServer(gctx.NewCtx())
 	app.AddService(gcore.ServiceItem{
 		Service: server,
-		BeforeInit: func(srv gcore.Service, config *gconfig.Config) (err error) {
+		BeforeInit: func(srv gcore.Service, config gcore.Config) (err error) {
 			config.Set("session.store", "none")
 			return
 		},
@@ -132,7 +130,7 @@ func TestBeforeRun(t *testing.T) {
 	//run gmc app
 	app := New().(*GMCApp)
 	assert.Nil(app.parseConfigFile())
-	app.OnRun(func(*gconfig.Config) error {
+	app.OnRun(func(gcore.Config) error {
 		return fmt.Errorf("stop")
 	})
 	err := app.Run()
@@ -142,7 +140,7 @@ func TestBeforeRun_1(t *testing.T) {
 	// assert := assert.New(t)
 	app := New()
 	app.SetBlock(false)
-	app.OnRun(func(*gconfig.Config) (err error) {
+	app.OnRun(func(gcore.Config) (err error) {
 		a := 0
 		_ = a / a
 		return
@@ -153,7 +151,7 @@ func TestBeforeRun_2(t *testing.T) {
 	// assert := assert.New(t)
 	app := New()
 	app.SetBlock(false)
-	app.OnRun(func(*gconfig.Config) (err error) {
+	app.OnRun(func(gcore.Config) (err error) {
 		return fmt.Errorf("_")
 	})
 	app.Run()

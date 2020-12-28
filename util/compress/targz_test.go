@@ -22,7 +22,7 @@ func TestUnTarGz(t *testing.T) {
 	var b bytes.Buffer
 	b.Write(d)
 	s, e := gcompress.Unpack(&b, "test")
-	fmt.Println(s, gerr.Stack(e))
+	fmt.Println(s, gcore.Providers.Error("")().StackError(e))
 	assert.Nil(e)
 	os.RemoveAll("test")
 }

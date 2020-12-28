@@ -122,11 +122,11 @@ func (this *Demo) List() {
 }
 func (this *Demo) Layout() {
 	this.View.Layout("page").Render("welcome", map[string]interface{}{
-		"title":"welcome",
+		"title": "welcome",
 	})
 }
 func (this *Demo) Layout2() {
 	this.View.Layout("page.html").Render("welcome.html", map[string]interface{}{
-		"title":"welcome",
+		"title": "welcome",
 	})
 }

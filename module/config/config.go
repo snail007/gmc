@@ -1,12 +1,17 @@
-package gconfig
+package config
 
 import (
 	"bytes"
+	gcore "github.com/snail007/gmc/core"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
 	*viper.Viper
+}
+
+func (c *Config) Sub(key string) gcore.SubConfig {
+	return c.Viper.Sub(key)
 }
 
 func NewConfig() *Config {

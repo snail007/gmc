@@ -5,12 +5,7 @@ import (
 	"fmt"
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/module/cache"
-	gctx "github.com/snail007/gmc/module/ctx"
-	gdb "github.com/snail007/gmc/module/db"
-	gerr "github.com/snail007/gmc/module/error"
-	gi18n "github.com/snail007/gmc/module/i18n"
 	"github.com/snail007/gmc/module/log"
-	gconfig "github.com/snail007/gmc/util/config"
 	ghook "github.com/snail007/gmc/util/process/hook"
 	"net"
 	"os"
@@ -18,15 +13,15 @@ import (
 )
 
 type GMCApp struct {
-	onRun             []func(*gconfig.Config) error
+	onRun             []func(gcore.Config) error
 	onShutdown        []func()
 	isBlock           bool
-	attachConfig      map[string]*gconfig.Config
+	attachConfig      map[string]gcore.Config
 	attachConfigfiles map[string]string
 	services          []gcore.ServiceItem
 	logger            gcore.Logger
 	configFile        string
-	config            *gconfig.Config
+	config            gcore.Config
 	ctx               gcore.Ctx
 }
 
@@ -38,32 +33,32 @@ func (s *GMCApp) SetCtx(ctx gcore.Ctx) {
 	s.ctx = ctx
 }
 
-func New() gcore.GMCApp {
+func New() gcore.App {
 	app := &GMCApp{
 		isBlock:           true,
-		onRun:             []func(*gconfig.Config) error{},
+		onRun:             []func(gcore.Config) error{},
 		onShutdown:        []func(){},
 		services:          []gcore.ServiceItem{},
 		logger:            nil,
-		attachConfig:      map[string]*gconfig.Config{},
+		attachConfig:      map[string]gcore.Config{},
 		attachConfigfiles: map[string]string{},
 	}
-	c := gctx.NewCtx()
+	c := gcore.Providers.Ctx("")()
 	c.SetApp(app)
 	app.ctx = c
 	return app
 }
 
-func Default() gcore.GMCApp {
+func Default() gcore.App {
 	// default config dir and name
-	cfg := gconfig.NewConfig()
+	cfg := gcore.Providers.Config("")()
 	cfg.SetConfigName("app")
 	cfg.AddConfigPath(".")
 	cfg.AddConfigPath("conf")
 	cfg.AddConfigPath("config")
 	a := New()
 	a.SetConfig(cfg)
-	c := gctx.NewCtx()
+	c := gcore.Providers.Ctx("")()
 	c.SetApp(a)
 	a.(*GMCApp).ctx = c
 	return a
@@ -86,12 +81,12 @@ func (s *GMCApp) initialize() (err error) {
 
 	// initialize logging
 	if s.config.Sub("log") != nil && s.logger == nil {
-		s.logger = glog.NewFromConfig(s.config)
+		s.logger = glog.NewFromConfig(s.config, "")
 	}
 
 	// initialize database
 	if s.config.Sub("database") != nil {
-		err = gdb.Init(s.config)
+		_, err = gcore.Providers.Database("")(s.ctx)
 		if err != nil {
 			return
 		}
@@ -104,9 +99,15 @@ func (s *GMCApp) initialize() (err error) {
 			return
 		}
 	}
+
 	// initialize i18n if needed
 	if s.config.Sub("i18n") != nil {
-		err = gi18n.Init(s.config)
+		var i18n gcore.I18n
+		i18n, err = gcore.Providers.I18n("")(s.ctx)
+		if err != nil {
+			return err
+		}
+		s.ctx.SetI18n(i18n)
 	}
 	return
 }
@@ -114,20 +115,20 @@ func (s *GMCApp) initialize() (err error) {
 func (s *GMCApp) SetConfigFile(file string) {
 	s.configFile = file
 }
-func (s *GMCApp) SetConfig(cfg *gconfig.Config) {
+func (s *GMCApp) SetConfig(cfg gcore.Config) {
 	s.config = cfg
 }
 func (s *GMCApp) AttachConfigFile(id, file string) {
 	s.attachConfigfiles[id] = file
 }
-func (s *GMCApp) AttachConfig(id string, cfg *gconfig.Config) {
+func (s *GMCApp) AttachConfig(id string, cfg gcore.Config) {
 	s.attachConfig[id] = cfg
 }
 
 //Config acquires the  or attach config object.
 //if `idanem` is empty , it return   config object,
 //other return attach config object of `id`.
-func (s *GMCApp) Config(id ...string) *gconfig.Config {
+func (s *GMCApp) Config(id ...string) gcore.Config {
 	if len(id) > 0 {
 		return s.attachConfig[id[0]]
 	}
@@ -137,7 +138,7 @@ func (s *GMCApp) parseConfigFile() (err error) {
 	parse := false
 	if s.configFile != "" {
 		if s.config == nil {
-			s.config = gconfig.NewConfig()
+			s.config = gcore.Providers.Config("")()
 		}
 		s.config.SetConfigFile(s.configFile)
 		parse = true
@@ -156,7 +157,7 @@ func (s *GMCApp) parseConfigFile() (err error) {
 		s.configFile = s.config.ConfigFileUsed()
 	}
 	for id, cfgfile := range s.attachConfigfiles {
-		cfg := gconfig.NewConfig()
+		cfg := gcore.Providers.Config("")()
 		cfg.SetConfigFile(cfgfile)
 		err = cfg.ReadInConfig()
 		if err != nil {
@@ -166,13 +167,13 @@ func (s *GMCApp) parseConfigFile() (err error) {
 	}
 	return
 }
-func (s *GMCApp) callRunE(fns []func(*gconfig.Config) error) (err error) {
+func (s *GMCApp) callRunE(fns []func(gcore.Config) error) (err error) {
 	hasError := false
 	for _, fn := range fns {
 		func() {
-			defer gerr.Recover(func(e interface{}) {
+			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 				hasError = true
-				err = gerr.Wrap(e)
+				err = gcore.Providers.Error("")().Wrap(e)
 			})
 			err = fn(s.config)
 			if err != nil {
@@ -218,8 +219,8 @@ func (s *GMCApp) Run() (err error) {
 func (s *GMCApp) Stop() {
 	for _, fn := range s.onShutdown {
 		func() {
-			defer gerr.Recover(func(e interface{}) {
-				s.logger.Infof("run beforeShutdown hook fail, error : %s", gerr.Stack(e))
+			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+				s.logger.Infof("run beforeShutdown hook fail, error : %s", gcore.Providers.Error("")().StackError(e))
 			})
 			fn()
 		}()
@@ -229,7 +230,7 @@ func (s *GMCApp) Stop() {
 	}
 }
 
-func (s *GMCApp) OnRun(fn func(*gconfig.Config) (err error)) {
+func (s *GMCApp) OnRun(fn func(gcore.Config) (err error)) {
 	s.onRun = append(s.onRun, fn)
 }
 func (s *GMCApp) OnShutdown(fn func()) {
@@ -259,7 +260,7 @@ func (s *GMCApp) run() (err error) {
 	json.Unmarshal([]byte(data), &fdMap)
 	for i, srvI := range s.services {
 		srv := srvI.Service
-		var cfg *gconfig.Config
+		var cfg gcore.Config
 		if srvI.ConfigID != "" {
 			cfg = s.attachConfig[srvI.ConfigID]
 		} else {

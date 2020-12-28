@@ -9,16 +9,13 @@ import (
 	"crypto/md5"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/log"
-	"github.com/snail007/gmc/util"
+ 	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
-
-	gerr "github.com/snail007/gmc/module/error"
 )
 
 type FileStoreConfig struct {
@@ -39,7 +36,7 @@ func NewFileStoreConfig() FileStoreConfig {
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
-		Logger: glog.NewGMCLog("[filestore]"),
+		Logger: gcore.Providers.Logger("")(nil,"[filestore]"),
 	}
 }
 
@@ -55,12 +52,6 @@ func NewFileStore(config interface{}) (st gcore.SessionStorage, err error) {
 	if cfg.Dir == "" {
 		cfg.Dir = "."
 	}
-	if !gutil.ExistsDir(cfg.Dir) {
-		err = os.Mkdir(cfg.Dir, 0700)
-		if err != nil {
-			return
-		}
-	}
 	cfg.Dir, err = filepath.Abs(cfg.Dir)
 	if err != nil {
 		return
@@ -68,9 +59,10 @@ func NewFileStore(config interface{}) (st gcore.SessionStorage, err error) {
 	cfg.Dir = filepath.Join(cfg.Dir, folder)
 	if !gutil.ExistsDir(cfg.Dir) {
 		err = os.MkdirAll(cfg.Dir, 0700)
-	}
-	if err != nil {
-		return
+		if err != nil && !strings.Contains(err.Error(), "file exists") {
+			return
+		}
+		err=nil
 	}
 	if cfg.GCtime <= 0 {
 		cfg.GCtime = 300
@@ -145,8 +137,8 @@ func (s *FileStore) file(sessionID string) string {
 	return path
 }
 func (s *FileStore) gc() {
-	defer gerr.Recover(func(e interface{}) {
-		fmt.Printf("filestore gc error: %s", gerr.Stack(e))
+	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+		fmt.Printf("filestore gc error: %s", gcore.Providers.Error("")().StackError(e))
 	})
 	var files []string
 	var err error

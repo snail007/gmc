@@ -11,6 +11,7 @@ import (
 	gview "github.com/snail007/gmc/http/view"
 	gapp "github.com/snail007/gmc/module/app"
 	gcache "github.com/snail007/gmc/module/cache"
+	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
 	gdb "github.com/snail007/gmc/module/db"
 	gerror "github.com/snail007/gmc/module/error"
@@ -29,7 +30,7 @@ var _ gcore.APIServer = &ghttpserver.APIServer{}
 var _ gcore.HTTPServer = &ghttpserver.HTTPServer{}
 var _ gcore.Service = &ghttpserver.HTTPServer{}
 var _ gcore.Service = &ghttpserver.APIServer{}
-var _ gcore.GMCApp = &gapp.GMCApp{}
+var _ gcore.App = &gapp.GMCApp{}
 var _ gcore.Template = &gtemplate.Template{}
 var _ gcore.View = &gview.View{}
 var _ gcore.Cache = &gcache.FileCache{}
@@ -45,3 +46,4 @@ var _ gcore.ActiveRecord = &gdb.SQLite3ActiveRecord{}
 var _ gcore.ResultSet = &gdb.ResultSet{}
 var _ gcore.Error = &gerror.Error{}
 var _ gcore.Database = &gdb.SQLite3DB{}
+var _ gcore.Config = &gconfig.Config{}

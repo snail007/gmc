@@ -5,10 +5,15 @@
 
 package gtemplate
 
-import "fmt"
+import (
+	"fmt"
+	gcore "github.com/snail007/gmc/core"
+)
 
 func Example() {
-	tpl, err := NewTemplate("tests/views")
+	ctx := gcore.Providers.Ctx("")()
+	ctx.SetConfig(gcore.Providers.Config("")())
+	tpl, err := NewTemplate(ctx, "tests/views")
 	if err != nil {
 		fmt.Println(err)
 		return

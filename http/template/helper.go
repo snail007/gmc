@@ -2,11 +2,11 @@ package gtemplate
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gconfig "github.com/snail007/gmc/util/config"
-)
+ )
 
-func Init(cfg *gconfig.Config) (tpl gcore.Template, err error) {
-	tpl, err = NewTemplate(cfg.GetString("template.dir"))
+func Init(ctx gcore.Ctx) (tpl gcore.Template, err error) {
+	cfg:=ctx.Config()
+	tpl, err = NewTemplate(ctx,cfg.GetString("template.dir"))
 	if err != nil {
 		return nil, err
 	}

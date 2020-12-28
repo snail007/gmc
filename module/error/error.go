@@ -20,11 +20,15 @@ type Error struct {
 	prefix string
 }
 
+func New() gcore.Error {
+	return &Error{}
+}
+
 // New makes an Error from the given value. If that value is already an
 // error then it will be used directly, if not, it will be passed to
 // fmt.Errorf("%v"). The stacktrace will point to the line of code that
 // called New.
-func New(e interface{}) *Error {
+func (this *Error) New(e interface{}) gcore.Error {
 	var err error
 
 	switch e := e.(type) {
@@ -41,15 +45,16 @@ func New(e interface{}) *Error {
 		stack: stack[:length],
 	}
 }
-func Stack(e interface{}) string {
+
+func (this *Error) StackError(e interface{}) string {
 	if e == nil {
 		return ""
 	}
-	var err *Error
+	var err gcore.Error
 	if v, ok := e.(*Error); ok {
 		err = v
 	} else {
-		err = Wrap(e)
+		err = this.Wrap(e)
 	}
 	return err.Error() + "\n" + string(err.Stack())
 }
@@ -58,10 +63,11 @@ func Stack(e interface{}) string {
 // error then it will be used directly, if not, it will be passed to
 // fmt.Errorf("%v"). The skip parameter indicates how far up the stack
 // to start the stacktrace. 0 is from the current call, 1 from its caller, etc.
-func Wrap(e interface{}) *Error {
-	return WrapN(e, 2)
+func (this *Error) Wrap(e interface{}) gcore.Error {
+	return this.WrapN(e, 2)
 }
-func WrapN(e interface{}, skip int) *Error {
+
+func (this *Error) WrapN(e interface{}, skip int) gcore.Error {
 	if e == nil {
 		return nil
 	}
@@ -91,15 +97,15 @@ func WrapN(e interface{}, skip int) *Error {
 // error message when calling Error(). The skip parameter indicates how far
 // up the stack to start the stacktrace. 0 is from the current call,
 // 1 from its caller, etc.
-func WrapPrefix(e interface{}, prefix string, skip int) *Error {
-	return WrapPrefixN(e, prefix, skip)
+func (this *Error) WrapPrefix(e interface{}, prefix string, skip int) gcore.Error {
+	return this.WrapPrefixN(e, prefix, skip)
 }
-func WrapPrefixN(e interface{}, prefix string, skip int) *Error {
+func (this *Error) WrapPrefixN(e interface{}, prefix string, skip int) gcore.Error {
 	if e == nil {
 		return nil
 	}
 
-	err := WrapN(e, 1+skip)
+	err := this.WrapN(e, 1+skip).(*Error)
 
 	if err.prefix != "" {
 		prefix = fmt.Sprintf("%s: %s", prefix, err.prefix)
@@ -116,8 +122,8 @@ func WrapPrefixN(e interface{}, prefix string, skip int) *Error {
 // Errorf creates a new error with the given message. You can use it
 // as a drop-in replacement for fmt.Errorf() to provide descriptive
 // errors in return values.
-func Errorf(format string, a ...interface{}) *Error {
-	return WrapN(fmt.Errorf(format, a...), 1)
+func (this *Error) Errorf(format string, a ...interface{}) gcore.Error {
+	return this.WrapN(fmt.Errorf(format, a...), 1)
 }
 
 // Error returns the underlying error's message.
@@ -184,7 +190,7 @@ func (err *Error) TypeName() string {
 	return reflect.TypeOf(err.Err).String()
 }
 
-func Recover(f ...interface{}) {
+func (this *Error) Recover(f ...interface{}) {
 	var f0 interface{}
 	var printStack bool
 	if len(f) == 0 {
@@ -201,11 +207,11 @@ func Recover(f ...interface{}) {
 		case string:
 			s := ""
 			if printStack {
-				s = fmt.Sprintf(",stack: %s", Wrap(e).ErrorStack())
+				s = fmt.Sprintf(",stack: %s", this.StackError(e))
 			}
 			fmt.Printf("\nrecover error, %s%s\n", f, s)
 		default:
-			fmt.Printf("\nrecover error %s\n", Wrap(e).ErrorStack())
+			fmt.Printf("\nrecover error %s\n", this.Wrap(e).ErrorStack())
 		}
 	}
 }

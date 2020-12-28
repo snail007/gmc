@@ -29,7 +29,7 @@ type FileCacheConfig struct {
 func NewFileCacheConfig() *FileCacheConfig {
 	return &FileCacheConfig{
 		CleanupInterval: time.Second,
-		Dir:           os.TempDir() ,
+		Dir:             os.TempDir(),
 	}
 }
 
@@ -58,20 +58,20 @@ func NewFileCache(cfg interface{}) (cache *FileCache, err error) {
 		cfg: cfg0,
 	}
 	c.cfg.Dir = strings.Replace(c.cfg.Dir, "{tmp}", os.TempDir(), 1)
-	if c.cfg.Dir==""{
-		c.cfg.Dir="."
+	if c.cfg.Dir == "" {
+		c.cfg.Dir = "."
 	}
 	c.cfg.Dir, err = filepath.Abs(c.cfg.Dir)
 	if err != nil {
 		return
 	}
 	c.cfg.Dir = filepath.Join(c.cfg.Dir, folder)
-	err = os.MkdirAll(c.cfg.Dir, 0700);
+	err = os.MkdirAll(c.cfg.Dir, 0700)
 	if err != nil {
 		return
 	}
 	go c.startGC()
-	cache=c
+	cache = c
 	return
 }
 
@@ -110,15 +110,15 @@ func (c *FileCache) read(key string) (*Item, error) {
 func (c *FileCache) Get(key string) (val string, err error) {
 	item, err := c.read(key)
 	if err != nil {
-		if os.IsNotExist(err){
-			err= gcore.ErrKeyNotExists
+		if os.IsNotExist(err) {
+			err = gcore.ErrKeyNotExists
 		}
 		return
 	}
 
 	if item.hasExpired() {
 		os.Remove(c.filepath(key))
-		err= gcore.ErrKeyNotExists
+		err = gcore.ErrKeyNotExists
 		return
 	}
 	return gcast.ToString(item.Val), nil
@@ -172,7 +172,7 @@ func (c *FileCache) IncrN(key string, n int64) (val int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return gcast.ToInt64(item.Val) , nil
+	return gcast.ToInt64(item.Val), nil
 }
 
 // Decr value N by key
@@ -206,7 +206,7 @@ func (c *FileCache) GetMulti(keys []string) (map[string]string, error) {
 		if e != nil && !gcore.IsNotExits(e) {
 			return nil, e
 		}
-		if !gcore.IsNotExits(e){
+		if !gcore.IsNotExits(e) {
 			d[key] = v
 		}
 	}

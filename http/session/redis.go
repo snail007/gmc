@@ -7,8 +7,7 @@ package gsession
 
 import (
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/cache"
-	"github.com/snail007/gmc/module/log"
+	gcache "github.com/snail007/gmc/module/cache"
 	"time"
 )
 
@@ -21,7 +20,7 @@ type RedisStoreConfig struct {
 func NewRedisStoreConfig() RedisStoreConfig {
 	return RedisStoreConfig{
 		TTL:      3600,
-		Logger:   glog.NewGMCLog("[redisstore]"),
+		Logger:   gcore.Providers.Logger("")(nil, "[redisstore]"),
 		RedisCfg: gcache.NewRedisCacheConfig(),
 	}
 }

@@ -3,11 +3,7 @@ package gcache
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/module/error"
-	"github.com/snail007/gmc/module/log"
 	"time"
-
-	gconfig "github.com/snail007/gmc/util/config"
 
 	"github.com/snail007/gmc/util/cast"
 )
@@ -17,8 +13,8 @@ var (
 	groupRedis  = map[string]gcore.Cache{}
 	groupMemory = map[string]gcore.Cache{}
 	groupFile   = map[string]gcore.Cache{}
-	logger      = glog.NewGMCLog()
-	cfg         *gconfig.Config
+	logger      gcore.Logger
+	cfg         gcore.Config
 )
 
 func SetLogger(l gcore.Logger) {
@@ -26,7 +22,7 @@ func SetLogger(l gcore.Logger) {
 }
 
 //RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
-func Init(cfg0 *gconfig.Config) (err error) {
+func Init(cfg0 gcore.Config) (err error) {
 	cfg = cfg0
 	for k, v := range cfg.Sub("cache").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {
@@ -68,8 +64,8 @@ func Init(cfg0 *gconfig.Config) (err error) {
 					CleanupInterval: time.Duration(gcast.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
 
-				groupFile[id],err = NewFileCache(cfg)
-				if err!=nil{
+				groupFile[id], err = NewFileCache(cfg)
+				if err != nil {
 					return
 				}
 			}
@@ -94,26 +90,27 @@ func Cache(id ...string) gcore.Cache {
 
 //Redis acquires a redis cache object associated the id, id default is : `default`
 func Redis(id ...string) *RedisCache {
-	return find("redis",id...).(*RedisCache)
+	return find("redis", id...).(*RedisCache)
 }
 
 func AddCacheU(id string, c gcore.Cache) {
 	myCache[id] = c
 }
 func CacheU(id ...string) gcore.Cache {
-	return find("user",id...)
+	return find("user", id...)
 }
 
 //Memory acquires a memory cache object associated the id, id default is : `default`
 func Memory(id ...string) *MemCache {
-	return find("memory",id...).(*MemCache)
-}
-//File acquires a file cache object associated the id, id default is : `default`
-func File(id ...string) *FileCache {
-	return find("file",id...).(*FileCache)
+	return find("memory", id...).(*MemCache)
 }
 
-func find(typ string,id ...string) gcore.Cache {
+//File acquires a file cache object associated the id, id default is : `default`
+func File(id ...string) *FileCache {
+	return find("file", id...).(*FileCache)
+}
+
+func find(typ string, id ...string) gcore.Cache {
 	id0 := "default"
 	if len(id) > 0 {
 		id0 = id[0]
@@ -133,12 +130,12 @@ func find(typ string,id ...string) gcore.Cache {
 		logf("[warn] %s cache not found", typ)
 	}
 	if !ok {
-		logf("[warn] %s cache `id`:%s not found",typ, id0)
+		logf("[warn] %s cache `id`:%s not found", typ, id0)
 	}
 	return v
 }
 func logf(f string, v ...interface{}) {
 	if logger != nil {
-		logger.Infof(gerr.New(fmt.Sprintf(f, v...)).String())
+		logger.Infof(gcore.Providers.Error("")().New(fmt.Sprintf(f, v...)).Error())
 	}
 }

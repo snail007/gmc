@@ -140,12 +140,12 @@ maxconnlifetime=3600
 wait=false
 
 [[cache.memory]]
-enable=false
+enable=true
 id="default"
 cleanupinterval=30
 
 [[cache.file]]
-enable=false
+enable=true
 id="default"
 dir="{tmp}"
 cleanupinterval=30

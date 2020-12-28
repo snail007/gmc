@@ -2,7 +2,6 @@ package gcore
 
 import (
 	"context"
-	gconfig "github.com/snail007/gmc/util/config"
 	"io"
 	"net"
 	"net/http"
@@ -72,7 +71,7 @@ var DefaultCookieOptions = &CookieOptions{
 }
 
 type Cookies interface {
-	Get(name string, signed ...bool) (value string, err error)
+	Get(name string) (value string, err error)
 	Set(name, val string, options ...*CookieOptions)
 	Remove(name string, options ...*CookieOptions)
 }
@@ -169,8 +168,8 @@ type HTTPServer interface {
 	SetHandler40x(fn func(ctx Ctx, tpl Template))
 	SetHandler50x(fn func(ctx Ctx, tpl Template, err interface{}))
 	AddFuncMap(f map[string]interface{})
-	SetConfig(c *gconfig.Config)
-	Config() *gconfig.Config
+	SetConfig(c Config)
+	Config() Config
 	ActiveConnCount() int64
 	Listener() net.Listener
 	Listeners() []net.Listener
@@ -192,6 +191,7 @@ type HTTPServer interface {
 }
 
 type Controller interface {
+	GetCtx()Ctx
 	MethodCallPre(ctx Ctx)
 	MethodCallPost()
 	Tr(key string, defaultText ...string) string

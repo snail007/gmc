@@ -7,8 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
- )
+)
 
 func base64encode(v string) string {
 	return base64.StdEncoding.EncodeToString([]byte(v))

@@ -3,23 +3,22 @@ package accesslog
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	log2 "github.com/snail007/gmc/module/log"
+	"github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util/cast"
-	gconfig "github.com/snail007/gmc/util/config"
 	"strings"
 	"time"
 )
 
 type accesslog struct {
-	logger *log2.GMCLog
+	logger *glog.GMCLog
 	format string
 }
 
-func newFromConfig(c *gconfig.Config) *accesslog {
+func newFromConfig(c gcore.Config) *accesslog {
 	cfg := c.Sub("accesslog")
-	logger := log2.NewGMCLog().(*log2.GMCLog)
+	logger := glog.NewGMCLog().(*glog.GMCLog)
 	logger.SetFlags(0)
-	logger.SetOutput(log2.NewFileWriter(cfg.GetString("filename"),
+	logger.SetOutput(glog.NewFileWriter(cfg.GetString("filename"),
 		cfg.GetString("dir"), cfg.GetBool("gzip")))
 	logger.EnableAsync()
 	return &accesslog{
@@ -28,7 +27,7 @@ func newFromConfig(c *gconfig.Config) *accesslog {
 	}
 }
 
-func NewWebFromConfig(c *gconfig.Config) gcore.MiddlewareWeb {
+func NewWebFromConfig(c gcore.Config) gcore.MiddlewareWeb {
 	a := newFromConfig(c)
 	return func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool) {
 		go log(ctx, a)
@@ -36,7 +35,7 @@ func NewWebFromConfig(c *gconfig.Config) gcore.MiddlewareWeb {
 	}
 }
 
-func NewAPIFromConfig(c *gconfig.Config) gcore.MiddlewareAPI {
+func NewAPIFromConfig(c gcore.Config) gcore.MiddlewareAPI {
 	a := newFromConfig(c)
 	return func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool) {
 		go log(ctx, a)

@@ -3,18 +3,60 @@ package gsession
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	gcache "github.com/snail007/gmc/module/cache"
+	gconfig "github.com/snail007/gmc/module/config"
+	gerror "github.com/snail007/gmc/module/error"
+	glog "github.com/snail007/gmc/module/log"
+	gutil "github.com/snail007/gmc/util"
 	"os"
 	"testing"
 )
 
 var (
-	fileStore gcore.SessionStorage
+	fileStore   gcore.SessionStorage
 	memoryStore gcore.SessionStorage
-	redisStore gcore.SessionStorage
+	redisStore  gcore.SessionStorage
 )
-func TestMain(m *testing.M) {
-	var err error
 
+func TestMain(m *testing.M) {
+
+	providers := gcore.Providers
+
+	providers.RegisterSession("", func() gcore.Session {
+		return  NewSession()
+	})
+
+	providers.RegisterSessionStorage("", func(ctx gcore.Ctx) (gcore.SessionStorage, error) {
+		return  Init(ctx.Config())
+	})
+
+	providers.RegisterConfig("", func() gcore.Config {
+		return gconfig.NewConfig()
+	})
+
+	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
+		var err error
+		gutil.OnceDo("gmc-cache-init", func() {
+			err = gcache.Init(ctx.Config())
+		})
+		if err != nil {
+			return nil, err
+		}
+		return gcache.Cache(), nil
+	})
+
+	providers.RegisterError("", func() gcore.Error {
+		return gerror.New()
+	})
+
+	providers.RegisterLogger("", func(ctx gcore.Ctx,prefix string) gcore.Logger {
+		if ctx == nil {
+			return glog.NewGMCLog(prefix)
+		}
+		return glog.NewFromConfig(ctx.Config(), prefix)
+	})
+
+	var err error
 	cfg := NewFileStoreConfig()
 	cfg.GCtime = 1
 	cfg.TTL = 1

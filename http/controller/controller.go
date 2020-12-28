@@ -8,10 +8,7 @@ package gcontroller
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gcookie "github.com/snail007/gmc/http/cookie"
-	gi18n "github.com/snail007/gmc/module/i18n"
-	"github.com/snail007/gmc/util/cast"
-	gconfig "github.com/snail007/gmc/util/config"
+	gcast "github.com/snail007/gmc/util/cast"
 	ghttputil "github.com/snail007/gmc/util/http"
 	"net/http"
 )
@@ -22,9 +19,10 @@ type Controller struct {
 	Param        gcore.Params
 	Session      gcore.Session
 	Tpl          gcore.Template
+	I18n         gcore.I18n
 	SessionStore gcore.SessionStorage
 	Router       gcore.HTTPRouter
-	Config       *gconfig.Config
+	Config       gcore.Config
 	Cookie       gcore.Cookies
 	Ctx          gcore.Ctx
 	View         gcore.View
@@ -44,9 +42,8 @@ func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 	this.Router = ctx.WebServer().Router()
 	this.Config = ctx.WebServer().Config()
 	this.Logger = ctx.WebServer().Logger()
-	this.View = gcore.Providers.View("")(ctx)
-	this.Cookie = gcookie.New(this.Response, this.Request)
-
+	this.View = gcore.Providers.View("")(ctx.Response(), ctx.Template())
+	this.Cookie = gcore.Providers.Cookies("")(ctx)
 	// 2.init stuff below
 	this.View.SetLayoutDir(this.Config.GetString("template.layout"))
 
@@ -63,11 +60,12 @@ func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 func (this *Controller) initLang() {
 	if this.Config.GetBool("i18n.enable") {
 		this.Lang = "none"
-		t, e := gi18n.MatchAcceptLanguageT(this.Request)
+		t, e := this.Ctx.I18n().MatchAcceptLanguageT(this.Request)
 		if e == nil {
 			this.Lang = t.String()
 			this.View.Set("Lang", this.Lang)
 		}
+		this.I18n = this.Ctx.I18n().Clone(this.Lang)
 	}
 }
 
@@ -151,7 +149,7 @@ func (this *Controller) MethodCallPost() {
 
 //Tr translates the key to `this.Lang's` text.
 func (this *Controller) Tr(key string, defaultText ...string) string {
-	return gi18n.Tr(this.Lang, key, defaultText...)
+	return this.I18n.Tr(this.Lang, key, defaultText...)
 }
 
 //Die will prevent to call After() if have, and MethodCallPost()
@@ -188,7 +186,7 @@ func (this *Controller) SessionStart() (err error) {
 		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
-		sess := gcore.Providers.Session("")(this.Ctx)
+		sess := gcore.Providers.Session("")()
 		sess.Touch()
 		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcore.CookieOptions{
 			Path:     "/",
@@ -201,7 +199,9 @@ func (this *Controller) SessionStart() (err error) {
 
 	return
 }
-
+func (this *Controller) GetCtx() gcore.Ctx {
+	return this.Ctx
+}
 func (this *Controller) SessionDestroy() (err error) {
 	if this.SessionStore == nil {
 		err = fmt.Errorf("session is disabled")

@@ -110,8 +110,8 @@ func Start() (err error) {
 	}
 	if isForever || flog != "" {
 		go func() {
-			defer gerr.Recover(func(e interface{}) {
-				fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
+			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+				fmt.Fprintf(w, "crashed, err: %s", gcore.Providers.Error("")().StackError(e))
 			})
 			for {
 				if cmd != nil {
@@ -136,16 +136,16 @@ func Start() (err error) {
 				scanner := bufio.NewScanner(cmdReader)
 				scannerStdErr := bufio.NewScanner(cmdReaderStderr)
 				go func() {
-					defer gerr.Recover(func(e interface{}) {
-						fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
+					defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+						fmt.Fprintf(w, "crashed, err: %s", gcore.Providers.Error("")().StackError(e))
 					})
 					for scanner.Scan() {
 						fmt.Fprintf(w, scanner.Text()+"\n")
 					}
 				}()
 				go func() {
-					defer gerr.Recover(func(e interface{}) {
-						fmt.Fprintf(w, "crashed, err: %s", gerr.Stack(e))
+					defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+						fmt.Fprintf(w, "crashed, err: %s", gcore.Providers.Error("")().StackError(e))
 					})
 					for scannerStdErr.Scan() {
 						fmt.Fprintf(w, scannerStdErr.Text()+"\n")

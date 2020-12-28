@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	log2 "github.com/snail007/gmc/module/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,9 +17,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	gconfig "github.com/snail007/gmc/util/config"
-
-	gerr "github.com/snail007/gmc/module/error"
 	ghttputil "github.com/snail007/gmc/util/http"
 )
 
@@ -40,19 +36,18 @@ type APIServer struct {
 	middleware3       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
 	isShutdown        bool
 	ext               string
-	config            *gconfig.Config
+	config            gcore.Config
 	localaddr         *sync.Map
 	connCnt           *int64
 	ctx               gcore.Ctx
 }
 
 func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
- 	api := &APIServer{
+	api := &APIServer{
 		server: &http.Server{
 			TLSConfig: &tls.Config{},
 		},
 		address:          address,
-		logger:           log2.NewGMCLog(),
 		router:           gcore.Providers.HTTPRouter("")(ctx),
 		isShowErrorStack: true,
 		middleware0:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
@@ -73,10 +68,11 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 		l := log.New(api.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
+	api.logger = gcore.Providers.Logger("")(ctx,"")
 	return api
 }
 
-func NewDefaultAPIServer(ctx gcore.Ctx, config *gconfig.Config) (api *APIServer, err error) {
+func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, err error) {
 	api = NewAPIServer(ctx, config.GetString("apiserver.listen"))
 	if config.GetBool("apiserver.tlsenable") {
 		tlsCfg := &tls.Config{}
@@ -91,7 +87,7 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config *gconfig.Config) (api *APIServer,
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
 			api = nil
-			err = gerr.New("failed to parse tls clients root certificate")
+			err = gcore.Providers.Error("")().New(("failed to parse tls clients root certificate"))
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -275,7 +271,7 @@ func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
 		ctx.Response().Header().Set("Content-Type", "text/plain")
 		msg := fmt.Sprintf("Internal Server Error")
 		if err != nil && this.isShowErrorStack {
-			msg += "\n" + gerr.Stack(err)
+			msg += "\n" + gcore.Providers.Error("")().StackError(err)
 		}
 		ctx.Write([]byte(msg))
 	} else {
@@ -284,8 +280,8 @@ func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gerr.Recover(func(e interface{}) {
-			err = gerr.Wrap(e)
+		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+			err = gcore.Providers.Error("")().Wrap(e)
 		})
 		fn()
 	}()
@@ -294,8 +290,8 @@ func (s *APIServer) call(fn func()) (err interface{}) {
 func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gerr.Recover(func(e interface{}) {
-				s.logger.Warn("middleware panic error : %s", gerr.Stack(e))
+			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+				s.logger.Warn("middleware panic error : %s", gcore.Providers.Error("")().StackError(e))
 				isStop = false
 			})
 			isStop = fn(ctx, s)
@@ -308,7 +304,7 @@ func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ct
 }
 
 //Init implements service.Service Init
-func (s *APIServer) Init(cfg *gconfig.Config) (err error) {
+func (s *APIServer) Init(cfg gcore.Config) (err error) {
 
 	return
 }

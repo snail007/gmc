@@ -2,13 +2,11 @@ package gcore
 
 import (
 	"net"
-
-	gconfig "github.com/snail007/gmc/util/config"
 )
 
 type Service interface {
 	// init servcie
-	Init(cfg *gconfig.Config) error
+	Init(cfg Config) error
 	//nonblocking, called After Init -> InjectListeners (when reload) -> Start
 	Start() error
 	Stop()
@@ -21,7 +19,7 @@ type Service interface {
 }
 
 type ServiceItem struct {
-	BeforeInit func(srv Service, cfg *gconfig.Config) (err error)
+	BeforeInit func(srv Service, cfg Config) (err error)
 	AfterInit  func(srv *ServiceItem) (err error)
 	Service    Service
 	ConfigID   string

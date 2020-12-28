@@ -64,22 +64,22 @@ func TestIncr(t *testing.T) {
 	// incr
 	data, err := cMem.Incr("k3")
 	assert.Nil(err)
-	assert.EqualValues(2,data)
+	assert.EqualValues(2, data)
 
 	// decr
 	data, err = cMem.Decr("k3")
 	assert.Nil(err)
-	assert.EqualValues(1,data)
+	assert.EqualValues(1, data)
 
 	// incr N
-	data, err = cMem.IncrN("k3",3)
+	data, err = cMem.IncrN("k3", 3)
 	assert.Nil(err)
-	assert.EqualValues(4,data)
+	assert.EqualValues(4, data)
 
 	// decr N
-	data, err = cMem.DecrN("k3",3)
+	data, err = cMem.DecrN("k3", 3)
 	assert.Nil(err)
-	assert.EqualValues(1,data)
+	assert.EqualValues(1, data)
 
 	//Get
 	d, err := cMem.Get("k3")
@@ -106,9 +106,9 @@ func Test_Multi(t *testing.T) {
 
 	_data, err := cMem.GetMulti([]string{"k1", "k2"})
 
-	_,ok:=_data["k1"]
+	_, ok := _data["k1"]
 	assert.False(ok)
-	_,ok=_data["k2"]
+	_, ok = _data["k2"]
 	assert.False(ok)
 
 }

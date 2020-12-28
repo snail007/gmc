@@ -90,7 +90,7 @@ func (frame *StackFrame) SourceLine() (string, error) {
 
 	file, err := os.Open(frame.File)
 	if err != nil {
-		return "", New(err)
+		return "", gcore.Providers.Error("")().New(err)
 	}
 	defer file.Close()
 
@@ -103,7 +103,7 @@ func (frame *StackFrame) SourceLine() (string, error) {
 		currentLine++
 	}
 	if err := scanner.Err(); err != nil {
-		return "", New(err)
+		return "", gcore.Providers.Error("")().New(err)
 	}
 
 	return "???", nil

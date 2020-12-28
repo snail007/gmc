@@ -6,13 +6,10 @@ import (
 	"time"
 )
 
-func New(w http.ResponseWriter, r *http.Request, keys ...string) (cookie *Cookies) {
+func New(w http.ResponseWriter, r *http.Request) (cookie *Cookies) {
 	c := &Cookies{
 		req: r,
 		w:   w,
-	}
-	if len(keys) > 0 {
-		c.keys = keys
 	}
 	return c
 }
@@ -20,10 +17,9 @@ func New(w http.ResponseWriter, r *http.Request, keys ...string) (cookie *Cookie
 type Cookies struct {
 	req  *http.Request
 	w    http.ResponseWriter
-	keys []string
-}
+ }
 
-func (c *Cookies) Get(name string, signed ...bool) (value string, err error) {
+func (c *Cookies) Get(name string) (value string, err error) {
 	cookie, err := c.req.Cookie(name)
 	if cookie == nil {
 		return

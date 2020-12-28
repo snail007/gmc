@@ -22,7 +22,7 @@ func TestNew(t *testing.T) {
 	assert.True(ok)
 	assert.Equal(s0.SessionID(), sid)
 	assert.Equal(s0.Get("test"), "aaa")
-	time.Sleep(time.Second*2)
+	time.Sleep(time.Second * 2)
 	_, ok = store.Load(sid)
 	assert.False(ok)
 	store.Delete(sid)

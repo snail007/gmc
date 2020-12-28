@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	gcore "github.com/snail007/gmc/core"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -36,11 +37,12 @@ type Template struct {
 	tpl     *gotemplate.Template
 	parsed  bool
 	ext     string
+	ctx     gcore.Ctx
 }
 
 // NewTemplate create a template object, and config it.
 // rootDir is root path of view files folder.
-func NewTemplate(rootDir string) (t *Template, err error) {
+func NewTemplate(ctx gcore.Ctx, rootDir string) (t *Template, err error) {
 	absRootDir, err := filepath.Abs(rootDir)
 	if err != nil {
 		return
@@ -51,8 +53,10 @@ func NewTemplate(rootDir string) (t *Template, err error) {
 		rootDir: absRootDir,
 		tpl:     tpl,
 		ext:     ".html",
+		ctx:     ctx,
 	}
-	t.Funcs(addFunc())
+	ctx.SetTemplate(t)
+	t.Funcs(addFunc(ctx))
 	return
 }
 

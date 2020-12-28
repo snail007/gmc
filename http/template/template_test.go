@@ -6,13 +6,10 @@
 package gtemplate
 
 import (
-	"os"
-	"testing"
+ 	"testing"
 )
 
-var (
-	tpl, _ = NewTemplate("tests/views")
-)
+
 
 func TestParse(t *testing.T) {
 	tpl.Execute("user/list", map[string]string{
@@ -22,8 +19,4 @@ func TestParse(t *testing.T) {
 	//fmt.Println(len(funcsM))
 	//t.Fail()
 }
-func TestMain(m *testing.M) {
-	tpl.Delims("{{", "}}")
-	tpl.Parse()
-	os.Exit(m.Run())
-}
+

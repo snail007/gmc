@@ -15,11 +15,11 @@ func StrStrToStrI(a map[string]string) (b map[string]interface{}) {
 func StrIToStrStr(a map[string]interface{}) (b map[string]string) {
 	b = map[string]string{}
 	for k, v := range a {
-		switch vv:=v.(type) {
+		switch vv := v.(type) {
 		case string:
 			b[k] = vv
 		default:
-			b[k] = fmt.Sprintf("%v",vv)
+			b[k] = fmt.Sprintf("%v", vv)
 		}
 	}
 	return

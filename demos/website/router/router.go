@@ -14,7 +14,7 @@ import (
 func InitRouter(s *gmc.HTTPServer) {
 
 	//enable http pprof
-	httppprof.BindRouter(s.Router(),"/gmcdebug")
+	httppprof.BindRouter(s.Router(), "/gmcdebug")
 
 	// sets pre routing handler, it be called with any request.
 	s.AddMiddleware0(filterAll)

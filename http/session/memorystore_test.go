@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestNewMemoryStore(t *testing.T) {
 	assert := assert.New(t)
 	sid := "testaaaa"

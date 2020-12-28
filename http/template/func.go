@@ -1,17 +1,18 @@
 package gtemplate
 
 import (
-	gi18n "github.com/snail007/gmc/module/i18n"
+	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/http/template/sprig"
 	"github.com/snail007/gmc/util/cast"
 	"html/template"
 )
 
-func addFunc() map[string]interface{} {
+func addFunc(ctx gcore.Ctx) map[string]interface{} {
+	i18n, _ := gcore.Providers.I18n("")(ctx)
 	funcMap := sprig.FuncMap()
 	f2 := map[string]interface{}{
-		"tr":     gi18n.TrV,
-		"trs":    gi18n.Tr,
+		"tr":     i18n.TrV,
+		"trs":    i18n.Tr,
 		"string": anyTostring,
 		"tohtml": anyToTplHTML,
 		"val":    trimNoValue,

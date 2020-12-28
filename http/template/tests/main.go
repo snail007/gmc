@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-
-	template "github.com/snail007/gmc/http/template"
+	_ "github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	gtemplate "github.com/snail007/gmc/http/template"
 )
 
 func main() {
-	t, err := template.NewTemplate("views")
+	ctx := gcore.Providers.Ctx("")()
+	t, err := gtemplate.NewTemplate(ctx, "views")
 	if err != nil {
 		fmt.Println(err)
 		return

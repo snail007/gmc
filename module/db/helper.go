@@ -2,20 +2,19 @@ package gdb
 
 import (
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/util/cast"
-	gconfig "github.com/snail007/gmc/util/config"
+ 	"github.com/snail007/gmc/util/cast"
 	"reflect"
 )
 
 var (
 	groupMySQL   = NewMySQLDBGroup("default")
 	groupSQLite3 = NewSQLite3DBGroup("default")
-	cfg          *gconfig.Config
+	cfg          gcore.Config
 )
 
 //InitFromFile parse foo.toml database configuration, `cfg` is Config object of foo.toml
 func InitFromFile(cfgFile string) (err error) {
-	cfg := gconfig.NewConfig()
+	cfg := gcore.Providers.Config("")()
 	cfg.SetConfigFile(cfgFile)
 	err = cfg.ReadInConfig()
 	if err != nil {
@@ -25,7 +24,7 @@ func InitFromFile(cfgFile string) (err error) {
 }
 
 //RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
-func Init(cfg0 *gconfig.Config) (err error) {
+func Init(cfg0 gcore.Config) (err error) {
 	cfg = cfg0
 	for k, v := range cfg.Sub("database").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {

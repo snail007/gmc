@@ -1,18 +1,21 @@
 package gcore
 
 import (
-	"github.com/snail007/gmc/util/config"
 	"net/http"
 	"time"
 )
 
 type Ctx interface {
-	Config() *gconfig.Config
-	SetConfig(config *gconfig.Config)
+	Template() Template
+	SetTemplate(template Template)
+	I18n() I18n
+	SetI18n(I18n)
+	Config() Config
+	SetConfig(config Config)
 	Logger() Logger
 	SetLogger(logger Logger)
-	App() GMCApp
-	SetApp(app GMCApp)
+	App() App
+	SetApp(app App)
 	Clone() Ctx
 	CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...Params) Ctx
 	APIServer() APIServer

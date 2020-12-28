@@ -3,11 +3,10 @@ package gsession
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gconfig "github.com/snail007/gmc/util/config"
 	"time"
 )
 
-func Init(config *gconfig.Config) (sessionStore gcore.SessionStorage, err error) {
+func Init(config gcore.Config) (sessionStore gcore.SessionStorage, err error) {
 	if !config.GetBool("session.enable") {
 		return nil, nil
 	}

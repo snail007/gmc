@@ -8,8 +8,6 @@ package gutil
 import (
 	"context"
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/module/error"
-	"github.com/snail007/gmc/module/log"
 	"sync"
 	"sync/atomic"
 )
@@ -38,7 +36,7 @@ func NewGPool(workerCount int) (p *GPool) {
 		runningtCnt: &cnt,
 		workerCnt:   workerCount,
 		workerSig:   []chan bool{},
-		logger:      glog.NewGMCLog(),
+		logger:      gcore.Providers.Logger("")(nil,""),
 	}
 	for i := 0; i < p.workerCnt; i++ {
 		p.workerSig = append(p.workerSig, make(chan bool, 1))
@@ -50,14 +48,14 @@ func NewGPool(workerCount int) (p *GPool) {
 //initialize workers to run tasks, a work is a goroutine
 func (s *GPool) init() {
 	go func() {
-		defer gerr.Recover(func(e interface{}) {
-			s.log("GPool stopped unexpectedly, err: %s", gerr.Stack(e))
+		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+			s.log("GPool stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
 		})
 		//start the workerCnt workers
 		for i := 0; i < s.workerCnt; i++ {
 			go func(i int, sig chan bool) {
-				defer gerr.Recover(func(e interface{}) {
-					s.log("GPool: a worker stopped unexpectedly, err: %s", gerr.Stack(e))
+				defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+					s.log("GPool: a worker stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
 				})
 				//s.log("GPool: worker[%d] started ...", i)
 				ctx, cancel := context.WithCancel(s.ctx)
@@ -91,8 +89,8 @@ func (s *GPool) init() {
 
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gerr.Recover(func(e interface{}) {
-		s.log("GPool: a task stopped unexpectedly, err: %s", gerr.Stack(e))
+	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
 	})
 	fn()
 }

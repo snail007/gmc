@@ -3,11 +3,9 @@ package gdb
 import (
 	"fmt"
 	"github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/module/error"
 	"github.com/snail007/gmc/util/cast"
 	"sync"
 )
-
 
 type Model struct {
 	db         gcore.Database
@@ -37,7 +35,7 @@ func Table(table string, db ...interface{}) *Model {
 		m.db = v
 	}
 	if m.db == nil {
-		panic(gerr.New(fmt.Errorf("table db arguments must be 'db string ID' or *gmysql.SQLite3DB or *gsqlite3.SQLite3DB")))
+		panic(gcore.Providers.Error("")().New((fmt.Errorf("table db arguments must be 'db string ID' or *gmysql.SQLite3DB or *gsqlite3.SQLite3DB"))))
 	}
 	return m
 }

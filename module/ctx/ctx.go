@@ -3,7 +3,6 @@ package gctx
 import (
 	gcore "github.com/snail007/gmc/core"
 	gutil "github.com/snail007/gmc/util"
-	gconfig "github.com/snail007/gmc/util/config"
 	"net"
 	"net/http"
 	"strings"
@@ -20,12 +19,30 @@ type Ctx struct {
 	localAddr string
 	apiServer gcore.APIServer
 	webServer gcore.HTTPServer
-	app       gcore.GMCApp
+	app       gcore.App
 	logger    gcore.Logger
-	config    *gconfig.Config
+	config    gcore.Config
+	i18n      gcore.I18n
+	template gcore.Template
 }
 
-func (this *Ctx) Config() *gconfig.Config {
+func (this *Ctx) Template() gcore.Template {
+	return this.template
+}
+
+func (this *Ctx) SetTemplate(template gcore.Template) {
+	this.template = template
+}
+
+func (this *Ctx) I18n() gcore.I18n {
+	return this.i18n
+}
+
+func (this *Ctx) SetI18n(i18n gcore.I18n) {
+	this.i18n = i18n
+}
+
+func (this *Ctx) Config() gcore.Config {
 	if this.config != nil {
 		return this.config
 	}
@@ -35,10 +52,10 @@ func (this *Ctx) Config() *gconfig.Config {
 	if this.webServer != nil {
 		return this.webServer.Config()
 	}
-	return nil
+	return gcore.Providers.Config("")()
 }
 
-func (this *Ctx) SetConfig(config *gconfig.Config) {
+func (this *Ctx) SetConfig(config gcore.Config) {
 	this.config = config
 }
 
@@ -50,11 +67,11 @@ func (this *Ctx) SetLogger(logger gcore.Logger) {
 	this.logger = logger
 }
 
-func (this *Ctx) App() gcore.GMCApp {
+func (this *Ctx) App() gcore.App {
 	return this.app
 }
 
-func (this *Ctx) SetApp(app gcore.GMCApp) {
+func (this *Ctx) SetApp(app gcore.App) {
 	this.app = app
 }
 
@@ -277,7 +294,7 @@ func NewCtx() *Ctx {
 	}
 }
 
-func NewCtxFromConfig(c *gconfig.Config) *Ctx {
+func NewCtxFromConfig(c gcore.Config) *Ctx {
 	return &Ctx{
 		config: c,
 		param:  gcore.Params{},
@@ -285,12 +302,14 @@ func NewCtxFromConfig(c *gconfig.Config) *Ctx {
 }
 
 func NewCtxFromConfigFile(file string) (ctx *Ctx, err error) {
-	cfg, err := gconfig.NewConfigFile(file)
+	c := gcore.Providers.Config("")()
+	c.SetConfigFile(file)
+	err = c.ReadInConfig()
 	if err != nil {
 		return
 	}
 	ctx = &Ctx{
-		config: cfg,
+		config: c,
 		param:  gcore.Params{},
 	}
 	return

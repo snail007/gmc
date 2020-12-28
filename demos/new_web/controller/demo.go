@@ -16,4 +16,3 @@ func (this *Demo) Index__() {
 func (this *Demo) Hello() {
 	this.Write("fmt.Println(\"Hello GMC!\")")
 }
-

@@ -17,7 +17,7 @@ func main() {
 		app.Logger().Error(err)
 	}
 	// 3. create api server
-	api, err := gmc.New.APIServerDefault(gctx.NewCtx(),cfg)
+	api, err := gmc.New.APIServerDefault(gctx.NewCtx(), cfg)
 	if err != nil {
 		app.Logger().Error(err)
 	}
@@ -33,7 +33,7 @@ func main() {
 		Service: api,
 	})
 	// 6. run app
-	if e := gerror.Stack(app.Run());e!=""{
+	if e := gerror.Stack(app.Run()); e != "" {
 		app.Logger().Panic(e)
 	}
 }

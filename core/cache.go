@@ -25,13 +25,13 @@ type Cache interface {
 	// DelMulti deletes multiple keys's values at once.
 	DelMulti(keys []string) (err error)
 	// Incr increases cached int-type value by given key as a counter.
-	Incr(key string) (int64,error)
+	Incr(key string) (int64, error)
 	// Decr decreases cached int-type value by given key as a counter.
-	Decr(key string) (int64,error)
+	Decr(key string) (int64, error)
 	// Incr increases N cached int-type value by given key as a counter.
-	IncrN(key string,n int64) (int64,error)
+	IncrN(key string, n int64) (int64, error)
 	// Decr decreases N cached int-type value by given key as a counter.
-	DecrN(key string,n int64) (int64,error)
+	DecrN(key string, n int64) (int64, error)
 }
 
 var (

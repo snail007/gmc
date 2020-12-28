@@ -2,7 +2,6 @@ package gview
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gerr "github.com/snail007/gmc/module/error"
 	ghttputil "github.com/snail007/gmc/util/http"
 	"io"
 	"strings"
@@ -74,7 +73,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 	}
 	d, this.lasterr = this.tpl.Execute(tpl, data0)
 	if this.lasterr != nil {
-		ghttputil.Stop(this.writer, gerr.Wrap(this.lasterr).ErrorStack())
+		ghttputil.Stop(this.writer, gcore.Providers.Error("")().StackError(this.lasterr))
 		return
 	}
 	if this.layout != "" {
@@ -85,7 +84,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 		}
 		d, this.lasterr = this.tpl.Execute(layout, data0)
 		if this.lasterr != nil {
-			ghttputil.Stop(this.writer, gerr.Wrap(this.lasterr).ErrorStack())
+			ghttputil.Stop(this.writer, gcore.Providers.Error("")().StackError(this.lasterr))
 			return
 		}
 	}

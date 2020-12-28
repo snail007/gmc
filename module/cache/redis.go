@@ -3,13 +3,11 @@ package gcache
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util/cast"
 	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	gerr "github.com/snail007/gmc/module/error"
 )
 
 type RedisCacheConfig struct {
@@ -31,8 +29,7 @@ func NewRedisCacheConfig() *RedisCacheConfig {
 	return &RedisCacheConfig{
 		Debug:           false,
 		Prefix:          "",
-		Logger:          glog.NewGMCLog(),
-		Addr:            "127.0.0.1:6379",
+ 		Addr:            "127.0.0.1:6379",
 		Password:        "",
 		DBNum:           0,
 		MaxIdle:         3,
@@ -97,7 +94,7 @@ func (c *RedisCache) Del(key string) (err error) {
 // Incr value by key
 func (c *RedisCache) Incr(key string) (val int64, err error) {
 	c.connect()
-	val, err =redis.Int64( c.exec("Incr", c.key(key)))
+	val, err = redis.Int64(c.exec("Incr", c.key(key)))
 
 	return
 }
@@ -110,17 +107,17 @@ func (c *RedisCache) Decr(key string) (val int64, err error) {
 }
 
 // Incr value N by key
-func (c *RedisCache) IncrN(key string,n int64) (val int64, err error) {
+func (c *RedisCache) IncrN(key string, n int64) (val int64, err error) {
 	c.connect()
-	val, err =redis.Int64( c.exec("IncrBy", c.key(key),n))
+	val, err = redis.Int64(c.exec("IncrBy", c.key(key), n))
 
 	return
 }
 
 // Decr value N by key
-func (c *RedisCache) DecrN(key string,n int64) (val int64, err error) {
+func (c *RedisCache) DecrN(key string, n int64) (val int64, err error) {
 	c.connect()
-	val, err = redis.Int64(c.exec("DecrBy", c.key(key),n))
+	val, err = redis.Int64(c.exec("DecrBy", c.key(key), n))
 	return
 }
 
@@ -149,7 +146,7 @@ func (c *RedisCache) GetMulti(keys []string) (map[string]string, error) {
 	}
 	values := make(map[string]string, len(keys))
 	for i, val := range list {
-		if val==nil{
+		if val == nil {
 			continue
 		}
 		values[keys[i]] = gcast.ToString(val)
@@ -170,7 +167,7 @@ func (c *RedisCache) SetMulti(values map[string]string, ttl time.Duration) (err 
 
 	for key, val := range values {
 		// bs, _ := cache.Marshal(val)
-		conn.Send("SetEx", c.key(key), ttlSec,val)
+		conn.Send("SetEx", c.key(key), ttlSec, val)
 	}
 
 	// do exec
@@ -222,7 +219,7 @@ func (c *RedisCache) key(key string) string {
 // actually do the redis cmds, args[0] must be the key name.
 func (c *RedisCache) exec(commandName string, args ...interface{}) (reply interface{}, err error) {
 	if len(args) < 1 {
-		return nil, gerr.New("missing required arguments")
+		return nil, gcore.Providers.Error("")().New(("missing required arguments"))
 	}
 
 	conn := c.pool.Get()

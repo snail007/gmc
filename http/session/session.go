@@ -31,7 +31,7 @@ type Session struct {
 	touchtime int64
 }
 
-func init()  {
+func init() {
 	gob.Register([]interface{}{})
 	gob.Register(map[interface{}]interface{}{})
 	gob.Register(map[string]string{})

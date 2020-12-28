@@ -2,7 +2,7 @@ package gctx
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gutil "github.com/snail007/gmc/util"
+	"github.com/snail007/gmc/util/paginator"
 	"net"
 	"net/http"
 	"strings"
@@ -23,7 +23,7 @@ type Ctx struct {
 	logger    gcore.Logger
 	config    gcore.Config
 	i18n      gcore.I18n
-	template gcore.Template
+	template  gcore.Template
 }
 
 func (this *Ctx) Template() gcore.Template {
@@ -45,14 +45,15 @@ func (this *Ctx) SetI18n(i18n gcore.I18n) {
 func (this *Ctx) Config() gcore.Config {
 	if this.config != nil {
 		return this.config
+	} else if this.app != nil {
+		this.config = this.app.Config()
+	} else if this.webServer != nil {
+		this.config = this.webServer.Config()
 	}
-	if this.app != nil {
-		return this.app.Config()
+	if this.config == nil {
+		this.config = gcore.Providers.Config("")()
 	}
-	if this.webServer != nil {
-		return this.webServer.Config()
-	}
-	return gcore.Providers.Config("")()
+	return this.config
 }
 
 func (this *Ctx) SetConfig(config gcore.Config) {
@@ -260,7 +261,7 @@ func (this *Ctx) ClientIP() (ip string) {
 
 // NewPager create a new paginator used for template
 func (this *Ctx) NewPager(perPage int, total int64) gcore.Paginator {
-	return gutil.NewPaginator(this.Request(), perPage, total, "page")
+	return paginator.NewPaginator(this.Request(), perPage, total, "page")
 }
 
 // GET gets the first value associated with the given key in url query.

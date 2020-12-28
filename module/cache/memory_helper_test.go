@@ -2,7 +2,7 @@ package gcache
 
 import (
 	"github.com/snail007/gmc/core"
-	assert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )

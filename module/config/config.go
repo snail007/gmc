@@ -4,6 +4,7 @@ import (
 	"bytes"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/spf13/viper"
+	"reflect"
 )
 
 type Config struct {
@@ -11,7 +12,11 @@ type Config struct {
 }
 
 func (c *Config) Sub(key string) gcore.SubConfig {
-	return c.Viper.Sub(key)
+	v := c.Viper.Sub(key)
+	if reflect.ValueOf(v).IsNil() {
+		return nil
+	}
+	return v
 }
 
 func NewConfig() *Config {

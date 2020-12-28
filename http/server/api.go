@@ -60,6 +60,7 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 	ctx.SetAPIServer(api)
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
+	api.logger = gcore.Providers.Logger("")(ctx,"")
 	api.server.ErrorLog = func() *log.Logger {
 		ns := api.logger.Namespace()
 		if ns != "" {
@@ -68,7 +69,6 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 		l := log.New(api.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
-	api.logger = gcore.Providers.Logger("")(ctx,"")
 	return api
 }
 

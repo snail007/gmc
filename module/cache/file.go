@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/util"
 	"github.com/snail007/gmc/util/cast"
 	"io/ioutil"
 	"log"
@@ -191,7 +190,7 @@ func (c *FileCache) DecrN(key string, n int64) (val int64, err error) {
 
 // IsExist returns true if cached value exists.
 func (c *FileCache) Has(key string) (bool, error) {
-	return gutil.Exists(c.filepath(key)), nil
+	return Exists(c.filepath(key)), nil
 }
 
 // Flush deletes all cached data.
@@ -276,4 +275,16 @@ func encodeGob(item *Item) ([]byte, error) {
 func decodeGob(data []byte, out *Item) error {
 	buf := bytes.NewBuffer(data)
 	return gob.NewDecoder(buf).Decode(&out)
+}
+func Exists(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	_, err = f.Stat()
+	if err != nil {
+		return false
+	}
+	return true
 }

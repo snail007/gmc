@@ -6,7 +6,6 @@
 package gsession
 
 import (
-	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -45,7 +44,7 @@ func TestMkdir(t *testing.T) {
 	cfg.Dir = ".gmcsess"
 	os.RemoveAll(cfg.Dir)
 	ioutil.WriteFile(cfg.Dir, []byte("."), 0700)
-	_,err := NewFileStore(cfg)
+	_, err := NewFileStore(cfg)
 	assert.NotNil(err)
 	os.Remove(cfg.Dir)
 	store, err := NewFileStore(cfg)
@@ -55,7 +54,7 @@ func TestMkdir(t *testing.T) {
 	k := "testbbb"
 	f := s0.file(k)
 	dir := filepath.Dir(f)
-	if !gutil.ExistsDir(dir) {
+	if !ExistsDir(dir) {
 		os.MkdirAll(dir, 0700)
 	}
 	err = ioutil.WriteFile(f, []byte("\n"), 0700)

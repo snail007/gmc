@@ -9,7 +9,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
- 	"github.com/snail007/gmc/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -36,7 +35,7 @@ func NewFileStoreConfig() FileStoreConfig {
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
-		Logger: gcore.Providers.Logger("")(nil,"[filestore]"),
+		Logger: gcore.Providers.Logger("")(nil, "[filestore]"),
 	}
 }
 
@@ -57,12 +56,12 @@ func NewFileStore(config interface{}) (st gcore.SessionStorage, err error) {
 		return
 	}
 	cfg.Dir = filepath.Join(cfg.Dir, folder)
-	if !gutil.ExistsDir(cfg.Dir) {
+	if !ExistsDir(cfg.Dir) {
 		err = os.MkdirAll(cfg.Dir, 0700)
 		if err != nil && !strings.Contains(err.Error(), "file exists") {
 			return
 		}
-		err=nil
+		err = nil
 	}
 	if cfg.GCtime <= 0 {
 		cfg.GCtime = 300
@@ -80,7 +79,7 @@ func (s *FileStore) Load(sessionID string) (sess gcore.Session, isExists bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	f := s.file(sessionID)
-	if !gutil.ExistsFile(f) {
+	if !ExistsFile(f) {
 		// s.cfg.Logger.Printf("filestore file not found: %s", f)
 		return
 	}
@@ -113,7 +112,7 @@ func (s *FileStore) Save(sess gcore.Session) (err error) {
 	}
 	f := s.file(sess.SessionID())
 	dir := filepath.Dir(f)
-	if !gutil.ExistsDir(dir) {
+	if !ExistsDir(dir) {
 		err = os.MkdirAll(dir, 0700)
 		if err != nil {
 			return
@@ -231,4 +230,35 @@ func (s *FileStore) tree(folder string, names *[]string) (err error) {
 		file.Close()
 	}
 	return
+}
+func ExistsFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	if stat.IsDir() {
+		return false
+	}
+	return true
+}
+
+func ExistsDir(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	if !stat.IsDir() {
+		return false
+	}
+	return true
 }

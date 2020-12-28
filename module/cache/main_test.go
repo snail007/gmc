@@ -5,8 +5,8 @@ import (
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
 	glog "github.com/snail007/gmc/module/log"
-	gutil "github.com/snail007/gmc/util"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		gutil.OnceDo("gmc-cache-init", func() {
+		OnceDo("gmc-cache-init", func() {
 			err = Init(ctx.Config())
 		})
 		if err != nil {
@@ -61,4 +61,11 @@ func TestMain(m *testing.M) {
 	}
 	cMem = NewMemCache(NewMemCacheConfig())
 	os.Exit(m.Run())
+}
+var onceDoDataMap = sync.Map{}
+
+func OnceDo(uniqueKey string, f func()) {
+	once, _ := onceDoDataMap.LoadOrStore(uniqueKey, &sync.Once{})
+	once.(*sync.Once).Do(f)
+	return
 }

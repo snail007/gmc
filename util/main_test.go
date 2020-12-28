@@ -1,4 +1,4 @@
-package gapp
+package gutil
 
 import (
 	gcore "github.com/snail007/gmc/core"
@@ -18,12 +18,10 @@ import (
 	glog "github.com/snail007/gmc/module/log"
 	"io"
 	"os"
-	"sync"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-
 	providers := gcore.Providers
 
 	providers.RegisterSession("", func() gcore.Session {
@@ -59,7 +57,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		 OnceDo("gmc-i18n-init", func() {
+		OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
@@ -78,7 +76,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		 OnceDo("gmc-cache-init", func() {
+		OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -89,7 +87,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterDatabase("", func(ctx gcore.Ctx) (gcore.Database, error) {
 		var err error
-		 OnceDo("gmc-cache-init", func() {
+		OnceDo("gmc-cache-init", func() {
 			err = gdb.Init(ctx.Config())
 		})
 		if err != nil {
@@ -111,13 +109,6 @@ func TestMain(m *testing.M) {
 	providers.RegisterHTTPServer("", func(ctx gcore.Ctx) gcore.HTTPServer {
 		return ghttpserver.NewHTTPServer(ctx)
 	})
+
 	os.Exit(m.Run())
-}
-
-var onceDoDataMap = sync.Map{}
-
-func OnceDo(uniqueKey string, f func()) {
-	once, _ := onceDoDataMap.LoadOrStore(uniqueKey, &sync.Once{})
-	once.(*sync.Once).Do(f)
-	return
 }

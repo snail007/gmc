@@ -7,15 +7,15 @@ var Providers = NewProvider()
 type SessionProvider func() Session
 type SessionStorageProvider func(ctx Ctx) (SessionStorage, error)
 type CacheProvider func(ctx Ctx) (Cache, error)
-type TemplateProvider func(ctx Ctx) (Template, error)
-type ViewProvider func(w io.Writer, tpl  Template) View
+type TemplateProvider func(ctx Ctx, rootDir string) (Template, error)
+type ViewProvider func(w io.Writer, tpl Template) View
 type DatabaseProvider func(ctx Ctx) (Database, error)
 type DatabaseGroupProvider func(ctx Ctx) (DatabaseGroup, error)
 type HTTPRouterProvider func(ctx Ctx) HTTPRouter
 type ConfigProvider func() Config
 type LoggerProvider func(ctx Ctx, prefix string) Logger
 
-type ControllerProvider func() Controller
+type ControllerProvider func(ctx Ctx) Controller
 type CookiesProvider func(ctx Ctx) Cookies
 type HTTPServerProvider func(ctx Ctx) HTTPServer
 type APIServerProvider func(ctx Ctx) APIServer

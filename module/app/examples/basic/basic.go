@@ -2,7 +2,6 @@ package main
 
 import (
 	gcore "github.com/snail007/gmc/core"
- 	"github.com/snail007/gmc/module/log"
 	"net"
 
 	"github.com/snail007/gmc"
@@ -20,7 +19,7 @@ func NewMyService() gcore.Service {
 }
 func (s *MyService) Init(cfg gcore.Config) error {
 	s.address = cfg.GetString("listen")
-	s.log = glog.NewGMCLog()
+	s.log = gcore.Providers.Logger("")(nil,"")
 	return nil
 }
 func (s *MyService) Start() (err error) {

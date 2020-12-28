@@ -7,20 +7,16 @@ import (
 	"fmt"
 	"github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
-	grouter "github.com/snail007/gmc/http/router"
 	gsession "github.com/snail007/gmc/http/session"
-	gtemplate "github.com/snail007/gmc/http/template"
-	glog "github.com/snail007/gmc/module/log"
 
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
- 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 //go test -coverprofile=a.out;go tool cover -html=a.out
@@ -73,15 +69,17 @@ func TestRouting_1(t *testing.T) {
 }
 func Test_handle50x(t *testing.T) {
 	assert := assert.New(t)
-	obj := gcore.Providers.Controller("")()
-	objrf := reflect.ValueOf(obj)
-	objv := objrf.Interface().(gcore.Controller)
 	w := httptest.NewRecorder()
-	objv.GetCtx().SetResponse(w)
-	objv.GetCtx().SetRequest(httptest.NewRequest("GET", "http://example.com/foo", nil))
-	s := NewHTTPServer(gcore.Providers.Ctx("")())
-	s.Init(gcore.Providers.Config("")())
-	s.handle50x(gcore.Providers.Ctx("")().CloneWithHTTP(w, objv.GetCtx().Request()), fmt.Errorf("aaa"))
+	ctx := gcore.Providers.Ctx("")()
+	ctx.SetResponse(w)
+	ctx.SetRequest(httptest.NewRequest("GET", "http://example.com/foo", nil))
+	cfg := ctx.Config()
+	controller := gcore.Providers.Controller("")(ctx)
+	s := NewHTTPServer(ctx)
+	assert.NotNil(cfg)
+	err := s.Init(cfg)
+	assert.Nil(err)
+	s.handle50x(gcore.Providers.Ctx("")().CloneWithHTTP(w, controller.GetCtx().Request()), fmt.Errorf("aaa"))
 
 	//response
 	resp := w.Result()
@@ -91,18 +89,20 @@ func Test_handle50x(t *testing.T) {
 }
 func Test_handle50x_1(t *testing.T) {
 	assert := assert.New(t)
-	obj := new(gcontroller.Controller)
-	objrf := reflect.ValueOf(obj)
-	objv := objrf.Interface().(*gcontroller.Controller)
 	w := httptest.NewRecorder()
-	objv.Response = w
-	objv.Request = httptest.NewRequest("GET", "http://example.com/foo", nil)
-	s := NewHTTPServer(gcore.Providers.Ctx("")())
-	s.Init(gcore.Providers.Config("")())
+	ctx := gcore.Providers.Ctx("")()
+	ctx.SetResponse(w)
+	ctx.SetRequest(httptest.NewRequest("GET", "http://example.com/foo", nil))
+	cfg := ctx.Config()
+	controller := gcore.Providers.Controller("")(ctx)
+	s := NewHTTPServer(ctx)
+	assert.NotNil(cfg)
+	err := s.Init(cfg)
+	assert.Nil(err)
 	s.SetHandler50x(func(c gcore.Ctx, tpl gcore.Template, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
-	c := gcore.Providers.Ctx("")().CloneWithHTTP(w, objv.Request)
+	c := gcore.Providers.Ctx("")().CloneWithHTTP(w, controller.GetCtx().Request())
 	s.handle50x(c, fmt.Errorf("aaa"))
 
 	//response
@@ -209,13 +209,15 @@ func TestHelper(t *testing.T) {
 	err := s.Listen()
 	assert.Nil(err)
 	assert.NotNil(s.Server().Addr)
-	s.SetLogger(glog.NewGMCLog())
+	s.SetLogger(gcore.Providers.Logger("")(s.ctx, ""))
 	assert.NotNil(s.logger)
-	r := grouter.NewHTTPRouter(s.ctx)
+	r := gcore.Providers.HTTPRouter("")(s.ctx)
 	s.SetRouter(r)
 	assert.NotNil(s.router)
-	tpl, err := gtemplate.NewTemplate(s.ctx,"views")
+	tpl, err := gcore.Providers.Template("")(s.ctx, "views")
 	assert.Nil(err)
+	//tpl, err := gtemplate.NewTemplate(s.ctx,"views")
+	//assert.Nil(err)
 	s.SetTpl(tpl)
 	assert.NotNil(s.tpl)
 	st, err := gsession.NewMemoryStore(gsession.NewMemoryStoreConfig())
@@ -347,20 +349,6 @@ func Test_handler40x(t *testing.T) {
 	assert.Equal("404", str)
 }
 
-type User struct {
-	gcontroller.Controller
-}
-
-func (this *User) URL() {
-	a := "a"
-	if this.Param != nil {
-		a = ""
-	}
-	this.Write(this.Request.URL.Path + a)
-}
-func (this *User) Ps() {
-	this.Write(this.Param.ByName("args") + this.Param.MatchedRoutePath())
-}
 func Test_Handle(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
@@ -394,28 +382,6 @@ func Test_Handle500(t *testing.T) {
 	assert.Equal("500", str)
 }
 
-func Test_Controller(t *testing.T) {
-	assert := assert.New(t)
-	s := mockHTTPServer()
-	s.router.Controller("/user/", new(User))
-	h, _, _ := s.router.Lookup("GET", "/user/url")
-	assert.NotNil(h)
-	w, r := mockRequest("/user/url")
-	s.ServeHTTP(w, r)
-	str, _ := result(w)
-	assert.Equal("/user/url", str)
-}
-func Test_Controller_Args(t *testing.T) {
-	assert := assert.New(t)
-	s := mockHTTPServer()
-	s.router.ControllerMethod("/user/:args", new(User), "Ps")
-	h, _, _ := s.router.Lookup("GET", "/user/hello")
-	assert.NotNil(h)
-	w, r := mockRequest("/user/hello")
-	s.ServeHTTP(w, r)
-	str, _ := result(w)
-	assert.Equal("hello/user/:args", str)
-}
 func Test_SetBindata(t *testing.T) {
 	assert := assert.New(t)
 	str := base64.StdEncoding.EncodeToString([]byte("{}"))
@@ -520,6 +486,45 @@ func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 	str = string(body)
 	return
 }
+
+func Test_Controller(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.router.Controller("/user/", new(User))
+	h, _, _ := s.router.Lookup("GET", "/user/url")
+	assert.NotNil(h)
+	w, r := mockRequest("/user/url")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("/user/url", str)
+}
+func Test_Controller_Args(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.router.ControllerMethod("/user/:args", new(User), "Ps")
+	h, _, _ := s.router.Lookup("GET", "/user/hello")
+	assert.NotNil(h)
+	w, r := mockRequest("/user/hello")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("hello/user/:args", str)
+}
+
+type User struct {
+	gcontroller.Controller
+}
+
+func (this *User) URL() {
+	a := "a"
+	if this.Param != nil {
+		a = ""
+	}
+	this.Write(this.Request.URL.Path + a)
+}
+func (this *User) Ps() {
+	this.Write(this.Param.ByName("args") + this.Param.MatchedRoutePath())
+}
+
 func mockConfig() gcore.Config {
 	cfg := gcore.Providers.Config("")()
 	cfg.SetConfigFile("../../module/app/app.toml")
@@ -527,16 +532,7 @@ func mockConfig() gcore.Config {
 	cfg.Set("template.dir", "")
 	return cfg
 }
-func mockController(obj interface{}, s *HTTPServer, w http.ResponseWriter, r *http.Request) interface{} {
-	objv := reflect.ValueOf(obj).Interface().(*gcontroller.Controller)
-	objv.Response = w
-	objv.Request = r
-	objv.Tpl = s.tpl
-	objv.SessionStore = s.sessionStore
-	objv.Router = s.router
-	objv.Config = s.config
-	return objv
-}
+
 func mockRequest(uri string) (w *httptest.ResponseRecorder, r *http.Request) {
 	w = httptest.NewRecorder()
 	r = httptest.NewRequest("GET", "http://example.com"+uri, nil)
@@ -558,11 +554,11 @@ func mockHTTPServer(cfg ...gcore.Config) *HTTPServer {
 	s := NewHTTPServer(gcore.Providers.Ctx("")())
 	s.Init(c)
 	s.bind(":")
-	s.SetRouter(grouter.NewHTTPRouter(s.ctx))
-	s.SetLogger(glog.NewGMCLog())
+	s.SetRouter(gcore.Providers.HTTPRouter("")(s.ctx))
+	s.SetLogger(gcore.Providers.Logger("")(s.ctx, ""))
 	st, _ := gsession.NewMemoryStore(gsession.NewMemoryStoreConfig())
 	s.SetSessionStore(st)
-	tpl, _ := gtemplate.NewTemplate(s.ctx,"../template/tests/views")
+	tpl, _ := gcore.Providers.Template("")(s.ctx, "../template/tests/views")
 	s.SetTpl(tpl)
 	return s
 }

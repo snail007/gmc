@@ -3,11 +3,8 @@ package gapp
 import (
 	"fmt"
 	"github.com/snail007/gmc/core"
- 	"github.com/snail007/gmc/module/ctx"
 	"testing"
 	"time"
-
-	httpserver "github.com/snail007/gmc/http/server"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,10 +17,13 @@ func Test_parseConfigFile(t *testing.T) {
 func TestRun(t *testing.T) {
 	assert := assert.New(t)
 	app := New()
+	assert.NotNil(app.Ctx())
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
+	server:=gcore.Providers.HTTPServer("")(app.Ctx())
+	assert.NotNil(server)
 	app.AddService(gcore.ServiceItem{
-		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
+		Service: server.(gcore.Service),
 		BeforeInit: func(srv gcore.Service, cfg gcore.Config) (err error) {
 			cfg.Set("template.dir", "../../http/template/tests/views")
 			cfg.Set("httpserver.listen", ":")
@@ -44,10 +44,10 @@ func TestRun_1(t *testing.T) {
 	app.SetConfigFile("app.toml")
 	app.AttachConfigFile("007", "app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
+		Service: gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service),
 	})
 	app.AddService(gcore.ServiceItem{
-		Service:  httpserver.NewHTTPServer(gctx.NewCtx()),
+		Service:  gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service),
 		ConfigID: "007",
 	})
 	err := app.Run()
@@ -59,7 +59,7 @@ func TestRun_2(t *testing.T) {
 	app := New()
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
-	server := httpserver.NewHTTPServer(gctx.NewCtx())
+	server := gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service)
 	app.AddService(gcore.ServiceItem{
 		Service: server,
 		BeforeInit: func(srv gcore.Service, config gcore.Config) (err error) {
@@ -78,7 +78,7 @@ func TestRun_3(t *testing.T) {
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: httpserver.NewHTTPServer(gctx.NewCtx()),
+		Service: gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service),
 		AfterInit: func(srv *gcore.ServiceItem) (err error) {
 			err = fmt.Errorf("error")
 			return

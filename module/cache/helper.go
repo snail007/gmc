@@ -14,7 +14,7 @@ var (
 	groupMemory = map[string]gcore.Cache{}
 	groupFile   = map[string]gcore.Cache{}
 	logger      gcore.Logger
-	cfg         gcore.Config
+	defaultCache       string
 )
 
 func SetLogger(l gcore.Logger) {
@@ -23,8 +23,8 @@ func SetLogger(l gcore.Logger) {
 
 //RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
 func Init(cfg0 gcore.Config) (err error) {
-	cfg = cfg0
-	for k, v := range cfg.Sub("cache").AllSettings() {
+	defaultCache = cfg0.GetString("cache.default")
+	for k, v := range cfg0.Sub("cache").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {
 			continue
 		}
@@ -75,7 +75,7 @@ func Init(cfg0 gcore.Config) (err error) {
 }
 
 func Cache(id ...string) gcore.Cache {
-	switch cfg.GetString("cache.default") {
+	switch defaultCache {
 	case "redis":
 		return Redis(id...)
 	case "memory":

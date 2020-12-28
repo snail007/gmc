@@ -7,6 +7,7 @@ import (
 	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
 	gconfig "github.com/snail007/gmc/module/config"
+	gerror "github.com/snail007/gmc/module/error"
 	"io"
 	"os"
 	"testing"
@@ -28,8 +29,11 @@ func TestMain(m *testing.M) {
 		return gview.New(w, tpl)
 	})
 
-	providers.RegisterTemplate("", func(ctx gcore.Ctx) (gcore.Template, error) {
-		return gtemplate.Init(ctx)
+	providers.RegisterTemplate("", func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
+		if ctx.Config().Sub("template") != nil {
+			return gtemplate.Init(ctx)
+		}
+		return gtemplate.NewTemplate(ctx, rootDir)
 	})
 
 	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
@@ -38,6 +42,17 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterConfig("", func() gcore.Config {
 		return gconfig.NewConfig()
+	})
+
+	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+		if ctx == nil {
+			return NewGMCLog(prefix)
+		}
+		return NewFromConfig(ctx.Config(), prefix)
+	})
+
+	providers.RegisterError("", func() gcore.Error {
+		return gerror.New()
 	})
 
 	os.Exit(m.Run())

@@ -1,4 +1,4 @@
-package gutil
+package paginator
 
 import (
 	"github.com/snail007/gmc/util/cast"

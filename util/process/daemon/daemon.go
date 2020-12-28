@@ -8,14 +8,14 @@ package gdaemon
 import (
 	"bufio"
 	"fmt"
+	gcore "github.com/snail007/gmc/core"
 	logger "log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	gerr "github.com/snail007/gmc/module/error"
-)
+ )
 
 var (
 	cmd       *exec.Cmd

@@ -78,10 +78,10 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 //Init implements service.Service Init
 func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	connCnt := int64(0)
+	s.config = cfg
 	s.server = &http.Server{}
 	s.logger = gcore.Providers.Logger("")(s.ctx,"")
 	s.connCnt = &connCnt
-	s.config = cfg
 	s.isTestNotClosedError = false
 	s.server.ConnState = s.connState
 	s.server.Handler = s
@@ -101,7 +101,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 
 	// init template
-	s.tpl, err = gcore.Providers.Template("")(s.ctx)
+	s.tpl, err = gcore.Providers.Template("")(s.ctx,"")
 	if err != nil {
 		return
 	}

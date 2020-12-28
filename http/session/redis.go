@@ -7,6 +7,7 @@ package gsession
 
 import (
 	"github.com/snail007/gmc/core"
+	// TODO remove "module/cache"
 	gcache "github.com/snail007/gmc/module/cache"
 	"time"
 )

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/module/cache"
-	"github.com/snail007/gmc/module/log"
 	ghook "github.com/snail007/gmc/util/process/hook"
 	"net"
 	"os"
@@ -66,7 +64,7 @@ func Default() gcore.App {
 func (s *GMCApp) initialize() (err error) {
 	defer func() {
 		if s.logger == nil {
-			s.logger = glog.NewGMCLog()
+			s.logger = gcore.Providers.Logger("")(nil, "")
 		}
 		if s.logger.Async() {
 			s.OnShutdown(func() {
@@ -81,7 +79,7 @@ func (s *GMCApp) initialize() (err error) {
 
 	// initialize logging
 	if s.config.Sub("log") != nil && s.logger == nil {
-		s.logger = glog.NewFromConfig(s.config, "")
+		s.logger = gcore.Providers.Logger("")(s.ctx, "")
 	}
 
 	// initialize database
@@ -94,7 +92,7 @@ func (s *GMCApp) initialize() (err error) {
 
 	// initialize cache
 	if s.config.Sub("cache") != nil {
-		err = gcache.Init(s.config)
+		_, err = gcore.Providers.Cache("")(s.ctx)
 		if err != nil {
 			return
 		}

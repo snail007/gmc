@@ -28,8 +28,11 @@ func TestMain(m *testing.M) {
 		return gview.New(w, tpl)
 	})
 
-	providers.RegisterTemplate("", func(ctx gcore.Ctx) (gcore.Template, error) {
-		return gtemplate.Init(ctx)
+	providers.RegisterTemplate("", func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
+		if ctx.Config().Sub("template") != nil {
+			return gtemplate.Init(ctx)
+		}
+		return gtemplate.NewTemplate(ctx, rootDir)
 	})
 
 	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {

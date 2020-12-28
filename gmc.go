@@ -53,8 +53,11 @@ func init() {
 		return gview.New(w, tpl)
 	})
 
-	providers.RegisterTemplate("", func(ctx gcore.Ctx) (gcore.Template, error) {
-		return gtemplate.Init(ctx)
+	providers.RegisterTemplate("", func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
+		if ctx.Config().Sub("template") != nil {
+			return gtemplate.Init(ctx)
+		}
+		return gtemplate.NewTemplate(ctx, rootDir)
 	})
 
 	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
@@ -113,8 +116,14 @@ func init() {
 	providers.RegisterCtx("", func() gcore.Ctx {
 		return gctx.NewCtx()
 	})
-	
-	providers.RegisterController("", func() gcore.Controller {
-		return &gcontroller.Controller{}
+
+	providers.RegisterController("", func(ctx gcore.Ctx) gcore.Controller {
+		c := &gcontroller.Controller{}
+		c.Ctx = ctx
+		return c
+	})
+
+	providers.RegisterHTTPServer("", func(ctx gcore.Ctx) gcore.HTTPServer {
+		return ghttpserver.NewHTTPServer(ctx)
 	})
 }

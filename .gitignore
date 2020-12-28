@@ -11,3 +11,4 @@
 /demos/website/website
 go.sum
 /gmc/app/logs
+*.log

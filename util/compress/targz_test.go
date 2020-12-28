@@ -3,8 +3,6 @@ package gcompress_test
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
-	gerr "github.com/snail007/gmc/module/error"
 	gcompress "github.com/snail007/gmc/util/compress"
 	assert "github.com/stretchr/testify/assert"
 	"os"
@@ -21,8 +19,7 @@ func TestUnTarGz(t *testing.T) {
 	assert.Nil(e)
 	var b bytes.Buffer
 	b.Write(d)
-	s, e := gcompress.Unpack(&b, "test")
-	fmt.Println(s, gcore.Providers.Error("")().StackError(e))
+	_, e = gcompress.Unpack(&b, "test")
 	assert.Nil(e)
 	os.RemoveAll("test")
 }

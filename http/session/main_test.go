@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		gutil.OnceDo("gmc-cache-init", func() {
+		 gutil.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -72,3 +72,11 @@ func TestMain(m *testing.M) {
 
 	os.Exit(m.Run())
 }
+
+//var onceDoDataMap = sync.Map{}
+//
+//func OnceDo(uniqueKey string, f func()) {
+//	once, _ := onceDoDataMap.LoadOrStore(uniqueKey, &sync.Once{})
+//	once.(*sync.Once).Do(f)
+//	return
+//}

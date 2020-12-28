@@ -8,9 +8,9 @@ import (
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
 	gi18n "github.com/snail007/gmc/module/i18n"
-	gutil "github.com/snail007/gmc/util"
 	"io"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -26,11 +26,14 @@ func TestMain(m *testing.M) {
 	})
 
 	providers.RegisterView("", func(w io.Writer, tpl gcore.Template) gcore.View {
-		return  New(w, tpl)
+		return New(w, tpl)
 	})
 
-	providers.RegisterTemplate("", func(ctx gcore.Ctx) (gcore.Template, error) {
-		return gtemplate.Init(ctx)
+	providers.RegisterTemplate("", func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
+		if ctx.Config().Sub("template") != nil {
+			return gtemplate.Init(ctx)
+		}
+		return gtemplate.NewTemplate(ctx, rootDir)
 	})
 
 	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
@@ -47,11 +50,19 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		gutil.OnceDo("gmc-i18n-init", func() {
+		OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
 	})
 
 	os.Exit(m.Run())
+}
+
+var onceDoDataMap = sync.Map{}
+
+func OnceDo(uniqueKey string, f func()) {
+	once, _ := onceDoDataMap.LoadOrStore(uniqueKey, &sync.Once{})
+	once.(*sync.Once).Do(f)
+	return
 }

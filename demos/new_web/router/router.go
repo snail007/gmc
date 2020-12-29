@@ -1,11 +1,11 @@
 package router
 
 import (
-	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	"mygmcweb/controller"
 )
 
-func InitRouter(s *gmc.HTTPServer) {
+func InitRouter(s gcore.HTTPServer) {
 	// acquire router object
 	r := s.Router()
 

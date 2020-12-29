@@ -44,6 +44,11 @@ func (s *NewAssistant) ConfigFile(file string) (cfg gcore.Config, err error) {
 	return
 }
 
+// Ctx creates an new object of gcore.Ctx
+func (s *NewAssistant) Ctx() gcore.Ctx {
+	return gcore.Providers.Ctx("")()
+}
+
 // App creates an new object of gcore.App
 func (s *NewAssistant) App() gcore.App {
 	return gcore.Providers.App("")(false)

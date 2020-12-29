@@ -47,7 +47,7 @@ func (this *Error) New(e interface{}) gcore.Error {
 }
 
 func (this *Error) StackError(e interface{}) string {
-	if e == nil {
+	if e == nil || reflect.ValueOf(e).IsNil() {
 		return ""
 	}
 	var err gcore.Error

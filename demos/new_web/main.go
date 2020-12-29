@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
-	ghttpserver "github.com/snail007/gmc/http/server"
 	"mygmcweb/initialize"
 )
 
@@ -14,16 +14,16 @@ func main() {
 
 	// 2. add a http server service to app.
 	app.AddService(gcore.ServiceItem{
-		Service: ghttpserver.NewHTTPServer(app.Ctx()),
+		Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
 		AfterInit: func(s *gcore.ServiceItem) (err error) {
 			// do some initialize after http server initialized.
-			err = initialize.Initialize(s.Service.(*ghttpserver.HTTPServer))
+			err = initialize.Initialize(s.Service.(gcore.HTTPServer))
 			return
 		},
 	})
 
 	// 3. run the app
 	if e := gmc.Err.Stack(app.Run()); e != "" {
-		app.Logger().Panic(e)
+		fmt.Println(e)
 	}
 }

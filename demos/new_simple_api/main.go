@@ -5,14 +5,13 @@ import (
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	gmchttp "github.com/snail007/gmc/http"
-	gctx "github.com/snail007/gmc/module/ctx"
 	gmap "github.com/snail007/gmc/util/map"
 	"net/http"
 )
 
 func main() {
 
-	api, _ := gmc.New.APIServer(gctx.NewCtx(), ":7082")
+	api, _ := gmc.New.APIServer(gmc.New.Ctx(), ":7082")
 
 	api.API("/", func(c gmc.C) {
 		c.Write(gmap.M{

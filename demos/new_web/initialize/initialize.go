@@ -1,11 +1,11 @@
 package initialize
 
 import (
-	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	"mygmcweb/router"
 )
 
-func Initialize(s *gmc.HTTPServer) (err error) {
+func Initialize(s gcore.HTTPServer) (err error) {
 	// init router
 	router.InitRouter(s)
 

@@ -78,7 +78,7 @@ func (this *Demo) Hello() {
 1. 后缀是两个连续`__`或一个`_`英文半角下划线的控制器方法，在路由里面绑定控制器的时候会被忽略。
 1. 控制器方法名称不能包含以下名称，它们是GMC完成框架功能的方法，同学们的控制器里面不能使用这些名称。
    `MethodCallPre()`，`MethodCallPost()`，`Stop()`，`Die()`，`Tr()`，`SessionStart()`，
-   `SessionDestroy()`，`Write()`，`StopE()`。
+   `SessionDestroy()`，`Write()`，`StopE()`，`GetCtx()`。
 1. 方法名称是`Before()`的方法，是控制器的构造方法，不需要可以不定义，在被访问控制器方法执行之前被调用，
     可以调用`this.Stop()`阻止被访问`控制器方法`的调用，但不能阻止`After()`控制器析构方法的调用。
     可以通过`this.Die()`阻止被访问`控制器方法`和`After()`调用。
@@ -210,11 +210,12 @@ r.GET("/user/:name",Hello)
  ```
 `:name`是一个占位符参数，此位置的值：
 - 在控制器里面可以通过 `this.Param.ByName("name")` 获取。
-- 在绑定的Handle里面可以通过 `gmc.P.ByName("name")` 获取。
+- 在绑定的`API`里面可以通过 `ctx.Param.ByName("name")` 获取。
+- 在绑定的`grouter.Handle`里面可以通过 `gmchttp.GetCtx(w).Param()` 获取。
 - 在 `http.Handler` 里面可以通过：
     ```go
-    params := gmc.ParamsFromContext(r.Context())
-    params.ByName("name")
+    ctx := gmchttp.GetCtx(w)
+    ctx.Param().ByName("name")
     ```
 
 ## 参数规则
@@ -493,7 +494,7 @@ GMC Web服务默认包含了模版，静态文件，数据库，session，缓存
 
 通过GMCT工具链生成的Web项目，默认配置文件位于：conf/app.toml，app.toml是项目的核心，几乎所有gmc功能都是这里配置。
 
-Web服务器在gmc中对应的是：`gmc.HTTPWebServer`，我们也可以看见，在项目的main文件，里面通过`gcore.GMCApp`对象启动一个Web服务。
+Web服务器在gmc中对应的是：`gcore.HTTPServer`，我们也可以看见，在项目的main文件，里面通过`gcore.App`对象启动一个Web服务。
 
 还可以在服务初始化前后执行一些自己的初始化等操作。
 
@@ -503,7 +504,9 @@ GMCT 生成的web项目，主文件内容如下：
 package main
 
 import (
+	"fmt"
 	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	"mygmcweb/initialize"
 )
 
@@ -514,26 +517,25 @@ func main() {
 
 	// 2. add a http server service to app.
 	app.AddService(gcore.ServiceItem{
-		Service: gmc.New.HTTPServer(),
+		Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
 		AfterInit: func(s *gcore.ServiceItem) (err error) {
 			// do some initialize after http server initialized.
-			err = initialize.Initialize(s.Service.(*gmc.HTTPServer))
+			err = initialize.Initialize(s.Service.(gcore.HTTPServer))
 			return
 		},
 	})
 
 	// 3. run the app
-	if e := gerror.Stack(app.Run());e!=""{
-		app.Logger().Panic(e)
+	if e := gmc.Err.Stack(app.Run()); e != "" {
+		fmt.Println(e)
 	}
 }
-
 ```
 
 主要做了三件事情：
 
-1. 创建一个默认gcore.GMCApp对象，用来管理程序和服务的整个生命周期，默认APP对象会使用`conf/app.toml`作为配置文件。
-1. 创建一个gmc.HTTPWebServer服务对象，添加到APP的服务列表中，并定义了服务初始化后执行的一些自己的初始化。
+1. 创建一个默认gcore.App对象，用来管理程序和服务的整个生命周期，默认APP对象会使用`conf/app.toml`作为配置文件。
+1. 创建一个gcore.HTTPServer服务对象，添加到APP的服务列表中，并定义了服务初始化后执行的一些自己的初始化。
 1.  启动APP，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
 
 # API 服务器
@@ -553,8 +555,10 @@ API服务相对于Web服务更加精简，性能更好，去掉了模版，静�
 package main
 
 import (
+	"fmt"
 	"github.com/snail007/gmc"
-	"mygmcapi/handlers"
+	gcore "github.com/snail007/gmc/core"
+ 	"mygmcapi/handlers"
 )
 
 func main() {
@@ -566,7 +570,9 @@ func main() {
 		app.Logger().Error(err)
 	}
 	// 3. create api server
-	api, err := gmc.New.APIServerDefault(cfg)
+	ctx := gmc.New.Ctx()
+	ctx.SetConfig(cfg)
+	api, err := gmc.New.APIServerDefault(ctx)
 	if err != nil {
 		app.Logger().Error(err)
 	}
@@ -579,20 +585,19 @@ func main() {
 	handlers.Init(api)
 	// 5. add service
 	app.AddService(gcore.ServiceItem{
-		Service: api,
+		Service: api.(gcore.Service),
 	})
 	// 6. run app
-	if e := gerror.Stack(app.Run());e!=""{
-		app.Logger().Panic(e)
+	if e := gmc.Err.Stack(app.Run()); e != "" {
+		fmt.Println(e)
 	}
 }
-
 ```
 主要做了以下事情：
 
-1. 创建一个默认gcore.GMCApp对象，用来管理程序和服务的整个生命周期。
+1. 创建一个默认gcore.App对象，用来管理程序和服务的整个生命周期。
 1. 创建一个配置对象，设置使用`conf/app.toml`作为配置文件。
-1. 创建一个gmc.APIServer服务对象，并使用上面的配置对象。
+1. 创建一个gcore.APIServer服务对象，并使用上面的配置对象。
 1. 初始化后执行的一些用到的功能，数据库，缓存，路由。
 1. 把API对象添加到APP管理服务列表中。
 1. 启动APP，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
@@ -609,31 +614,48 @@ Simple API示例：
 package main
 
 import (
+	"fmt"
 	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	gmchttp "github.com/snail007/gmc/http"
+	gmap "github.com/snail007/gmc/util/map"
+	"net/http"
 )
 
 func main() {
 
-	api := gmc.New.APIServer(":7082")
+	api, _ := gmc.New.APIServer(gmc.New.Ctx(), ":7082")
+
 	api.API("/", func(c gmc.C) {
- 		c.Write(gmap.M{
- 			"code":0,
- 			"message":"Hello GMC!",
- 			"data":nil,
+		c.Write(gmap.M{
+			"code":    0,
+			"message": "Hello GMC!",
+			"data":    nil,
 		})
+	})
+
+	// http://foo.com/ctxfoo
+	api.Router().HandlerFunc("GET", "/ctx:name", func(w http.ResponseWriter, r *http.Request) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
+	// http://foo.com/2ctxfoo
+	api.Router().Handle("GET", "/2ctx:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
 	})
 
 	app := gmc.New.App()
 	app.AddService(gcore.ServiceItem{
-		Service: api,
-		BeforeInit: func(s gcore.Service, cfg *gconfig.Config) (err error) {
+		Service: api.(gcore.Service),
+		BeforeInit: func(s gcore.Service, cfg gcore.Config) (err error) {
 			api.PrintRouteTable(nil)
 			return
 		},
 	})
 
-	if e := gerror.Stack(app.Run());e!=""{
-		app.Logger().Panic(e)
+	if e := gmc.Err.Stack(app.Run()); e != "" {
+		fmt.Println(e)
 	}
 }
 ```
@@ -647,11 +669,12 @@ package main
 
 import (
 	"github.com/snail007/gmc"
+    gmap "github.com/snail007/gmc/util/map"
 )
 
 func main() {
-
-	api := gmc.New.APIServer(":7082").Ext(".json")
+	api,_:= gmc.New.APIServer(gmc.New.Ctx(),":7082")
+    api.Ext(".json")
 	api.API("/hello", func(c gmc.C) {
  		c.Write(gmap.M{
  			"code":0,
@@ -659,7 +682,7 @@ func main() {
  			"data":nil,
 		})
 	})
-	if e := gerror.Stack(api.Run());e!=""{
+	if e := gmc.Err.Stack(api.Run());e!=""{
 		panic(e)
 	}
 }
@@ -667,7 +690,7 @@ func main() {
 
 主要做了以下事情：
 
-1. 创建一个gmc.APIServer服务对象，监听7082端口，设置url后缀为`.json`。
+1. 创建一个gcore.APIServer服务对象，监听7082端口，设置url后缀为`.json`。
 1. 注册了一个url路径`/hello.json`，输出一个json数据。
 1. 启动API，并捕获错误信息，然后输出错误，APP启动后Run()会阻塞，直到手动关闭APP或者发生异常。
 
@@ -681,11 +704,11 @@ GMC 数据库操作支持：
 1. 方便的链式查询和更新。
 1. 映射结果集到结构体。
 1. 事务支持。
-1. 快速表模型，`gmc.Table("table_name")`可以对表进行各种常见的增删改查。
+1. 快速表模型，`gmc.DB.Table("table_name")`可以对表进行各种常见的增删改查。
 
 ## 快速表模型
 
-一般情况下，如果什么对数据表没有十分复杂的操作，在初始化数据库连接后，我们看通过`gmc.Table("table_name")`操作一个数据表，
+一般情况下，如果什么对数据表没有十分复杂的操作，在初始化数据库连接后，我们看通过`gmc.DB.Table("table_name")`操作一个数据表，
 而不需要写任何表模型类来操作表数据。
 
 快速表模型约定如下:
@@ -777,7 +800,7 @@ func main() {
 }
 ```
 
-由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/db/mysql/README.md)
+由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/moudle/db/mysql/README.md)
 
 ## SQLITE3 数据库
 
@@ -806,14 +829,14 @@ cachemode="shared"
 `gmc.DB.DB(id ...string)`或`gmc.DB.SQLite3(id ...string)`获取数据库操作对象。
 
 
-由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/db/sqlite3/README.md)
+由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/moudle/db/sqlite3/README.md)
 
 # 缓存
 
 ## 缓存介绍
 
 GMC缓存Cache支持Redis、File、内存缓存三种类型，为适应不同的业务场景，开发者也可以自己实现`gcore.Cache`接口，
-然后通过`gcachehelper.AddCacheU(id,cache)`注册自己的缓存，然后就可以通过`gmc.Cache.Cache(id)`获取自己注册的缓存对象。
+然后通过`gcache.AddCacheU(id,cache)`注册自己的缓存，然后就可以通过`gmc.Cache.Cache(id)`获取自己注册的缓存对象。
 
 如果要在`gmc`项目里面使用缓存，需要修改配置文件`app.toml`里面的`[cache]`部分，首先设置默认缓存类型,比如使用redis `default="redis"`，
 然后需要修改对应缓存驱动`[[redis]]`部分的启用`enable=true`。每个驱动类型的缓存都可以配置多个，每个的id必须唯一，id是"default"的将作为默认使用。
@@ -832,7 +855,7 @@ default="redis" //设置默认生效缓存配置项，比如项目默认为redis
 [[cache.memory]]//内存缓存配置项，其中cleanupinterval为自动垃圾收集时间单位是second
 ```
 
-通过gcore.GMCApp启动的API或者Web服务，使用配置文件配置缓存，当你在配置文件app.toml启用了缓存，
+通过gcore.App启动的API或者Web服务，使用配置文件配置缓存，当你在配置文件app.toml启用了缓存，
 那么可以通过gmc.Cache.Cache()使用缓存。
 
 ### Redis缓存
@@ -882,7 +905,7 @@ cleanupinterval=30
 
 ## 单独使用缓存模块
 
-当然`gmccache`包也可以单独使用，不依赖gmc框架,自己实例化配置对象，初始化缓存配置，使用方法示例如下：
+当然`gcache`包也可以单独使用，不依赖gmc框架,自己实例化配置对象，初始化缓存配置，使用方法示例如下：
 
 ```go
 package main
@@ -975,10 +998,11 @@ GMC基于go官方的`net/http/pprof`提供了方便的远程调试功能，只�
 
 ```go
 import (
+ "github.com/snail007/gmc/gcore"
  "github.com/snail007/gmc/util/pprof"
 )
 
-func InitRouter(s *gmc.HTTPServer) {
+func InitRouter(s gcore.HTTPServer) {
     // ...
 	//enable http pprof
 	httppprof.BindRouter(s.Router(),"/gmcdebug")
@@ -1054,10 +1078,11 @@ format="$req_time $host $uri?$query $status_code ${time_used}ms"
 
 ```go
 import (
- "github.com/snail007/gmc/middleware/accesslog"
+ "github.com/snail007/gmc/core"
+ "github.com/snail007/gmc/module/middleware/accesslog"
 )
 
-func InitRouter(s *gmc.HTTPServer) {
+func InitRouter(s gcore.HTTPServer) {
     //...
     // middleware: accesslog
     s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
@@ -1086,15 +1111,13 @@ kill -USR2 11297
 
 ## gpool
 
-## gmcmap
+## gmap
 
-## sizeutil
+## glog
 
-## timeutil
+## gsize
 
-## gmclog
-
-## cast
+## gcast
 
 # 其它功能
 

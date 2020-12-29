@@ -2,7 +2,7 @@ package gdb
 
 import (
 	"github.com/snail007/gmc/core"
- 	"github.com/snail007/gmc/util/cast"
+	"github.com/snail007/gmc/util/cast"
 	"reflect"
 )
 
@@ -10,6 +10,7 @@ var (
 	groupMySQL   = NewMySQLDBGroup("default")
 	groupSQLite3 = NewSQLite3DBGroup("default")
 	cfg          gcore.Config
+	defaultDB    string
 )
 
 //InitFromFile parse foo.toml database configuration, `cfg` is Config object of foo.toml
@@ -25,6 +26,7 @@ func InitFromFile(cfgFile string) (err error) {
 
 //RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
 func Init(cfg0 gcore.Config) (err error) {
+	defaultDB = cfg0.GetString("database.default")
 	cfg = cfg0
 	for k, v := range cfg.Sub("database").AllSettings() {
 		if _, ok := v.([]interface{}); !ok {
@@ -84,7 +86,7 @@ func Init(cfg0 gcore.Config) (err error) {
 }
 
 func DB(id ...string) gcore.Database {
-	switch cfg.GetString("database.default") {
+	switch defaultDB {
 	case "mysql":
 		return DBMySQL(id...)
 	case "sqlite3":
@@ -95,11 +97,19 @@ func DB(id ...string) gcore.Database {
 
 //DBMySQL acquires a mysql db object associated the id, id default is : `default`
 func DBMySQL(id ...string) *MySQLDB {
+	// no mysql database enabled, just return nil
+	if len(groupMySQL.dbGroup) == 0 {
+		return nil
+	}
 	return groupMySQL.DB(id...).(*MySQLDB)
 }
 
 //DBSQLite3 acquires a sqlite3 db object associated the id, id default is : `default`
 func DBSQLite3(id ...string) *SQLite3DB {
+	// no sqlite3 database enabled, just return nil
+	if len(groupSQLite3.dbGroup) == 0 {
+		return nil
+	}
 	return groupSQLite3.DB(id...).(*SQLite3DB)
 }
 

@@ -3,9 +3,13 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gutil
+package gpool
 
 import (
+	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
+	glog "github.com/snail007/gmc/module/log"
+	"os"
 	"testing"
 	"time"
 )
@@ -106,4 +110,18 @@ func TestAwaiting(t *testing.T) {
 		t.Fatalf("Awaiting is failed")
 	}
 	p.Stop()
+}
+
+func TestMain(m *testing.M) {
+	providers := gcore.Providers
+	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+		if ctx == nil {
+			return glog.NewGMCLog(prefix)
+		}
+		return glog.NewFromConfig(ctx.Config(), prefix)
+	})
+	providers.RegisterError("", func() gcore.Error {
+		return gerror.New()
+	})
+	os.Exit(m.Run())
 }

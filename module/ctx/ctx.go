@@ -8,22 +8,40 @@ import (
 	"strings"
 	"time"
 
-	ghttputil "github.com/snail007/gmc/util/http"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 )
 
 type Ctx struct {
-	response  http.ResponseWriter
-	request   *http.Request
-	param     gcore.Params
-	timeUsed  time.Duration
-	localAddr string
-	apiServer gcore.APIServer
-	webServer gcore.HTTPServer
-	app       gcore.App
-	logger    gcore.Logger
-	config    gcore.Config
-	i18n      gcore.I18n
-	template  gcore.Template
+	response   http.ResponseWriter
+	request    *http.Request
+	param      gcore.Params
+	timeUsed   time.Duration
+	localAddr  string
+	apiServer  gcore.APIServer
+	webServer  gcore.HTTPServer
+	app        gcore.App
+	logger     gcore.Logger
+	config     gcore.Config
+	i18n       gcore.I18n
+	template   gcore.Template
+	remoteAddr string
+	conn       net.Conn
+}
+
+func (this *Ctx) Conn() net.Conn {
+	return this.conn
+}
+
+func (this *Ctx) SetConn(conn net.Conn) {
+	this.conn = conn
+}
+
+func (this *Ctx) RemoteAddr() string {
+	return this.remoteAddr
+}
+
+func (this *Ctx) SetRemoteAddr(remoteAddr string) {
+	this.remoteAddr = remoteAddr
 }
 
 func (this *Ctx) Template() gcore.Template {
@@ -82,12 +100,20 @@ func (this *Ctx) Clone() gcore.Ctx {
 		ps = gcore.Params{}
 	}
 	return &Ctx{
-		app:       this.app,
-		apiServer: this.apiServer,
-		webServer: this.webServer,
-		response:  this.response,
-		request:   this.request,
-		param:     ps,
+		app:        this.app,
+		apiServer:  this.apiServer,
+		webServer:  this.webServer,
+		response:   this.response,
+		request:    this.request,
+		param:      ps,
+		timeUsed:   this.timeUsed,
+		localAddr:  this.localAddr,
+		remoteAddr: this.remoteAddr,
+		logger:     this.logger,
+		config:     this.config,
+		i18n:       this.i18n,
+		template:   this.template,
+		conn:       this.conn,
 	}
 }
 
@@ -95,17 +121,15 @@ func (this *Ctx) CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...gco
 	var ps0 gcore.Params
 	if len(ps) > 0 && ps[0] != nil {
 		ps0 = ps[0]
-	} else {
+	}
+	if ps0 == nil {
 		ps0 = gcore.Params{}
 	}
-	return &Ctx{
-		app:       this.app,
-		apiServer: this.apiServer,
-		webServer: this.webServer,
-		response:  w,
-		request:   r,
-		param:     ps0,
-	}
+	c := this.Clone()
+	c.SetResponse(w)
+	c.SetRequest(r)
+	c.SetParam(ps0)
+	return c
 }
 
 func (this *Ctx) APIServer() gcore.APIServer {
@@ -153,6 +177,9 @@ func (this *Ctx) SetResponse(response http.ResponseWriter) {
 }
 
 func (this *Ctx) SetParam(param gcore.Params) {
+	if param == nil {
+		param = gcore.Params{}
+	}
 	this.param = param
 	return
 }

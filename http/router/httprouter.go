@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 	"io"
 	"net/http"
 	"os"
@@ -41,6 +42,7 @@ var (
 		"After":          true,
 		"MethodCallPost": true,
 		"MethodCallPre":  true,
+		"GetCtx":         true,
 	}
 )
 
@@ -198,7 +200,10 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			path = p + strings.ToLower(objMethod) + ext1
 		}
 		objMethod0 := objMethod
-		s.HandleAny(path, func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+		s.HandleAny(path, func(w http.ResponseWriter, _ *http.Request, ps gcore.Params) {
+			reqCtx := w.(*ghttputil.ResponseWriter).Data("ctx").(gcore.Ctx)
+			// fix param not contains matched route path
+			reqCtx.SetParam(ps)
 			obj0 := reflect.ValueOf(obj)
 			var val reflect.Value
 			if obj0.Kind() == reflect.Ptr {
@@ -211,7 +216,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			objv := vp.Interface()
 
 			defer invoke(objv, "MethodCallPost")
-			invoke(objv, "MethodCallPre", s.ctx.CloneWithHTTP(w, r, ps))
+			invoke(objv, "MethodCallPre", reqCtx)
 			if beforeIsFound {
 				invoke(objv, "Before")
 			}

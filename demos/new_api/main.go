@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	gctx "github.com/snail007/gmc/module/ctx"
-	gerror "github.com/snail007/gmc/module/error"
 	"mygmcapi/handlers"
 )
 
@@ -17,7 +17,9 @@ func main() {
 		app.Logger().Error(err)
 	}
 	// 3. create api server
-	api, err := gmc.New.APIServerDefault(gctx.NewCtx(), cfg)
+	ctx := gctx.NewCtx()
+	ctx.SetConfig(cfg)
+	api, err := gmc.New.APIServerDefault(ctx)
 	if err != nil {
 		app.Logger().Error(err)
 	}
@@ -30,10 +32,10 @@ func main() {
 	handlers.Init(api)
 	// 5. add service
 	app.AddService(gcore.ServiceItem{
-		Service: api,
+		Service: api.(gcore.Service),
 	})
 	// 6. run app
-	if e := gerror.Stack(app.Run()); e != "" {
-		app.Logger().Panic(e)
+	if e := gmc.Err.Stack(app.Run()); e != "" {
+		fmt.Println(e)
 	}
 }

@@ -41,7 +41,7 @@ func TestNew(t *testing.T) {
 }
 func TestNew_2(t *testing.T) {
 	assert := assert.New(t)
- 	cfg := NewRedisCacheConfig()
+	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
 	//cfg.Password = "123"

@@ -29,7 +29,7 @@ func NewRedisCacheConfig() *RedisCacheConfig {
 	return &RedisCacheConfig{
 		Debug:           false,
 		Prefix:          "",
- 		Addr:            "127.0.0.1:6379",
+		Addr:            "127.0.0.1:6379",
 		Password:        "",
 		DBNum:           0,
 		MaxIdle:         3,

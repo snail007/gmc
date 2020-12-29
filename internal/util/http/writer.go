@@ -2,12 +2,30 @@ package ghttputil
 
 import (
 	"net/http"
+	"sync"
 )
 
 type ResponseWriter struct {
 	http.ResponseWriter
 	statusCode   int
 	writeByteCnt int64
+	data         *sync.Map
+}
+
+func (this *ResponseWriter) ClearData() {
+	this.data = &sync.Map{}
+}
+
+func (this *ResponseWriter) Data(k interface{}) interface{} {
+	v, ok := this.data.Load(k)
+	if !ok {
+		return nil
+	}
+	return v
+}
+
+func (this *ResponseWriter) SetData(k interface{}, v interface{}) {
+	this.data.Store(k, v)
 }
 
 func NewResponseWriter(w http.ResponseWriter) http.ResponseWriter {
@@ -17,8 +35,10 @@ func NewResponseWriter(w http.ResponseWriter) http.ResponseWriter {
 	return &ResponseWriter{
 		ResponseWriter: w,
 		statusCode:     200,
+		data:           &sync.Map{},
 	}
 }
+
 func (this *ResponseWriter) WriteHeader(status int) {
 	this.statusCode = status
 	this.ResponseWriter.WriteHeader(status)

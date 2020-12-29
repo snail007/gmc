@@ -13,6 +13,12 @@ func (this *Demo) Index__() {
 		Set("title", "It works!").
 		Render("welcome")
 }
+
 func (this *Demo) Hello() {
 	this.Write("fmt.Println(\"Hello GMC!\")")
+}
+
+func (this *Demo) Conn() {
+	ctx := this.Ctx
+	ctx.Write(ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
 }

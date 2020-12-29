@@ -24,11 +24,11 @@ type StackFrame interface {
 }
 
 type Error interface {
-	New(e interface{})  Error
+	New(e interface{}) Error
 	StackError(e interface{}) string
-	Wrap(e interface{})  Error
+	Wrap(e interface{}) Error
 	WrapN(e interface{}, skip int) Error
-	WrapPrefix(e interface{}, prefix string, skip int)Error
+	WrapPrefix(e interface{}, prefix string, skip int) Error
 	WrapPrefixN(e interface{}, prefix string, skip int) Error
 	Errorf(format string, a ...interface{}) Error
 	Error() string

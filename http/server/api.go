@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	ghttputil "github.com/snail007/gmc/util/http"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 )
 
 type APIServer struct {
@@ -37,30 +37,36 @@ type APIServer struct {
 	isShutdown        bool
 	ext               string
 	config            gcore.Config
-	localaddr         *sync.Map
+	remoteAddrDataMap *sync.Map
 	connCnt           *int64
 	ctx               gcore.Ctx
 }
 
+func NewAPIServerForProvider(ctx gcore.Ctx, address string) (*APIServer, error) {
+	if address != "" {
+		return NewAPIServer(ctx, address), nil
+	}
+	return NewDefaultAPIServer(ctx, ctx.Config())
+}
 func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 	api := &APIServer{
 		server: &http.Server{
 			TLSConfig: &tls.Config{},
 		},
-		address:          address,
-		router:           gcore.Providers.HTTPRouter("")(ctx),
-		isShowErrorStack: true,
-		middleware0:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		middleware1:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		middleware2:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		middleware3:      []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		localaddr:        &sync.Map{},
-		ctx:              ctx,
+		address:           address,
+		router:            gcore.Providers.HTTPRouter("")(ctx),
+		isShowErrorStack:  true,
+		middleware0:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware1:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware2:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware3:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		remoteAddrDataMap: &sync.Map{},
+		ctx:               ctx,
 	}
 	ctx.SetAPIServer(api)
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
-	api.logger = gcore.Providers.Logger("")(ctx,"")
+	api.logger = gcore.Providers.Logger("")(ctx, "")
 	api.server.ErrorLog = func() *log.Logger {
 		ns := api.logger.Namespace()
 		if ns != "" {
@@ -69,6 +75,8 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 		l := log.New(api.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
+	api.server.ConnState = api.connState
+	api.connCnt = new(int64)
 	return api
 }
 
@@ -98,47 +106,59 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, er
 	return
 }
 
-func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (this *APIServer) initRequestCtx(w http.ResponseWriter, r *http.Request) gcore.Ctx {
 	w = ghttputil.NewResponseWriter(w)
 	c0 := this.ctx.CloneWithHTTP(w, r)
+	item, _ := this.remoteAddrDataMap.Load(r.RemoteAddr)
+	if v, ok := item.(remoteAddrItem); ok {
+		c0.SetLocalAddr(v.localAddr)
+		c0.SetRemoteAddr(v.remoteAddr)
+		c0.SetConn(v.conn)
+	}
+	w.(*ghttputil.ResponseWriter).SetData("ctx", c0)
+	return c0
+}
+
+func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	reqCtx := this.initRequestCtx(w, r)
 	defer func() {
 		// middleware3
-		this.callMiddleware(c0, this.middleware3)
+		this.callMiddleware(reqCtx, this.middleware3)
 	}()
 	//middleware0
-	if this.callMiddleware(c0, this.middleware0) {
+	if this.callMiddleware(reqCtx, this.middleware0) {
 		return
 	}
 
 	h, params, _ := this.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
-		c0.SetParam(params)
+		reqCtx.SetParam(params)
 		// middleware1
-		if this.callMiddleware(c0, this.middleware1) {
+		if this.callMiddleware(reqCtx, this.middleware1) {
 			return
 		}
 
 		start := time.Now()
 		status := ""
-		err := this.call(func() { h(w, r, params) })
-		c0.SetTimeUsed(time.Now().Sub(start))
+		err := this.call(func() { h(reqCtx.Response(), reqCtx.Request(), reqCtx.Param()) })
+		reqCtx.SetTimeUsed(time.Now().Sub(start))
 		if err != nil {
 			status = fmt.Sprintf("%s", err)
 			switch status {
 			case "__STOP__", "":
 			default:
 				//exception
-				this.handler500(c0, err)
+				this.handler500(reqCtx, err)
 			}
 		}
 
 		// middleware2
-		if this.callMiddleware(c0, this.middleware2) {
+		if this.callMiddleware(reqCtx, this.middleware2) {
 			return
 		}
 
 	} else {
-		this.handler404(c0)
+		this.handler404(reqCtx)
 	}
 }
 func (this *APIServer) Address() string {
@@ -192,8 +212,8 @@ func (this *APIServer) API(path string, handle func(ctx gcore.Ctx), ext ...strin
 		// cover
 		ext1 = ext[0]
 	}
-	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
-		handle(this.ctx.CloneWithHTTP(w, r, ps))
+	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, _ *http.Request, _ gcore.Params) {
+		handle(w.(*ghttputil.ResponseWriter).Data("ctx").(gcore.Ctx))
 	})
 }
 
@@ -250,11 +270,15 @@ func (s *APIServer) ActiveConnCount() int64 {
 func (s *APIServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
-		s.localaddr.Store(c.RemoteAddr().String(), c.LocalAddr().String())
 		atomic.AddInt64(s.connCnt, 1)
+		s.remoteAddrDataMap.Store(c.RemoteAddr().String(), remoteAddrItem{
+			remoteAddr: c.RemoteAddr().String(),
+			localAddr:  c.LocalAddr().String(),
+			conn:       c,
+		})
 	case http.StateClosed:
-		s.localaddr.Delete(c.RemoteAddr().String())
 		atomic.AddInt64(s.connCnt, -1)
+		s.remoteAddrDataMap.Delete(c.RemoteAddr().String())
 	}
 }
 func (this *APIServer) handler404(ctx gcore.Ctx) {

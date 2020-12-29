@@ -4,7 +4,6 @@ import (
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	ghttpserver "github.com/snail007/gmc/http/server"
-	gerror "github.com/snail007/gmc/module/error"
 	"mygmcweb/initialize"
 )
 
@@ -24,7 +23,7 @@ func main() {
 	})
 
 	// 3. run the app
-	if e := gerror.Stack(app.Run()); e != "" {
+	if e := gmc.Err.Stack(app.Run()); e != "" {
 		app.Logger().Panic(e)
 	}
 }

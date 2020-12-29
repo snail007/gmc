@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 		return Cache(), nil
 	})
 
-	providers.RegisterLogger("", func(ctx gcore.Ctx,prefix string) gcore.Logger {
+	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewGMCLog(prefix)
 		}
@@ -52,8 +52,7 @@ func TestMain(m *testing.M) {
 		panic(e)
 	}
 
-	logger = gcore.Providers.Logger("")(c,"")
-
+	logger = gcore.Providers.Logger("")(c, "")
 
 	cFile, err = NewFileCache(NewFileCacheConfig())
 	if err != nil {
@@ -62,6 +61,7 @@ func TestMain(m *testing.M) {
 	cMem = NewMemCache(NewMemCacheConfig())
 	os.Exit(m.Run())
 }
+
 var onceDoDataMap = sync.Map{}
 
 func OnceDo(uniqueKey string, f func()) {

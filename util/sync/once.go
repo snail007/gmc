@@ -1,4 +1,4 @@
-package gutil
+package sync
 
 import (
 	"crypto/rand"

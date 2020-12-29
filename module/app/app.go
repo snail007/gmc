@@ -31,6 +31,13 @@ func (s *GMCApp) SetCtx(ctx gcore.Ctx) {
 	s.ctx = ctx
 }
 
+func NewApp(isDefault bool) gcore.App {
+	if isDefault {
+		return Default()
+	}
+	return New()
+}
+
 func New() gcore.App {
 	app := &GMCApp{
 		isBlock:           true,

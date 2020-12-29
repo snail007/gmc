@@ -20,7 +20,7 @@ func TestRun(t *testing.T) {
 	assert.NotNil(app.Ctx())
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
-	server:=gcore.Providers.HTTPServer("")(app.Ctx())
+	server := gcore.Providers.HTTPServer("")(app.Ctx())
 	assert.NotNil(server)
 	app.AddService(gcore.ServiceItem{
 		Service: server.(gcore.Service),

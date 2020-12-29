@@ -9,7 +9,7 @@ import (
 
 func Test_Cache(t *testing.T) {
 	assert := assert2.New(t)
-	ctx:=gcore.Providers.Ctx("")()
+	ctx := gcore.Providers.Ctx("")()
 	c := gcore.Providers.Config("")()
 	c.SetConfigFile("../app/app.toml")
 	err := c.ReadInConfig()

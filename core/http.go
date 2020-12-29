@@ -142,6 +142,8 @@ type HTTPRouter interface {
 	ServeHTTP(w http.ResponseWriter, req *http.Request)
 }
 type APIServer interface {
+	Run() error
+	Address() string
 	Server() *http.Server
 	Router() HTTPRouter
 	SetTLSFile(certFile, keyFile string)
@@ -191,7 +193,7 @@ type HTTPServer interface {
 }
 
 type Controller interface {
-	GetCtx()Ctx
+	GetCtx() Ctx
 	MethodCallPre(ctx Ctx)
 	MethodCallPost()
 	Tr(key string, defaultText ...string) string

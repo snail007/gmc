@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		 OnceDo("gmc-i18n-init", func() {
+		OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
@@ -78,7 +78,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		 OnceDo("gmc-cache-init", func() {
+		OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -89,7 +89,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterDatabase("", func(ctx gcore.Ctx) (gcore.Database, error) {
 		var err error
-		 OnceDo("gmc-cache-init", func() {
+		OnceDo("gmc-cache-init", func() {
 			err = gdb.Init(ctx.Config())
 		})
 		if err != nil {

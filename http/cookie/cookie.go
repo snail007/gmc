@@ -15,9 +15,9 @@ func New(w http.ResponseWriter, r *http.Request) (cookie *Cookies) {
 }
 
 type Cookies struct {
-	req  *http.Request
-	w    http.ResponseWriter
- }
+	req *http.Request
+	w   http.ResponseWriter
+}
 
 func (c *Cookies) Get(name string) (value string, err error) {
 	cookie, err := c.req.Cookie(name)

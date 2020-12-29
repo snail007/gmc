@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
-	ghttpserver "github.com/snail007/gmc/http/server"
-	gutil "github.com/snail007/gmc/util"
+	gmchttp "github.com/snail007/gmc/http"
+	"net/http"
 	"time"
 )
 
-func initHanlder(api *ghttpserver.APIServer) {
+func initHanlder(api gcore.APIServer) {
 
 	// URL: http://foo.com/
 	api.API("/", func(c gcore.Ctx) {
@@ -50,12 +50,23 @@ func initHanlder(api *ghttpserver.APIServer) {
 		a := 0
 		a /= a
 	})
+	// access ctx
+	// http://foo.com/ctxfoo
+	group0.Router().HandlerFunc("GET", "/ctx:name", func(w http.ResponseWriter, r *http.Request) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
+	// http://foo.com/2ctxfoo
+	group0.Router().Handle("GET", "/2ctx:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
 
 	// http://foo.com/v2/time
 	group1 := api.Group("/v2")
 	group1.Ext(".json")
 	group1.API("/time", func(c gmc.C) {
-		c.Write(gutil.DateFormat(time.Now(), "Y-m-d H:i:s"))
+		c.Write(time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
 	})
 
 }

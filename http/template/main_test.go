@@ -20,7 +20,6 @@ var (
 
 func TestMain(m *testing.M) {
 
-
 	providers := gcore.Providers
 
 	providers.RegisterSession("", func() gcore.Session {
@@ -37,9 +36,9 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterTemplate("", func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
 		if ctx.Config().Sub("template") != nil {
-			return  Init(ctx)
+			return Init(ctx)
 		}
-		return  NewTemplate(ctx, rootDir)
+		return NewTemplate(ctx, rootDir)
 	})
 
 	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
@@ -52,7 +51,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		 OnceDo("gmc-i18n-init", func() {
+		OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
@@ -64,11 +63,12 @@ func TestMain(m *testing.M) {
 
 	ctx := gcore.Providers.Ctx("")()
 	ctx.SetConfig(gcore.Providers.Config("")())
-	tpl,_=NewTemplate(ctx,"tests/views")
+	tpl, _ = NewTemplate(ctx, "tests/views")
 	tpl.Delims("{{", "}}")
 	tpl.Parse()
 	os.Exit(m.Run())
 }
+
 var onceDoDataMap = sync.Map{}
 
 func OnceDo(uniqueKey string, f func()) {

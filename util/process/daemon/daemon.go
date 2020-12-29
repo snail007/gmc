@@ -14,8 +14,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
- )
+)
 
 var (
 	cmd       *exec.Cmd

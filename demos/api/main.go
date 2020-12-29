@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
+	gmchttp "github.com/snail007/gmc/http"
 	gctx "github.com/snail007/gmc/module/ctx"
-	gerror "github.com/snail007/gmc/module/error"
-	gutil "github.com/snail007/gmc/util"
 	ghook "github.com/snail007/gmc/util/process/hook"
 	"net"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 )
 
 func main() {
-	api := gmc.New.APIServer(gctx.NewCtx(), ":8030")
+	api, _ := gmc.New.APIServer(gctx.NewCtx(), ":8030")
 	api.Ext(".html")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
@@ -41,7 +40,7 @@ func main() {
 	// sets a function to handle panic error.
 	api.Handle500(func(c gmc.C, err interface{}) {
 		c.WriteHeader(http.StatusInternalServerError)
-		c.Write("panic error : ", gerror.Stack(err))
+		c.Write("panic error : ", gmc.Err.Stack(err))
 	})
 	// sets an api in url path: /hello
 	// add more api , just call api.API() repeatedly
@@ -57,11 +56,27 @@ func main() {
 		a := 0
 		a /= a
 	})
+	// access under layer conn
+	api.API("/conn", func(c gmc.C) {
+		c.Write(c.Conn().RemoteAddr().String(), c.Conn().LocalAddr().String())
+	})
+	// access ctx
+	// http://foo.com/ctxfoo
+	api.Router().HandlerFunc("GET", "/ctx:name", func(w http.ResponseWriter, r *http.Request) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
+	// http://foo.com/2ctxfoo
+	api.Router().Handle("GET", "/2ctx:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
+
 	// routing by group is supported
 	group1 := api.Group("/v1")
 	group1.Ext(".json")
 	group1.API("/time", func(c gmc.C) {
-		c.Write(gutil.Date("Y-m-d H:i:s", time.Now()))
+		c.Write(time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
 	})
 	api.PrintRouteTable(nil)
 	// start the api server

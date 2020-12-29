@@ -19,7 +19,7 @@ func NewMyService() gcore.Service {
 }
 func (s *MyService) Init(cfg gcore.Config) error {
 	s.address = cfg.GetString("listen")
-	s.log = gcore.Providers.Logger("")(nil,"")
+	s.log = gcore.Providers.Logger("")(nil, "")
 	return nil
 }
 func (s *MyService) Start() (err error) {

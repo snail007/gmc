@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gutil
+package gpool
 
 import (
 	"context"
@@ -36,7 +36,7 @@ func NewGPool(workerCount int) (p *GPool) {
 		runningtCnt: &cnt,
 		workerCnt:   workerCount,
 		workerSig:   []chan bool{},
-		logger:      gcore.Providers.Logger("")(nil,""),
+		logger:      gcore.Providers.Logger("")(nil, ""),
 	}
 	for i := 0; i < p.workerCnt; i++ {
 		p.workerSig = append(p.workerSig, make(chan bool, 1))

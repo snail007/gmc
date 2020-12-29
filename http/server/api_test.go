@@ -2,9 +2,9 @@ package ghttpserver
 
 import (
 	gcore "github.com/snail007/gmc/core"
- 	"testing"
+	"testing"
 
-	ghttputil "github.com/snail007/gmc/util/http"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 
 	"github.com/stretchr/testify/assert"
 )

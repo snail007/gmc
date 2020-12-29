@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
- 	gctx "github.com/snail007/gmc/module/ctx"
-	gerror "github.com/snail007/gmc/module/error"
-	gutil "github.com/snail007/gmc/util"
+	gmchttp "github.com/snail007/gmc/http"
+	gctx "github.com/snail007/gmc/module/ctx"
 	"net"
 	"net/http"
 	"strings"
@@ -15,7 +14,7 @@ import (
 )
 
 func main() {
-	api := gmc.New.APIServer(gctx.NewCtx(), ":8030")
+	api, _ := gmc.New.APIServer(gctx.NewCtx(), ":8030")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
 	api.AddMiddleware1(func(c gmc.C, s gcore.APIServer) (isStop bool) {
@@ -58,16 +57,27 @@ func main() {
 		time.Sleep(time.Second * 10)
 		c.Write("reload")
 	})
+	// access ctx
+	// http://foo.com/ctxfoo
+	api.Router().HandlerFunc("GET", "/ctx:name", func(w http.ResponseWriter, r *http.Request) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
+	// http://foo.com/2ctxfoo
+	api.Router().Handle("GET", "/2ctx:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+		ctx := gmchttp.GetCtx(w)
+		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
+	})
 	// routing by group is supported
 	group1 := api.Group("/v1")
 	group1.API("/time", func(c gmc.C) {
-		c.Write(gutil.DateFormat(time.Now(), "Y-m-d H:i:s"))
+		c.Write(time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
 	})
 
 	app := gmc.New.App()
 
 	app.AddService(gcore.ServiceItem{
-		Service: api,
+		Service: api.(gcore.Service),
 		BeforeInit: func(s gcore.Service, cfg gcore.Config) (err error) {
 			api.PrintRouteTable(nil)
 			return
@@ -86,7 +96,7 @@ func main() {
 		}
 		fmt.Println("http://127.0.0.1:" + port + path)
 	}
-	if e := gerror.Stack(app.Run()); e != "" {
+	if e := gmc.Err.Stack(app.Run()); e != "" {
 		app.Logger().Panic(e)
 	}
 }

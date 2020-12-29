@@ -9,6 +9,7 @@ import (
 	gsession "github.com/snail007/gmc/http/session"
 	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
+	gapp "github.com/snail007/gmc/module/app"
 	gcache "github.com/snail007/gmc/module/cache"
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
@@ -16,7 +17,7 @@ import (
 	gerror "github.com/snail007/gmc/module/error"
 	gi18n "github.com/snail007/gmc/module/i18n"
 	glog "github.com/snail007/gmc/module/log"
-	gutil "github.com/snail007/gmc/util"
+	"github.com/snail007/gmc/util/sync"
 	"io"
 	"net/http"
 )
@@ -74,7 +75,7 @@ func init() {
 
 	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		gutil.OnceDo("gmc-i18n-init", func() {
+		sync.OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
@@ -93,7 +94,7 @@ func init() {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		gutil.OnceDo("gmc-cache-init", func() {
+		sync.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -104,7 +105,7 @@ func init() {
 
 	providers.RegisterDatabase("", func(ctx gcore.Ctx) (gcore.Database, error) {
 		var err error
-		gutil.OnceDo("gmc-cache-init", func() {
+		sync.OnceDo("gmc-cache-init", func() {
 			err = gdb.Init(ctx.Config())
 		})
 		if err != nil {
@@ -126,4 +127,14 @@ func init() {
 	providers.RegisterHTTPServer("", func(ctx gcore.Ctx) gcore.HTTPServer {
 		return ghttpserver.NewHTTPServer(ctx)
 	})
+
+	providers.RegisterApp("", func(isDefault bool) gcore.App {
+		return gapp.NewApp(isDefault)
+	})
+
+	providers.RegisterAPIServer("", func(ctx gcore.Ctx, address string) (gcore.APIServer, error) {
+		return ghttpserver.NewAPIServerForProvider(ctx, address)
+	})
+
+	initHelper()
 }

@@ -12,3 +12,4 @@
 go.sum
 /gmc/app/logs
 *.log
+gmcrun.toml

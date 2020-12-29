@@ -6,14 +6,13 @@
 package gpool
 
 import (
-	"github.com/snail007/gmc/util"
 	"sync"
 	"testing"
 )
 
 func BenchmarkSubmit(b *testing.B) {
 	b.StopTimer()
-	p := gutil.NewGPool(3)
+	p := NewGPool(3)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		p.Submit(func() {
@@ -24,7 +23,7 @@ func BenchmarkSubmit(b *testing.B) {
 }
 func BenchmarkWorker(b *testing.B) {
 	b.StopTimer()
-	p := gutil.NewGPool(4)
+	p := NewGPool(4)
 	g := sync.WaitGroup{}
 	g.Add(b.N)
 	for i := 0; i < b.N; i++ {

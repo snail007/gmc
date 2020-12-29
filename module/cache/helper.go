@@ -9,12 +9,12 @@ import (
 )
 
 var (
-	myCache     = map[string]gcore.Cache{}
-	groupRedis  = map[string]gcore.Cache{}
-	groupMemory = map[string]gcore.Cache{}
-	groupFile   = map[string]gcore.Cache{}
-	logger      gcore.Logger
-	defaultCache       string
+	myCache      = map[string]gcore.Cache{}
+	groupRedis   = map[string]gcore.Cache{}
+	groupMemory  = map[string]gcore.Cache{}
+	groupFile    = map[string]gcore.Cache{}
+	logger       gcore.Logger
+	defaultCache string
 )
 
 func SetLogger(l gcore.Logger) {
@@ -90,6 +90,10 @@ func Cache(id ...string) gcore.Cache {
 
 //Redis acquires a redis cache object associated the id, id default is : `default`
 func Redis(id ...string) *RedisCache {
+	// no redis cache enabled, just return nil
+	if len(groupRedis) == 0 {
+		return nil
+	}
 	return find("redis", id...).(*RedisCache)
 }
 
@@ -97,16 +101,28 @@ func AddCacheU(id string, c gcore.Cache) {
 	myCache[id] = c
 }
 func CacheU(id ...string) gcore.Cache {
+	// no user cache enabled, just return nil
+	if len(myCache) == 0 {
+		return nil
+	}
 	return find("user", id...)
 }
 
 //Memory acquires a memory cache object associated the id, id default is : `default`
 func Memory(id ...string) *MemCache {
+	// no memory cache enabled, just return nil
+	if len(groupMemory) == 0 {
+		return nil
+	}
 	return find("memory", id...).(*MemCache)
 }
 
 //File acquires a file cache object associated the id, id default is : `default`
 func File(id ...string) *FileCache {
+	// no file cache enabled, just return nil
+	if len(groupFile) == 0 {
+		return nil
+	}
 	return find("file", id...).(*FileCache)
 }
 

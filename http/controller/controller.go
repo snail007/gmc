@@ -8,8 +8,8 @@ package gcontroller
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 	gcast "github.com/snail007/gmc/util/cast"
-	ghttputil "github.com/snail007/gmc/util/http"
 	"net/http"
 )
 

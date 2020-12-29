@@ -18,8 +18,8 @@ type LoggerProvider func(ctx Ctx, prefix string) Logger
 type ControllerProvider func(ctx Ctx) Controller
 type CookiesProvider func(ctx Ctx) Cookies
 type HTTPServerProvider func(ctx Ctx) HTTPServer
-type APIServerProvider func(ctx Ctx) APIServer
-type AppProvider func(ctx Ctx) App
+type APIServerProvider func(ctx Ctx, address string) (APIServer, error)
+type AppProvider func(isDefault bool) App
 type CtxProvider func() Ctx
 type ErrorProvider func() Error
 type I18nProvider func(ctx Ctx) (I18n, error)

@@ -6,10 +6,8 @@
 package gtemplate
 
 import (
- 	"testing"
+	"testing"
 )
-
-
 
 func TestParse(t *testing.T) {
 	tpl.Execute("user/list", map[string]string{
@@ -19,4 +17,3 @@ func TestParse(t *testing.T) {
 	//fmt.Println(len(funcsM))
 	//t.Fail()
 }
-

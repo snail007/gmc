@@ -2,7 +2,7 @@ package gview
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/util/http"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 	"io"
 	"strings"
 	"sync"

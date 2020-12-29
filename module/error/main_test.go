@@ -2,7 +2,7 @@ package gerror
 
 import (
 	gcore "github.com/snail007/gmc/core"
- 	gconfig "github.com/snail007/gmc/module/config"
+	gconfig "github.com/snail007/gmc/module/config"
 	"os"
 	"testing"
 )

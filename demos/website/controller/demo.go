@@ -130,3 +130,8 @@ func (this *Demo) Layout2() {
 		"title": "welcome",
 	})
 }
+
+func (this *Demo) Conn() {
+	this.Ctx.Conn().Write([]byte("HTTP/1.1 200 OK\r\n\r\ntest"))
+	this.Ctx.Conn().Close()
+}

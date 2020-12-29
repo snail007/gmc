@@ -1,8 +1,8 @@
 package handlers
 
-import ghttpserver "github.com/snail007/gmc/http/server"
+import gcore "github.com/snail007/gmc/core"
 
-func Init(api *ghttpserver.APIServer) {
+func Init(api gcore.APIServer) {
 	initMiddleware(api)
 	initError(api)
 	initHanlder(api)

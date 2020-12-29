@@ -7,7 +7,7 @@ import (
 	gconfig "github.com/snail007/gmc/module/config"
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
-	gutil "github.com/snail007/gmc/util"
+	"github.com/snail007/gmc/util/sync"
 	"os"
 	"testing"
 )
@@ -23,11 +23,11 @@ func TestMain(m *testing.M) {
 	providers := gcore.Providers
 
 	providers.RegisterSession("", func() gcore.Session {
-		return  NewSession()
+		return NewSession()
 	})
 
 	providers.RegisterSessionStorage("", func(ctx gcore.Ctx) (gcore.SessionStorage, error) {
-		return  Init(ctx.Config())
+		return Init(ctx.Config())
 	})
 
 	providers.RegisterConfig("", func() gcore.Config {
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		 gutil.OnceDo("gmc-cache-init", func() {
+		sync.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 		return gerror.New()
 	})
 
-	providers.RegisterLogger("", func(ctx gcore.Ctx,prefix string) gcore.Logger {
+	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewGMCLog(prefix)
 		}

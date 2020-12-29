@@ -8,7 +8,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
- 	"io"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
+	"io"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -58,18 +59,24 @@ type HTTPServer struct {
 	middleware2          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
 	middleware3          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
 	isShutdown           bool
-	localaddr            *sync.Map
+	remoteAddrDataMap    *sync.Map
 	ctx                  gcore.Ctx
+}
+
+type remoteAddrItem struct {
+	remoteAddr string
+	localAddr  string
+	conn       net.Conn
 }
 
 func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 	s := &HTTPServer{
-		ctx:         ctx,
-		middleware0: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		middleware1: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		middleware2: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		middleware3: []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		localaddr:   &sync.Map{},
+		ctx:               ctx,
+		middleware0:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware1:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware2:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware3:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		remoteAddrDataMap: &sync.Map{},
 	}
 	ctx.SetWebServer(s)
 	return s
@@ -80,7 +87,7 @@ func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	connCnt := int64(0)
 	s.config = cfg
 	s.server = &http.Server{}
-	s.logger = gcore.Providers.Logger("")(s.ctx,"")
+	s.logger = gcore.Providers.Logger("")(s.ctx, "")
 	s.connCnt = &connCnt
 	s.isTestNotClosedError = false
 	s.server.ConnState = s.connState
@@ -98,10 +105,11 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 		if err != nil {
 			return
 		}
+		s.ctx.SetI18n(s.i18n)
 	}
 
 	// init template
-	s.tpl, err = gcore.Providers.Template("")(s.ctx,"")
+	s.tpl, err = gcore.Providers.Template("")(s.ctx, "")
 	if err != nil {
 		return
 	}
@@ -109,7 +117,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	// init session store
 
 	s.sessionStore, err = gcore.Providers.SessionStorage("")(s.ctx)
- 	if err != nil {
+	if err != nil {
 		return
 	}
 
@@ -127,55 +135,60 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	s.initStatic()
 	return
 }
-
-func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	// init ctx
-	c0 := s.ctx.CloneWithHTTP(w, r)
-	addr, _ := s.localaddr.Load(r.RemoteAddr)
-	if v, ok := addr.(string); ok {
-		c0.SetLocalAddr(v)
+func (this *HTTPServer) initRequestCtx(w http.ResponseWriter, r *http.Request) gcore.Ctx {
+	w = ghttputil.NewResponseWriter(w)
+	c0 := this.ctx.CloneWithHTTP(w, r)
+	item, _ := this.remoteAddrDataMap.Load(r.RemoteAddr)
+	if v, ok := item.(remoteAddrItem); ok {
+		c0.SetLocalAddr(v.localAddr)
+		c0.SetRemoteAddr(v.remoteAddr)
+		c0.SetConn(v.conn)
 	}
-
+	w.(*ghttputil.ResponseWriter).SetData("ctx", c0)
+	return c0
+}
+func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// init ctx
+	reqCtx := s.initRequestCtx(w, r)
 	defer func() {
 		// middleware3
-		s.callMiddleware(c0, s.middleware3)
+		s.callMiddleware(reqCtx, s.middleware3)
 	}()
 
 	//middleware0
-	if s.callMiddleware(c0, s.middleware0) {
+	if s.callMiddleware(reqCtx, s.middleware0) {
 		return
 	}
 
 	h, params, _ := s.router.Lookup(r.Method, r.URL.Path)
 	if h != nil {
-		c0.SetParam(params)
+		reqCtx.SetParam(params)
 		// middleware1
-		if s.callMiddleware(c0, s.middleware1) {
+		if s.callMiddleware(reqCtx, s.middleware1) {
 			return
 		}
 
 		start := time.Now()
 		status := ""
-		err := s.call(func() { h(w, r, params) })
-		c0.SetTimeUsed(time.Now().Sub(start))
+		err := s.call(func() { h(reqCtx.Response(), reqCtx.Request(), reqCtx.Param()) })
+		reqCtx.SetTimeUsed(time.Now().Sub(start))
 		if err != nil {
 			status = fmt.Sprintf("%s", err)
 			switch status {
 			case "__DIE__", "":
 			default:
 				//exception
-				s.handle50x(c0, err)
+				s.handle50x(reqCtx, err)
 			}
 		}
 
 		// middleware2
-		if s.callMiddleware(c0, s.middleware2) {
+		if s.callMiddleware(reqCtx, s.middleware2) {
 			return
 		}
 	} else {
 		//404
-		s.handle40x(c0)
+		s.handle40x(reqCtx)
 	}
 
 }
@@ -375,10 +388,14 @@ func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
 		atomic.AddInt64(s.connCnt, 1)
-		s.localaddr.Store(c.RemoteAddr().String(), c.LocalAddr().String())
+		s.remoteAddrDataMap.Store(c.RemoteAddr().String(), remoteAddrItem{
+			remoteAddr: c.RemoteAddr().String(),
+			localAddr:  c.LocalAddr().String(),
+			conn:       c,
+		})
 	case http.StateClosed:
 		atomic.AddInt64(s.connCnt, -1)
-		s.localaddr.Delete(c.RemoteAddr().String())
+		s.remoteAddrDataMap.Delete(c.RemoteAddr().String())
 	}
 }
 

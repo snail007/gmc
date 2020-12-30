@@ -191,10 +191,10 @@ func (this *APIServer) AddMiddleware2(m func(ctx gcore.Ctx, server gcore.APIServ
 func (this *APIServer) AddMiddleware3(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
 	this.middleware3 = append(this.middleware3, m)
 }
-func (this *APIServer) Handle404(handle func(ctx gcore.Ctx)) {
+func (this *APIServer) SetNotFoundHandler(handle func(ctx gcore.Ctx)) {
 	this.handle404 = handle
 }
-func (this *APIServer) Handle500(handle func(ctx gcore.Ctx, err interface{})) {
+func (this *APIServer) SetErrorHandler(handle func(ctx gcore.Ctx, err interface{})) {
 	this.handle500 = handle
 }
 func (this *APIServer) ShowErrorStack(isShow bool) {
@@ -290,17 +290,19 @@ func (this *APIServer) handler404(ctx gcore.Ctx) {
 	}
 }
 func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
+	msg := gcore.Providers.Error("")().StackError(err)
 	if this.handle500 == nil {
 		ctx.WriteHeader(http.StatusInternalServerError)
 		ctx.Response().Header().Set("Content-Type", "text/plain")
-		msg := fmt.Sprintf("Internal Server Error")
+		info := fmt.Sprintf("Internal Server Error")
 		if err != nil && this.isShowErrorStack {
-			msg += "\n" + gcore.Providers.Error("")().StackError(err)
+			info += "\n" + msg
 		}
-		ctx.Write([]byte(msg))
+		ctx.Write(info)
 	} else {
 		this.handle500(ctx, err)
 	}
+	this.logger.Warn(ctx.Request().URL.String() + "\n" + msg)
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {

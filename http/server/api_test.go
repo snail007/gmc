@@ -78,7 +78,7 @@ func TestStop(t *testing.T) {
 func TestHandle404(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(gcore.Providers.Ctx("")(), ":")
-	api.Handle404(func(c gcore.Ctx) {
+	api.SetNotFoundHandler(func(c gcore.Ctx) {
 		c.Write("404")
 	})
 	w, r := mockRequest("/hello")
@@ -99,7 +99,7 @@ func TestHandle404_1(t *testing.T) {
 func TestHandle500(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(gcore.Providers.Ctx("")(), ":")
-	api.Handle500(func(c gcore.Ctx, err interface{}) {
+	api.SetErrorHandler(func(c gcore.Ctx, err interface{}) {
 		c.Write("500")
 	})
 	api.API("/hello", func(c gcore.Ctx) {

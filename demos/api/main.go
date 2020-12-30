@@ -33,11 +33,11 @@ func main() {
 		return false
 	})
 	// sets a function to handle 404 requests.
-	api.Handle404(func(c gmc.C) {
+	api.SetNotFoundHandler(func(c gmc.C) {
 		c.Write("404")
 	})
 	// sets a function to handle panic error.
-	api.Handle500(func(c gmc.C, err interface{}) {
+	api.SetErrorHandler(func(c gmc.C, err interface{}) {
 		c.WriteHeader(http.StatusInternalServerError)
 		c.Write("panic error : ", gmc.Err.Stack(err))
 	})

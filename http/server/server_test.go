@@ -99,7 +99,7 @@ func Test_handle50x_1(t *testing.T) {
 	assert.NotNil(cfg)
 	err := s.Init(cfg)
 	assert.Nil(err)
-	s.SetHandler50x(func(c gcore.Ctx, tpl gcore.Template, err interface{}) {
+	s.SetErrorHandler(func(c gcore.Ctx, tpl gcore.Template, err interface{}) {
 		c.Write(fmt.Errorf("%sbbb", err))
 	})
 	c := gcore.Providers.Ctx("")().CloneWithHTTP(w, controller.GetCtx().Request())
@@ -340,7 +340,7 @@ func TestListen_2(t *testing.T) {
 func Test_handler40x(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.SetHandler40x(func(ctx gcore.Ctx, tpl gcore.Template) {
+	s.SetNotFoundHandler(func(ctx gcore.Ctx, tpl gcore.Template) {
 		ctx.Response().Write([]byte("404"))
 	})
 	w, r := mockRequest("/foo")
@@ -371,7 +371,7 @@ func Test_Handle500(t *testing.T) {
 		a := 0
 		a /= a
 	})
-	s.SetHandler50x(func(ctx gcore.Ctx, tpl gcore.Template, err interface{}) {
+	s.SetErrorHandler(func(ctx gcore.Ctx, tpl gcore.Template, err interface{}) {
 		ctx.Write("500")
 	})
 	h, _, _ := s.router.Lookup("GET", "/user/url")

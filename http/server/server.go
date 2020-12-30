@@ -49,7 +49,7 @@ type HTTPServer struct {
 	connCnt      *int64
 	config       gcore.Config
 	handler40x   func(ctx gcore.Ctx, tpl gcore.Template)
-	handler50x   func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
+	handler500   func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
@@ -201,11 +201,11 @@ func (s *HTTPServer) call(fn func()) (err interface{}) {
 	}()
 	return
 }
-func (s *HTTPServer) SetHandler40x(fn func(ctx gcore.Ctx, tpl gcore.Template)) {
+func (s *HTTPServer) SetNotFoundHandler(fn func(ctx gcore.Ctx, tpl gcore.Template)) {
 	s.handler40x = fn
 }
-func (s *HTTPServer) SetHandler50x(fn func(ctx gcore.Ctx, tpl gcore.Template, err interface{})) {
-	s.handler50x = fn
+func (s *HTTPServer) SetErrorHandler(fn func(ctx gcore.Ctx, tpl gcore.Template, err interface{})) {
+	s.handler500 = fn
 }
 
 // called in httpserver
@@ -221,16 +221,19 @@ func (s *HTTPServer) handle40x(ctx gcore.Ctx) {
 
 // called in httprouter
 func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
-	if s.handler50x == nil {
+	msg := gcore.Providers.Error("")().StackError(err)
+	if s.handler500 == nil {
 		c.WriteHeader(http.StatusInternalServerError)
 		c.Response().Header().Set("Content-Type", "text/plain")
-		c.Write([]byte("Internal Server Error"))
+		info := "Internal Server Error"
 		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
-			c.Write([]byte("\n" + gcore.Providers.Error("")().StackError(err)))
+			info += "\n" + msg
 		}
+		c.Write(info)
 	} else {
-		s.handler50x(c, s.tpl, err)
+		s.handler500(c, s.tpl, err)
 	}
+	s.logger.Warn(c.Request().URL.String() + "\n" + msg)
 }
 
 // AddFuncMap adds helper functions to template

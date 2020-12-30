@@ -8,9 +8,9 @@ import (
 
 func initError(api gcore.APIServer) {
 	// sets a function to handle 404 requests.
-	api.Handle404(error404)
+	api.SetNotFoundHandler(error404)
 	// sets a function to handle panic error.
-	api.Handle500(error500)
+	api.SetErrorHandler(error500)
 }
 
 func error404(c gmc.C) {

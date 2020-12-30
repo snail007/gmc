@@ -153,8 +153,8 @@ type APIServer interface {
 	AddMiddleware1(m func(ctx Ctx, server APIServer) (isStop bool))
 	AddMiddleware2(m func(ctx Ctx, server APIServer) (isStop bool))
 	AddMiddleware3(m func(ctx Ctx, server APIServer) (isStop bool))
-	Handle404(handle func(ctx Ctx))
-	Handle500(handle func(ctx Ctx, err interface{}))
+	SetNotFoundHandler(handle func(ctx Ctx))
+	SetErrorHandler(handle func(ctx Ctx, err interface{}))
 	ShowErrorStack(isShow bool)
 	Ext(ext string)
 	API(path string, handle func(ctx Ctx), ext ...string)
@@ -167,8 +167,8 @@ type APIServer interface {
 }
 
 type HTTPServer interface {
-	SetHandler40x(fn func(ctx Ctx, tpl Template))
-	SetHandler50x(fn func(ctx Ctx, tpl Template, err interface{}))
+	SetNotFoundHandler(fn func(ctx Ctx, tpl Template))
+	SetErrorHandler(fn func(ctx Ctx, tpl Template, err interface{}))
 	AddFuncMap(f map[string]interface{})
 	SetConfig(c Config)
 	Config() Config

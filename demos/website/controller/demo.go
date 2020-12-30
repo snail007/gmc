@@ -135,3 +135,7 @@ func (this *Demo) Conn() {
 	this.Ctx.Conn().Write([]byte("HTTP/1.1 200 OK\r\n\r\ntest"))
 	this.Ctx.Conn().Close()
 }
+
+func (this *Demo) TplErr() {
+	this.View.Render("none")
+}

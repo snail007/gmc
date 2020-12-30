@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More infomation at https://github.com/snail007/gmc
 
-package gsize
+package gbyte
 
 import (
 	"errors"
@@ -25,14 +25,14 @@ const (
 
 	fnUnmarshalText string = "UnmarshalText"
 	maxUint64       uint64 = (1 << 64) - 1
-	cutoff          uint64 = maxUint64 / 10
+	cutoff                 = maxUint64 / 10
 )
 
 var ErrBits = errors.New("unit with capital unit prefix and lower case unit (b) - bits, not bytes ")
 
 var defaultDatasize ByteSize
 
-func Parse(s string) (bytes uint64, err error) {
+func StrToSize(s string) (bytes uint64, err error) {
 	err = defaultDatasize.UnmarshalText([]byte(s))
 	if err != nil {
 		return
@@ -40,7 +40,7 @@ func Parse(s string) (bytes uint64, err error) {
 	bytes = defaultDatasize.Bytes()
 	return
 }
-func HumanSize(bytes uint64) (s string, err error) {
+func SizeToStr(bytes uint64) (s string, err error) {
 	err = defaultDatasize.UnmarshalText([]byte(fmt.Sprintf("%d", bytes)))
 	if err != nil {
 		return

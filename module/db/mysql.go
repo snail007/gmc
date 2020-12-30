@@ -6,7 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/snail007/gmc/core"
-	makeutil "github.com/snail007/gmc/util/make"
+	makeutil "github.com/snail007/gmc/internal/util/make"
 	"net/url"
 	"reflect"
 	"strings"

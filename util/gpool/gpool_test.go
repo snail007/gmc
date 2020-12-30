@@ -6,9 +6,11 @@
 package gpool
 
 import (
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
+	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
@@ -86,6 +88,27 @@ func TestRunning(t *testing.T) {
 	} else {
 		t.Fatalf("Running is failed")
 	}
+	p.Stop()
+}
+
+func TestIncrease(t *testing.T) {
+	assert := assert2.New(t)
+	p := NewGPool(3)
+	for i := 0; i < 3; i++ {
+		p.Submit(func() {
+			fmt.Println(">>>>")
+			time.Sleep(time.Second * 5)
+		})
+	}
+	p.Increase(3)
+	for i := 0; i < 3; i++ {
+		p.Submit(func() {
+			time.Sleep(time.Second * 5)
+		})
+	}
+	time.Sleep(time.Second)
+	t.Log(p.WorkerCount())
+	assert.Equal(6, p.Running())
 	p.Stop()
 }
 

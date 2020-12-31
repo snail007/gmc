@@ -64,6 +64,7 @@ func (s *GPool) Decrease(workerCount int) {
 		w := v.(*worker)
 		if w.Status() == statusWaiting {
 			w.Stop()
+			s.workers.Delete(w.id)
 			workerCount--
 			if workerCount == 0 {
 				return false
@@ -77,6 +78,7 @@ func (s *GPool) Decrease(workerCount int) {
 			w := v.(*worker)
 			if w.Status() == statusRunning {
 				v.(*worker).Stop()
+				s.workers.Delete(w.id)
 				workerCount--
 				if workerCount == 0 {
 					return false

@@ -120,9 +120,8 @@ func TestDecrease(t *testing.T) {
 	time.Sleep(time.Millisecond * 30)
 	assert.Equal(2, p.Running())
 	p.Decrease(1)
-	time.Sleep(time.Millisecond * 1200)
+	time.Sleep(time.Second)
 	assert.Equal(1, p.Running())
-	assert.Equal(3, p.Awaiting())
 	p.Stop()
 }
 

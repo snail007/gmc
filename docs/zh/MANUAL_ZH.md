@@ -800,7 +800,7 @@ func main() {
 }
 ```
 
-由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/moudle/db/mysql/README.md)
+由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/module/db/mysql/README.md)
 
 ## SQLITE3 数据库
 
@@ -829,7 +829,7 @@ cachemode="shared"
 `gmc.DB.DB(id ...string)`或`gmc.DB.SQLite3(id ...string)`获取数据库操作对象。
 
 
-由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/moudle/db/sqlite3/README.md)
+由于数据库说明比较多，详细的请 [参考这里](https://github.com/snail007/gmc/blob/master/module/db/sqlite3/README.md)
 
 # 缓存
 

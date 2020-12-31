@@ -807,7 +807,7 @@ func main() {
 }
 ```
 
-Due to a database that is more, detailed please reference [here](https://github.com/snail007/gmc/blob/master/moudle/db/mysql/README.md)
+Due to a database that is more, detailed please reference [here](https://github.com/snail007/gmc/blob/master/module/db/mysql/README.md)
 
 ## SQLITE3
 
@@ -835,7 +835,7 @@ cachemode="shared"
 In an API or Web project, after the app is launched, that is, after the database has been initialized successfully, it can be passed in the code
 `gmc.DB.DB(id ... String) ` or ` GMC.DB.SQLite3(id... String) `gets the database action object.
 
-Due to a database that is more, detailed please reference [here](https://github.com/snail007/gmc/blob/master/moudle/db/sqlite3/README.md)
+Due to a database that is more, detailed please reference [here](https://github.com/snail007/gmc/blob/master/module/db/sqlite3/README.md)
 
 # CACHE
 

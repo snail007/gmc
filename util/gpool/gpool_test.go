@@ -6,7 +6,6 @@
 package gpool
 
 import (
-	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
@@ -45,7 +44,7 @@ func TestSubmit(t *testing.T) {
 	} else {
 		t.Fatalf("Submit is failed")
 	}
-	p.Stop()
+	time.Sleep(time.Second)
 }
 func TestStop(t *testing.T) {
 	p := NewGPool(3)
@@ -96,7 +95,6 @@ func TestIncrease(t *testing.T) {
 	p := NewGPool(3)
 	for i := 0; i < 3; i++ {
 		p.Submit(func() {
-			fmt.Println(">>>>")
 			time.Sleep(time.Second * 5)
 		})
 	}
@@ -107,8 +105,24 @@ func TestIncrease(t *testing.T) {
 		})
 	}
 	time.Sleep(time.Second)
-	t.Log(p.WorkerCount())
 	assert.Equal(6, p.Running())
+	p.Stop()
+}
+
+func TestDecrease(t *testing.T) {
+	assert := assert2.New(t)
+	p := NewGPool(2)
+	for i := 0; i < 6; i++ {
+		p.Submit(func() {
+			time.Sleep(time.Second)
+		})
+	}
+	time.Sleep(time.Millisecond * 30)
+	assert.Equal(2, p.Running())
+	p.Decrease(1)
+	time.Sleep(time.Millisecond * 1200)
+	assert.Equal(1, p.Running())
+	assert.Equal(3, p.Awaiting())
 	p.Stop()
 }
 
@@ -146,5 +160,7 @@ func TestMain(m *testing.M) {
 	providers.RegisterError("", func() gcore.Error {
 		return gerror.New()
 	})
+
+	pSubmit = NewGPool(500000)
 	os.Exit(m.Run())
 }

@@ -9,28 +9,29 @@ import (
 	"sync"
 	"testing"
 )
+var pSubmit,pWorker *GPool
 
 func BenchmarkSubmit(b *testing.B) {
-	b.StopTimer()
-	p := NewGPool(3)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		p.Submit(func() {
+		pSubmit.Submit(func() {
 		})
 	}
 	b.StopTimer()
-	p.Stop()
+	pSubmit.Stop()
 }
 func BenchmarkWorker(b *testing.B) {
+	pWorker = NewGPool(1)
 	b.StopTimer()
-	p := NewGPool(4)
 	g := sync.WaitGroup{}
 	g.Add(b.N)
+	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		p.Submit(func() {
+		pWorker.Submit(func() {
 			g.Done()
 		})
 	}
-	b.StartTimer()
 	g.Wait()
+	b.StopTimer()
+	pWorker.Stop()
 }

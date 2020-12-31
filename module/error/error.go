@@ -192,15 +192,15 @@ func (err *Error) TypeName() string {
 }
 
 func (this *Error) Recover(f ...interface{}) {
-	var f0 interface{}
-	var printStack bool
-	if len(f) == 0 {
-		return
-	}
-	if len(f) == 2 {
-		printStack = f[1].(bool)
-	}
 	if e := recover(); e != nil {
+		var f0 interface{}
+		var printStack bool
+		if len(f) == 0 {
+			return
+		}
+		if len(f) == 2 {
+			printStack = f[1].(bool)
+		}
 		f0 = f[0]
 		switch v := f0.(type) {
 		case func(e interface{}):

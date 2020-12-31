@@ -68,11 +68,21 @@ func (s *Map) Delete(key interface{}) *Map {
 	s.lock.Unlock()
 	return s
 }
+
 func (s *Map) Len() int {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	return s.keys.Len()
 }
+
+func (s *Map) Clear() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.data = sync.Map{}
+	s.keys = list.New()
+	s.keyElMap = map[interface{}]*list.Element{}
+}
+
 func (s *Map) Range(f func(key, value interface{}) bool) *Map {
 	for _, k := range s.Keys() {
 		v, _ := s.data.Load(k)

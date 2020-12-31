@@ -6,78 +6,110 @@
 package gpool
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
+	gmap "github.com/snail007/gmc/util/map"
 	"io"
 	"sync"
-	"sync/atomic"
 )
 
+const (
+	statusRunning = iota + 1
+	statusWaiting
+	statusStopped
+)
+
+// GPool is a goroutine pool, you can increase or decrease pool size in runtime.
 type GPool struct {
-	tasks        []func()
-	taskLock     *sync.Mutex
-	cntLock      *sync.Mutex
-	ctx          context.Context
-	cancel       context.CancelFunc
-	runningtCnt  *int32
-	logger       gcore.Logger
-	maxWorkerCnt *int32
-	workerCnt    *int32
-	workerSig    *sync.Map
-	isStop       bool
+	taskLock *sync.Mutex
+	tasks    []func()
+	logger   gcore.Logger
+	workers  *gmap.Map
+	debug    bool
 }
 
-//create a gpool object to using
+// IsDebug returns the pool in debug mode or not.
+func (s *GPool) IsDebug() bool {
+	return s.debug
+}
+
+// SetDebug sets the pool in debug mode, the pool will output more logging.
+func (s *GPool) SetDebug(debug bool) {
+	s.debug = debug
+}
+
+// NewGPool create a gpool object to using
 func NewGPool(workerCount int) (p *GPool) {
-	ctx0, cancel0 := context.WithCancel(context.Background())
 	p = &GPool{
-		tasks:        []func(){},
-		taskLock:     &sync.Mutex{},
-		cntLock:      &sync.Mutex{},
-		ctx:          ctx0,
-		cancel:       cancel0,
-		runningtCnt:  new(int32),
-		workerCnt:    new(int32),
-		workerSig:    &sync.Map{},
-		maxWorkerCnt: new(int32),
-		logger:       gcore.Providers.Logger("")(nil, ""),
+		taskLock: &sync.Mutex{},
+		tasks:    []func(){},
+		logger:   gcore.Providers.Logger("")(nil, ""),
+		workers:  gmap.NewMap(),
 	}
 	p.addWorker(workerCount)
 	return
 }
 
+// Increase add the count of `workerCount` workers
 func (s *GPool) Increase(workerCount int) {
-	s.cntLock.Lock()
-	defer s.cntLock.Unlock()
 	s.addWorker(workerCount)
-	s.notifyAll()
 }
 
+// Decrease stop the count of `workerCount` workers
 func (s *GPool) Decrease(workerCount int) {
-	s.cntLock.Lock()
-	defer s.cntLock.Unlock()
-	if atomic.LoadInt32(s.maxWorkerCnt) == 0 {
+	// find idle workers
+	s.workers.Range(func(_, v interface{}) bool {
+		w := v.(*worker)
+		if w.Status() == statusWaiting {
+			w.Stop()
+			workerCount--
+			if workerCount == 0 {
+				return false
+			}
+		}
+		return true
+	})
+	// workerCount still great 0, stop some running workers
+	if workerCount > 0 {
+		s.workers.Range(func(_, v interface{}) bool {
+			w := v.(*worker)
+			if w.Status() == statusRunning {
+				v.(*worker).Stop()
+				workerCount--
+				if workerCount == 0 {
+					return false
+				}
+			}
+			return true
+		})
+	}
+}
+
+// ResetTo set the count of workers
+func (s *GPool) ResetTo(workerCount int) {
+	length := s.workers.Len()
+	if length == workerCount {
 		return
 	}
-	if atomic.LoadInt32(s.maxWorkerCnt)-int32(workerCount) < 0 {
-		atomic.AddInt32(s.maxWorkerCnt, 0)
+	if workerCount > length {
+		s.Increase(workerCount - length)
 	} else {
-		atomic.AddInt32(s.maxWorkerCnt, -int32(workerCount))
+		s.Decrease(length - workerCount)
 	}
-	s.notifyAll()
 }
 
-func (s *GPool) Reset(workerCount int) {
-	s.cntLock.Lock()
-	defer s.cntLock.Unlock()
-	atomic.StoreInt32(s.maxWorkerCnt, int32(workerCount))
-	s.notifyAll()
-}
-
+// WorkerCount returns the count of workers
 func (s *GPool) WorkerCount() int {
-	return int(atomic.LoadInt32(s.workerCnt))
+	return s.workers.Len()
+}
+
+func (s *GPool) addWorker(cnt int) {
+	for i := 0; i < cnt; i++ {
+		w := newWorker(s)
+		s.workers.Store(w.id, w)
+	}
 }
 
 func (s *GPool) newWorkerID() string {
@@ -88,72 +120,15 @@ func (s *GPool) newWorkerID() string {
 	return hex.EncodeToString(k)
 }
 
-func (s *GPool) addWorker(cnt int) {
-	atomic.AddInt32(s.workerCnt, int32(cnt))
-	atomic.AddInt32(s.maxWorkerCnt, int32(cnt))
-	for i := 0; i < cnt; i++ {
-		idx := s.newWorkerID()
-		sig := make(chan bool, 1)
-		s.workerSig.Store(idx, sig)
-		go func(idx string, sig chan bool) {
-			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-				s.log("GPool: a worker stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
-			})
-			s.log("GPool: worker[%s] started ...", idx)
-			ctx, cancel := context.WithCancel(s.ctx)
-			defer cancel()
-			var fn func()
-			for {
-				select {
-				//checking stop is called
-				case <-ctx.Done():
-					// s.log("GPool: worker[%d] stopped.", i)
-					return
-				case <-sig:
-					atomic.AddInt32(s.runningtCnt, 1)
-					for {
-						if s.isStop || s.needExit() {
-							atomic.AddInt32(s.runningtCnt, -1)
-							s.deleteWorker(idx)
-							return
-						}
-						if fn = s.pop(); fn != nil {
-							s.run(fn)
-						} else {
-							break
-						}
-					}
-					atomic.AddInt32(s.runningtCnt, -1)
-				}
-			}
-		}(idx, sig)
-	}
-	atomic.AddInt32(s.workerCnt, int32(cnt))
-}
-
-func (s *GPool) needExit() bool {
-	if atomic.LoadInt32(s.maxWorkerCnt) == 0 {
-		return false
-	}
-	return atomic.LoadInt32(s.workerCnt) > atomic.LoadInt32(s.maxWorkerCnt)
-}
-
-func (s *GPool) deleteWorker(idx string) {
-	if _, ok := s.workerSig.Load(idx); ok {
-		s.workerSig.Delete(idx)
-		atomic.AddInt32(s.workerCnt, -1)
-	}
-}
-
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+	defer gerror.New().Recover(func(e interface{}) {
 		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
 	})
 	fn()
 }
 
-//submit a function as a task ready to run
+//Submit adds a function as a task ready to run
 func (s *GPool) Submit(task func()) {
 	s.taskLock.Lock()
 	defer s.taskLock.Unlock()
@@ -163,11 +138,8 @@ func (s *GPool) Submit(task func()) {
 
 // notify all workers, only idle workers be awakened
 func (s *GPool) notifyAll() {
-	s.workerSig.Range(func(_, v interface{}) bool {
-		select {
-		case v.(chan bool) <- true:
-		default:
-		}
+	s.workers.Range(func(_, v interface{}) bool {
+		v.(*worker).Wakeup()
 		return true
 	})
 }
@@ -189,20 +161,35 @@ func (s *GPool) pop() (fn func()) {
 	return
 }
 
-//stop all workers in the pool
+// Stop stop and remove all workers in the pool
 func (s *GPool) Stop() {
-	s.isStop = true
-	s.cancel()
+	s.workers.Range(func(_, v interface{}) bool {
+		v.(*worker).Stop()
+		return true
+	})
+	s.workers.Clear()
 }
 
-//return the number of running workers
-func (s *GPool) Running() (cnt int32) {
-	return atomic.LoadInt32(s.runningtCnt)
+// Running returns the count of running workers
+func (s *GPool) Running() (cnt int) {
+	s.workers.Range(func(_, v interface{}) bool {
+		if v.(*worker).Status() == statusRunning {
+			cnt++
+		}
+		return true
+	})
+	return
 }
 
-//return the number of task ready to run
-func (s *GPool) Awaiting() (cnt int32) {
-	return int32(len(s.tasks))
+// Awaiting returns the count of task ready to run
+func (s *GPool) Awaiting() (cnt int) {
+	return len(s.tasks)
+}
+func (s *GPool) debugLog(fmt string, v ...interface{}) {
+	if !s.debug {
+		return
+	}
+	s.log(fmt, v...)
 }
 func (s *GPool) log(fmt string, v ...interface{}) {
 	if s.logger == nil {
@@ -216,4 +203,105 @@ func (s *GPool) log(fmt string, v ...interface{}) {
 //default is log.New(os.Stdout, "", log.LstdFlags),
 func (s *GPool) SetLogger(l gcore.Logger) {
 	s.logger = l
+}
+
+type worker struct {
+	status    int
+	pool      *GPool
+	wakeupSig chan bool
+	breakSig  chan bool
+	id        string
+}
+
+func (w *worker) Status() int {
+	return w.status
+}
+
+func (w *worker) SetStatus(status int) {
+	w.status = status
+}
+
+func (w *worker) Wakeup() bool {
+	defer gerror.New().Recover()
+	select {
+	case w.wakeupSig <- true:
+	default:
+		return false
+	}
+	return true
+}
+
+func (w *worker) isBreak() bool {
+	select {
+	case <-w.breakSig:
+		return true
+	default:
+		return false
+	}
+	return false
+}
+
+func (w *worker) breakLoop() bool {
+	defer gerror.New().Recover()
+	select {
+	case w.breakSig <- true:
+	default:
+		return false
+	}
+	return true
+}
+
+func (w *worker) Stop() {
+	defer gerror.New().Recover()
+	w.breakLoop()
+	close(w.wakeupSig)
+}
+
+func (w *worker) start() {
+	go func() {
+		w.Wakeup()
+		defer func() {
+			w.SetStatus(statusStopped)
+			w.pool.debugLog("GPool: worker[%s] stopped", w.id)
+		}()
+		w.pool.debugLog("GPool: worker[%s] started ...", w.id)
+		var fn func()
+		for {
+			w.SetStatus(statusWaiting)
+			w.pool.debugLog("GPool: worker[%s] waiting ...", w.id)
+			select {
+			case _, ok := <-w.wakeupSig:
+				if !ok {
+					return
+				}
+				w.SetStatus(statusRunning)
+				w.pool.debugLog("GPool: worker[%s] running ...", w.id)
+				for {
+					w.pool.debugLog("GPool: worker[%s] read break", w.id)
+					if w.isBreak() {
+						w.pool.debugLog("GPool: worker[%s] break", w.id)
+						break
+					}
+					if fn = w.pool.pop(); fn != nil {
+						w.pool.debugLog("GPool: worker[%s] called", w.id)
+						w.pool.run(fn)
+					} else {
+						w.pool.debugLog("GPool: worker[%s] no task, break", w.id)
+						break
+					}
+				}
+			}
+		}
+	}()
+}
+
+func newWorker(pool *GPool) *worker {
+	w := &worker{
+		pool:      pool,
+		id:        pool.newWorkerID(),
+		wakeupSig: make(chan bool, 1),
+		breakSig:  make(chan bool, 1),
+	}
+	w.start()
+	return w
 }

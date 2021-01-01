@@ -150,8 +150,8 @@ func (s *List) ToSlice() []interface{} {
 
 // Clear empty the list s.
 func (s *List) Clear() {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.data = []interface{}{}
 }
 

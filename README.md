@@ -24,6 +24,7 @@ A package must be include the fllowing files:
 
 | File | Description |
 | ---- | ---- |
+| xxx.go | main file |
 | xxx_test.go | testing file, code coverage must be than 90% |
 | example_test.go  | each public function example code |
 | benchmark_test.go | benchmark testing file |

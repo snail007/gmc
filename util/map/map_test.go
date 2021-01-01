@@ -1,6 +1,7 @@
 package gmap
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,4 +164,86 @@ func TestPop(t *testing.T) {
 		assert.Equal(v.len, m.Len())
 		assert.Equal(v.key, key)
 	}
+}
+
+func TestMap_Clone(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	m1 := m.Clone()
+	for i := 0; i < 101; i++ {
+		v, ok := m1.Load(i)
+		if i < 100 {
+			assert.True(ok)
+			assert.Equal(i, v)
+		} else {
+			assert.False(false)
+		}
+	}
+}
+
+func TestMap_ToMap(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	m1 :=m.ToMap()
+	for i := 0; i < 101; i++ {
+		v, ok := m1[i]
+		if i < 100 {
+			assert.True(ok)
+			assert.Equal(i, v)
+		} else {
+			assert.False(false)
+		}
+	}
+}
+
+func TestMap_Merge(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	assert.Equal(100,m.Len())
+	m1 :=NewMap()
+	m1.Merge(m)
+	assert.Equal(100,m1.Len())
+}
+
+func TestMap_MergeMap(t *testing.T) {
+	assert := assert.New(t)
+	m := map[interface{}]interface{}{}
+	for i := 0; i < 100; i++ {
+		m[i]=i
+	}
+	assert.Equal(100,len(m))
+	m1 :=NewMap()
+	m1.MergeMap(m)
+	assert.Equal(100,m1.Len())
+}
+
+func TestMap_MergeSyncMap(t *testing.T) {
+	assert := assert.New(t)
+	m := &sync.Map{}
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	m1 :=NewMap()
+	m1.MergeSyncMap(m)
+	assert.Equal(100,m1.Len())
+}
+
+func TestMap_Clear(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	assert.Equal(100,m.Len())
+	m.Clear()
+	assert.Equal(0,m.Len())
 }

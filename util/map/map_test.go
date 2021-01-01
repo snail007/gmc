@@ -107,3 +107,60 @@ func TestKeys_2(t *testing.T) {
 	assert.Equal([]interface{}{"a", "c"}, m.Keys())
 
 }
+
+func TestShift(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	m.Store("a", "111").
+		Store("b", "222").
+		Store("c", "333").
+		Store("d", "444")
+	data := []struct {
+		key    interface{}
+		except interface{}
+		len    int
+		ok     bool
+	}{
+		{"a", "111", 3, true},
+		{"b", "222", 2, true},
+		{"c", "333", 1, true},
+		{"d", "444", 0, true},
+		{nil, nil, 0, false},
+	}
+	for _, v := range data {
+		key, value, ok := m.Shift()
+		assert.Equal(v.ok, ok)
+		assert.Equal(v.except, value)
+		assert.Equal(v.len, m.Len())
+		assert.Equal(v.key, key)
+	}
+}
+
+func TestPop(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	m.Store("a", "111").
+		Store("b", "222").
+		Store("c", "333").
+		Store("d", "444")
+	data := []struct {
+		key    interface{}
+		except interface{}
+		len    int
+		ok     bool
+	}{
+		{nil, nil, 0, false},
+		{"a", "111", 0, true},
+		{"b", "222", 1, true},
+		{"c", "333", 2, true},
+		{"d", "444", 3, true},
+	}
+	for i := len(data) - 1; i >= 0; i-- {
+		v := data[i]
+		key, value, ok := m.Pop()
+		assert.Equal(v.ok, ok)
+		assert.Equal(v.except, value)
+		assert.Equal(v.len, m.Len())
+		assert.Equal(v.key, key)
+	}
+}

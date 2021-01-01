@@ -10,9 +10,9 @@ import (
 	"encoding/hex"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
+	glist "github.com/snail007/gmc/util/list"
 	gmap "github.com/snail007/gmc/util/map"
 	"io"
-	"sync"
 )
 
 const (
@@ -23,11 +23,10 @@ const (
 
 // GPool is a goroutine pool, you can increase or decrease pool size in runtime.
 type GPool struct {
-	taskLock *sync.Mutex
-	tasks    []func()
-	logger   gcore.Logger
-	workers  *gmap.Map
-	debug    bool
+	tasks   *glist.List
+	logger  gcore.Logger
+	workers *gmap.Map
+	debug   bool
 }
 
 // IsDebug returns the pool in debug mode or not.
@@ -43,10 +42,9 @@ func (s *GPool) SetDebug(debug bool) {
 // NewGPool create a gpool object to using
 func NewGPool(workerCount int) (p *GPool) {
 	p = &GPool{
-		taskLock: &sync.Mutex{},
-		tasks:    []func(){},
-		logger:   gcore.Providers.Logger("")(nil, ""),
-		workers:  gmap.NewMap(),
+		tasks:   glist.NewList(),
+		logger:  gcore.Providers.Logger("")(nil, ""),
+		workers: gmap.NewMap(),
 	}
 	p.addWorker(workerCount)
 	return
@@ -132,9 +130,7 @@ func (s *GPool) run(fn func()) {
 
 //Submit adds a function as a task ready to run
 func (s *GPool) Submit(task func()) {
-	s.taskLock.Lock()
-	defer s.taskLock.Unlock()
-	s.tasks = append(s.tasks, task)
+	s.tasks.Add(task)
 	s.notifyAll()
 }
 
@@ -148,17 +144,9 @@ func (s *GPool) notifyAll() {
 
 //shift an element from array head
 func (s *GPool) pop() (fn func()) {
-	s.taskLock.Lock()
-	defer s.taskLock.Unlock()
-	l := len(s.tasks)
-	if l > 0 {
-		fn = s.tasks[0]
-		s.tasks[0] = nil
-		if l == 1 {
-			s.tasks = []func(){}
-		} else {
-			s.tasks = s.tasks[1:]
-		}
+	f := s.tasks.Pop()
+	if f != nil {
+		fn = f.(func())
 	}
 	return
 }
@@ -185,7 +173,7 @@ func (s *GPool) Running() (cnt int) {
 
 // Awaiting returns the count of task ready to run
 func (s *GPool) Awaiting() (cnt int) {
-	return len(s.tasks)
+	return s.tasks.Len()
 }
 func (s *GPool) debugLog(fmt string, v ...interface{}) {
 	if !s.debug {
@@ -197,7 +185,7 @@ func (s *GPool) log(fmt string, v ...interface{}) {
 	if s.logger == nil {
 		return
 	}
-	s.logger.Infof(fmt, v...)
+	s.logger.Warnf(fmt, v...)
 }
 
 //SetLogger set the logger to logging, you can SetLogger(nil) to disable logging

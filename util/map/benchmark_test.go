@@ -81,3 +81,27 @@ func BenchmarkGoMapRange(b *testing.B) {
 		return true
 	})
 }
+
+func BenchmarkGMapPop(b *testing.B) {
+	gMap := NewMap()
+	b.StopTimer()
+	for i := 0; i < b.N/2; i++ {
+		gMap.Store(i, Map{})
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		gMap.Pop()
+	}
+}
+
+func BenchmarkGMapShift(b *testing.B) {
+	gMap := NewMap()
+	b.StopTimer()
+	for i := 0; i < b.N/2; i++ {
+		gMap.Store(i, Map{})
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		gMap.Shift()
+	}
+}

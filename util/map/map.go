@@ -121,7 +121,7 @@ func (s *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bo
 }
 
 // Store sets the value for a key.
-func (s *Map) Store(key, value interface{}) *Map {
+func (s *Map) Store(key, value interface{}) {
 	s.data.Store(key, value)
 	s.lock.Lock()
 	if v, ok := s.keyElMap[key]; ok {
@@ -129,11 +129,10 @@ func (s *Map) Store(key, value interface{}) *Map {
 	}
 	s.keyElMap[key] = s.keys.PushBack(key)
 	s.lock.Unlock()
-	return s
 }
 
 // Delete deletes the value for a key.
-func (s *Map) Delete(key interface{}) *Map {
+func (s *Map) Delete(key interface{}) {
 	s.data.Delete(key)
 	s.lock.Lock()
 	if el, ok := s.keyElMap[key]; ok {
@@ -141,7 +140,6 @@ func (s *Map) Delete(key interface{}) *Map {
 		delete(s.keyElMap, key)
 	}
 	s.lock.Unlock()
-	return s
 }
 
 // Len returns the length of the map s.

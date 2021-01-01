@@ -88,6 +88,7 @@ func GetHomeDir() string {
 }
 
 var homeDir = GetHomeDir()
+
 // Abs is similar to Abs in the std library "path/filepath",
 // but firstly convert "~"" and "$HOME" to the home directory.
 //
@@ -111,4 +112,3 @@ func Abs(p string) string {
 	}
 	return p
 }
-

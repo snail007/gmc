@@ -9,7 +9,8 @@ import (
 	"sync"
 	"testing"
 )
-var pSubmit,pWorker *GPool
+
+var pSubmit, pWorker *GPool
 
 func BenchmarkSubmit(b *testing.B) {
 	b.StartTimer()

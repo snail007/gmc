@@ -1,4 +1,4 @@
-package gmap
+package util
 
 import "fmt"
 

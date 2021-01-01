@@ -65,7 +65,7 @@ func BenchmarkGMapRange(b *testing.B) {
 		gMap.Store(i, Map{})
 	}
 	b.StartTimer()
-	gMap.Range(func(_, _ interface{}) bool {
+	gMap.RangeFast(func(_, _ interface{}) bool {
 		return true
 	})
 }

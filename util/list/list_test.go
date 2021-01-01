@@ -218,8 +218,8 @@ func TestList_Range(t *testing.T) {
 		l.Add(i)
 	}
 	k := 0
-	j:=0
-	l.Range(func(v interface{}) bool {
+	j := 0
+	l.Range(func(_ int, v interface{}) bool {
 		if v.(int) < 90 {
 			k = v.(int)
 		} else {
@@ -230,4 +230,51 @@ func TestList_Range(t *testing.T) {
 	})
 	assert.Equal(90, j)
 	assert.Equal(89, k)
+}
+func TestList_Range2(t *testing.T) {
+	assert := assert.New(t)
+	l := NewList()
+	for i := 0; i < 100; i++ {
+		l.Add(i)
+	}
+	l.Range(func(idx int, v interface{}) bool {
+		if idx < 90 {
+			l.Remove(0)
+		} else {
+			l.Add(idx)
+		}
+		return true
+	})
+	assert.Equal(20, l.Len())
+}
+func TestList_RangeFast(t *testing.T) {
+	assert := assert.New(t)
+	l := NewList()
+	for i := 0; i < 100; i++ {
+		l.Add(i)
+	}
+	k := 0
+	j := 0
+	l.RangeFast(func(_ int, v interface{}) bool {
+		if v.(int) < 90 {
+			k = v.(int)
+		} else {
+			return false
+		}
+		j++
+		return true
+	})
+	assert.Equal(90, j)
+	assert.Equal(89, k)
+}
+func TestList_IsEmpty(t *testing.T) {
+	assert := assert.New(t)
+	l := NewList()
+	for i := 0; i < 100; i++ {
+		l.Add(i)
+	}
+	assert.Equal(100, l.Len())
+	assert.False(l.IsEmpty())
+	l.Clear()
+	assert.True(l.IsEmpty())
 }

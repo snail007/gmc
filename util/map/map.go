@@ -36,10 +36,10 @@ func NewMap() *Map {
 // Clone duplicates the map s.
 func (s *Map) Clone() *Map {
 	m := NewMap()
-	s.data.Range(func(key, value interface{}) bool {
-		m.Store(key, value)
-		return true
-	})
+	for _, k := range s.Keys() {
+		v, _ := s.data.Load(k)
+		m.Store(k, v)
+	}
 	return m
 }
 
@@ -164,14 +164,32 @@ func (s *Map) Clear() {
 // If f returns false, range stops the iteration.
 //
 // Range keep the sequence of store sequence.
-func (s *Map) Range(f func(key, value interface{}) bool) *Map {
+func (s *Map) Range(f func(key, value interface{}) bool) {
+	snapshot := s.Clone()
+	for _, k := range snapshot.Keys() {
+		v, _ := snapshot.data.Load(k)
+		if !f(k, v) {
+			break
+		}
+	}
+	return
+}
+
+// RangeFast calls f sequentially for each key and value present in the map.
+// If f returns false, range stops the iteration.
+//
+// RangeFast keep the sequence of store sequence.
+//
+// RangeFast do not create a snapshot for range, so you can not
+// modify map s in range loop, indicate do not call Delete(), Store(), LoadOrStore(), Merge(), etc.
+func (s *Map) RangeFast(f func(key, value interface{}) bool) {
 	for _, k := range s.Keys() {
 		v, _ := s.data.Load(k)
 		if !f(k, v) {
 			break
 		}
 	}
-	return s
+	return
 }
 
 // Keys returns all keys in map s and keep the sequence of store sequence.
@@ -185,4 +203,9 @@ func (s *Map) Keys() (keys []interface{}) {
 		p = p.Next()
 	}
 	return
+}
+
+// IsEmpty indicates if the map is empty.
+func (s *Map) IsEmpty() bool {
+	return s.keys.Len() == 0
 }

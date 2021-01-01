@@ -47,7 +47,7 @@ func (s *List) Remove(idx int) {
 	}
 	data := s.data[0:idx]
 	if idx+1 <= length-1 {
-		data = append(data, s.data[idx+1:])
+		data = append(data, s.data[idx+1:]...)
 	}
 	s.data = data
 }
@@ -115,11 +115,23 @@ func (s *List) Shift() (v interface{}) {
 }
 
 // Range ranges the value in list s, if function f return false, the range loop will break.
-func (s *List) Range(f func(value interface{}) bool) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	for _, v := range s.data {
-		if !f(v) {
+func (s *List) Range(f func(index int, value interface{}) bool) {
+	snapshot := s.Clone()
+	for idx, v := range snapshot.data {
+		if !f(idx, v) {
+			break
+		}
+	}
+	return
+}
+
+// Range ranges the value in list s, if function f return false, the range loop will break.
+//
+// RangeFast do not create a snapshot for range, so you can not modify list s in range loop,
+// indicate do not call Delete(), Add(), Merge() etc.
+func (s *List) RangeFast(f func(index int, value interface{}) bool) {
+	for idx, v := range s.data {
+		if !f(idx, v) {
 			break
 		}
 	}
@@ -131,9 +143,7 @@ func (s *List) Clone() *List {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	newList := NewList()
-	for _, v := range s.data {
-		newList.data = append(newList.data, v)
-	}
+	newList.data = append(newList.data, s.data...)
 	return newList
 }
 
@@ -142,9 +152,7 @@ func (s *List) ToSlice() []interface{} {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	newList := []interface{}{}
-	for _, v := range s.data {
-		newList = append(newList, v)
-	}
+	newList = append(newList, s.data...)
 	return newList
 }
 
@@ -179,6 +187,13 @@ func (s *List) Contains(v interface{}) bool {
 		}
 	}
 	return false
+}
+
+// IsEmpty indicates if the list is empty.
+func (s *List) IsEmpty() bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return len(s.data) == 0
 }
 
 // NewList returns a new *List object

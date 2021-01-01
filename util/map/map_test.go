@@ -41,14 +41,12 @@ func TestRange_1(t *testing.T) {
 	m.Store("a", "111").
 		Store("b", "111").
 		Store("c", "111")
-	for i := 0; i < 10; i++ {
-		a := []interface{}{}
-		m.Range(func(k, v interface{}) bool {
-			a = append(a, k)
-			return true
-		})
-		assert.Equal([]interface{}{"a", "b", "c"}, a)
-	}
+	a := []interface{}{}
+	m.Range(func(k, v interface{}) bool {
+		a = append(a, k)
+		return true
+	})
+	assert.Equal([]interface{}{"a", "b", "c"}, a)
 }
 func TestRange_2(t *testing.T) {
 	assert := assert.New(t)
@@ -56,17 +54,31 @@ func TestRange_2(t *testing.T) {
 	m.Store("a", "111").
 		Store("b", "111").
 		Store("c", "111")
-	for i := 0; i < 10; i++ {
-		a := []interface{}{}
-		m.Range(func(k, v interface{}) bool {
-			if k.(string) == "b" {
-				return false
-			}
-			a = append(a, k)
-			return true
-		})
-		assert.Equal([]interface{}{"a"}, a)
-	}
+	a := []interface{}{}
+	m.Range(func(k, v interface{}) bool {
+		if k.(string) == "b" {
+			return false
+		}
+		a = append(a, k)
+		return true
+	})
+	assert.Equal([]interface{}{"a"}, a)
+}
+func TestMap_RangeFast(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	m.Store("a", "111").
+		Store("b", "111").
+		Store("c", "111")
+	a := []interface{}{}
+	m.RangeFast(func(k, v interface{}) bool {
+		if k.(string)=="c"{
+			return false
+		}
+		a = append(a, k)
+		return true
+	})
+	assert.Equal([]interface{}{"a", "b"}, a)
 }
 func TestKeys(t *testing.T) {
 	assert := assert.New(t)
@@ -246,4 +258,16 @@ func TestMap_Clear(t *testing.T) {
 	assert.Equal(100,m.Len())
 	m.Clear()
 	assert.Equal(0,m.Len())
+}
+
+func TestMap_IsEmpty(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	assert.Equal(100,m.Len())
+	assert.False(m.IsEmpty())
+	m.Clear()
+	assert.True(m.IsEmpty())
 }

@@ -1,6 +1,7 @@
 package gmap
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -217,6 +218,24 @@ func TestMap_ToMap(t *testing.T) {
 	}
 }
 
+func TestMap_ToStringMap(t *testing.T) {
+	assert := assert.New(t)
+	m := NewMap()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	m1 := m.ToStringMap()
+	for i := 0; i < 101; i++ {
+		v, ok := m1[fmt.Sprintf("%d",i)]
+		if i < 100 {
+			assert.True(ok)
+			assert.Equal(i, v)
+		} else {
+			assert.False(false)
+		}
+	}
+}
+
 func TestMap_Merge(t *testing.T) {
 	assert := assert.New(t)
 	m := NewMap()
@@ -240,6 +259,19 @@ func TestMap_MergeMap(t *testing.T) {
 	m1.MergeMap(m)
 	assert.Equal(100, m1.Len())
 }
+
+func TestMap_MergeStringMap(t *testing.T) {
+	assert := assert.New(t)
+	m := map[string]interface{}{}
+	for i := 0; i < 100; i++ {
+		m[fmt.Sprintf("%v",i)] = i
+	}
+	assert.Equal(100, len(m))
+	m1 := NewMap()
+	m1.MergeStringMap(m)
+	assert.Equal(100, m1.Len())
+}
+
 
 func TestMap_MergeSyncMap(t *testing.T) {
 	assert := assert.New(t)
@@ -273,4 +305,39 @@ func TestMap_IsEmpty(t *testing.T) {
 	assert.False(m.IsEmpty())
 	m.Clear()
 	assert.True(m.IsEmpty())
+}
+
+func TestMap_IndexOf(t *testing.T) {
+	assert := assert.New(t)
+	data := []struct {
+		m   *Map
+		max int
+	}{
+		{NewMap(), 0},
+		{NewMap(), 1},
+		{NewMap(), 2},
+		{NewMap(), 3},
+		{NewMap(), 100},
+	}
+	for _, v := range data {
+		for i := 0; i < v.max; i++ {
+			v.m.Store(i, i)
+		}
+		for i := 0; i < v.max+1; i++ {
+			if i < v.max {
+				assert.Equal(i, v.m.IndexOf(i))
+			} else {
+				assert.Equal(-1, v.m.IndexOf(i))
+			}
+		}
+	}
+}
+
+func TestList_String(t *testing.T) {
+	assert := assert.New(t)
+	l := NewMap()
+	for i := 0; i < 1; i++ {
+		l.Store(i,i)
+	}
+	assert.Equal("map[0:0]",fmt.Sprintf("%s",l))
 }

@@ -1,6 +1,7 @@
 package glist
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -53,10 +54,10 @@ func (s *List) Remove(idx int) {
 }
 
 // Add adds a value to end of list s.
-func (s *List) Add(v interface{}) {
+func (s *List) Add(v ...interface{}) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.data = append(s.data, v)
+	s.data = append(s.data, v...)
 }
 
 // AddFirst adds a value to first of list s.
@@ -72,6 +73,15 @@ func (s *List) MergeSlice(arr []interface{}) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.data = append(s.data, arr...)
+}
+
+// MergeStringSlice merge a array slice to end of list s.
+func (s *List) MergeStringSlice(arr []string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	for _, v := range arr {
+		s.data = append(s.data, v)
+	}
 }
 
 // Merge merges a List to end of list s.
@@ -125,7 +135,7 @@ func (s *List) Range(f func(index int, value interface{}) bool) {
 	return
 }
 
-// Range ranges the value in list s, if function f return false, the range loop will break.
+// RangeFast ranges the value in list s, if function f return false, the range loop will break.
 //
 // RangeFast do not create a snapshot for range, so you can not modify list s in range loop,
 // indicate do not call Delete(), Add(), Merge() etc.
@@ -151,8 +161,17 @@ func (s *List) Clone() *List {
 func (s *List) ToSlice() []interface{} {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	newList := []interface{}{}
+	var newList []interface{}
 	newList = append(newList, s.data...)
+	return newList
+}
+
+// ToStringSlice returns the list as an array.
+func (s *List) ToStringSlice() []string {
+	var newList []string
+	for _, v := range s.ToSlice() {
+		newList = append(newList, fmt.Sprintf("%v", v))
+	}
 	return newList
 }
 
@@ -194,6 +213,31 @@ func (s *List) IsEmpty() bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return len(s.data) == 0
+}
+
+// IndexOf indicates the index of value in list s, if not found returns -1.
+//
+// idx start with 0.
+func (s *List) IndexOf(v interface{}) int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	j := len(s.data) - 1
+	length := len(s.data)
+	for i := 0; i <= length/2; i++ {
+		if i < length && s.data[i] == v {
+			return i
+		}
+		if j >= 0 && s.data[j] == v {
+			return j
+		}
+		j--
+	}
+	return -1
+}
+
+// String returns string format of the list.
+func (s *List) String() string {
+	return fmt.Sprintf("%v", s.ToSlice())
 }
 
 // NewList returns a new *List object

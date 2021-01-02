@@ -1,6 +1,7 @@
 package glist
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -120,6 +121,25 @@ func TestList_MergeSlice(t *testing.T) {
 	l.MergeSlice(l1)
 	for i := 0; i < 200; i++ {
 		assert.Equal(i, l.Get(i))
+	}
+	assert.Equal(200, l.Len())
+}
+
+
+
+func TestList_MergeStringSlice(t *testing.T) {
+	assert := assert.New(t)
+	l := NewList()
+	for i := 0; i < 100; i++ {
+		l.Add(fmt.Sprintf("%v",i))
+	}
+	l1 := []string{}
+	for i := 100; i < 200; i++ {
+		l1 = append(l1, fmt.Sprintf("%v",i))
+	}
+	l.MergeStringSlice(l1)
+	for i := 0; i < 200; i++ {
+		assert.Equal(fmt.Sprintf("%d",i), l.Get(i))
 	}
 	assert.Equal(200, l.Len())
 }
@@ -267,14 +287,60 @@ func TestList_RangeFast(t *testing.T) {
 	assert.Equal(90, j)
 	assert.Equal(89, k)
 }
+
 func TestList_IsEmpty(t *testing.T) {
 	assert := assert.New(t)
 	l := NewList()
 	for i := 0; i < 100; i++ {
 		l.Add(i)
 	}
-	assert.Equal(100, l.Len())
-	assert.False(l.IsEmpty())
 	l.Clear()
 	assert.True(l.IsEmpty())
+}
+
+func TestMap_IndexOf(t *testing.T) {
+	assert := assert.New(t)
+	data := []struct {
+		m   *List
+		max int
+	}{
+		{NewList(), 0},
+		{NewList(), 1},
+		{NewList(), 2},
+		{NewList(), 3},
+		{NewList(), 100},
+	}
+	for _, v := range data {
+		for i := 0; i < v.max; i++ {
+			v.m.Add(i)
+		}
+		for i := 0; i < v.max+1; i++ {
+			if i < v.max {
+				assert.Equal(i, v.m.IndexOf(i))
+			} else {
+				assert.Equal(-1, v.m.IndexOf(i))
+			}
+		}
+	}
+}
+
+func TestList_String(t *testing.T) {
+	assert := assert.New(t)
+	l := NewList()
+	for i := 0; i < 2; i++ {
+		l.Add(i)
+	}
+	assert.Equal("[0 1]",fmt.Sprintf("%s",l))
+}
+
+func TestList_ToStringSlice(t *testing.T) {
+	assert := assert.New(t)
+	m := NewList()
+	for i := 0; i < 100; i++ {
+		m.Add(i)
+	}
+	m1 := m.ToStringSlice()
+	for i := 0; i < 100; i++ {
+		assert.Equal(fmt.Sprintf("%d", i), m1[i])
+	}
 }

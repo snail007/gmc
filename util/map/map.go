@@ -2,6 +2,7 @@ package gmap
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 )
 
@@ -23,16 +24,6 @@ type Map struct {
 	keyElMap map[interface{}]*list.Element
 }
 
-// NewMap creates a Map object.
-func NewMap() *Map {
-	return &Map{
-		keys:     list.New(),
-		data:     sync.Map{},
-		lock:     sync.Mutex{},
-		keyElMap: map[interface{}]*list.Element{},
-	}
-}
-
 // Clone duplicates the map s.
 func (s *Map) Clone() *Map {
 	m := NewMap()
@@ -43,11 +34,21 @@ func (s *Map) Clone() *Map {
 	return m
 }
 
-// Clone duplicates the map s.
+// ToMap duplicates the map s.
 func (s *Map) ToMap() map[interface{}]interface{} {
 	m := map[interface{}]interface{}{}
 	s.data.Range(func(key, value interface{}) bool {
 		m[key] = value
+		return true
+	})
+	return m
+}
+
+// ToStringMap duplicates the map s.
+func (s *Map) ToStringMap() map[string]interface{} {
+	m := map[string]interface{}{}
+	s.data.Range(func(key, value interface{}) bool {
+		m[fmt.Sprintf("%v", key)] = value
 		return true
 	})
 	return m
@@ -61,8 +62,15 @@ func (s *Map) Merge(m *Map) {
 	})
 }
 
-// Merge merges a map to Map s.
+// MergeMap merges a map to Map s.
 func (s *Map) MergeMap(m map[interface{}]interface{}) {
+	for key, value := range m {
+		s.Store(key, value)
+	}
+}
+
+// MergeStringMap merges a map to Map s.
+func (s *Map) MergeStringMap(m map[string]interface{}) {
 	for key, value := range m {
 		s.Store(key, value)
 	}
@@ -203,7 +211,53 @@ func (s *Map) Keys() (keys []interface{}) {
 	return
 }
 
+// StringKeys returns all keys in map s and keep the sequence of store sequence.
+func (s *Map) StringKeys() (keys []string) {
+	for _, v := range s.Keys() {
+		keys = append(keys, fmt.Sprintf("%v", v))
+	}
+	return
+}
+
 // IsEmpty indicates if the map is empty.
 func (s *Map) IsEmpty() bool {
 	return s.keys.Len() == 0
+}
+
+// IndexOf indicates the index of value in Map s, if not found returns -1.
+//
+// idx start with 0.
+func (s *Map) IndexOf(k interface{}) int {
+	p := s.keys.Front()
+	p0 := s.keys.Back()
+	for i := 0; i <= s.keys.Len()/2; i++ {
+		if p != nil {
+			if p.Value == k {
+				return i
+			}
+			p = p.Next()
+		}
+		if p0 != nil {
+			if p0.Value == k {
+				return s.keys.Len() - 1 - i
+			}
+			p0 = p0.Prev()
+		}
+	}
+	return -1
+}
+
+// String returns string format of the Set.
+func (s *Map) String() string {
+	return fmt.Sprintf("%v", s.ToMap())
+}
+
+// NewMap creates a Map object.
+func NewMap() *Map {
+	return &Map{
+		keys:     list.New(),
+		data:     sync.Map{},
+		lock:     sync.Mutex{},
+		keyElMap: map[interface{}]*list.Element{},
+	}
 }

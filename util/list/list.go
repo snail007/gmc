@@ -215,23 +215,28 @@ func (s *List) IsEmpty() bool {
 	return len(s.data) == 0
 }
 
-// IndexOf indicates the index of value in list s, if not found returns -1.
+// IndexOf indicates the first index of value in list s, if not found returns -1.
 //
 // idx start with 0.
 func (s *List) IndexOf(v interface{}) int {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	j := len(s.data) - 1
-	length := len(s.data)
-	for i := 0; i <= length/2; i++ {
-		if i < length && s.data[i] == v {
+	for i := 0; i < len(s.data); i++ {
+		if  s.data[i] == v {
 			return i
 		}
-		if j >= 0 && s.data[j] == v {
-			return j
-		}
-		j--
 	}
+	//j := len(s.data) - 1
+	//length := len(s.data)
+	//for i := 0; i <= length/2; i++ {
+	//	if i < length && s.data[i] == v {
+	//		return i
+	//	}
+	//	if j >= 0 && s.data[j] == v {
+	//		return j
+	//	}
+	//	j--
+	//}
 	return -1
 }
 

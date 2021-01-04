@@ -31,4 +31,4 @@ A package must be include the fllowing files:
 | doc.go | description of package |
 | README.md | testing and benchmarkresult must be include |
 
-You can reference the package sync/gpool to get more infomation about code specification.
+You can reference the package sync/gpool to get more information about code specification.

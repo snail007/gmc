@@ -96,7 +96,7 @@ func TestSet_MergeStringSlice(t *testing.T) {
 	s1.MergeStringSlice(s.ToStringSlice())
 	assert.Equal(10, s1.Len())
 	for i := 0; i < 10; i++ {
-		assert.Equal(fmt.Sprintf("%d",i), fmt.Sprintf("%v",s1.Shift()))
+		assert.Equal(fmt.Sprintf("%d", i), fmt.Sprintf("%v", s1.Shift()))
 	}
 }
 
@@ -175,7 +175,7 @@ func TestMap_IndexOf(t *testing.T) {
 	}
 }
 
-func TestList_String(t *testing.T) {
+func TestSet_String(t *testing.T) {
 	assert := assert.New(t)
 	l := NewSet()
 	for i := 0; i < 2; i++ {
@@ -194,4 +194,16 @@ func TestSet_ToStringSlice(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		assert.Equal(fmt.Sprintf("%d", i), m1[i])
 	}
+}
+
+func TestSet_AddFront(t *testing.T) {
+	assert := assert.New(t)
+	l := NewSet()
+	for i := 0; i < 2; i++ {
+		l.AddFront(i)
+	}
+	for i := 1; i >=0; i-- {
+		l.AddFront(i)
+	}
+	assert.Equal("[1 0]", fmt.Sprintf("%s", l))
 }

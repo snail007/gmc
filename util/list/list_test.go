@@ -47,7 +47,7 @@ func TestList_AddFirst(t *testing.T) {
 	assert := assert.New(t)
 	l := NewList()
 	for i := 0; i <= 100; i++ {
-		l.AddFirst(i)
+		l.AddFront(i)
 	}
 	for i := 0; i <= 100; i++ {
 		assert.Equal(100-i, l.Get(i))

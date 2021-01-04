@@ -128,6 +128,32 @@ func (s *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bo
 	return
 }
 
+// LoadOrStoreFront returns the existing value for the key if present.
+// Otherwise, it stores and returns the given value.
+// The loaded result is true if the value was loaded, false if stored.
+// The key will be stored the first in keys queue if key not exists.
+func (s *Map) LoadOrStoreFront(key, value interface{}) (actual interface{}, loaded bool) {
+	actual, loaded = s.data.LoadOrStore(key, value)
+	if !loaded {
+		s.lock.Lock()
+		s.keyElMap[key] = s.keys.PushFront(key)
+		s.lock.Unlock()
+	}
+	return
+}
+
+// StoreFront sets the value for a key.
+// The key will be stored the first in keys queue.
+func (s *Map) StoreFront(key, value interface{}) {
+	s.data.Store(key, value)
+	s.lock.Lock()
+	if v, ok := s.keyElMap[key]; ok {
+		s.keys.Remove(v)
+	}
+	s.keyElMap[key] = s.keys.PushFront(key)
+	s.lock.Unlock()
+}
+
 // Store sets the value for a key.
 func (s *Map) Store(key, value interface{}) {
 	s.data.Store(key, value)

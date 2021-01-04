@@ -226,7 +226,7 @@ func TestMap_ToStringMap(t *testing.T) {
 	}
 	m1 := m.ToStringMap()
 	for i := 0; i < 101; i++ {
-		v, ok := m1[fmt.Sprintf("%d",i)]
+		v, ok := m1[fmt.Sprintf("%d", i)]
 		if i < 100 {
 			assert.True(ok)
 			assert.Equal(i, v)
@@ -264,14 +264,13 @@ func TestMap_MergeStringMap(t *testing.T) {
 	assert := assert.New(t)
 	m := map[string]interface{}{}
 	for i := 0; i < 100; i++ {
-		m[fmt.Sprintf("%v",i)] = i
+		m[fmt.Sprintf("%v", i)] = i
 	}
 	assert.Equal(100, len(m))
 	m1 := NewMap()
 	m1.MergeStringMap(m)
 	assert.Equal(100, m1.Len())
 }
-
 
 func TestMap_MergeSyncMap(t *testing.T) {
 	assert := assert.New(t)
@@ -333,11 +332,32 @@ func TestMap_IndexOf(t *testing.T) {
 	}
 }
 
-func TestList_String(t *testing.T) {
+func TestMap_String(t *testing.T) {
 	assert := assert.New(t)
 	l := NewMap()
 	for i := 0; i < 1; i++ {
-		l.Store(i,i)
+		l.Store(i, i)
 	}
-	assert.Equal("map[0:0]",fmt.Sprintf("%s",l))
+	assert.Equal("map[0:0]", fmt.Sprintf("%s", l))
+}
+
+func TestMap_StoreFront(t *testing.T) {
+	assert := assert.New(t)
+	l := NewMap()
+	for i := 0; i < 3; i++ {
+		l.StoreFront(i, i)
+	}
+	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
+}
+
+func TestMap_LoadOrStoreFront(t *testing.T) {
+	assert := assert.New(t)
+	l := NewMap()
+	for i := 0; i < 3; i++ {
+		l.LoadOrStoreFront(i, i)
+	}
+	for i := 2; i >= 0; i-- {
+		l.LoadOrStoreFront(i, i)
+	}
+	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
 }

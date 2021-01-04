@@ -17,6 +17,14 @@ func (s *Set) Add(value ...interface{}) {
 	}
 }
 
+// AddFront adds a value to set, if value not exists in set s.
+// The value will be stored the first in set s if value not exists.
+func (s *Set) AddFront(value ...interface{}) {
+	for _, v := range value {
+		s.data.LoadOrStoreFront(v, nil)
+	}
+}
+
 // Delete removes a value from set.
 func (s *Set) Delete(value interface{}) {
 	s.data.Delete(value)

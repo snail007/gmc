@@ -60,8 +60,8 @@ func (s *List) Add(v ...interface{}) {
 	s.data = append(s.data, v...)
 }
 
-// AddFirst adds a value to first of list s.
-func (s *List) AddFirst(v interface{}) {
+// AddFront adds a value to first of list s.
+func (s *List) AddFront(v interface{}) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	arr := []interface{}{v}

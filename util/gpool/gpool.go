@@ -161,10 +161,10 @@ func (s *GPool) Stop() {
 }
 
 // Running returns the count of running workers
-func (s *GPool) Running() (cnt int) {
+func (s *GPool) Running() (workerCount int) {
 	s.workers.Range(func(_, v interface{}) bool {
 		if v.(*worker).Status() == statusRunning {
-			cnt++
+			workerCount++
 		}
 		return true
 	})
@@ -172,7 +172,7 @@ func (s *GPool) Running() (cnt int) {
 }
 
 // Awaiting returns the count of task ready to run
-func (s *GPool) Awaiting() (cnt int) {
+func (s *GPool) Awaiting() (taskCount int) {
 	return s.tasks.Len()
 }
 func (s *GPool) debugLog(fmt string, v ...interface{}) {

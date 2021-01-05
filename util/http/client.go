@@ -17,15 +17,12 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
 var (
 	// Client a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
 	Client = NewHTTPClient()
-	// SimpleClient simple HTTPClient, every request using a new http.Client object.
-	SimpleClient = NewSimpleHTTPClient()
 )
 
 // HTTPClient do http get, post etc.
@@ -39,23 +36,14 @@ type HTTPClient struct {
 	setProxyFromEnv bool
 	dns             string
 	connWrap        func(net.Conn) (conn net.Conn, err error)
-	simpleClient    bool
-	client          *http.Client
-	once            *sync.Once
-}
-
-// NewSimpleHTTPClient new a simple HTTPClient, every request using a new http.Client object.
-func NewSimpleHTTPClient() HTTPClient {
-	return HTTPClient{
-		once:         &sync.Once{},
-		simpleClient: true,
-	}
+	jar             http.CookieJar
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
 func NewHTTPClient() HTTPClient {
+	jar, _ := cookiejar.New(&cookiejar.Options{})
 	return HTTPClient{
-		once: &sync.Once{},
+		jar: jar,
 	}
 }
 
@@ -79,6 +67,9 @@ func (s *HTTPClient) SetProxy(proxyURL string) (err error) {
 		return
 	}
 	s.proxyURL, err = url.Parse(proxyURL)
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -140,13 +131,11 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 			resp.Body.Close()
 		}
 	}()
-	client, err := s.getClient(u, timeout)
+	client, err := s.newClient(u, timeout)
 	if err != nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
+	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return
 	}
@@ -186,13 +175,11 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 			resp.Body.Close()
 		}
 	}()
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "POST", u, r)
+	req, err := http.NewRequest("POST", u, r)
 	if err != nil {
 		return
 	}
-	client, err := s.getClient(u, timeout)
+	client, err := s.newClient(u, timeout)
 	if err != nil {
 		return
 	}
@@ -220,81 +207,93 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	return
 }
 
-// Close close the idle connections when keepalive enabled.
-//
-// Close do nothing in simple HTTPClient
-func (s *HTTPClient) Close() {
-	if s.client != nil {
-		s.client.Transport.(*http.Transport).CloseIdleConnections()
+func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, err error) {
+	proxyURL := s.getProxyURL()
+	resolver := s.newResolver(timeout)
+	tr = &http.Transport{
+		ResponseHeaderTimeout: timeout,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   timeout,
+		ExpectContinueTimeout: 1 * time.Second,
+		DisableKeepAlives:     true,
+		Proxy: func(req *http.Request) (u *url.URL, err error) {
+			// do nothing, disable default, process in DialContext
+			return
+		},
+		DialContext: func(c context.Context, network, addr string) (conn net.Conn, err error) {
+			ctx, cancel := context.WithTimeout(c, timeout)
+			defer cancel()
+			if proxyURL != nil {
+				var j gproxy.Jumper
+				j, err = gproxy.NewJumper(proxyURL.String(), timeout)
+				if err != nil {
+					return
+				}
+				conn, err = j.Dial(addr)
+			} else {
+				host, port, _ := net.SplitHostPort(addr)
+				iparr, e := resolver.LookupIPAddr(ctx, host)
+				if e != nil {
+					return nil, e
+				}
+				if len(iparr) == 0 {
+					return nil, fmt.Errorf("can not reslove domain %s", host)
+				}
+				ip := iparr[rand.Intn(len(iparr))]
+				addr = net.JoinHostPort(ip.String(), port)
+				conn, err = net.DialTimeout(network, addr, timeout)
+			}
+			if err == nil && s.connWrap != nil {
+				conn, err = s.connWrap(conn)
+			}
+			return
+		},
 	}
-}
-
-// get a client for requests
-func (s *HTTPClient) getClient(u string, timeout time.Duration) (client *http.Client, err error) {
-	if s.client != nil {
-		return s.client, nil
-	}
-	defer func() {
-		if !s.simpleClient && err == nil {
-			s.client = client
-		}
-	}()
-	if s.simpleClient {
-		client, err = s.newClient(u, timeout)
-	} else {
-		s.once.Do(func() {
-			s.client, err = s.newClient(u, timeout)
-		})
-		client = s.client
-	}
-	return
-}
-
-// new a http.Client
-func (s *HTTPClient) newClient(u string, timeout time.Duration) (client *http.Client, err error) {
-	tr := &http.Transport{}
-	if strings.Contains(u, "https://") {
-		conf := &tls.Config{}
-		conf.InsecureSkipVerify = true
-		conf.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			if s.pinCert == nil && s.caCertPool != nil {
+	conf := &tls.Config{}
+	conf.InsecureSkipVerify = true
+	conf.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		if s.pinCert == nil && s.caCertPool != nil {
+			found := false
+			for _, rawCert := range rawCerts {
+				cert, _ := x509.ParseCertificate(rawCert)
+				_, e := cert.Verify(*s.opts)
+				if e == nil {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("unknown server certificate recieved")
+			}
+		} else {
+			if s.pinCert != nil {
 				found := false
 				for _, rawCert := range rawCerts {
 					cert, _ := x509.ParseCertificate(rawCert)
-					_, e := cert.Verify(*s.opts)
-					if e == nil {
+					if s.pinCert.Equal(cert) {
 						found = true
-						break
 					}
 				}
 				if !found {
 					return fmt.Errorf("unknown server certificate recieved")
 				}
-			} else {
-				if s.pinCert != nil {
-					found := false
-					for _, rawCert := range rawCerts {
-						cert, _ := x509.ParseCertificate(rawCert)
-						if s.pinCert.Equal(cert) {
-							found = true
-						}
-					}
-					if !found {
-						return fmt.Errorf("unknown server certificate recieved")
-					}
-				}
 			}
-			return nil
 		}
-		if s.caCertPool != nil {
-			conf.RootCAs = s.caCertPool
-		}
-		if s.clientAuth {
-			conf.Certificates = []tls.Certificate{s.clientCert}
-		}
-		tr.TLSClientConfig = conf
+		return nil
 	}
-	resolver := net.DefaultResolver
+	if s.caCertPool != nil {
+		conf.RootCAs = s.caCertPool
+	}
+	if s.clientAuth {
+		conf.Certificates = []tls.Certificate{s.clientCert}
+	}
+	tr.TLSClientConfig = conf
+	return
+}
+
+func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver) {
+	resolver = net.DefaultResolver
 	if s.dns != "" {
 		resolver = &net.Resolver{
 			PreferGo: true,
@@ -307,12 +306,13 @@ func (s *HTTPClient) newClient(u string, timeout time.Duration) (client *http.Cl
 			},
 		}
 	}
-	//proxy
-	tr.Proxy = func(req *http.Request) (u *url.URL, err error) {
-		// do nothing, disable default, process in DialContext
-		return
+	return
+}
+func (s *HTTPClient) getProxyURL() (proxyURL *url.URL) {
+	if s.proxyURL != nil {
+		return s.proxyURL
 	}
-	if s.proxyURL == nil && s.setProxyFromEnv {
+	if s.setProxyFromEnv {
 		proxyENV := ""
 		for _, k := range []string{"http_proxy", "all_proxy"} {
 			proxyENV = os.Getenv(k)
@@ -327,44 +327,21 @@ func (s *HTTPClient) newClient(u string, timeout time.Duration) (client *http.Cl
 			if !strings.HasPrefix(proxyENV, "http://") {
 				proxyENV = "http://" + proxyENV
 			}
-			s.proxyURL, _ = url.Parse(proxyENV)
+			proxyURL, _ = url.Parse(proxyENV)
 		}
 	}
-	tr.DialContext = func(c context.Context, network, addr string) (conn net.Conn, err error) {
-		ctx, cancel := context.WithTimeout(c, timeout)
-		defer cancel()
-		if s.proxyURL != nil {
-			var j gproxy.Jumper
-			j, err = gproxy.NewJumper(s.proxyURL.String(), timeout)
-			if err != nil {
-				return
-			}
-			conn, err = j.Dial(addr)
-		} else {
-			host, port, _ := net.SplitHostPort(addr)
-			iparr, e := resolver.LookupIPAddr(ctx, host)
-			if e != nil {
-				return nil, e
-			}
-			if len(iparr) == 0 {
-				return nil, fmt.Errorf("can not reslove domain %s", host)
-			}
-			ip := iparr[rand.Intn(len(iparr))]
-			addr = net.JoinHostPort(ip.String(), port)
-			conn, err = net.DialTimeout(network, addr, timeout)
+	return
+}
+
+// new a http.Client
+func (s *HTTPClient) newClient(u string, timeout time.Duration) (client *http.Client, err error) {
+	client = &http.Client{}
+	client.Jar, _ = cookiejar.New(&cookiejar.Options{})
+	if strings.HasPrefix(u, "https://") {
+		client.Transport, err = s.newTransport(timeout)
+		if err != nil {
+			return
 		}
-		if err == nil && s.connWrap != nil {
-			conn, err = s.connWrap(conn)
-		}
-		return
-	}
-	client = &http.Client{
-		Transport: tr,
-	}
-	if s.simpleClient {
-		tr.DisableKeepAlives = true
-	} else {
-		client.Jar, _ = cookiejar.New(&cookiejar.Options{})
 	}
 	return
 }

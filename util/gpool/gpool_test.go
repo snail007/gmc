@@ -6,6 +6,7 @@
 package gpool
 
 import (
+	_ "github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"

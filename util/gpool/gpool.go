@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	gcore "github.com/snail007/gmc/core"
-	gerror "github.com/snail007/gmc/module/error"
 	glist "github.com/snail007/gmc/util/list"
 	gmap "github.com/snail007/gmc/util/map"
 	"io"
@@ -122,7 +121,7 @@ func (s *GPool) newWorkerID() string {
 
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gerror.New().Recover(func(e interface{}) {
+	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
 	})
 	fn()
@@ -212,7 +211,7 @@ func (w *worker) SetStatus(status int) {
 }
 
 func (w *worker) Wakeup() bool {
-	defer gerror.New().Recover()
+	defer gcore.Providers.Error("")().Recover()
 	select {
 	case w.wakeupSig <- true:
 	default:
@@ -232,7 +231,7 @@ func (w *worker) isBreak() bool {
 }
 
 func (w *worker) breakLoop() bool {
-	defer gerror.New().Recover()
+	defer gcore.Providers.Error("")().Recover()
 	select {
 	case w.breakSig <- true:
 	default:
@@ -242,7 +241,7 @@ func (w *worker) breakLoop() bool {
 }
 
 func (w *worker) Stop() {
-	defer gerror.New().Recover()
+	defer gcore.Providers.Error("")().Recover()
 	w.breakLoop()
 	close(w.wakeupSig)
 }

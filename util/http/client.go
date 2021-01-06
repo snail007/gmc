@@ -66,6 +66,9 @@ func (s *HTTPClient) SetProxy(proxyURL string) (err error) {
 	if proxyURL == "" {
 		return
 	}
+	if !strings.Contains(proxyURL, "://") {
+		proxyURL = "http://" + proxyURL
+	}
 	s.proxyURL, err = url.Parse(proxyURL)
 	if err != nil {
 		return
@@ -90,7 +93,8 @@ func (s *HTTPClient) SetDNS(dns string) (err error) {
 func (s *HTTPClient) SetPinCert(pemBytes []byte) (err error) {
 	block, _ := pem.Decode(pemBytes)
 	if block == nil {
-		panic("failed to parse certificate PEM")
+		err = fmt.Errorf("failed to parse certificate PEM")
+		return
 	}
 	s.pinCert, err = x509.ParseCertificate(block.Bytes)
 	return
@@ -131,7 +135,7 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 			resp.Body.Close()
 		}
 	}()
-	client, err := s.newClient(u, timeout)
+	client, err := s.newClient(timeout)
 	if err != nil {
 		return
 	}
@@ -179,7 +183,7 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	if err != nil {
 		return
 	}
-	client, err := s.newClient(u, timeout)
+	client, err := s.newClient(timeout)
 	if err != nil {
 		return
 	}
@@ -324,7 +328,7 @@ func (s *HTTPClient) getProxyURL() (proxyURL *url.URL) {
 			}
 		}
 		if proxyENV != "" {
-			if !strings.HasPrefix(proxyENV, "http://") {
+			if !strings.Contains(proxyENV, "://") {
 				proxyENV = "http://" + proxyENV
 			}
 			proxyURL, _ = url.Parse(proxyENV)
@@ -334,14 +338,9 @@ func (s *HTTPClient) getProxyURL() (proxyURL *url.URL) {
 }
 
 // new a http.Client
-func (s *HTTPClient) newClient(u string, timeout time.Duration) (client *http.Client, err error) {
+func (s *HTTPClient) newClient(timeout time.Duration) (client *http.Client, err error) {
 	client = &http.Client{}
 	client.Jar, _ = cookiejar.New(&cookiejar.Options{})
-	if strings.HasPrefix(u, "https://") {
-		client.Transport, err = s.newTransport(timeout)
-		if err != nil {
-			return
-		}
-	}
+	client.Transport, err = s.newTransport(timeout)
 	return
 }

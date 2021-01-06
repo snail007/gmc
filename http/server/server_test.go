@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go test -coverprofile=a.out;go tool cover -html=a.out
+//go test -coverprofile=a.out;go tool cover -html=a.out;rm a.out;
 
 func TestNew(t *testing.T) {
 	assert := assert.New(t)

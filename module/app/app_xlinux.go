@@ -24,7 +24,7 @@ func (s *GMCApp) reloadSignalMonitor() {
 		ch := make(chan os.Signal)
 		signal.Notify(ch, syscall.SIGUSR2)
 		<-ch
-		s.logger.Infof("Recieved USR2 signal , now reloading ...")
+		s.logger.Infof("Received USR2 signal , now reloading ...")
 		s.reload()
 	}()
 }

@@ -74,7 +74,9 @@ func TestMain(m *testing.M) {
 	cfg0.GCtime = 1
 	cfg0.TTL = 1
 	memoryStore, err = NewMemoryStore(cfg0)
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	os.Exit(m.Run())
 }
 

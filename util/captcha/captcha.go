@@ -179,17 +179,16 @@ func (c *Captcha) drawNoises(img *Image) {
 	}
 
 	// 绘制干扰线
+
 	for i := 0; i < dlen; i++ {
 		x := ra.Intn(size.X)
 		y := ra.Intn(size.Y)
 		o := int(math.Pow(-1, float64(i)))
 		w := ra.Intn(size.Y) * o
 		h := ra.Intn(size.Y/10) * o
-		colorindex := ra.Intn(len(c.frontColors))
-		img.DrawLine(x, y, x+w, y+h, c.frontColors[colorindex])
-		colorindex++
+		colorIndex := ra.Intn(len(c.frontColors))
+		img.DrawLine(x, y, x+w, y+h, c.frontColors[colorIndex])
 	}
-
 }
 
 // 绘制文字
@@ -259,7 +258,7 @@ func (c *Captcha) Create(num int, t StrType) (*Image, string) {
 
 func (c *Captcha) CreateCustom(str string) *Image {
 	if len(str) == 0 {
-		str = "unkown"
+		str = "unknown"
 	}
 	dst := NewImage(c.size.X, c.size.Y)
 	c.drawBkg(dst)

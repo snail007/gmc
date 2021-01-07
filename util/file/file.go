@@ -82,7 +82,7 @@ func FileSize(file string) (int64, error) {
 
 // GetHomeDir returns the home directory.
 //
-// Return "" if the home direcotry is empty.
+// Return "" if the home directory is empty.
 func GetHomeDir() string {
 	if v := os.Getenv("HOME"); v != "" { // For Unix/Linux
 		return v

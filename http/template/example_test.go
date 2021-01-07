@@ -30,6 +30,10 @@ func Example() {
 	b, err := tpl.Execute("user/list", map[string]string{
 		"head": "hello",
 	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	fmt.Println(string(b))
 	// Output: hello
 }

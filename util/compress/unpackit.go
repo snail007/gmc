@@ -187,15 +187,15 @@ func Unzip(r io.Reader, destPath string) (string, error) {
 	)
 
 	if f, ok := r.(*os.File); ok {
-		fstat, err := f.Stat()
-		if err != nil {
-			return "", err
+		fstat, e := f.Stat()
+		if e != nil {
+			return "", e
 		}
 		zr, err = zip.NewReader(f, fstat.Size())
 	} else {
-		data, err := ioutil.ReadAll(r)
-		if err != nil {
-			return "", err
+		data, e := ioutil.ReadAll(r)
+		if e != nil {
+			return "", e
 		}
 		memReader := bytes.NewReader(data)
 		zr, err = zip.NewReader(memReader, memReader.Size())

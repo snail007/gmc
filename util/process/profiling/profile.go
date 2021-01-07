@@ -111,7 +111,6 @@ func trimArgs(trim string, _args []string) ([]string, string, bool) {
 				value = strings.Trim(a[1], `"'`)
 			} else if len(_args) >= i+2 {
 				value = _args[i+1]
-				i++
 			} else {
 				found = false
 			}

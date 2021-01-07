@@ -101,15 +101,15 @@ func Test_Multi(t *testing.T) {
 
 	//GetMulti
 	data0, err := cMem.GetMulti([]string{"k1", "k2"})
+	assert.Nil(err)
 	assert.Equal("111", data0["k1"])
 	assert.Equal("222", data0["k2"])
 
 	//DelMulti
 	err = cMem.DelMulti([]string{"k1", "k2"})
 	assert.Nil(err)
-
 	_data, err := cMem.GetMulti([]string{"k1", "k2"})
-
+	assert.NotNil(err)
 	_, ok := _data["k1"]
 	assert.False(ok)
 	_, ok = _data["k2"]

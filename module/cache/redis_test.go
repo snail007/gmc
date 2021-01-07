@@ -105,6 +105,7 @@ func Test_RedisMulti(t *testing.T) {
 
 	//GetMulti
 	data0, err := rd.GetMulti([]string{"k1", "k2"})
+	assert.Nil(err)
 	assert.Equal("111", data0["k1"])
 	assert.Equal("222", data0["k2"])
 
@@ -113,7 +114,7 @@ func Test_RedisMulti(t *testing.T) {
 	assert.Nil(err)
 
 	_data, err := rd.GetMulti([]string{"k1", "k2"})
-
+	assert.Nil(err)
 	_, ok := _data["k1"]
 	assert.False(ok)
 	_, ok = _data["k2"]

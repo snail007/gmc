@@ -111,7 +111,7 @@ func Test_FileMulti(t *testing.T) {
 	assert.Nil(err)
 
 	_data, err := cFile.GetMulti([]string{"k1", "k2"})
-
+	assert.Nil(err)
 	_, ok := _data["k1"]
 	assert.False(ok)
 	_, ok = _data["k2"]

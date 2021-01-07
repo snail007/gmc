@@ -42,7 +42,7 @@ func NewJumper(proxyURL string, timeout time.Duration) (j Jumper, err error) {
 	case "https", "socks5s":
 		j.tls = true
 	default:
-		err = fmt.Errorf("unkown scheme of %s", j.proxyURL.String())
+		err = fmt.Errorf("unknown scheme of %s", j.proxyURL.String())
 	}
 	return
 }

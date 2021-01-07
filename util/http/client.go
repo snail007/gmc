@@ -242,7 +242,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 					return nil, e
 				}
 				if len(iparr) == 0 {
-					return nil, fmt.Errorf("can not reslove domain %s", host)
+					return nil, fmt.Errorf("can not resolve domain %s", host)
 				}
 				ip := iparr[rand.Intn(len(iparr))]
 				addr = net.JoinHostPort(ip.String(), port)
@@ -268,7 +268,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 				}
 			}
 			if !found {
-				return fmt.Errorf("unknown server certificate recieved")
+				return fmt.Errorf("unknown server certificate received")
 			}
 		} else {
 			if s.pinCert != nil {
@@ -280,7 +280,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 					}
 				}
 				if !found {
-					return fmt.Errorf("unknown server certificate recieved")
+					return fmt.Errorf("unknown server certificate received")
 				}
 			}
 		}

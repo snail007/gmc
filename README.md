@@ -1,7 +1,7 @@
 
 # GMC Web & API Framework
 
-<img align="right" src="/doc/images/logo2.png" width="200" height="auto"/>  
+<a href="#"><img align="right" src="/doc/images/logo2.png" width="200" height="auto"/></a>  
 
 [![Build Status](https://travis-ci.com/snail007/gmc.svg?branch=master)](https://travis-ci.com/snail007/gmc)
 [![codecov](https://codecov.io/gh/snail007/gmc/branch/master/graph/badge.svg)](https://codecov.io/gh/snail007/gmc)

@@ -6,7 +6,6 @@
 package gcache
 
 import (
-	"github.com/snail007/gmc/core"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -15,7 +14,7 @@ import (
 func TestMemCache_Get(t *testing.T) {
 	assert := assert.New(t)
 	_, err := cMem.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestMemCache_Set(t *testing.T) {
 	assert := assert.New(t)
@@ -31,7 +30,7 @@ func TestMemCache_Expire(t *testing.T) {
 	assert.Nil(err)
 	time.Sleep(time.Second)
 	_, err = cMem.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestMemCache_Delete(t *testing.T) {
 	assert := assert.New(t)
@@ -39,7 +38,7 @@ func TestMemCache_Delete(t *testing.T) {
 	assert.Nil(err)
 	cMem.Del("test")
 	_, err = cMem.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestMemCache_Has(t *testing.T) {
 	assert := assert.New(t)
@@ -54,7 +53,7 @@ func TestMemCache_Clean(t *testing.T) {
 	assert.Nil(err)
 	cMem.Clear()
 	_, err = cMem.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestMemCache_String(t *testing.T) {
 	assert := assert.New(t)

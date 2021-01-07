@@ -6,7 +6,6 @@
 package gcore
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -37,13 +36,4 @@ type Cache interface {
 	IncrN(key string, n int64) (int64, error)
 	// Decr decreases N cached int-type value by given key as a counter.
 	DecrN(key string, n int64) (int64, error)
-}
-
-var (
-	// ErrKeyNotExists is the error of key not exists
-	ErrKeyNotExists = fmt.Errorf("key not exists")
-)
-
-func IsNotExits(err error) bool {
-	return ErrKeyNotExists == err
 }

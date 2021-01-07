@@ -56,7 +56,7 @@ func (s *MemCache) Get(key string) (string, error) {
 	if b {
 		return gcast.ToString(v), nil
 	}
-	return "", gcore.ErrKeyNotExists
+	return "", ErrKeyNotExists
 }
 func (s *MemCache) Set(key string, value string, ttl time.Duration) error {
 	s.c.Set(key, value, ttl)
@@ -102,7 +102,7 @@ func (s *MemCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := s.Get(key)
-		if e != nil && gcore.IsNotExits(e) {
+		if e != nil && isNotExits(e) {
 			return nil, e
 		}
 		d[key] = gcast.ToString(v)

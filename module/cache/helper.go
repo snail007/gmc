@@ -160,3 +160,12 @@ func logf(f string, v ...interface{}) {
 		logger.Infof(gcore.Providers.Error("")().New(fmt.Sprintf(f, v...)).Error())
 	}
 }
+
+var (
+	// ErrKeyNotExists is the error of key not exists
+	ErrKeyNotExists = fmt.Errorf("key not exists")
+)
+
+func isNotExits(err error) bool {
+	return ErrKeyNotExists == err
+}

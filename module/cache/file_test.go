@@ -7,7 +7,6 @@ package gcache
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/core"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -17,7 +16,7 @@ func TestFileCache_Get(t *testing.T) {
 	assert := assert.New(t)
 	_, err := cFile.Get("test")
 	fmt.Println(err)
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestFileCache_Set(t *testing.T) {
 	assert := assert.New(t)
@@ -33,7 +32,7 @@ func TestFileCache_Expire(t *testing.T) {
 	assert.Nil(err)
 	time.Sleep(time.Second * 2)
 	_, err = cFile.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestFileCache_Delete(t *testing.T) {
 	assert := assert.New(t)
@@ -41,7 +40,7 @@ func TestFileCache_Delete(t *testing.T) {
 	assert.Nil(err)
 	cFile.Del("test")
 	_, err = cFile.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestFileCache_Has(t *testing.T) {
 	assert := assert.New(t)
@@ -56,7 +55,7 @@ func TestFileCache_Clean(t *testing.T) {
 	assert.Nil(err)
 	cFile.Clear()
 	_, err = cFile.Get("test")
-	assert.True(gcore.IsNotExits(err))
+	assert.True(isNotExits(err))
 }
 func TestFileCache_String(t *testing.T) {
 	assert := assert.New(t)

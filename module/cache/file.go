@@ -115,14 +115,14 @@ func (c *FileCache) Get(key string) (val string, err error) {
 	item, err := c.read(key)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = gcore.ErrKeyNotExists
+			err = ErrKeyNotExists
 		}
 		return
 	}
 
 	if item.hasExpired() {
 		os.Remove(c.filepath(key))
-		err = gcore.ErrKeyNotExists
+		err = ErrKeyNotExists
 		return
 	}
 	return gcast.ToString(item.Val), nil
@@ -207,10 +207,10 @@ func (c *FileCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
 		v, e := c.Get(key)
-		if e != nil && !gcore.IsNotExits(e) {
+		if e != nil && !isNotExits(e) {
 			return nil, e
 		}
-		if !gcore.IsNotExits(e) {
+		if !isNotExits(e) {
 			d[key] = v
 		}
 	}

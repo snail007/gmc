@@ -130,21 +130,19 @@ func TestList_MergeSlice(t *testing.T) {
 	assert.Equal(200, l.Len())
 }
 
-
-
 func TestList_MergeStringSlice(t *testing.T) {
 	assert := assert.New(t)
 	l := NewList()
 	for i := 0; i < 100; i++ {
-		l.Add(fmt.Sprintf("%v",i))
+		l.Add(fmt.Sprintf("%v", i))
 	}
 	l1 := []string{}
 	for i := 100; i < 200; i++ {
-		l1 = append(l1, fmt.Sprintf("%v",i))
+		l1 = append(l1, fmt.Sprintf("%v", i))
 	}
 	l.MergeStringSlice(l1)
 	for i := 0; i < 200; i++ {
-		assert.Equal(fmt.Sprintf("%d",i), l.Get(i))
+		assert.Equal(fmt.Sprintf("%d", i), l.Get(i))
 	}
 	assert.Equal(200, l.Len())
 }
@@ -335,7 +333,7 @@ func TestList_String(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		l.Add(i)
 	}
-	assert.Equal("[0 1]",fmt.Sprintf("%s",l))
+	assert.Equal("[0 1]", fmt.Sprintf("%s", l))
 }
 
 func TestList_ToStringSlice(t *testing.T) {

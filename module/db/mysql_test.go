@@ -124,10 +124,10 @@ func TestInsertBatch(t *testing.T) {
 	_ar := ar()
 	want := "INSERT INTO  `test` (`name`) \nVALUES (?),(?)"
 	got := strings.TrimSpace(_ar.InsertBatch("test", []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "admin11",
 		},
-		map[string]interface{}{
+		{
 			"name": "admin",
 		},
 	}).SQL())
@@ -140,10 +140,10 @@ func TestReplaceBatch(t *testing.T) {
 	_ar := ar()
 	want := "REPLACE INTO  `test` (`name`) \nVALUES (?),(?)"
 	got := strings.TrimSpace(_ar.ReplaceBatch("test", []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "admin11",
 		},
-		map[string]interface{}{
+		{
 			"name": "admin",
 		},
 	}).SQL())
@@ -175,11 +175,11 @@ func TestUpdateBatch(t *testing.T) {
 	_ar := ar()
 	want := "UPDATE  `test` \nSET `name` = CASE \nWHEN `gid` = ? THEN ? \nWHEN `gid` = ? THEN ? \nELSE `name` END \nWHERE `gid` IN (?,?)"
 	got := strings.TrimSpace(_ar.UpdateBatch("test", []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "admin11",
 			"gid":  22,
 		},
-		map[string]interface{}{
+		{
 			"name": "admin",
 			"gid":  33,
 		},
@@ -218,7 +218,7 @@ type User struct {
 }
 
 var rawRows = []map[string][]byte{
-	map[string][]byte{
+	{
 		"name":        []byte("jack"),
 		"id":          []byte("229"),
 		"weight":      []byte("60"),
@@ -227,7 +227,7 @@ var rawRows = []map[string][]byte{
 		"create_time": []byte("2017-10-10 09:00:09"),
 		"pid":         []byte("1"),
 	},
-	map[string][]byte{
+	{
 		"name":        []byte("jack"),
 		"id":          []byte("229"),
 		"weight":      []byte("60"),
@@ -281,12 +281,12 @@ func TestMapStructs(t *testing.T) {
 func TestUpdateBatch0(t *testing.T) {
 	// assert := assert.New(t)
 	ar := ar().UpdateBatch("test", []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"id":      "id1",
 			"gid":     22,
 			"name":    "test1",
 			"score +": 1,
-		}, map[string]interface{}{
+		}, {
 			"id":      "id2",
 			"gid":     33,
 			"name":    "test2",

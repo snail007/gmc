@@ -227,7 +227,7 @@ func (s *List) IndexOf(v interface{}) int {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	for i := 0; i < len(s.data); i++ {
-		if  s.data[i] == v {
+		if s.data[i] == v {
 			return i
 		}
 	}

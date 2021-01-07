@@ -268,7 +268,7 @@ func (c *Captcha) CreateCustom(str string) *Image {
 	return dst
 }
 
-var fontKinds = [][]int{[]int{10, 48}, []int{26, 97}, []int{26, 65}}
+var fontKinds = [][]int{{10, 48}, {26, 97}, {26, 65}}
 var letters = []byte("34578acdefghjkmnpqstwxyABCDEFGHJKMNPQRSVWXY")
 
 // 生成随机字符串

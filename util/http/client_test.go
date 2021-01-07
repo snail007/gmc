@@ -11,20 +11,20 @@ import (
 func TestHTTPClient_Header(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, _ := client.Post(httpServerURL+"/header",map[string]string{"name": "snail007"} , time.Second,map[string]string{"token": "200"})
+	body, _, _, _ := client.Post(httpServerURL+"/header", map[string]string{"name": "snail007"}, time.Second, map[string]string{"token": "200"})
 	assert.Equal("200", string(body))
 }
 func TestHTTPClient_Post(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, _ := client.Post(httpServerURL+"/post",map[string]string{"name": "snail007"} , time.Second,map[string]string{"token": "200"})
+	body, _, _, _ := client.Post(httpServerURL+"/post", map[string]string{"name": "snail007"}, time.Second, map[string]string{"token": "200"})
 	assert.Equal("snail007", string(body))
 }
 
 func TestHTTPClient_PostOfReader(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, _ := client.PostOfReader(httpServerURL+"/post",strings.NewReader("name=snail007") , time.Second,map[string]string{"token": "200"})
+	body, _, _, _ := client.PostOfReader(httpServerURL+"/post", strings.NewReader("name=snail007"), time.Second, map[string]string{"token": "200"})
 	assert.Equal("snail007", string(body))
 }
 
@@ -117,6 +117,6 @@ func TestHTTPClient_SetDNS(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetDNS("8.8.8.8:53")
-	body, _, _, _ := client.Get("http://www.baidu.com/", time.Second*3, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, map[string]string{"token": "200"})
 	assert.Contains(string(body), "STATUS OK")
 }

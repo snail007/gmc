@@ -207,7 +207,7 @@ func TestSet_AddFront(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		l.AddFront(i)
 	}
-	for i := 1; i >=0; i-- {
+	for i := 1; i >= 0; i-- {
 		l.AddFront(i)
 	}
 	assert.Equal("[1 0]", fmt.Sprintf("%s", l))

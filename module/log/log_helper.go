@@ -16,7 +16,7 @@ import (
 )
 
 func NewFromConfig(c gcore.Config, prefix string) (l gcore.Logger) {
-	l = NewGMCLog(prefix)
+	l = NewLogger(prefix)
 	cfg := c.Sub("log")
 	if cfg == nil {
 		return
@@ -59,7 +59,7 @@ func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter) {
 	if !ExistsDir(dir) {
 		os.MkdirAll(dir, 0755)
 	}
-	logger := NewGMCLog()
+	logger := NewLogger()
 	filename0 := filepath.Join(dir, TimeFormatText(time.Now(), filename))
 	w0, err := os.OpenFile(filename0, os.O_CREATE|os.O_APPEND, 0700)
 	if err != nil {

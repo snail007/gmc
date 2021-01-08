@@ -32,7 +32,7 @@ type GMCLog struct {
 	asyncWG   *sync.WaitGroup
 }
 
-func NewGMCLog(prefix ...string) gcore.Logger {
+func NewLogger(prefix ...string) gcore.Logger {
 	pre := ""
 	if len(prefix) == 1 {
 		pre = prefix[0]

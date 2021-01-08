@@ -153,7 +153,7 @@ func TestMain(m *testing.M) {
 	providers := gcore.Providers
 	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
-			return glog.NewGMCLog(prefix)
+			return glog.NewLogger(prefix)
 		}
 		return glog.NewFromConfig(ctx.Config(), prefix)
 	})

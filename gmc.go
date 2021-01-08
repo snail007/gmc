@@ -80,7 +80,7 @@ func init() {
 
 	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		sync.OnceDo("gmc-i18n-init", func() {
+		gsync.OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
@@ -99,7 +99,7 @@ func init() {
 
 	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		sync.OnceDo("gmc-cache-init", func() {
+		gsync.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -110,7 +110,7 @@ func init() {
 
 	providers.RegisterDatabase("", func(ctx gcore.Ctx) (gcore.Database, error) {
 		var err error
-		sync.OnceDo("gmc-cache-init", func() {
+		gsync.OnceDo("gmc-cache-init", func() {
 			err = gdb.Init(ctx.Config())
 		})
 		if err != nil {

@@ -99,7 +99,7 @@ func (s *Model) GetByWithFields(fields string, where map[string]interface{}) (re
 }
 
 func (s *Model) MGetByIDs(ids []string, orderBy ...interface{}) (ret map[string]string, error error) {
-	return s.MGetByIDsWithFields("*", ids, orderBy)
+	return s.MGetByIDsWithFields("*", ids, orderBy...)
 }
 
 func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...interface{}) (ret map[string]string, error error) {
@@ -119,7 +119,7 @@ func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...inte
 }
 
 func (s *Model) GetAll(orderBy ...interface{}) (ret []map[string]string, error error) {
-	return s.GetAllWithFields("*", orderBy)
+	return s.GetAllWithFields("*", orderBy...)
 }
 
 func (s *Model) GetAllWithFields(fields string, orderBy ...interface{}) (ret []map[string]string, error error) {
@@ -210,7 +210,7 @@ func (s *Model) UpdateBy(where, data map[string]interface{}) (cnt int64, err err
 }
 
 func (s *Model) Page(where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, total int, err error) {
-	return s.PageWithFields("*", where, offset, length, orderBy)
+	return s.PageWithFields("*", where, offset, length, orderBy...)
 }
 
 func (s *Model) PageWithFields(fields string, where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, total int, err error) {
@@ -241,7 +241,7 @@ func (s *Model) PageWithFields(fields string, where map[string]interface{}, offs
 }
 
 func (s *Model) List(where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, err error) {
-	return s.ListWithFields("*", where, offset, length, orderBy)
+	return s.ListWithFields("*", where, offset, length, orderBy...)
 }
 
 func (s *Model) ListWithFields(fields string, where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, err error) {

@@ -18,7 +18,7 @@ func addFunc(ctx gcore.Ctx) map[string]interface{} {
 	f2 := map[string]interface{}{
 		"tr":     i18n.TrV,
 		"trs":    i18n.Tr,
-		"string": anyTostring,
+		"string": anyToString,
 		"tohtml": anyToTplHTML,
 		"val":    trimNoValue,
 	}
@@ -28,22 +28,28 @@ func addFunc(ctx gcore.Ctx) map[string]interface{} {
 	return funcMap
 }
 
-func anyTostring(v interface{}) string {
+func anyToString(v interface{}) string {
 	return gcast.ToString(v)
 }
 
 func anyToTplHTML(v interface{}) template.HTML {
-	return template.HTML(anyTostring(v))
+	return template.HTML(anyToString(v))
 }
 
-func trimNoValue(m interface{}, key string) interface{} {
+func trimNoValue(m interface{}, key ...string) interface{} {
+	if m == nil {
+		return ""
+	}
+	if len(key) == 0 {
+		return m
+	}
 	switch val := m.(type) {
 	case map[string]interface{}:
-		if v, ok := val[key]; ok {
+		if v, ok := val[key[0]]; ok {
 			return v
 		}
 	case map[string]string:
-		if v, ok := val[key]; ok {
+		if v, ok := val[key[0]]; ok {
 			return v
 		}
 	}

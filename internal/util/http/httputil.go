@@ -86,7 +86,7 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 		default:
 			t := reflect.TypeOf(v)
 			//map, slice
-			if t.Kind() == reflect.Slice || t.Kind() == reflect.Map {
+			if t.Kind() == reflect.Slice || t.Kind() == reflect.Map || t.Kind() == reflect.Struct {
 				var b []byte
 				b, err = json.Marshal(v)
 				if err == nil {

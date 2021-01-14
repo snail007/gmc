@@ -56,12 +56,12 @@ func initHanlder(api gcore.APIServer) {
 		a /= a
 	})
 	// access ctx
-	// http://foo.com/ctxfoo
+	// http://foo.com/v1/ctxfoo
 	group0.Router().HandlerFunc("GET", "/ctx:name", func(w http.ResponseWriter, r *http.Request) {
 		ctx := gmchttp.GetCtx(w)
 		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
 	})
-	// http://foo.com/2ctxfoo
+	// http://foo.com/v1/2ctxfoo
 	group0.Router().Handle("GET", "/2ctx:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
 		ctx := gmchttp.GetCtx(w)
 		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())

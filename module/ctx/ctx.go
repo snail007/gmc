@@ -523,13 +523,13 @@ func (this *Ctx) SetCookie(name, value string, maxAge int, path, domain string, 
 // ErrNoCookie if not found. And return the named cookie is unescaped.
 // If multiple cookies match the given name, only one cookie will
 // be returned.
-func (this *Ctx) Cookie(name string) (string, error) {
+func (this *Ctx) Cookie(name string) string {
 	cookie, err := this.request.Cookie(name)
 	if err != nil {
-		return "", err
+		return ""
 	}
 	val, _ := url.QueryUnescape(cookie.Value)
-	return val, nil
+	return val
 }
 
 // File writes the specified file into the body stream in an efficient way.

@@ -80,7 +80,7 @@ type Ctx interface {
 	Header(key string) string
 	RequestBody() ([]byte, error)
 	SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool)
-	Cookie(name string) (string, error)
+	Cookie(name string) string
 	WriteFile(filepath string)
 	WriteFileFromFS(filepath string, fs http.FileSystem)
 	WriteFileAttachment(filepath, filename string)

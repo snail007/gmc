@@ -6,16 +6,21 @@
 package gcore
 
 import (
+	"mime/multipart"
 	"net"
 	"net/http"
 	"time"
 )
 
 type Ctx interface {
+	Conn() net.Conn
+	SetConn(conn net.Conn)
+	RemoteAddr() string
+	SetRemoteAddr(remoteAddr string)
 	Template() Template
 	SetTemplate(template Template)
 	I18n() I18n
-	SetI18n(I18n)
+	SetI18n(i18n I18n)
 	Config() Config
 	SetConfig(config Config)
 	Logger() Logger
@@ -31,6 +36,7 @@ type Ctx interface {
 	LocalAddr() string
 	SetLocalAddr(localAddr string)
 	Param() Params
+	GetParam(key string) string
 	Request() *http.Request
 	SetRequest(request *http.Request)
 	Response() http.ResponseWriter
@@ -42,6 +48,7 @@ type Ctx interface {
 	WriteE(data ...interface{}) (n int, err error)
 	WriteHeader(statusCode int)
 	StatusCode() int
+	Status(code int)
 	WriteCount() int64
 	IsPOST() bool
 	IsGET() bool
@@ -51,14 +58,37 @@ type Ctx interface {
 	IsHEAD() bool
 	IsOPTIONS() bool
 	IsAJAX() bool
+	IsWebsocket() bool
 	Stop(msg ...interface{})
+	StopJSON(code int, msg interface{})
 	ClientIP() (ip string)
 	NewPager(perPage int, total int64) Paginator
 	GET(key string, Default ...string) (val string)
+	GETArray(key string, Default ...string) (val []string)
+	GETData() (data map[string]string)
+	GetPostData() (data map[string]string)
 	POST(key string, Default ...string) (val string)
+	POSTArray(key string, Default ...string) (val []string)
+	POSTData() (data map[string]string)
+	GetPost(key string, Default ...string) (val string)
+	Host() (host string)
+	JSON(code int, data interface{}) (err error)
+	PrettyJSON(code int, data interface{}) (err error)
+	JSONP(code int, data interface{}) (err error)
 	Redirect(url string) (val string)
-	Conn() net.Conn
-	SetConn(conn net.Conn)
-	RemoteAddr() string
-	SetRemoteAddr(remoteAddr string)
+	SetHeader(key, value string)
+	Header(key string) string
+	RequestBody() ([]byte, error)
+	SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool)
+	Cookie(name string) (string, error)
+	WriteFile(filepath string)
+	WriteFileFromFS(filepath string, fs http.FileSystem)
+	WriteFileAttachment(filepath, filename string)
+	FullPath() string
+	Set(key interface{}, value interface{})
+	Get(key interface{}) (value interface{}, exists bool)
+	MustGet(key interface{}) (v interface{})
+	FormFile(name string, maxMultipartMemory int64) (*multipart.FileHeader, error)
+	MultipartForm(maxMultipartMemory int64) (*multipart.Form, error)
+	SaveUploadedFile(file *multipart.FileHeader, dst string) error
 }

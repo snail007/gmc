@@ -60,7 +60,12 @@ func (s *GMCLog) asyncWriterInit() {
 		for {
 			item := <-s.bufChn
 			s.output(item.msg)
-			s.asyncWG.Done()
+			func() {
+				defer func() {
+					_ = recover()
+				}()
+				s.asyncWG.Done()
+			}()
 		}
 	}()
 }

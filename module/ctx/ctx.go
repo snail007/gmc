@@ -6,10 +6,18 @@
 package gctx
 
 import (
+	"bytes"
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	gmap "github.com/snail007/gmc/util/map"
 	"github.com/snail007/gmc/util/paginator"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -31,6 +39,8 @@ type Ctx struct {
 	template   gcore.Template
 	remoteAddr string
 	conn       net.Conn
+	cookies    gcore.Cookies
+	metadata   *gmap.Map
 }
 
 func (this *Ctx) Conn() net.Conn {
@@ -104,7 +114,7 @@ func (this *Ctx) Clone() gcore.Ctx {
 	if ps == nil {
 		ps = gcore.Params{}
 	}
-	return &Ctx{
+	c := &Ctx{
 		app:        this.app,
 		apiServer:  this.apiServer,
 		webServer:  this.webServer,
@@ -120,6 +130,11 @@ func (this *Ctx) Clone() gcore.Ctx {
 		template:   this.template,
 		conn:       this.conn,
 	}
+	c.metadata = this.metadata.Clone()
+	paramCopy := make([]gcore.Param, len(this.param))
+	copy(paramCopy, this.param)
+	c.param = paramCopy
+	return c
 }
 
 func (this *Ctx) CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...gcore.Params) gcore.Ctx {
@@ -134,6 +149,7 @@ func (this *Ctx) CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...gco
 	c.SetResponse(w)
 	c.SetRequest(r)
 	c.SetParam(ps0)
+	c.(*Ctx).metadata = this.metadata.Clone()
 	return c
 }
 
@@ -163,6 +179,16 @@ func (this *Ctx) SetLocalAddr(localAddr string) {
 
 func (this *Ctx) Param() gcore.Params {
 	return this.param
+}
+
+// GetParam returns the value of the URL param.
+// It is a shortcut for c.Param().ByName(key)
+//     router.GET("/user/:id", func(c *gcore.Ctx) {
+//         // a GET request to /user/john
+//         id := c.Param("id") // id == "john"
+//     })
+func (this *Ctx) GetParam(key string) string {
+	return this.param.ByName(key)
 }
 
 func (this *Ctx) Request() *http.Request {
@@ -220,6 +246,11 @@ func (this *Ctx) StatusCode() int {
 	return ghttputil.StatusCode(this.Response())
 }
 
+// Status sets the HTTP response code.
+func (this *Ctx) Status(code int) {
+	this.response.WriteHeader(code)
+}
+
 // WriteCount acquires outgoing bytes count by writer
 func (this *Ctx) WriteCount() int64 {
 	return ghttputil.WriteCount(this.Response())
@@ -265,9 +296,27 @@ func (this *Ctx) IsAJAX() bool {
 	return strings.EqualFold(this.Request().Header.Get("X-Requested-With"), "XMLHttpRequest")
 }
 
-// Stop will exit controller method or api handle function at once
+// IsWebsocket returns true if the request headers indicate that a websocket
+// handshake is being initiated by the client.
+func (this *Ctx) IsWebsocket() bool {
+	if strings.Contains(strings.ToLower(this.request.Header.Get("Connection")), "upgrade") &&
+		strings.EqualFold(this.request.Header.Get("Upgrade"), "websocket") {
+		return true
+	}
+	return false
+}
+
+// Stop will exit controller method or api handle function at once.
 func (this *Ctx) Stop(msg ...interface{}) {
 	ghttputil.Stop(this.Response(), msg...)
+}
+
+// StopJSON will exit controller method or api handle function at once.
+// And  writes the status code and a JSON body.
+// It also sets the Content-Type as "application/json".
+func (this *Ctx) StopJSON(code int, msg interface{}) {
+	this.JSON(code, msg)
+	this.Stop()
 }
 
 // ClientIP acquires the real client ip, search in X-Forwarded-For, X-Real-IP, request.RemoteAddr.
@@ -305,12 +354,115 @@ func (this *Ctx) GET(key string, Default ...string) (val string) {
 	return
 }
 
+// GETArray returns a slice of strings for a given query key.
+func (this *Ctx) GETArray(key string, Default ...string) (val []string) {
+	this.request.ParseForm()
+	val = this.Request().URL.Query()[key]
+	if len(val) == 0 && len(Default) > 0 {
+		return Default
+	}
+	return
+}
+
+// GETData gets full k,v query data from request url.
+func (this *Ctx) GETData() (data map[string]string) {
+	for k, v := range this.Request().URL.Query() {
+		if len(v) > 0 {
+			data[k] = v[0]
+		}
+	}
+	return
+}
+
+// GETData gets full k,v query data from request url.
+func (this *Ctx) GetPostData() (data map[string]string) {
+	for k, v := range this.Request().URL.Query() {
+		if len(v) > 0 {
+			data[k] = v[0]
+		}
+	}
+	return
+}
+
 // POST gets the first value associated with the given key in post body.
 func (this *Ctx) POST(key string, Default ...string) (val string) {
 	val = this.Request().PostFormValue(key)
 	if val == "" && len(Default) > 0 {
 		return Default[0]
 	}
+	return
+}
+
+// POSTArray returns a slice of strings for a given form key.
+// The length of the slice depends on the number of params with the given key.
+func (this *Ctx) POSTArray(key string, Default ...string) (val []string) {
+	this.Request().ParseForm()
+	val = this.Request().PostForm[key]
+	if len(val) == 0 && len(Default) > 0 {
+		return Default
+	}
+	return
+}
+
+// POSTData gets full k,v query data from request FORM.
+func (this *Ctx) POSTData() (data map[string]string) {
+	this.Request().ParseForm()
+	for k, v := range this.Request().PostForm {
+		if len(v) > 0 {
+			data[k] = v[0]
+		}
+	}
+	return
+}
+
+// GetPost gets the first value associated with the given key in GET or POST.
+func (this *Ctx) GetPost(key string, Default ...string) (val string) {
+	val = this.GET(key, "")
+	if val == "" {
+		return this.POST(key, Default...)
+	}
+	return
+}
+
+// Host returns the HOST in requested HTTP HEADER.
+func (this *Ctx) Host() (host string) {
+	return this.request.Host
+}
+
+// JSON serializes the given struct as JSON into the response body.
+// It also sets the Content-Type as "application/json".
+func (this *Ctx) JSON(code int, data interface{}) (err error) {
+	this.response.WriteHeader(code)
+	this.response.Header().Set("Content-Type", "application/json")
+	_, err = this.Write(data)
+	return
+}
+
+// PrettyJSON serializes the given struct as pretty JSON (indented) into the response body.
+// It also sets the Content-Type as "application/json". WARNING: we recommend to use this only for
+// development purposes since printing pretty JSON is more CPU and bandwidth consuming.
+// Use Ctx.JSON() instead.
+func (this *Ctx) PrettyJSON(code int, data interface{}) (err error) {
+	this.response.WriteHeader(code)
+	this.response.Header().Set("Content-Type", "application/json")
+	_, err = ghttputil.WritePretty(this.Response(), data)
+	return
+}
+
+// JSONP serializes the given struct as JSON into the response body.
+// It sets the Content-Type as "application/javascript".
+func (this *Ctx) JSONP(code int, data interface{}) (err error) {
+	callback := this.GET("callback", "_jsonp")
+	this.response.WriteHeader(code)
+	this.response.Header().Set("Content-Type", "application/javascript")
+	var buf = &bytes.Buffer{}
+	buf.Write([]byte(callback + "("))
+	_, err = ghttputil.Write(buf, data)
+	if err != nil {
+		return
+	}
+	buf.Write([]byte(")"))
+	_, err = this.Write(buf.Bytes())
 	return
 }
 
@@ -321,16 +473,174 @@ func (this *Ctx) Redirect(url string) (val string) {
 	return
 }
 
+// SetHeader is a intelligent shortcut for ctx.Response().Header().Set(key, value).
+// It writes a header in the response.
+// If value == "", this method removes the header `ctx.Response().Header().Del(key)`
+func (this *Ctx) SetHeader(key, value string) {
+	if value == "" {
+		this.response.Header().Del(key)
+		return
+	}
+	this.response.Header().Set(key, value)
+}
+
+// Header returns value from request headers.
+func (this *Ctx) Header(key string) string {
+	return this.request.Header.Get(key)
+}
+
+// RequestBody returns raw request body data.
+func (this *Ctx) RequestBody() ([]byte, error) {
+	return ioutil.ReadAll(this.request.Body)
+}
+
+func (this *Ctx) getCookies() gcore.Cookies {
+	if this.cookies == nil {
+		this.cookies = gcore.Providers.Cookies("")(this)
+	}
+	return this.cookies
+}
+
+// SetCookie adds a Set-Cookie header to the ResponseWriter's headers.
+// The provided cookie must have a valid Name. Invalid cookies may be
+// silently dropped.
+func (this *Ctx) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
+	if path == "" {
+		path = "/"
+	}
+	http.SetCookie(this.response, &http.Cookie{
+		Name:     name,
+		Value:    url.QueryEscape(value),
+		MaxAge:   maxAge,
+		Path:     path,
+		Domain:   domain,
+		Secure:   secure,
+		HttpOnly: httpOnly,
+	})
+}
+
+// Cookie returns the named cookie provided in the request or
+// ErrNoCookie if not found. And return the named cookie is unescaped.
+// If multiple cookies match the given name, only one cookie will
+// be returned.
+func (this *Ctx) Cookie(name string) (string, error) {
+	cookie, err := this.request.Cookie(name)
+	if err != nil {
+		return "", err
+	}
+	val, _ := url.QueryUnescape(cookie.Value)
+	return val, nil
+}
+
+// File writes the specified file into the body stream in an efficient way.
+func (this *Ctx) WriteFile(filepath string) {
+	http.ServeFile(this.response, this.request, filepath)
+}
+
+// FileFromFS writes the specified file from http.FileSystem into the body stream in an efficient way.
+func (this *Ctx) WriteFileFromFS(filepath string, fs http.FileSystem) {
+	defer func(old string) {
+		this.request.URL.Path = old
+	}(this.request.URL.Path)
+
+	this.request.URL.Path = filepath
+
+	http.FileServer(fs).ServeHTTP(this.response, this.request)
+}
+
+// WriteFileAttachment writes the specified file into the body stream in an efficient way
+// On the client side, the file will typically be downloaded with the given filename
+func (this *Ctx) WriteFileAttachment(filepath, filename string) {
+	this.response.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	http.ServeFile(this.response, this.request, filepath)
+}
+
+// FullPath returns a matched route full path. For not found routes
+// returns an empty string.
+//     router.GET("/user/:id", func(c gcore.Ctx) {
+//         c.FullPath() == "/user/:id" // true
+//     })
+func (this *Ctx) FullPath() string {
+	return this.param.MatchedRoutePath()
+}
+
+// Set is used to store a new key/value pair exclusively for this context.
+// It also lazy initializes  c.Keys if it was not used previously.
+func (this *Ctx) Set(key interface{}, value interface{}) {
+	this.metadata.Store(key, value)
+}
+
+// Get returns the value for the given key, ie: (value, true).
+// If the value does not exists it returns (nil, false)
+func (this *Ctx) Get(key interface{}) (value interface{}, exists bool) {
+	return this.metadata.Load(key)
+}
+
+// MustGet returns the value for the given key if it exists, otherwise it panics.
+func (this *Ctx) MustGet(key interface{}) (v interface{}) {
+	v, _ = this.metadata.Load(key)
+	return
+}
+
+// FormFile returns the first file for the provided form key.
+// maxMultipartMemory limits the request form parser using memory byte size.
+func (this *Ctx) FormFile(name string, maxMultipartMemory int64) (*multipart.FileHeader, error) {
+	if maxMultipartMemory <= 0 {
+		maxMultipartMemory = 32 << 20
+	}
+	if this.request.MultipartForm == nil {
+		if err := this.request.ParseMultipartForm(maxMultipartMemory); err != nil {
+			return nil, err
+		}
+	}
+	f, fh, err := this.request.FormFile(name)
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
+	return fh, err
+}
+
+// MultipartForm is the parsed multipart form, including file uploads.
+// maxMultipartMemory limits the request form parser using memory byte size.
+func (this *Ctx) MultipartForm(maxMultipartMemory int64) (*multipart.Form, error) {
+	if maxMultipartMemory <= 0 {
+		maxMultipartMemory = 32 << 20
+	}
+	err := this.request.ParseMultipartForm(maxMultipartMemory)
+	return this.request.MultipartForm, err
+}
+
+// SaveUploadedFile uploads the form file to specific dst.
+func (this *Ctx) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, src)
+	return err
+}
+
 func NewCtx() *Ctx {
 	return &Ctx{
-		param: gcore.Params{},
+		param:    gcore.Params{},
+		metadata: gmap.NewMap(),
 	}
 }
 
 func NewCtxFromConfig(c gcore.Config) *Ctx {
 	return &Ctx{
-		config: c,
-		param:  gcore.Params{},
+		config:   c,
+		param:    gcore.Params{},
+		metadata: gmap.NewMap(),
 	}
 }
 
@@ -342,8 +652,9 @@ func NewCtxFromConfigFile(file string) (ctx *Ctx, err error) {
 		return
 	}
 	ctx = &Ctx{
-		config: c,
-		param:  gcore.Params{},
+		config:   c,
+		param:    gcore.Params{},
+		metadata: gmap.NewMap(),
 	}
 	return
 }

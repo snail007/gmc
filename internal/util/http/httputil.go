@@ -59,7 +59,16 @@ func StopE(err interface{}, fn ...func()) {
 	}
 	panic("__STOP__")
 }
+
 func Write(w io.Writer, data ...interface{}) (n int, err error) {
+	return write(false, w, data...)
+}
+
+func WritePretty(w io.Writer, data ...interface{}) (n int, err error) {
+	return write(true, w, data...)
+}
+
+func write(pretty bool, w io.Writer, data ...interface{}) (n int, err error) {
 	for _, d := range data {
 		if d == nil {
 			continue
@@ -88,7 +97,11 @@ func Write(w io.Writer, data ...interface{}) (n int, err error) {
 			//map, slice
 			if t.Kind() == reflect.Slice || t.Kind() == reflect.Map || t.Kind() == reflect.Struct {
 				var b []byte
-				b, err = json.Marshal(v)
+				if pretty {
+					b, err = json.MarshalIndent(v, "", "    ")
+				} else {
+					b, err = json.Marshal(v)
+				}
 				if err == nil {
 					n, err = w.Write(b)
 				}

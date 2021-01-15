@@ -8,8 +8,6 @@
 *.prof
 /*.html
 .idea
-/demos/website/website
 go.sum
-/gmc/app/logs
 *.log
 gmcrun.toml

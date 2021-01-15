@@ -1295,10 +1295,10 @@ cd $GOPATH/src/foo.com/foo/myadmin
 操作步骤，执行下面命令：
 
 ```shell
-gmct view -n user
+gmct view -n user -t user
 ```
 
-执行完毕，发现当前目录多了一个`user.go`的模型文件。
+执行完毕，发现当前目录多了`list.html`和`form.html`的views文件。
 
 参数说明：
 

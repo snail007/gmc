@@ -2,6 +2,7 @@ package gctx
 
 import (
 	"bytes"
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	ghttputil "github.com/snail007/gmc/internal/util/http"
 	assert2 "github.com/stretchr/testify/assert"
@@ -97,6 +98,30 @@ func TestCtx_JSON(t *testing.T) {
 		{mockCtx("GET", "/", ""), 404, "", 404, ""},
 	} {
 		v.ctx.JSON(v.code, v.data)
+		assert.Equal(v.exceptCode, v.ctx.response.(*httptest.ResponseRecorder).Code)
+		data, _ := ioutil.ReadAll(v.ctx.response.(*httptest.ResponseRecorder).Body)
+		assert.Equal(v.exceptData, string(data))
+	}
+}
+
+func TestCtx_PrettyJSON(t *testing.T) {
+	assert := assert2.New(t)
+	for _, v := range []struct {
+		ctx        *Ctx
+		code       int
+		data       interface{}
+		exceptCode int
+		exceptData string
+	}{
+		{mockCtx("GET", "/", ""), 200, map[string]string{"a": "b"}, 200, `{
+    "a": "b"
+}`},
+		{mockCtx("GET", "/", ""), 500, []string{"a"}, 500, `[
+    "a"
+]`},
+		{mockCtx("GET", "/", ""), 404, "", 404, ""},
+	} {
+		v.ctx.PrettyJSON(v.code, v.data)
 		assert.Equal(v.exceptCode, v.ctx.response.(*httptest.ResponseRecorder).Code)
 		data, _ := ioutil.ReadAll(v.ctx.response.(*httptest.ResponseRecorder).Body)
 		assert.Equal(v.exceptData, string(data))
@@ -287,6 +312,108 @@ func TestCtx_GetXXX(t *testing.T) {
 		}, func(ctx *Ctx) interface{} {
 			return "test=a; Path=/; HttpOnly; Secure"
 		}, "SetCookie"},
+		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			var err string
+			func() {
+				defer func() {
+					e := recover()
+					err = fmt.Sprintf("%s", e)
+				}()
+				ctx.Stop("a")
+			}()
+			output := ctx.response.(*httptest.ResponseRecorder).Body.String()
+			return output == "a" && err == "__STOP__"
+		}, func(ctx *Ctx) interface{} {
+			return true
+		}, "Stop"},
+		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			var err string
+			func() {
+				defer func() {
+					e := recover()
+					err = fmt.Sprintf("%s", e)
+				}()
+				ctx.StopJSON(400, []string{"a"})
+			}()
+			code := ctx.response.(*httptest.ResponseRecorder).Code
+			output := ctx.response.(*httptest.ResponseRecorder).Body.String()
+			return code == 400 && output == `["a"]` && err == "__STOP__"
+		}, func(ctx *Ctx) interface{} {
+			return true
+		}, "StopJSON"},
+		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.NewPager(0, 0) != nil
+		}, func(ctx *Ctx) interface{} {
+			return true
+		}, "NewPager"},
+		{mockCtx("GET", "/?a=1&b=2", ""), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.GETData()
+		}, func(ctx *Ctx) interface{} {
+			return map[string]string{"a": "1", "b": "2"}
+		}, "GETData"},
+		{mockCtx("GET", "/?a=1&a=2", ""), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.GETArray("a")
+		}, func(ctx *Ctx) interface{} {
+			return []string{"1", "2"}
+		}, "GETArray"},
+		{mockCtx("POST", "/", "a=1&b=2"), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.POSTData()
+		}, func(ctx *Ctx) interface{} {
+			return map[string]string{"a": "1", "b": "2"}
+		}, "POSTData"},
+		{mockCtx("POST", "/", "a=1&a=2"), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.POSTArray("a")
+		}, func(ctx *Ctx) interface{} {
+			return []string{"1", "2"}
+		}, "POSTArray"},
+		{mockCtx("POST", "/?a=2", "a=1"), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.GetPost("a")
+		}, func(ctx *Ctx) interface{} {
+			return "2"
+		}, "GetPost"},
+		{mockCtx("POST", "/", "a=2"), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			return ctx.GetPost("a")
+		}, func(ctx *Ctx) interface{} {
+			return "2"
+		}, "GetPost"},
+		{mockCtx("POST", "/", "a=2"), func(ctx *Ctx) {
+			ctx.request.Host = "foo.com"
+		}, func(ctx *Ctx) interface{} {
+			return ctx.Host()
+		}, func(ctx *Ctx) interface{} {
+			return "foo.com"
+		}, "Host"},
+		{mockCtx("POST", "/", "abc"), func(ctx *Ctx) {
+		}, func(ctx *Ctx) interface{} {
+			b, _ := ctx.RequestBody()
+			return string(b)
+		}, func(ctx *Ctx) interface{} {
+			return "abc"
+		}, "RequestBody"},
+		{mockCtx("POST", "/", "abc"), func(ctx *Ctx) {
+			ctx.Set("a", "1")
+		}, func(ctx *Ctx) interface{} {
+			v, _ := ctx.Get("a")
+			return v
+		}, func(ctx *Ctx) interface{} {
+			return "1"
+		}, "Get-Set"},
+		{mockCtx("POST", "/", "abc"), func(ctx *Ctx) {
+			ctx.Set("a", "1")
+		}, func(ctx *Ctx) interface{} {
+			return ctx.MustGet("a")
+		}, func(ctx *Ctx) interface{} {
+			return "1"
+		}, "MustGet"},
 	} {
 		v.setter(v.ctx)
 		assert.Equal(v.excepted(v.ctx), v.getter(v.ctx), v.testTag)

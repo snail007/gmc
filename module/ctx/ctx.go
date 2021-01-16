@@ -364,6 +364,7 @@ func (this *Ctx) GETArray(key string, Default ...string) (val []string) {
 
 // GETData gets full k,v query data from request url.
 func (this *Ctx) GETData() (data map[string]string) {
+	data = make(map[string]string)
 	for k, v := range this.Request().URL.Query() {
 		if len(v) > 0 {
 			data[k] = v[0]
@@ -394,6 +395,7 @@ func (this *Ctx) POSTArray(key string, Default ...string) (val []string) {
 
 // POSTData gets full k,v query data from request FORM.
 func (this *Ctx) POSTData() (data map[string]string) {
+	data = make(map[string]string)
 	this.Request().ParseForm()
 	for k, v := range this.Request().PostForm {
 		if len(v) > 0 {

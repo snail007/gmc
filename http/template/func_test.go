@@ -21,25 +21,25 @@ func TestVal(t *testing.T) {
 	assert.Empty(output)
 
 	output, err = tpl.Execute("val/val1", map[string]string{
-		"test":"test",
+		"test": "test",
 	})
 	assert.Nil(err)
-	assert.Equal("test",string(output))
+	assert.Equal("test", string(output))
 
 	output, err = tpl.Execute("val/val2", map[string]interface{}{
-		"map":map[string]string{"a":"a"},
+		"map": map[string]string{"a": "a"},
 	})
 	assert.Nil(err)
-	assert.Equal("a",string(output))
+	assert.Equal("a", string(output))
 
 	output, err = tpl.Execute("val/val2", map[string]interface{}{
-		"map":map[string]interface{}{"a":"a"},
+		"map": map[string]interface{}{"a": "a"},
 	})
 	assert.Nil(err)
-	assert.Equal("a",string(output))
+	assert.Equal("a", string(output))
 
 	output, err = tpl.Execute("val/val2", map[string]interface{}{
-		"map":map[string]interface{}{"b":"b"},
+		"map": map[string]interface{}{"b": "b"},
 	})
 	assert.Nil(err)
 	assert.Empty(output)

@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -414,6 +415,25 @@ func TestCtx_GetXXX(t *testing.T) {
 		}, func(ctx *Ctx) interface{} {
 			return "1"
 		}, "MustGet"},
+		{mockCtx("POST", "/", "abc"), func(ctx *Ctx) {
+			ioutil.WriteFile("a.txt", []byte("a"), 0755)
+			ctx.WriteFile("a.txt")
+			os.Remove("a.txt")
+		}, func(ctx *Ctx) interface{} {
+			return "a" == ctx.response.(*httptest.ResponseRecorder).Body.String()
+		}, func(ctx *Ctx) interface{} {
+			return true
+		}, "WriteFile"},
+		{mockCtx("POST", "/", "abc"), func(ctx *Ctx) {
+			ioutil.WriteFile("a.txt", []byte("a"), 0755)
+			ctx.WriteFileAttachment("a.txt", "b.txt")
+			os.Remove("a.txt")
+		}, func(ctx *Ctx) interface{} {
+			w := ctx.response.(*httptest.ResponseRecorder)
+			return "a" == w.Body.String() && w.Header().Get("Content-Disposition") == "attachment; filename=\"b.txt\""
+		}, func(ctx *Ctx) interface{} {
+			return true
+		}, "WriteFileAttachment"},
 	} {
 		v.setter(v.ctx)
 		assert.Equal(v.excepted(v.ctx), v.getter(v.ctx), v.testTag)

@@ -11,3 +11,9 @@
 go.sum
 *.log
 gmcrun.toml
+
+!/vendor/github.com/davecgh/go-spew
+!/vendor/github.com/pmezard/go-difflib
+!/vendor/github.com/stretchr/testify
+!/vendor/gopkg.in/yaml.v2
+/vendor/*

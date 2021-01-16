@@ -66,7 +66,6 @@ type Ctx interface {
 	GET(key string, Default ...string) (val string)
 	GETArray(key string, Default ...string) (val []string)
 	GETData() (data map[string]string)
-	GetPostData() (data map[string]string)
 	POST(key string, Default ...string) (val string)
 	POSTArray(key string, Default ...string) (val []string)
 	POSTData() (data map[string]string)

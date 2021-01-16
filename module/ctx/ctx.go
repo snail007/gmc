@@ -39,7 +39,6 @@ type Ctx struct {
 	template   gcore.Template
 	remoteAddr string
 	conn       net.Conn
-	cookies    gcore.Cookies
 	metadata   *gmap.Map
 }
 
@@ -129,8 +128,8 @@ func (this *Ctx) Clone() gcore.Ctx {
 		i18n:       this.i18n,
 		template:   this.template,
 		conn:       this.conn,
+		metadata:   this.metadata.Clone(),
 	}
-	c.metadata = this.metadata.Clone()
 	paramCopy := make([]gcore.Param, len(this.param))
 	copy(paramCopy, this.param)
 	c.param = paramCopy
@@ -145,11 +144,10 @@ func (this *Ctx) CloneWithHTTP(w http.ResponseWriter, r *http.Request, ps ...gco
 	if ps0 == nil {
 		ps0 = gcore.Params{}
 	}
-	c := this.Clone()
-	c.SetResponse(w)
-	c.SetRequest(r)
-	c.SetParam(ps0)
-	c.(*Ctx).metadata = this.metadata.Clone()
+	c := this.Clone().(*Ctx)
+	c.response = w
+	c.request = r
+	c.param = ps0
 	return c
 }
 
@@ -238,7 +236,7 @@ func (this *Ctx) WriteE(data ...interface{}) (n int, err error) {
 
 // WriteHeader sets http code in response
 func (this *Ctx) WriteHeader(statusCode int) {
-	this.Response().WriteHeader(statusCode)
+	this.response.WriteHeader(statusCode)
 }
 
 // StatusCode returns http code in response, if not set, default is 200.
@@ -293,14 +291,14 @@ func (this *Ctx) IsOPTIONS() bool {
 
 // IsOPTIONS returns true if the request is jquery AJAX request.
 func (this *Ctx) IsAJAX() bool {
-	return strings.EqualFold(this.Request().Header.Get("X-Requested-With"), "XMLHttpRequest")
+	return strings.EqualFold(this.Header("X-Requested-With"), "XMLHttpRequest")
 }
 
 // IsWebsocket returns true if the request headers indicate that a websocket
 // handshake is being initiated by the client.
 func (this *Ctx) IsWebsocket() bool {
-	if strings.Contains(strings.ToLower(this.request.Header.Get("Connection")), "upgrade") &&
-		strings.EqualFold(this.request.Header.Get("Upgrade"), "websocket") {
+	if strings.Contains(strings.ToLower(this.Header("Connection")), "upgrade") &&
+		strings.EqualFold(this.Header("Upgrade"), "websocket") {
 		return true
 	}
 	return false
@@ -374,16 +372,6 @@ func (this *Ctx) GETData() (data map[string]string) {
 	return
 }
 
-// GETData gets full k,v query data from request url.
-func (this *Ctx) GetPostData() (data map[string]string) {
-	for k, v := range this.Request().URL.Query() {
-		if len(v) > 0 {
-			data[k] = v[0]
-		}
-	}
-	return
-}
-
 // POST gets the first value associated with the given key in post body.
 func (this *Ctx) POST(key string, Default ...string) (val string) {
 	val = this.Request().PostFormValue(key)
@@ -432,8 +420,8 @@ func (this *Ctx) Host() (host string) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (this *Ctx) JSON(code int, data interface{}) (err error) {
-	this.response.WriteHeader(code)
-	this.response.Header().Set("Content-Type", "application/json")
+	this.Status(code)
+	this.SetHeader("Content-Type", "application/json")
 	_, err = this.Write(data)
 	return
 }
@@ -443,8 +431,8 @@ func (this *Ctx) JSON(code int, data interface{}) (err error) {
 // development purposes since printing pretty JSON is more CPU and bandwidth consuming.
 // Use Ctx.JSON() instead.
 func (this *Ctx) PrettyJSON(code int, data interface{}) (err error) {
-	this.response.WriteHeader(code)
-	this.response.Header().Set("Content-Type", "application/json")
+	this.Status(code)
+	this.SetHeader("Content-Type", "application/json")
 	_, err = ghttputil.WritePretty(this.Response(), data)
 	return
 }
@@ -492,13 +480,6 @@ func (this *Ctx) Header(key string) string {
 // RequestBody returns raw request body data.
 func (this *Ctx) RequestBody() ([]byte, error) {
 	return ioutil.ReadAll(this.request.Body)
-}
-
-func (this *Ctx) getCookies() gcore.Cookies {
-	if this.cookies == nil {
-		this.cookies = gcore.Providers.Cookies("")(this)
-	}
-	return this.cookies
 }
 
 // SetCookie adds a Set-Cookie header to the ResponseWriter's headers.

@@ -116,7 +116,7 @@ func TestHTTPClient_SetProxy(t *testing.T) {
 func TestHTTPClient_SetDNS(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	client.SetDNS("8.8.8.8:53")
+	client.SetDNS("8.8.4.4:53")
 	body, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, map[string]string{"token": "200"})
 	assert.Contains(string(body), "STATUS OK")
 }

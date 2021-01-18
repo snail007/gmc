@@ -265,7 +265,7 @@ func TestMap_MergeMap(t *testing.T) {
 	assert.Equal(100, m1.Len())
 }
 
-func TestMap_MergeStringMap(t *testing.T) {
+func TestMap_MergeStrMap(t *testing.T) {
 	assert := assert.New(t)
 	m := map[string]interface{}{}
 	for i := 0; i < 100; i++ {
@@ -273,7 +273,19 @@ func TestMap_MergeStringMap(t *testing.T) {
 	}
 	assert.Equal(100, len(m))
 	m1 := NewMap()
-	m1.MergeStringMap(m)
+	m1.MergeStrMap(m)
+	assert.Equal(100, m1.Len())
+}
+
+func TestMap_MergeStrStrMap(t *testing.T) {
+	assert := assert.New(t)
+	m := map[string]string{}
+	for i := 0; i < 100; i++ {
+		m[fmt.Sprintf("%v", i)] = fmt.Sprintf("%v", i)
+	}
+	assert.Equal(100, len(m))
+	m1 := NewMap()
+	m1.MergeStrStrMap(m)
 	assert.Equal(100, m1.Len())
 }
 
@@ -366,3 +378,4 @@ func TestMap_LoadOrStoreFront(t *testing.T) {
 	}
 	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
 }
+

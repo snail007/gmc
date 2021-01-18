@@ -68,14 +68,21 @@ func (s *Map) Merge(m *Map) {
 }
 
 // MergeMap merges a map to Map s.
-func (s *Map) MergeMap(m map[interface{}]interface{}) {
+func (s *Map) MergeMap(m Mii) {
 	for key, value := range m {
 		s.Store(key, value)
 	}
 }
 
 // MergeStringMap merges a map to Map s.
-func (s *Map) MergeStringMap(m map[string]interface{}) {
+func (s *Map) MergeStrMap(m M) {
+	for key, value := range m {
+		s.Store(key, value)
+	}
+}
+
+// MergeStrStrMap merges a map to Map s.
+func (s *Map) MergeStrStrMap(m Mss) {
 	for key, value := range m {
 		s.Store(key, value)
 	}

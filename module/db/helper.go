@@ -8,7 +8,10 @@ package gdb
 import (
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util/cast"
+	gmap "github.com/snail007/gmc/util/map"
 	"reflect"
+	"sort"
+	"strings"
 )
 
 var (
@@ -17,6 +20,8 @@ var (
 	cfg          gcore.Config
 	defaultDB    string
 )
+
+type M map[string]interface{}
 
 //InitFromFile parse foo.toml database configuration, `cfg` is Config object of foo.toml
 func InitFromFile(cfgFile string) (err error) {
@@ -129,4 +134,28 @@ func isBool(v interface{}) bool {
 		return false
 	}
 	return reflect.TypeOf(v).Kind() == reflect.Bool
+}
+
+func sortMap(data gmap.M, asc bool) []map[string]interface{} {
+	var keys []string
+	for k := range data {
+		keys = append(keys, k)
+	}
+	if asc {
+		sort.Strings(keys)
+	} else {
+		sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	}
+	var m []gmap.M
+	for _, k := range keys {
+		col := k
+		if strings.Contains(k, ":") {
+			col = k[strings.Index(k, ":")+1:]
+		}
+		m = append(m, gmap.M{
+			"col":   col,
+			"value": data[k],
+		})
+	}
+	return m
 }

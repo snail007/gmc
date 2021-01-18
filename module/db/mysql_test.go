@@ -51,12 +51,12 @@ func TestJoin(t *testing.T) {
 func TestWhere(t *testing.T) {
 	_ar := ar()
 	want := "SELECT * \nFROM `test` \nWHERE `addr` = ? AND `name` = ?"
-	want1 := "SELECT * \nFROM `test` \nWHERE `name` = ? AND `addr` = ?"
 	got := strings.TrimSpace(_ar.From("test").Where(map[string]interface{}{
-		"name": "kitty",
-		"addr": "hk",
+		"2:name": "kitty",
+		"1:addr": "hk",
 	}).SQL())
-	if want != got && want1 != got {
+	t.Log(want)
+	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
@@ -91,34 +91,34 @@ func TestLimit(t *testing.T) {
 	}
 }
 
-// func TestInsert(t *testing.T) {
-// 	_ar := ar()
-// 	want := "INSERT INTO  `test` (`name`,`gid`,`addr`,`is_delete`) \nVALUES (?,?,?,?)"
-// 	got := strings.TrimSpace(_ar.Insert("test", map[string]interface{}{
-// 		"name":      "admin",
-// 		"gid":       33,
-// 		"addr":      nil,
-// 		"is_delete": false,
-// 	}).Limit(0, 3).SQL())
-// 	//fmt.Println(_ar.Values())
-// 	if want != got {
-// 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
-// 	}
-// }
-// func TestReplace(t *testing.T) {
-// 	_ar := ar()
-// 	want := "REPLACE INTO  `test` (`name`,`gid`,`addr`,`is_delete`) \nVALUES (?,?,?,?)"
-// 	got := strings.TrimSpace(_ar.Replace("test", map[string]interface{}{
-// 		"name":      "admin",
-// 		"gid":       33,
-// 		"addr":      nil,
-// 		"is_delete": false,
-// 	}).Limit(0, 3).SQL())
-// 	//fmt.Println(_ar.Values())
-// 	if want != got {
-// 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
-// 	}
-// }
+func TestInsert(t *testing.T) {
+	_ar := ar()
+	want := "INSERT INTO  `test` (`name`,`gid`,`addr`,`is_delete`) \nVALUES (?,?,?,?)"
+	got := strings.TrimSpace(_ar.Insert("test", map[string]interface{}{
+		"1:name":      "admin",
+		"2:gid":       33,
+		"3:addr":      nil,
+		"4:is_delete": false,
+	}).Limit(0, 3).SQL())
+	//fmt.Println(_ar.Values())
+	if want != got {
+		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
+	}
+}
+func TestReplace(t *testing.T) {
+	_ar := ar()
+	want := "REPLACE INTO  `test` (`name`,`gid`,`addr`,`is_delete`) \nVALUES (?,?,?,?)"
+	got := strings.TrimSpace(_ar.Replace("test", map[string]interface{}{
+		"1:name":      "admin",
+		"2:gid":       33,
+		"3:addr":      nil,
+		"4:is_delete": false,
+	}).Limit(0, 3).SQL())
+	//fmt.Println(_ar.Values())
+	if want != got {
+		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
+	}
+}
 
 func TestInsertBatch(t *testing.T) {
 	_ar := ar()

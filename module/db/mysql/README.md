@@ -55,10 +55,6 @@ if db != nil {
 ## SELECT
 
 ```go
-type User{
-    ID int `column:"id"`
-    Name string `column:"name"`
-}
 rs, err := db.Query(db.AR().
             Select("*").
             From("log").
@@ -71,6 +67,31 @@ if err != nil {
 } else {
     fmt.Println(rs.Rows())
 }
+```
+
+By default, where columns in random sequence, but you can indicate the column sequence by add prefix `index:` in column name.
+
+```go
+rs, err := db.Query(db.AR().
+            Select("*").
+            From("test").
+            Where(map[string]interface{}{
+                "1:id": 11,
+                "3:age": 11,
+                "2:name": 11,
+            })
+)
+if err != nil {
+    fmt.Printf("ERR:%s", err)
+} else {
+    fmt.Println(rs.Rows())
+}
+```
+
+```sql
+SELECT * 
+FROM `test` 
+WHERE `id` = ? AND `name` = ? AND `age` = ?
 ```
 
 ### RESULT TO STRUCT

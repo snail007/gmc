@@ -59,10 +59,10 @@ type HTTPServer struct {
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
-	middleware0       []gcore.Middleware
-	middleware1       []gcore.Middleware
-	middleware2       []gcore.Middleware
-	middleware3       []gcore.Middleware
+	middleware0          []gcore.Middleware
+	middleware1          []gcore.Middleware
+	middleware2          []gcore.Middleware
+	middleware3          []gcore.Middleware
 	isShutdown           bool
 	remoteAddrDataMap    *sync.Map
 	ctx                  gcore.Ctx

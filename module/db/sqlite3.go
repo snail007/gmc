@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/snail007/gmc/core"
 	makeutil "github.com/snail007/gmc/internal/util/make"
+	gmap "github.com/snail007/gmc/util/map"
 	"net/url"
 	"reflect"
 	"strings"
@@ -415,8 +416,8 @@ type SQLite3ActiveRecord struct {
 	arLimit                  string
 	arSet                    map[string][]interface{}
 	arUpdateBatch            []interface{}
-	arInsert                 map[string]interface{}
-	arInsertBatch            []map[string]interface{}
+	arInsert                 gmap.M
+	arInsertBatch            []gmap.M
 	asTable                  map[string]bool
 	values                   []interface{}
 	sqlType                  string
@@ -446,8 +447,8 @@ func (ar *SQLite3ActiveRecord) Reset() {
 	ar.arLimit = ""
 	ar.arSet = map[string][]interface{}{}
 	ar.arUpdateBatch = []interface{}{}
-	ar.arInsert = map[string]interface{}{}
-	ar.arInsertBatch = []map[string]interface{}{}
+	ar.arInsert = gmap.M{}
+	ar.arInsertBatch = []gmap.M{}
 	ar.asTable = map[string]bool{}
 	ar.values = []interface{}{}
 	ar.sqlType = "select"
@@ -485,13 +486,13 @@ func (ar *SQLite3ActiveRecord) Join(table, as, on, typ string) gcore.ActiveRecor
 	ar.arJoin = append(ar.arJoin, []string{table, as, on, typ})
 	return ar
 }
-func (ar *SQLite3ActiveRecord) Where(where map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) Where(where gmap.M) gcore.ActiveRecord {
 	if len(where) > 0 {
 		ar.WhereWrap(where, "AND", "")
 	}
 	return ar
 }
-func (ar *SQLite3ActiveRecord) WhereWrap(where map[string]interface{}, leftWrap, rightWrap string) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) WhereWrap(where gmap.M, leftWrap, rightWrap string) gcore.ActiveRecord {
 	if len(where) > 0 {
 		ar.arWhere = append(ar.arWhere, []interface{}{where, leftWrap, rightWrap, len(ar.arWhere)})
 	}
@@ -530,41 +531,43 @@ func (ar *SQLite3ActiveRecord) Limit(limit ...int) gcore.ActiveRecord {
 	return ar
 }
 
-func (ar *SQLite3ActiveRecord) Insert(table string, data map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) Insert(table string, data gmap.M) gcore.ActiveRecord {
 	ar.sqlType = "insert"
 	ar.arInsert = data
 	ar.From(table)
 	return ar
 }
-func (ar *SQLite3ActiveRecord) Replace(table string, data map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) Replace(table string, data gmap.M) gcore.ActiveRecord {
 	ar.sqlType = "replace"
 	ar.arInsert = data
 	ar.From(table)
 	return ar
 }
 
-func (ar *SQLite3ActiveRecord) InsertBatch(table string, data []map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) InsertBatch(table string, data []gmap.M) gcore.ActiveRecord {
 	ar.sqlType = "insertBatch"
 	ar.arInsertBatch = data
 	ar.From(table)
 	return ar
 }
-func (ar *SQLite3ActiveRecord) ReplaceBatch(table string, data []map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) ReplaceBatch(table string, data []gmap.M) gcore.ActiveRecord {
 	ar.InsertBatch(table, data)
 	ar.sqlType = "replaceBatch"
 	return ar
 }
 
-func (ar *SQLite3ActiveRecord) Delete(table string, where map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) Delete(table string, where gmap.M) gcore.ActiveRecord {
 	ar.From(table)
 	ar.Where(where)
 	ar.sqlType = "delete"
 	return ar
 }
-func (ar *SQLite3ActiveRecord) Update(table string, data, where map[string]interface{}) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) Update(table string, data, where gmap.M) gcore.ActiveRecord {
 	ar.From(table)
 	ar.Where(where)
-	for k, v := range data {
+	_data := sortMap(data, true)
+	for _, val := range _data {
+		k, v := val["col"].(string), val["value"]
 		if isBool(v) {
 			value := 0
 			if v.(bool) {
@@ -579,7 +582,7 @@ func (ar *SQLite3ActiveRecord) Update(table string, data, where map[string]inter
 	}
 	return ar
 }
-func (ar *SQLite3ActiveRecord) UpdateBatch(table string, values []map[string]interface{}, whereColumn []string) gcore.ActiveRecord {
+func (ar *SQLite3ActiveRecord) UpdateBatch(table string, values []gmap.M, whereColumn []string) gcore.ActiveRecord {
 	ar.From(table)
 	ar.sqlType = "updateBatch"
 	ar.arUpdateBatch = []interface{}{values, whereColumn}
@@ -589,7 +592,7 @@ func (ar *SQLite3ActiveRecord) UpdateBatch(table string, values []map[string]int
 			for _, val := range values {
 				ids = append(ids, val[whereCol])
 			}
-			ar.Where(map[string]interface{}{whereCol: ids})
+			ar.Where(gmap.M{whereCol: ids})
 		}
 	}
 	return ar
@@ -729,9 +732,10 @@ func (ar *SQLite3ActiveRecord) getSelectSQL() string {
 func (ar *SQLite3ActiveRecord) compileUpdateBatch() string {
 	_values, _index := ar.arUpdateBatch[0], ar.arUpdateBatch[1]
 	index := _index.([]string)
-	values := _values.([]map[string]interface{})
+	values := _values.([]gmap.M)
 	columns := []string{}
-	for k := range values[0] {
+	for _, val := range sortMap(values[0], true) {
+		k := val["col"].(string)
 		_continue := false
 		for _, v1 := range index {
 			if k == v1 {
@@ -774,7 +778,9 @@ func (ar *SQLite3ActiveRecord) compileUpdateBatch() string {
 func (ar *SQLite3ActiveRecord) compileInsert() string {
 	var columns = []string{}
 	var values = []string{}
-	for k, v := range ar.arInsert {
+	data := sortMap(ar.arInsert, true)
+	for _, val := range data {
+		k, v := val["col"].(string), val["value"]
 		columns = append(columns, ar.protectIdentifier(k))
 		values = append(values, "?")
 		ar.values = append(ar.values, v)
@@ -787,11 +793,12 @@ func (ar *SQLite3ActiveRecord) compileInsert() string {
 func (ar *SQLite3ActiveRecord) compileInsertBatch() string {
 	var columns []string
 	var values []string
-	for col := range ar.arInsertBatch[0] {
+	data := sortMap(ar.arInsertBatch[0], true)
+	for _, val := range data {
+		col := val["col"].(string)
 		columns = append(columns, ar.protectIdentifier(col))
 	}
 	for _, row := range ar.arInsertBatch {
-
 		_values := []string{}
 		for _, col := range columns {
 			_values = append(_values, "?")
@@ -864,8 +871,9 @@ func (ar *SQLite3ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightW
 	if reflect.TypeOf(where0).Kind() == reflect.String {
 		return fmt.Sprintf(" %s %s %s ", leftWrap, where0, rightWrap)
 	}
-	where := where0.(map[string]interface{})
-	for key, value := range where {
+	where := sortMap(where0.(gmap.M), true)
+	for _, val := range where {
+		key, value := val["col"].(string), val["value"]
 		k := ""
 		k = strings.TrimSpace(key)
 		_key := strings.SplitN(k, " ", 2)
@@ -1033,7 +1041,7 @@ func (ar *SQLite3ActiveRecord) getWhere() string {
 	hasEmptyIn := false
 
 	for _, v := range ar.arWhere {
-		for _, value := range v[0].(map[string]interface{}) {
+		for _, value := range v[0].(gmap.M) {
 			if isArray(value) && reflect.ValueOf(value).Len() == 0 {
 				hasEmptyIn = true
 				break
@@ -1042,7 +1050,7 @@ func (ar *SQLite3ActiveRecord) getWhere() string {
 		if hasEmptyIn {
 			break
 		}
-		where = append(where, ar.compileWhere(v[0].(map[string]interface{}), v[1].(string), v[2].(string), v[3].(int)))
+		where = append(where, ar.compileWhere(v[0].(gmap.M), v[1].(string), v[2].(string), v[3].(int)))
 	}
 	if hasEmptyIn {
 		return "WHERE 0"

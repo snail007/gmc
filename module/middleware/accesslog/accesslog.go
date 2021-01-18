@@ -32,17 +32,9 @@ func newFromConfig(c gcore.Config) *accesslog {
 	}
 }
 
-func NewWebFromConfig(c gcore.Config) gcore.MiddlewareWeb {
+func NewFromConfig(c gcore.Config) gcore.Middleware {
 	a := newFromConfig(c)
-	return func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool) {
-		go log(ctx, a)
-		return false
-	}
-}
-
-func NewAPIFromConfig(c gcore.Config) gcore.MiddlewareAPI {
-	a := newFromConfig(c)
-	return func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool) {
+	return func(ctx gcore.Ctx) (isStop bool) {
 		go log(ctx, a)
 		return false
 	}

@@ -1,9 +1,11 @@
 package ghttp
 
 import (
+	"crypto/md5"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -79,6 +81,25 @@ func initHTTPServer() {
 	})
 	r.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello"))
+	})
+	r.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseMultipartForm(32 << 20)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
+		file, _, err := r.FormFile("test")
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
+		f, _ := os.Create("test.bin")
+		io.Copy(f, file)
+		f.Close()
+		h := md5.New()
+		h.Write([]byte("a"))
+		s := fmt.Sprintf("%x", h.Sum(nil))
+		w.Write([]byte(r.PostFormValue("uid") + s))
 	})
 	r.HandleFunc("/sleep", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Second * 2)

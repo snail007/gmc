@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 func TestRouting(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.AddMiddleware0(func(ctx gcore.Ctx, tpl gcore.HTTPServer) (isStop bool) {
+	s.AddMiddleware0(func(ctx gcore.Ctx) (isStop bool) {
 		ctx.Response().Write([]byte("error"))
 		return true
 	})
@@ -60,7 +60,7 @@ func TestRouting(t *testing.T) {
 func TestRouting_1(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.AddMiddleware1(func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool) {
+	s.AddMiddleware1(func(ctx gcore.Ctx) (isStop bool) {
 		ctx.Response().Write([]byte("error"))
 		return true
 	})

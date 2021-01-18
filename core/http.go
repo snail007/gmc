@@ -17,8 +17,7 @@ type (
 	// requests. Like http.HandlerFunc, but has a third parameter for the values of
 	// wildcards (path variables).
 	Handle        func(http.ResponseWriter, *http.Request, Params)
-	MiddlewareAPI func(ctx Ctx, api APIServer) (isStop bool)
-	MiddlewareWeb func(ctx Ctx, server HTTPServer) (isStop bool)
+	Middleware    func(ctx Ctx) (isStop bool)
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -154,10 +153,10 @@ type APIServer interface {
 	SetTLSFile(certFile, keyFile string)
 	SetLogger(l Logger)
 	Logger() Logger
-	AddMiddleware0(m func(ctx Ctx, server APIServer) (isStop bool))
-	AddMiddleware1(m func(ctx Ctx, server APIServer) (isStop bool))
-	AddMiddleware2(m func(ctx Ctx, server APIServer) (isStop bool))
-	AddMiddleware3(m func(ctx Ctx, server APIServer) (isStop bool))
+	AddMiddleware0(m Middleware)
+	AddMiddleware1(m Middleware)
+	AddMiddleware2(m Middleware)
+	AddMiddleware3(m Middleware)
 	SetNotFoundHandler(handle func(ctx Ctx))
 	SetErrorHandler(handle func(ctx Ctx, err interface{}))
 	ShowErrorStack(isShow bool)
@@ -189,10 +188,10 @@ type HTTPServer interface {
 	Tpl() Template
 	SetSessionStore(st SessionStorage)
 	SessionStore() SessionStorage
-	AddMiddleware0(m func(ctx Ctx, server HTTPServer) (isStop bool))
-	AddMiddleware1(m func(ctx Ctx, server HTTPServer) (isStop bool))
-	AddMiddleware2(m func(ctx Ctx, server HTTPServer) (isStop bool))
-	AddMiddleware3(m func(ctx Ctx, server HTTPServer) (isStop bool))
+	AddMiddleware0(m Middleware)
+	AddMiddleware1(m Middleware)
+	AddMiddleware2(m Middleware)
+	AddMiddleware3(m Middleware)
 	PrintRouteTable(w io.Writer)
 	SetLog(l Logger)
 }

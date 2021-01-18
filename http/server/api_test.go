@@ -23,7 +23,7 @@ func TestNewAPIServer(t *testing.T) {
 func TestBefore(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(gcore.Providers.Ctx("")(), ":")
-	api.AddMiddleware0(func(c gcore.Ctx, s gcore.APIServer) bool {
+	api.AddMiddleware0(func(c gcore.Ctx) bool {
 		c.Write("okay")
 		return true
 	})
@@ -53,7 +53,7 @@ func TestAPI(t *testing.T) {
 func TestAfter(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(gcore.Providers.Ctx("")(), ":")
-	api.AddMiddleware2(func(c gcore.Ctx, s gcore.APIServer) bool {
+	api.AddMiddleware2(func(c gcore.Ctx) bool {
 		c.Write("okay")
 		return false
 	})

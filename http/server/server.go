@@ -59,10 +59,10 @@ type HTTPServer struct {
 	isTestNotClosedError bool
 	staticDir            string
 	staticUrlpath        string
-	middleware0          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
-	middleware1          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
-	middleware2          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
-	middleware3          []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)
+	middleware0       []gcore.Middleware
+	middleware1       []gcore.Middleware
+	middleware2       []gcore.Middleware
+	middleware3       []gcore.Middleware
 	isShutdown           bool
 	remoteAddrDataMap    *sync.Map
 	ctx                  gcore.Ctx
@@ -77,10 +77,10 @@ type remoteAddrItem struct {
 func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 	s := &HTTPServer{
 		ctx:               ctx,
-		middleware0:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		middleware1:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		middleware2:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
-		middleware3:       []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool){},
+		middleware0:       []gcore.Middleware{},
+		middleware1:       []gcore.Middleware{},
+		middleware2:       []gcore.Middleware{},
+		middleware3:       []gcore.Middleware{},
 		remoteAddrDataMap: &sync.Map{},
 	}
 	ctx.SetWebServer(s)
@@ -307,16 +307,16 @@ func (s *HTTPServer) SetSessionStore(st gcore.SessionStorage) {
 func (s *HTTPServer) SessionStore() gcore.SessionStorage {
 	return s.sessionStore
 }
-func (s *HTTPServer) AddMiddleware0(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
+func (s *HTTPServer) AddMiddleware0(m gcore.Middleware) {
 	s.middleware0 = append(s.middleware0, m)
 }
-func (s *HTTPServer) AddMiddleware1(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
+func (s *HTTPServer) AddMiddleware1(m gcore.Middleware) {
 	s.middleware1 = append(s.middleware1, m)
 }
-func (s *HTTPServer) AddMiddleware2(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
+func (s *HTTPServer) AddMiddleware2(m gcore.Middleware) {
 	s.middleware2 = append(s.middleware2, m)
 }
-func (s *HTTPServer) AddMiddleware3(m func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) {
+func (s *HTTPServer) AddMiddleware3(m gcore.Middleware) {
 	s.middleware3 = append(s.middleware3, m)
 }
 
@@ -529,14 +529,14 @@ func (s *HTTPServer) SetLog(l gcore.Logger) {
 	s.logger = l
 	return
 }
-func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.HTTPServer) (isStop bool)) (isStop bool) {
+func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
 			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 				s.logger.Warnf("middleware panic error : %s", gcore.Providers.Error("")().StackError(e))
 				isStop = false
 			})
-			isStop = fn(ctx, s)
+			isStop = fn(ctx)
 		}()
 		if isStop {
 			return

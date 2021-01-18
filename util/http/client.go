@@ -11,9 +11,11 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"net/textproto"
 	"net/url"
 	"os"
 	"strings"
@@ -211,6 +213,69 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	return
 }
 
+// Upload uploads a file from a file `filename`,
+// fieldName is the form filed name in form, filename is the value of filed `fieldName` and also the file to upload.
+// data is the additional form data.
+func (s *HTTPClient) Upload(u, fieldName, filename string, data map[string]string) (body string, resp *http.Response, err error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	return s.UploadReader(u, fieldName, filename, file, data)
+}
+
+// UploadReader upload a file from a io.Reader `reader`,
+// fieldName is the form filed name in form, filename is the value of filed `fieldName`.
+// data is the additional form data.
+func (s *HTTPClient) UploadReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {
+	r, w := io.Pipe()
+	m := multipart.NewWriter(w)
+	go func() {
+		defer w.Close()
+		defer m.Close()
+		defer reader.Close()
+		if len(data) > 0 {
+			for k, v := range data {
+				m.WriteField(k, v)
+			}
+		}
+		var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+		h := make(textproto.MIMEHeader)
+		h.Set("Content-Disposition",
+			fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
+				quoteEscaper.Replace(fieldName), quoteEscaper.Replace(filename)))
+		h.Set("Content-Type", "application/octet-stream")
+		part, err := m.CreatePart(h)
+		if err != nil {
+			return
+		}
+		if _, err = io.Copy(part, reader); err != nil {
+			return
+		}
+	}()
+	req, err := http.NewRequest("POST", u, r)
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", m.FormDataContentType())
+	url0, _ := url.Parse(u)
+	req.Host = url0.Host
+	c, err := s.newClient(0)
+	if err != nil {
+		return
+	}
+	resp, err = c.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	body = string(b)
+	return
+}
 func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, err error) {
 	proxyURL := s.getProxyURL()
 	resolver := s.newResolver(timeout)

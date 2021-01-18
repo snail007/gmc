@@ -6,7 +6,6 @@
 package router
 
 import (
-	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/module/middleware/accesslog"
 	httppprof "github.com/snail007/gmc/util/pprof"
 	"strings"
@@ -30,7 +29,7 @@ func InitRouter(s *gmc.HTTPServer) {
 	s.AddMiddleware2(logging)
 
 	// middleware: accesslog
-	s.AddMiddleware3(accesslog.NewWebFromConfig(s.Config()))
+	s.AddMiddleware3(accesslog.NewFromConfig(s.Config()))
 
 	// acquire router object
 	r := s.Router()
@@ -46,12 +45,12 @@ func InitRouter(s *gmc.HTTPServer) {
 	s.Logger().Infof("router inited.")
 }
 
-func filterAll(c gmc.C, server gcore.HTTPServer) bool {
-	server.Logger().Infof(c.Request().RequestURI)
+func filterAll(c gmc.C) bool {
+	c.WebServer().Logger().Infof(c.Request().RequestURI)
 	return false
 }
 
-func filter(c gmc.C, server gcore.HTTPServer) bool {
+func filter(c gmc.C) bool {
 	path := strings.TrimRight(c.Request().URL.Path, "/\\")
 
 	// we want to prevent user to access method `controller.Demo.Protected`
@@ -59,11 +58,12 @@ func filter(c gmc.C, server gcore.HTTPServer) bool {
 		c.Write([]byte("404"))
 		return true
 	}
+
 	//server.Logger().Printf("%v %s",c.TimeUsed(),path)
 	return false
 }
 
-func logging(c gmc.C, server gcore.HTTPServer) bool {
-	server.Logger().Infof("after request %s %d %d %s %s", c.Request().Method, c.StatusCode(), c.WriteCount(), c.TimeUsed(), c.Request().RequestURI)
+func logging(c gmc.C) bool {
+	c.WebServer().Logger().Infof("after request %s %d %d %s %s", c.Request().Method, c.StatusCode(), c.WriteCount(), c.TimeUsed(), c.Request().RequestURI)
 	return false
 }

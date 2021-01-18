@@ -35,10 +35,10 @@ type APIServer struct {
 	handle500         func(ctx gcore.Ctx, err interface{})
 	isShowErrorStack  bool
 	certFile, keyFile string
-	middleware0       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
-	middleware1       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
-	middleware2       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
-	middleware3       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)
+	middleware0       []gcore.Middleware
+	middleware1       []gcore.Middleware
+	middleware2       []gcore.Middleware
+	middleware3       []gcore.Middleware
 	isShutdown        bool
 	ext               string
 	config            gcore.Config
@@ -61,10 +61,10 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 		address:           address,
 		router:            gcore.Providers.HTTPRouter("")(ctx),
 		isShowErrorStack:  true,
-		middleware0:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		middleware1:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		middleware2:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
-		middleware3:       []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool){},
+		middleware0:       []gcore.Middleware{},
+		middleware1:       []gcore.Middleware{},
+		middleware2:       []gcore.Middleware{},
+		middleware3:       []gcore.Middleware{},
 		remoteAddrDataMap: &sync.Map{},
 		ctx:               ctx,
 	}
@@ -184,16 +184,16 @@ func (this *APIServer) SetLogger(l gcore.Logger) {
 func (this *APIServer) Logger() gcore.Logger {
 	return this.logger
 }
-func (this *APIServer) AddMiddleware0(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
+func (this *APIServer) AddMiddleware0(m gcore.Middleware) {
 	this.middleware0 = append(this.middleware0, m)
 }
-func (this *APIServer) AddMiddleware1(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
+func (this *APIServer) AddMiddleware1(m gcore.Middleware) {
 	this.middleware1 = append(this.middleware1, m)
 }
-func (this *APIServer) AddMiddleware2(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
+func (this *APIServer) AddMiddleware2(m gcore.Middleware) {
 	this.middleware2 = append(this.middleware2, m)
 }
-func (this *APIServer) AddMiddleware3(m func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) {
+func (this *APIServer) AddMiddleware3(m gcore.Middleware) {
 	this.middleware3 = append(this.middleware3, m)
 }
 func (this *APIServer) SetNotFoundHandler(handle func(ctx gcore.Ctx)) {
@@ -318,14 +318,14 @@ func (s *APIServer) call(fn func()) (err interface{}) {
 	}()
 	return
 }
-func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []func(ctx gcore.Ctx, server gcore.APIServer) (isStop bool)) (isStop bool) {
+func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
 			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 				s.logger.Warn("middleware panic error : %s", gcore.Providers.Error("")().StackError(e))
 				isStop = false
 			})
-			isStop = fn(ctx, s)
+			isStop = fn(ctx)
 		}()
 		if isStop {
 			return

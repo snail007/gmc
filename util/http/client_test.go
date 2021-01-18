@@ -1,6 +1,8 @@
 package ghttp
 
 import (
+	"crypto/md5"
+	"fmt"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"strings"
@@ -26,6 +28,23 @@ func TestHTTPClient_PostOfReader(t *testing.T) {
 	client := NewHTTPClient()
 	body, _, _, _ := client.PostOfReader(httpServerURL+"/post", strings.NewReader("name=snail007"), time.Second, map[string]string{"token": "200"})
 	assert.Equal("snail007", string(body))
+}
+
+func TestHTTPClient_Upload(t *testing.T) {
+	assert := assert2.New(t)
+	client := NewHTTPClient()
+	f, _ := os.Create("upload.bin")
+	f.WriteString("a")
+	f.Close()
+	h := md5.New()
+	h.Write([]byte("a"))
+	s := fmt.Sprintf("%x", h.Sum(nil))
+	body, _, err := client.Upload(httpServerURL+"/upload", "test", "upload.bin", map[string]string{"uid": "007"})
+	assert.Nil(err)
+	assert.Equal("007"+s, body)
+	assert.FileExists("test.bin")
+	os.Remove("test.bin")
+	os.Remove("upload.bin")
 }
 
 func TestHTTPClient_Get(t *testing.T) {

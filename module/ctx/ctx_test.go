@@ -210,9 +210,9 @@ func TestCtx_GetXXX(t *testing.T) {
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
 			ctx.SetLogger((gcore.Logger)(nil))
 		}, func(ctx *Ctx) interface{} {
-			return ctx.Logger()
+			return ctx.Logger() != nil
 		}, func(ctx *Ctx) interface{} {
-			return ctx.logger
+			return true
 		}, "Logger"},
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
 			ctx.SetWebServer((gcore.HTTPServer)(nil))
@@ -434,16 +434,6 @@ func TestCtx_GetXXX(t *testing.T) {
 		}, func(ctx *Ctx) interface{} {
 			return true
 		}, "WriteFileAttachment"},
-		//{mockCtx("POST", "/", ""), func(ctx *Ctx) {
-		//	ioutil.WriteFile("a.txt", []byte("a"), 0755)
-		//	ctx.WriteFileAttachment("a.txt", "b.txt")
-		//	os.Remove("a.txt")
-		//}, func(ctx *Ctx) interface{} {
-		//	w := ctx.response.(*httptest.ResponseRecorder)
-		//	return "a" == w.Body.String() && w.Header().Get("Content-Disposition") == "attachment; filename=\"b.txt\""
-		//}, func(ctx *Ctx) interface{} {
-		//	return true
-		//}, "WriteFileAttachment"},
 	} {
 		v.setter(v.ctx)
 		assert.Equal(v.excepted(v.ctx), v.getter(v.ctx), v.testTag)

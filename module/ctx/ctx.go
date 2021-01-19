@@ -93,6 +93,18 @@ func (this *Ctx) SetConfig(config gcore.Config) {
 }
 
 func (this *Ctx) Logger() gcore.Logger {
+	if this.logger != nil {
+		return this.logger
+	} else if this.app != nil && this.app.Logger() != nil {
+		this.logger = this.app.Logger()
+	} else if this.webServer != nil && this.webServer.Logger() != nil {
+		this.logger = this.webServer.Logger()
+	} else if this.apiServer != nil && this.apiServer.Logger() != nil {
+		this.logger = this.apiServer.Logger()
+	}
+	if this.logger == nil {
+		this.logger = gcore.Providers.Logger("")(this, "")
+	}
 	return this.logger
 }
 

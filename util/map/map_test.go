@@ -378,4 +378,3 @@ func TestMap_LoadOrStoreFront(t *testing.T) {
 	}
 	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
 }
-

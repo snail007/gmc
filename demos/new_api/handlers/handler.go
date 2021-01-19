@@ -28,6 +28,12 @@ func initHanlder(api gcore.APIServer) {
 		out.WriteString("<p><a href=\"https://github.com/snail007/gmc\" target=\"_blank\">View on GitHub</a></p>")
 		c.Write(out.Bytes())
 	})
+
+	// URL: http://foo.com/redirect
+	api.API("/redirect", func(c gmc.C) {
+		c.Redirect("/")
+	})
+
 	// URL: http://foo.com/version
 	api.API("/version", func(c gmc.C) {
 		c.Write(1.1)

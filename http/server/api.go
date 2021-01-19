@@ -150,7 +150,7 @@ func (this *APIServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			status = fmt.Sprintf("%s", err)
 			switch status {
-			case "__STOP__", "":
+			case "__STOP__", "__DIE__":
 			default:
 				//exception
 				this.handler500(reqCtx, err)

@@ -19,12 +19,12 @@ func initMiddleware(api gcore.APIServer) {
 	api.AddMiddleware2(middleware2)
 }
 
-func middleware1(c gmc.C, s gcore.APIServer) (isStop bool) {
-	s.Logger().Infof("before request %s", c.Request().RequestURI)
+func middleware1(c gmc.C) (isStop bool) {
+	c.APIServer().Logger().Infof("before request %s", c.Request().RequestURI)
 	return false
 }
 
-func middleware2(c gmc.C, s gcore.APIServer) (isStop bool) {
-	s.Logger().Infof("after request %s %d %d %s", c.Request().Method, c.StatusCode(), c.WriteCount(), c.Request().RequestURI)
+func middleware2(c gmc.C) (isStop bool) {
+	c.APIServer().Logger().Infof("after request %s %d %d %s", c.Request().Method, c.StatusCode(), c.WriteCount(), c.Request().RequestURI)
 	return false
 }

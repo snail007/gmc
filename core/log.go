@@ -8,7 +8,7 @@ package gcore
 import "io"
 
 const (
-	LTRACE = iota
+	LTRACE = iota + 1
 	LDEBUG
 	LINFO
 	LWARN

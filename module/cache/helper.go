@@ -68,7 +68,6 @@ func Init(cfg0 gcore.Config) (err error) {
 					Dir:             gcast.ToString(vvv["dir"]),
 					CleanupInterval: time.Duration(gcast.ToInt(vvv["cleanupinterval"])) * time.Second,
 				}
-
 				groupFile[id], err = NewFileCache(cfg)
 				if err != nil {
 					return

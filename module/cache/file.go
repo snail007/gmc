@@ -32,7 +32,7 @@ type FileCacheConfig struct {
 
 func NewFileCacheConfig() *FileCacheConfig {
 	return &FileCacheConfig{
-		CleanupInterval: time.Second,
+		CleanupInterval: time.Second * 30,
 		Dir:             os.TempDir(),
 	}
 }
@@ -268,7 +268,7 @@ func (c *FileCache) startGC() {
 		log.Printf("error gc cache files: %v", err)
 	}
 
-	time.AfterFunc(time.Duration(c.cfg.CleanupInterval)*time.Second, func() { c.startGC() })
+	time.AfterFunc(c.cfg.CleanupInterval, func() { c.startGC() })
 }
 
 func encodeGob(item *Item) ([]byte, error) {

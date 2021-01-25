@@ -59,7 +59,7 @@ func TestFileCache_Clean(t *testing.T) {
 }
 func TestFileCache_String(t *testing.T) {
 	assert := assert.New(t)
-	assert.Contains(cFile.String(), "gmc file cache, gc: 1s, dir: ")
+	assert.Contains(cFile.String(), "gmc file cache, gc: 30s, dir: ")
 }
 func TestFileIncr(t *testing.T) {
 	assert := assert.New(t)

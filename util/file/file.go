@@ -117,3 +117,18 @@ func Abs(p string) string {
 	}
 	return p
 }
+
+// FileName returns file name end of the path without extension.
+func FileName(filePath string) string {
+	basename := filepath.Base(filePath)
+	if !strings.Contains(basename, ".") {
+		return basename
+	}
+	return strings.TrimSuffix(basename, filepath.Ext(filePath))
+}
+
+// FileBaseName returns file name end of the path with extension.
+func FileBaseName(filePath string) string {
+
+	return filepath.Base(filePath)
+}

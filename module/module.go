@@ -20,6 +20,7 @@ import (
 	gctx "github.com/snail007/gmc/module/ctx"
 	gdb "github.com/snail007/gmc/module/db"
 	gerror "github.com/snail007/gmc/module/error"
+	glog "github.com/snail007/gmc/module/log"
 )
 
 // Make sure all modules conform with the correct interface
@@ -52,3 +53,4 @@ var _ gcore.ResultSet = &gdb.ResultSet{}
 var _ gcore.Error = &gerror.Error{}
 var _ gcore.Database = &gdb.SQLite3DB{}
 var _ gcore.Config = &gconfig.Config{}
+var _ gcore.Logger = &glog.GMCLog{}

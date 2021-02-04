@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package config
+package gconfig
 
 import (
 	"bytes"
@@ -43,11 +43,11 @@ func NewConfigFile(file string) (c *Config, err error) {
 	return
 }
 
-func NewConfigBytes(b []byte) *Config {
-	c := &Config{
+func NewConfigBytes(b []byte) (c *Config, err error) {
+	c = &Config{
 		Viper: viper.New(),
 	}
 	c.SetConfigType("toml")
-	c.ReadConfig(bytes.NewReader(b))
-	return c
+	err = c.ReadConfig(bytes.NewReader(b))
+	return
 }

@@ -355,7 +355,7 @@ func TestMap_String(t *testing.T) {
 	for i := 0; i < 1; i++ {
 		l.Store(i, i)
 	}
-	assert.Equal("map[0:0]", fmt.Sprintf("%s", l))
+	assert.Equal("map[0:0]", l.String())
 }
 
 func TestMap_StoreFront(t *testing.T) {

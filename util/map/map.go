@@ -216,7 +216,6 @@ func (s *Map) Range(f func(key, value interface{}) bool) {
 			break
 		}
 	}
-	return
 }
 
 // RangeFast calls f sequentially for each key and value present in the map.
@@ -233,7 +232,6 @@ func (s *Map) RangeFast(f func(key, value interface{}) bool) {
 			break
 		}
 	}
-	return
 }
 
 // Keys returns all keys in map s and keep the sequence of store sequence.

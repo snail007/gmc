@@ -9,9 +9,6 @@
 [![API Reference](https://img.shields.io/badge/go.dev-reference-blue)](https://pkg.go.dev/github.com/snail007/gmc)
 [![LICENSE](https://img.shields.io/github/license/snail007/gmc)](#)
 
-
-
-
 GMC is a smart and flexible golang web and api development framework. GMC goal is high performance, good productivity and write less code to do more things.
 
 # Contents

@@ -19,12 +19,12 @@ const (
 )
 
 func Die(w io.Writer, data ...interface{}) {
-	Write(w, data...)
+	_, _ = Write(w, data...)
 	panic(dieKEY)
 }
 
 func Stop(w io.Writer, data ...interface{}) {
-	Write(w, data...)
+	_, _ = Write(w, data...)
 	panic(stopKEY)
 }
 

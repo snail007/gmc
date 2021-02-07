@@ -6,7 +6,7 @@ on:
     branches:
       - master
 
-name: run tests
+name: tests
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -61,3 +61,31 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Run tests
         run: go test -v -covermode=count ./...
+  codecov:
+    name: codecov
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15.x
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+
+      - name: Generate coverage report
+        run: |
+          go test `go list ./... | grep -v examples` -coverprofile=coverage.txt -covermode=atomic
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          file: ./coverage.txt
+          flags: unittests
+          name: codecov-umbrella

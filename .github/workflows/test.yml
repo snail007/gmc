@@ -52,7 +52,7 @@ jobs:
           done
       - name: Setting Up DB
         run: |
-        mysql -h mysql -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
+          mysql -h mysql -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
       - name: Install Go
         if: success()
         uses: actions/setup-go@v2

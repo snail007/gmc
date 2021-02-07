@@ -22,14 +22,14 @@ func main() {
 	api.Ext(".html")
 	// add a middleware typed 1 to filter all request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware1(func(c gmc.C, s gcore.APIServer) (isStop bool) {
-		s.Logger().Infof("before request %s", c.Request().RequestURI)
+	api.AddMiddleware1(func(c gmc.C) (isStop bool) {
+		c.Logger().Infof("before request %s", c.Request().RequestURI)
 		return false
 	})
 	// add a middleware typed 2 to logging every request registered in router,
 	// exclude 404 requests.
-	api.AddMiddleware2(func(c gmc.C, s gcore.APIServer) (isStop bool) {
-		s.Logger().Infof("after request %s %d %d %s %s",
+	api.AddMiddleware2(func(c gmc.C) (isStop bool) {
+		c.Logger().Infof("after request %s %d %d %s %s",
 			c.Request().Method,
 			c.StatusCode(),
 			c.WriteCount(),

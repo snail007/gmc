@@ -50,6 +50,8 @@ jobs:
           while ! mysqladmin ping -h"127.0.0.1" -P"$PORT" --silent; do
             sleep 1
           done
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Setting Up DB
         run: |
           mysql -h mysql -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
@@ -58,7 +60,5 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Checkout code
-        uses: actions/checkout@v2
       - name: Run tests
         run: go test -v -covermode=count ./...

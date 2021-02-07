@@ -22,7 +22,7 @@ jobs:
           mysql-version: '5.6'
       - name: Setting Up DB
         run: |
-          mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
+          cmd /c 'mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql'
       - name: Install Go
         if: success()
         uses: actions/setup-go@v2

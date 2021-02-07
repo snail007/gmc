@@ -17,6 +17,7 @@ type (
 	// requests. Like http.HandlerFunc, but has a third parameter for the values of
 	// wildcards (path variables).
 	Handle     func(http.ResponseWriter, *http.Request, Params)
+	Handler    func(ctx Ctx)
 	Middleware func(ctx Ctx) (isStop bool)
 )
 

@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v2
       - uses: shogo82148/actions-setup-mysql@v1
         with:
-          mysql-version: '5.5.0'
+          mysql-version: '5.6'
       - name: Setting Up DB
         run: |
           mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql

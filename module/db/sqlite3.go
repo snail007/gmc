@@ -401,7 +401,7 @@ func NewSQLite3DBConfig() SQLite3DBConfig {
 		Database:                 "test",
 		TablePrefix:              "",
 		TablePrefixSQLIdentifier: "",
-		Password:                 "passwd",
+		Password:                 "",
 	}
 }
 

@@ -90,4 +90,6 @@ type Ctx interface {
 	FormFile(name string, maxMultipartMemory int64) (*multipart.FileHeader, error)
 	MultipartForm(maxMultipartMemory int64) (*multipart.Form, error)
 	SaveUploadedFile(file *multipart.FileHeader, dst string) error
+	ControllerMethod() string
+	SetControllerMethod(controllerMethod string)
 }

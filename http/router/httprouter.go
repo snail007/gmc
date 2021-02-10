@@ -204,6 +204,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			reqCtx := w.(*ghttputil.ResponseWriter).Data("ctx").(gcore.Ctx)
 			// fix param not contains matched route path
 			reqCtx.SetParam(ps)
+			reqCtx.SetControllerMethod(objMethod0)
 			obj0 := reflect.ValueOf(obj)
 			var val reflect.Value
 			if obj0.Kind() == reflect.Ptr {

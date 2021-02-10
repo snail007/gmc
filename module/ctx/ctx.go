@@ -40,6 +40,15 @@ type Ctx struct {
 	remoteAddr string
 	conn       net.Conn
 	metadata   *gmap.Map
+	controllerMethod string
+}
+
+func (this *Ctx) ControllerMethod() string {
+	return this.controllerMethod
+}
+
+func (this *Ctx) SetControllerMethod(controllerMethod string) {
+	this.controllerMethod = controllerMethod
 }
 
 func (this *Ctx) Conn() net.Conn {

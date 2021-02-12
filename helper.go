@@ -23,7 +23,8 @@ var (
 	Cache = &CacheAssistant{}
 	// I18n shortcut of gmc i18n
 	I18n = &I18nAssistant{}
-	Err  *ErrorAssistant
+	// Err shortcut of gerror
+	Err  = &ErrorAssistant{}
 )
 
 // #########################################
@@ -229,13 +230,13 @@ func (e *ErrorAssistant) Recover(f ...interface{}) {
 // New creates a gcore.Error from an error or string, the gcore.Error
 // keeps the full stack information.
 func (e *ErrorAssistant) New(err interface{}) error {
-	return e.p().New(e)
+	return e.p().New(err)
 }
 
 // Wrap wraps an error to gcore.Error, which keeps
 // the full stack information.
 func (e *ErrorAssistant) Wrap(err interface{}) error {
-	return e.p().New(e)
+	return e.p().WrapN(err,2)
 }
 
 func initHelper() {

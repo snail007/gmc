@@ -80,13 +80,18 @@ func (this *Error) WrapN(e interface{}, skip int) gcore.Error {
 
 	var err error
 
-	switch e := e.(type) {
+	switch ev := e.(type) {
 	case *Error:
-		return e
+		return ev
 	case error:
-		err = e
+		err = ev
 	default:
-		err = fmt.Errorf("%v", e)
+		vp:=reflect.ValueOf(ev)
+		if vp.Kind()==reflect.Ptr{
+			err = fmt.Errorf("%s->%v",reflect.TypeOf(ev).String() ,vp.Interface())
+		}else{
+			err = fmt.Errorf("%v", ev)
+		}
 	}
 
 	stack := make([]uintptr, MaxStackDepth)

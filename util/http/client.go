@@ -43,9 +43,8 @@ type HTTPClient struct {
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
 func NewHTTPClient() HTTPClient {
-	jar, _ := cookiejar.New(&cookiejar.Options{})
 	return HTTPClient{
-		jar: jar,
+		jar: NewCookieJar(),
 	}
 }
 
@@ -405,7 +404,32 @@ func (s *HTTPClient) getProxyURL() (proxyURL *url.URL) {
 // new a http.Client
 func (s *HTTPClient) newClient(timeout time.Duration) (client *http.Client, err error) {
 	client = &http.Client{}
-	client.Jar, _ = cookiejar.New(&cookiejar.Options{})
+	client.Jar = s.jar
 	client.Transport, err = s.newTransport(timeout)
 	return
+}
+
+type CookieJar struct {
+	jar *cookiejar.Jar
+}
+
+func NewCookieJar() *CookieJar {
+	jar, _ := cookiejar.New(&cookiejar.Options{})
+	return &CookieJar{
+		jar: jar,
+	}
+}
+
+func (s *CookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
+	for k, v := range cookies {
+		if net.ParseIP(v.Domain) != nil {
+			v.Domain = ""
+		}
+		cookies[k] = v
+	}
+	s.jar.SetCookies(u, cookies)
+}
+
+func (s *CookieJar) Cookies(u *url.URL) []*http.Cookie {
+	return s.jar.Cookies(u)
 }

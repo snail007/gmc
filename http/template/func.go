@@ -38,6 +38,9 @@ func anyToTplHTML(v interface{}) template.HTML {
 
 func trimNoValue(m interface{}, key ...string) interface{} {
 	if m == nil {
+		if len(key) >= 2 {
+			return key[1]
+		}
 		return ""
 	}
 	if len(key) == 0 {
@@ -52,6 +55,9 @@ func trimNoValue(m interface{}, key ...string) interface{} {
 		if v, ok := val[key[0]]; ok {
 			return v
 		}
+	}
+	if len(key) >= 2 {
+		return key[1]
 	}
 	return ""
 }

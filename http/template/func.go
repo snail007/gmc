@@ -46,15 +46,19 @@ func trimNoValue(m interface{}, key ...string) interface{} {
 	if len(key) == 0 {
 		return m
 	}
+	var v interface{}
+	var ok bool
 	switch val := m.(type) {
 	case map[string]interface{}:
-		if v, ok := val[key[0]]; ok {
-			return v
-		}
+		v, ok = val[key[0]]
 	case map[string]string:
-		if v, ok := val[key[0]]; ok {
-			return v
+		v, ok = val[key[0]]
+	}
+	if ok {
+		if gcast.ToString(v) == "" && len(key) >= 2 {
+			return key[1]
 		}
+		return v
 	}
 	if len(key) >= 2 {
 		return key[1]

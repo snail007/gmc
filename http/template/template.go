@@ -114,8 +114,10 @@ func (t *Template) Parse() (err error) {
 		return
 	}
 	if len(bindata) > 0 {
+		t.ctx.Logger().Infof("parse views from binary data")
 		err = t.parseFromBinData()
 	} else {
+		t.ctx.Logger().Infof("parse views from disk")
 		err = t.parseFromDisk()
 	}
 	if err != nil {

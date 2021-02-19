@@ -8,10 +8,12 @@ package gtemplate
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	"io/ioutil"
 )
 
 func Example() {
 	ctx := gcore.Providers.Ctx("")()
+	ctx.Logger().SetOutput(ioutil.Discard)
 	ctx.SetConfig(gcore.Providers.Config("")())
 	tpl, err := NewTemplate(ctx, "tests/views")
 	if err != nil {

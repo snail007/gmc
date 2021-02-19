@@ -13,6 +13,7 @@ import (
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
 	gi18n "github.com/snail007/gmc/module/i18n"
+	glog "github.com/snail007/gmc/module/log"
 	"io"
 	"os"
 	"sync"
@@ -60,6 +61,13 @@ func TestMain(m *testing.M) {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
+	})
+
+	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+		if ctx == nil {
+			return glog.NewLogger(prefix)
+		}
+		return glog.NewFromConfig(ctx.Config(), prefix)
 	})
 
 	providers.RegisterCtx("", func() gcore.Ctx {

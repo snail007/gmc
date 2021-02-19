@@ -25,22 +25,30 @@ import (
 )
 
 type Ctx struct {
-	response   http.ResponseWriter
-	request    *http.Request
-	param      gcore.Params
-	timeUsed   time.Duration
-	localAddr  string
-	apiServer  gcore.APIServer
-	webServer  gcore.HTTPServer
-	app        gcore.App
-	logger     gcore.Logger
-	config     gcore.Config
-	i18n       gcore.I18n
-	template   gcore.Template
-	remoteAddr string
-	conn       net.Conn
-	metadata   *gmap.Map
+	response         http.ResponseWriter
+	request          *http.Request
+	param            gcore.Params
+	timeUsed         time.Duration
+	localAddr        string
+	apiServer        gcore.APIServer
+	webServer        gcore.HTTPServer
+	app              gcore.App
+	logger           gcore.Logger
+	config           gcore.Config
+	i18n             gcore.I18n
+	template         gcore.Template
+	remoteAddr       string
+	conn             net.Conn
+	metadata         *gmap.Map
 	controllerMethod string
+}
+
+func (this *Ctx) ControllerMethod() string {
+	return this.controllerMethod
+}
+
+func (this *Ctx) SetControllerMethod(controllerMethod string) {
+	this.controllerMethod = controllerMethod
 }
 
 func (this *Ctx) Conn() net.Conn {

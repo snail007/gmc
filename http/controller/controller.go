@@ -11,6 +11,7 @@ import (
 	ghttputil "github.com/snail007/gmc/internal/util/http"
 	gcast "github.com/snail007/gmc/util/cast"
 	"net/http"
+	"net/textproto"
 )
 
 type Controller struct {
@@ -71,7 +72,7 @@ func (this *Controller) initLang() {
 
 // init GPSC variables in views
 func (this *Controller) initGPSC() {
-	g, p, s, c, u := map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}
+	g, p, s, c, u, h := map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}, map[string]string{}
 
 	// get
 	for k, v := range this.Request.URL.Query() {
@@ -120,6 +121,14 @@ func (this *Controller) initGPSC() {
 	u["URI"] = u0.RequestURI()
 	u["URL"] = u0.String()
 
+	// HTTP HEADER
+	for k, v := range this.Request.Header {
+		h[k] = ""
+		if len(v) > 0 {
+			h[textproto.CanonicalMIMEHeaderKey(k)] = v[0]
+		}
+	}
+
 	// fill gpsc to data
 	data := map[string]interface{}{
 		"G": g,
@@ -127,6 +136,7 @@ func (this *Controller) initGPSC() {
 		"S": s,
 		"C": c,
 		"U": u,
+		"H": h,
 	}
 
 	// set data to view

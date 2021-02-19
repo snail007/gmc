@@ -58,6 +58,7 @@ delimiterright="}}"
 1. `.C` access COOKIE data. `.C` is a `map[string][string]`, 
     `.C.key` key is cookie field name in cookies raw string.
 1. `.U` current URL information `u:=map[string]string`.
+1. `.H` request HTTP HEADER information `h:=map[string]string`.
     
     ```golang
     u["HOST"] = u0.Host

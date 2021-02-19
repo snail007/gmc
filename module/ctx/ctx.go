@@ -43,14 +43,6 @@ type Ctx struct {
 	controllerMethod string
 }
 
-func (this *Ctx) ControllerMethod() string {
-	return this.controllerMethod
-}
-
-func (this *Ctx) SetControllerMethod(controllerMethod string) {
-	this.controllerMethod = controllerMethod
-}
-
 func (this *Ctx) Conn() net.Conn {
 	return this.conn
 }

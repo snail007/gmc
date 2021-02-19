@@ -362,6 +362,7 @@ gmc做了精简，精简后的全部介绍在：[template/sprig/docs](https://gi
 1. `.S` SESION数据，是一个 `map[string][string]`，`{{.S.key}}` key是SESSION数据的中的键名称。
     提示：只有在控制器里面调用 `SessionStart()` 开启了session，才有效。
 1. `.C` POST数据，是一个 `map[string][string]`，`{{.C.key}}` key是COOKIE数据的中的键名称。
+1. `.H` 当前请求的HTTP头部信息， 是一个 `map[string]string`。
 1. `.U` 当前请求URL的信息， 是一个 `map[string]string`，它的详细内容如下：
     
     ```go

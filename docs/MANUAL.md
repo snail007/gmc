@@ -385,7 +385,8 @@ In the template, GMC has the following variables ready for the template that can
 1. `.P `POST data, is a` map[string][string] `, `{{.P.key}}` key is the key name in the POST data.
 1. `.S `SESION data, is a` map[string][string] `, `{{.S.key}}` key is the name of the key in the SESSION data.
 Tip: The session is only enabled by calling `SessionStart()` in the controller.
-1. `.C `POST data, is a` map[string][string] `, `{{.C.key}}` key is the key name in COOKIE data.
+1. `.C `COOKIE data, is a` map[string][string] `, `{{.C.key}}` key is the key name in COOKIE data.
+1. `.H `HTTP HEADER data, is a` map[string][string]`.
 1. `.U `is a` map[string] String `, details of `.U` are as follows:
    
   ```go

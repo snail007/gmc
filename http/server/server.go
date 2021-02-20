@@ -68,6 +68,10 @@ type HTTPServer struct {
 	ctx                  gcore.Ctx
 }
 
+func (s *HTTPServer) SetCtx(ctx gcore.Ctx) {
+	s.ctx = ctx
+}
+
 type remoteAddrItem struct {
 	remoteAddr string
 	localAddr  string
@@ -102,6 +106,11 @@ func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	err = s.initBaseObjets()
 	return
 }
+
+func (s *HTTPServer) Ctx() gcore.Ctx {
+	return s.ctx
+}
+
 func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init i18n

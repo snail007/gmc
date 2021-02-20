@@ -111,6 +111,10 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, er
 	return
 }
 
+func (this *APIServer) Ctx() gcore.Ctx {
+	return this.ctx
+}
+
 func (this *APIServer) initRequestCtx(w http.ResponseWriter, r *http.Request) gcore.Ctx {
 	w = ghttputil.NewResponseWriter(w)
 	c0 := this.ctx.CloneWithHTTP(w, r)

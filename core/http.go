@@ -169,6 +169,7 @@ type APIServer interface {
 	SetLog(l Logger)
 	Listeners() []net.Listener
 	Listener() net.Listener
+	Ctx() Ctx
 }
 
 type HTTPServer interface {
@@ -195,6 +196,7 @@ type HTTPServer interface {
 	AddMiddleware3(m Middleware)
 	PrintRouteTable(w io.Writer)
 	SetLog(l Logger)
+	Ctx() Ctx
 }
 
 type Controller interface {

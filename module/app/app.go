@@ -157,8 +157,12 @@ func (s *GMCApp) parseConfigFile() (err error) {
 	}
 	if parse {
 		// env binding
+		prefix := os.Getenv("ENV_PREFIX")
+		if prefix == "" {
+			prefix = "GMC"
+		}
 		s.config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-		s.config.SetEnvPrefix("GMC")
+		s.config.SetEnvPrefix(prefix)
 		s.config.AutomaticEnv()
 		err = s.config.ReadInConfig()
 		if err != nil {

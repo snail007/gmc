@@ -11,18 +11,25 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
 var (
 	shutdown = []func(){}
 	IsMock   = false
+	once     = sync.Once{}
 )
 
 func RegistShutdown(fn func()) {
 	shutdown = append(shutdown, fn)
 }
+
 func WaitShutdown() {
+	once.Do(waitShutdown)
+}
+
+func waitShutdown() {
 	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 		fmt.Printf("shutdown hook manager crashed, err: %s", gcore.Providers.Error("")().StackError(e))
 	})

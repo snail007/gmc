@@ -29,7 +29,7 @@ after using daemon package, execute your program can be like this:
 ## Demo
 
 ```golang
-package daemon
+package main
 
 import (
 	"fmt"
@@ -42,11 +42,11 @@ import (
 
 func main() {
 	//the code block should be in your main function,and the actual main() change to doMain()
-	if err := daemon.Start(); err != nil {
+	if err := gdaemon.Start(); err != nil {
 		fmt.Println(err)
 		return
 	}
-	if daemon.CanRun() {
+	if gdaemon.CanRun() {
 		//call actual main()
 		go doMain()
 	}
@@ -55,7 +55,7 @@ func main() {
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-signalChan
 	//do clean
-	daemon.Clean()
+	gdaemon.Clean()
 }
 
 //your main function

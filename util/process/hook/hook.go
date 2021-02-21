@@ -51,6 +51,7 @@ func MockShutdown() {
 	log.Println("Received an interrupt, mock stopping service...")
 	runHooks()
 }
+
 func runHooks() {
 	caller := func(fn func()) {
 		defer gcore.Providers.Error("")().Recover(func(e interface{}) {

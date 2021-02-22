@@ -120,9 +120,7 @@ func (s *Model) MGetByIDsWithFieldsRs(fields string, ids []string, orderBy ...in
 	ar := db.AR().Select(fields).From(s.table).Where(map[string]interface{}{
 		s.primaryKey: ids,
 	})
-	if col, by := s.OrderBy(orderBy...); col != "" {
-		ar.OrderBy(col, by)
-	}
+	s.OrderBy(ar, orderBy...)
 	rs, err = db.Query(ar)
 	return
 }
@@ -163,9 +161,7 @@ func (s *Model) MGetByWithFields(fields string, where map[string]interface{}, or
 func (s *Model) MGetByWithFieldsRs(fields string, where map[string]interface{}, orderBy ...interface{}) (rs gcore.ResultSet, err error) {
 	db := s.db
 	ar := db.AR().Select(fields).From(s.table).Where(where)
-	if col, by := s.OrderBy(orderBy...); col != "" {
-		ar.OrderBy(col, by)
-	}
+	s.OrderBy(ar, orderBy...)
 	rs, err = db.Query(ar)
 	return
 }
@@ -255,9 +251,7 @@ func (s *Model) PageWithFields(fields string, where map[string]interface{}, offs
 	if len(where) > 0 {
 		ar.Where(where)
 	}
-	if col, by := s.OrderBy(orderBy...); col != "" {
-		ar.OrderBy(col, by)
-	}
+	s.OrderBy(ar, orderBy...)
 	rs, err = db.Query(ar)
 	if err != nil {
 		return nil, 0, err
@@ -276,9 +270,7 @@ func (s *Model) ListWithFields(fields string, where map[string]interface{}, offs
 	if len(where) > 0 {
 		ar.Where(where)
 	}
-	if col, by := s.OrderBy(orderBy...); col != "" {
-		ar.OrderBy(col, by)
-	}
+	s.OrderBy(ar, orderBy...)
 	rs, err := db.Query(ar)
 	if err != nil {
 		return nil, err
@@ -287,18 +279,16 @@ func (s *Model) ListWithFields(fields string, where map[string]interface{}, offs
 	return
 }
 
-func (s *Model) OrderBy(orderBy ...interface{}) (col, by string) {
+func (s *Model) OrderBy(ar gcore.ActiveRecord, orderBy ...interface{}) (ret [][]string) {
 	if len(orderBy) > 0 {
 		switch val := orderBy[0].(type) {
 		case map[string]interface{}:
 			for k, v := range val {
-				col, by = k, v.(string)
-				break
+				ar.OrderBy(k, v.(string))
 			}
 		case map[string]string:
 			for k, v := range val {
-				col, by = k, v
-				break
+				ar.OrderBy(k, v)
 			}
 		}
 	}

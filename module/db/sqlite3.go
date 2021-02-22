@@ -847,8 +847,9 @@ func (ar *SQLite3ActiveRecord) compileGroupBy() string {
 
 func (ar *SQLite3ActiveRecord) compileOrderBy() string {
 	orderBy := []string{}
-	for key, Type := range ar.arOrderBy {
-		Type = strings.ToUpper(Type)
+	for _, val := range sortMapSS(ar.arOrderBy, true) {
+		key := val["col"].(string)
+		Type := strings.ToUpper(val["value"].(string))
 		_key := strings.Split(key, ".")
 		if len(_key) == 2 {
 			orderBy = append(orderBy, fmt.Sprintf("%s.%s %s", ar.protectIdentifier(ar.checkPrefix(_key[0])), ar.protectIdentifier(_key[1]), Type))

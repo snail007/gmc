@@ -52,6 +52,11 @@ type RedisCache struct {
 	connectLock *sync.Mutex
 }
 
+func (c *RedisCache) Pool() *redis.Pool {
+	c.connect()
+	return c.pool
+}
+
 // New redis cache
 func NewRedisCache(cfg interface{}) *RedisCache {
 	cfg0 := cfg.(*RedisCacheConfig)

@@ -3,7 +3,6 @@ module github.com/snail007/gmc
 go 1.12
 
 require (
-	github.com/davecgh/go-spew v1.1.1
 	github.com/dsnet/compress v0.0.1
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
@@ -12,7 +11,6 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/klauspost/pgzip v1.2.5
 	github.com/pkg/errors v0.8.1
-	github.com/pmezard/go-difflib v1.0.0
 	github.com/snail007/go-sqlcipher v0.0.0-20210114093415-fb27975e042f
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.5.0
@@ -21,5 +19,4 @@ require (
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/text v0.3.3
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v2 v2.2.4
 )

@@ -1023,6 +1023,31 @@ func InitRouter(s gcore.HTTPServer) {
 - The second parameter is the path of the debugging function in the URL. If it is empty, the default is: `/debug/pprof/`.
 - Visit: `http://127.0.0.1:7080/gmcdebug/` to see the effect, and then use `go tool` to remotely debug various indicators.
 
+#Configuration file
+gmc uses toml as the configuration file. The configuration in the configuration file can be dynamically changed by setting the environment variables.
+
+A configuration file fragment is as follows:
+
+```toml
+[httpserver]
+listen = ": 6800"
+```
+
+Then you can set the environment variable `GMC_HTTPSERVER_LISTEN=:9999` to change the http service port monitored by the program to `9999`.
+
+It can be found that the rules are as follows:
+
+1. The environment variable is composition of `GMC_` with all uppercase of the name in the configuration.
+1. The name level in the configuration file is indicated by an underscore `_` in the environment variable.
+
+In addition:
+
+`GMC_` This can be changed by setting the environment variable `ENV_PREFIX`.
+
+E.g:
+
+Set the environment variable `ENV_PREFIX=APP_`, change it to `APP_`, then set the environment variable:`APP_HTTPSERVER_LISTEN=:9999`, you can change the http service port to `9999`.
+
 # MIDDLEWARE
 
 Both THE Web and API servers of GMC support middleware. When existing functions cannot meet your requirements, you can complete various functions by registering middleware, such as: `authorization`, `logging`, `modification request` and so on.

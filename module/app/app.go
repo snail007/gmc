@@ -12,7 +12,6 @@ import (
 	ghook "github.com/snail007/gmc/util/process/hook"
 	"net"
 	"os"
-	"strings"
 )
 
 type GMCApp struct {
@@ -156,14 +155,6 @@ func (s *GMCApp) parseConfigFile() (err error) {
 		parse = true
 	}
 	if parse {
-		// env binding
-		prefix := os.Getenv("ENV_PREFIX")
-		if prefix == "" {
-			prefix = "GMC"
-		}
-		s.config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-		s.config.SetEnvPrefix(prefix)
-		s.config.AutomaticEnv()
 		err = s.config.ReadInConfig()
 		if err != nil {
 			return

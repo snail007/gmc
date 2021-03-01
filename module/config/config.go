@@ -9,7 +9,9 @@ import (
 	"bytes"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/spf13/viper"
+	"os"
 	"reflect"
+	"strings"
 )
 
 type Config struct {
@@ -25,9 +27,11 @@ func (c *Config) Sub(key string) gcore.SubConfig {
 }
 
 func NewConfig() *Config {
-	return &Config{
+	c := &Config{
 		Viper: viper.New(),
 	}
+	bindEnv(c)
+	return c
 }
 
 func NewConfigFile(file string) (c *Config, err error) {
@@ -40,6 +44,7 @@ func NewConfigFile(file string) (c *Config, err error) {
 	c = &Config{
 		Viper: cfg,
 	}
+	bindEnv(c)
 	return
 }
 
@@ -48,6 +53,17 @@ func NewConfigBytes(b []byte) (c *Config, err error) {
 		Viper: viper.New(),
 	}
 	c.SetConfigType("toml")
+	bindEnv(c)
 	err = c.ReadConfig(bytes.NewReader(b))
 	return
+}
+func bindEnv(config gcore.Config) {
+	// env binding
+	prefix := os.Getenv("ENV_PREFIX")
+	if prefix == "" {
+		prefix = "GMC"
+	}
+	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	config.SetEnvPrefix(prefix)
+	config.AutomaticEnv()
 }

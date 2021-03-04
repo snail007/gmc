@@ -263,7 +263,7 @@ func (s *GMCLog) caller(msg string, skip int) string {
 	line := 0
 	if _, file0, line0, ok := runtime.Caller(skip); ok {
 		file0 = strings.Replace(file0, "\\", "/", -1)
-		p := "/github.com/snail007/gmc/"
+		p := "github.com/snail007/gmc"
 		if strings.Contains(file0, p) &&
 			!strings.Contains(file0, p+"demos") {
 			file = "[gmc]" + file0[strings.Index(file0, p)+len(p):]

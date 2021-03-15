@@ -43,6 +43,10 @@ type Ctx struct {
 	controllerMethod string
 }
 
+func (this *Ctx) IsTLSRequest() bool {
+	return this.request.TLS != nil
+}
+
 func (this *Ctx) ControllerMethod() string {
 	return this.controllerMethod
 }

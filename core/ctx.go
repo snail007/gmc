@@ -92,4 +92,5 @@ type Ctx interface {
 	SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	ControllerMethod() string
 	SetControllerMethod(controllerMethod string)
+	IsTLSRequest()bool
 }

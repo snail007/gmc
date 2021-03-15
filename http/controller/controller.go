@@ -10,6 +10,7 @@ import (
 	gcore "github.com/snail007/gmc/core"
 	ghttputil "github.com/snail007/gmc/internal/util/http"
 	gcast "github.com/snail007/gmc/util/cast"
+	"net"
 	"net/http"
 	"net/textproto"
 )
@@ -106,18 +107,23 @@ func (this *Controller) initGPSC() {
 	}
 
 	// URL
+	scheme := "http"
+	if this.Ctx.IsWebsocket() {
+		scheme = "ws"
+	}
+	if this.Request.TLS != nil {
+		scheme += "s"
+	}
 	u0 := this.Request.URL
-	u["HOST"] = u0.Host
-	u["HOSTNAME"] = u0.Hostname()
-	u["PORT"] = u0.Port()
+	u["HOST"] = this.Request.Host
+	u["HOSTNAME"], u["PORT"], _ = net.SplitHostPort(this.Request.Host)
 	u["PATH"] = u0.Path
 	u["FRAGMENT"] = u0.Fragment
 	u["OPAQUE"] = u0.Opaque
 	u["RAW_PATH"] = u0.RawPath
 	u["RAW_QUERY"] = u0.RawQuery
-	u["SCHEME"] = u0.Scheme
-	u["USER"] = u0.User.Username()
-	u["PASSWORD"], _ = u0.User.Password()
+	u["SCHEME"] = scheme
+	u["USER"], u["PASSWORD"], _ = this.Request.BasicAuth()
 	u["URI"] = u0.RequestURI()
 	u["URL"] = u0.String()
 

@@ -15,8 +15,8 @@ import (
 // IsExists checks whether a file or directory exists.
 // It returns false when the file or directory does not exists.
 func Exists(path string) bool {
-	_, err := os.Stat(path)
-	return os.IsExist(err)
+	_, e := os.Stat(path)
+	return e == nil
 }
 
 // IsFile checks whether the path is a file,

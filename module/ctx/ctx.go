@@ -7,6 +7,7 @@ package gctx
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gmap "github.com/snail007/gmc/util/map"
@@ -19,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	ghttputil "github.com/snail007/gmc/internal/util/http"
@@ -342,24 +344,113 @@ func (this *Ctx) StopJSON(code int, msg interface{}) {
 	this.Stop()
 }
 
+var (
+	ipOnce    = sync.Once{}
+	ipNetwork []*net.IPNet
+)
+
+type CloudFlareIPS struct {
+	Result struct {
+		Ipv4Cidrs []string `json:"ipv4_cidrs"`
+		Ipv6Cidrs []string `json:"ipv6_cidrs"`
+		Etag string `json:"etag"`
+	} `json:"result"`
+	Success bool `json:"success"`
+	Errors []interface{} `json:"errors"`
+	Messages []interface{} `json:"messages"`
+}
+
 // ClientIP acquires the real client ip, search in X-Forwarded-For, X-Real-IP, request.RemoteAddr.
 func (this *Ctx) ClientIP() (ip string) {
-	// X-Forwarded-For
-	xForwardedFor := this.Request().Header.Get("X-Forwarded-For")
-	if xForwardedFor != "" {
-		proxyIps := strings.Split(strings.Replace(xForwardedFor, " ", "", -1), ",")
-		if len(proxyIps) > 0 {
-			ip = proxyIps[0]
-			return
+	clientIP, _, _ := net.SplitHostPort(this.Request().RemoteAddr)
+	frontType := this.Config().GetString("frontend.type")
+	ipOnce.Do(func() {
+		switch frontType {
+		case "cloudflare":
+			client := http.Client{
+				Timeout: time.Second * 10,
+			}
+			resp, err := client.Get("https://api.cloudflare.com/client/v4/ips")
+			if err != nil {
+				return
+			}
+			defer resp.Body.Close()
+			b, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				this.Logger().Warnf("fetch cloudflare ips fail, error:%s ", err)
+				return
+			}
+			var cloudFlareIPS CloudFlareIPS
+			err = json.Unmarshal(b, &cloudFlareIPS)
+			if err != nil {
+				this.Logger().Warnf("fetch cloudflare ips fail, content:%s, error:%s", string(b), err)
+				return
+			}
+			if !cloudFlareIPS.Success {
+				this.Logger().Warnf("fetch cloudflare ips fail, content:%s, error:%s", string(b), err)
+				return
+			}
+			for _, v := range append(cloudFlareIPS.Result.Ipv4Cidrs, cloudFlareIPS.Result.Ipv6Cidrs...) {
+				_, cloudFlareIPsNetwork, _ := net.ParseCIDR(v)
+				if cloudFlareIPsNetwork != nil {
+					ipNetwork = append(ipNetwork,cloudFlareIPsNetwork)
+				}
+			}
+		case "proxy":
+			ipsProxy := this.Config().GetStringSlice("frontend.ips")
+			if len(ipsProxy) > 0 {
+				for _, v := range ipsProxy {
+					if !strings.Contains(v, "/") {
+						v += "/32"
+					}
+					_, cloudFlareIPsNetwork, _ := net.ParseCIDR(v)
+					if cloudFlareIPsNetwork != nil {
+						ipNetwork = append(ipNetwork,cloudFlareIPsNetwork)
+					}
+				}
+			}
+		}
+	})
+	check := false
+	if len(ipNetwork) > 0 {
+		clientIPObj := net.ParseIP(clientIP)
+		for _, ipn := range ipNetwork {
+			if ipn.Contains(clientIPObj) {
+				check = true
+				break
+			}
 		}
 	}
-	// X-Real-IP
-	ip = this.Request().Header.Get("X-Real-IP")
-	if ip != "" {
-		return
+	if check {
+		switch frontType {
+		case "cloudflare":
+			// CF-Connecting-IP
+			ip = this.Header("True-Client-IP")
+			if ip == "" {
+				// CF-Connecting-IP
+				ip = this.Header("CF-Connecting-IP")
+			}
+		case "proxy":
+			// X-Real-IP
+			ip = this.Header("X-Real-IP")
+			if ip == "" {
+				// X-Forwarded-For
+				xForwardedFor := this.Header("X-Forwarded-For")
+				if xForwardedFor != "" {
+					xForwardedFor = strings.Replace(xForwardedFor, ":", " ", -1)
+					xForwardedFor = strings.Replace(xForwardedFor, ",", " ", -1)
+					proxyIps := strings.Fields(xForwardedFor)
+					if len(proxyIps) > 0 {
+						ip = proxyIps[0]
+					}
+				}
+			}
+		}
 	}
-	// RemoteAddr
-	ip, _, _ = net.SplitHostPort(this.Request().RemoteAddr)
+	if ip == "" {
+		// RemoteAddr
+		ip = clientIP
+	}
 	return
 }
 

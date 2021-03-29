@@ -239,3 +239,19 @@ dir="./logs"
 filename="access_%Y%m%d.log"
 gzip=true
 format="$req_time $client_ip $host $uri?$query $status_code ${time_used}ms"
+
+##############################################################
+# make it safe to get client ip
+##############################################################
+# 1.type is a type of frontend.
+#     currently can be : cloudflare, proxy.
+# 1.1 when type is cloudflare, gmc will get cloudflare ip range
+#     though api by only once to check the client ip header, when
+#     you using ctx.ClientIP().
+# 1.2 when type is proxy, you should set ip or ip range of your
+#     frontend server, such as nginx, apache. ips is an array
+#     of ip or ip of CIDR. such as: 192.168.1.1, 192.168.0.0/16
+##############################################################
+[frontend]
+#type="proxy"
+#ips=["192.168.1.1","192.168.0.0/16"]

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -290,22 +291,43 @@ func TestCtx_GetXXX(t *testing.T) {
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {}, func(ctx *Ctx) interface{} { return ctx.IsAJAX() }, func(ctx *Ctx) interface{} { return false }, "IsAJAX"},
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {}, func(ctx *Ctx) interface{} { return ctx.IsWebsocket() }, func(ctx *Ctx) interface{} { return false }, "IsWebsocket"},
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
+			ipOnce = sync.Once{}
+			ipNetwork = []*net.IPNet{}
 			ctx.request.Header.Set("X-Forwarded-For", "1.1.1.1")
+			ctx.Config().Set("frontend", map[string]interface{}{
+				"type": "proxy",
+				"ips":  []string{"192.0.0.0/8", "172.0.0.0/8", "127.0.0.0/8"},
+			})
 		}, func(ctx *Ctx) interface{} {
 			return ctx.ClientIP()
 		}, func(ctx *Ctx) interface{} {
 			return "1.1.1.1"
-		}, "ClientIP-X-Forwarded-For"},
+		}, "ClientIP() proxy X-Forwarded-For"},
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
+			ipOnce = sync.Once{}
+			ipNetwork = []*net.IPNet{}
 			ctx.request.Header.Set("X-Real-IP", "1.1.1.1")
+			ctx.Config().Set("frontend", map[string]interface{}{
+				"type": "proxy",
+				"ips":  []string{"192.0.0.0/8", "172.0.0.0/8", "127.0.0.0/8"},
+			})
 		}, func(ctx *Ctx) interface{} {
 			return ctx.ClientIP()
 		}, func(ctx *Ctx) interface{} {
-			a := ctx.Clone().(*Ctx)
-			c := a.CloneWithHTTP(a.response, a.request, a.param).(*Ctx)
-			*ctx = *c
 			return "1.1.1.1"
-		}, "ClientIP-X-Real-IP"},
+		}, "ClientIP() proxy X-Real-IP"},
+		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
+			ipOnce = sync.Once{}
+			ipNetwork = []*net.IPNet{}
+			ctx.request.Header.Set("CF-Connecting-IP", "1.1.1.1")
+			ctx.Config().Set("frontend", map[string]interface{}{
+				"type": "cloudflare",
+			})
+		}, func(ctx *Ctx) interface{} {
+			return len(ipNetwork) > 0 && ctx.ClientIP() == "1.1.1.1"
+		}, func(ctx *Ctx) interface{} {
+			return false
+		}, "ClientIP() cloudflare CF-Connecting-IP"},
 		{mockCtx("GET", "/", ""), func(ctx *Ctx) {
 			ctx.SetCookie("test", "a", 0, "", "", true, true)
 		}, func(ctx *Ctx) interface{} {

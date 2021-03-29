@@ -345,18 +345,19 @@ func (this *Ctx) StopJSON(code int, msg interface{}) {
 }
 
 var (
-	ipOnce    = sync.Once{}
-	ipNetwork []*net.IPNet
+	ipOnce        = sync.Once{}
+	ipNetwork     []*net.IPNet
+	ipFetchMaxTry = 60
 )
 
 type CloudFlareIPS struct {
 	Result struct {
 		Ipv4Cidrs []string `json:"ipv4_cidrs"`
 		Ipv6Cidrs []string `json:"ipv6_cidrs"`
-		Etag string `json:"etag"`
+		Etag      string   `json:"etag"`
 	} `json:"result"`
-	Success bool `json:"success"`
-	Errors []interface{} `json:"errors"`
+	Success  bool          `json:"success"`
+	Errors   []interface{} `json:"errors"`
 	Messages []interface{} `json:"messages"`
 }
 
@@ -365,36 +366,60 @@ func (this *Ctx) ClientIP() (ip string) {
 	clientIP, _, _ := net.SplitHostPort(this.Request().RemoteAddr)
 	frontType := this.Config().GetString("frontend.type")
 	ipOnce.Do(func() {
-		switch frontType {
-		case "cloudflare":
+		var cloudflare = func() (err error) {
 			client := http.Client{
 				Timeout: time.Second * 10,
 			}
 			resp, err := client.Get("https://api.cloudflare.com/client/v4/ips")
 			if err != nil {
+				err = fmt.Errorf("fetch cloudflare ips fail, error:%s ", err)
 				return
 			}
 			defer resp.Body.Close()
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				this.Logger().Warnf("fetch cloudflare ips fail, error:%s ", err)
+				err = fmt.Errorf("read cloudflare ips fail, error:%s ", err)
 				return
 			}
 			var cloudFlareIPS CloudFlareIPS
 			err = json.Unmarshal(b, &cloudFlareIPS)
 			if err != nil {
-				this.Logger().Warnf("fetch cloudflare ips fail, content:%s, error:%s", string(b), err)
+				err = fmt.Errorf("parse cloudflare ips fail, content:%s, error:%s", string(b), err)
 				return
 			}
 			if !cloudFlareIPS.Success {
-				this.Logger().Warnf("fetch cloudflare ips fail, content:%s, error:%s", string(b), err)
+				err = fmt.Errorf("parse cloudflare ips fail, content:%s, error:%s", string(b), err)
 				return
 			}
 			for _, v := range append(cloudFlareIPS.Result.Ipv4Cidrs, cloudFlareIPS.Result.Ipv6Cidrs...) {
 				_, cloudFlareIPsNetwork, _ := net.ParseCIDR(v)
 				if cloudFlareIPsNetwork != nil {
-					ipNetwork = append(ipNetwork,cloudFlareIPsNetwork)
+					ipNetwork = append(ipNetwork, cloudFlareIPsNetwork)
 				}
+			}
+			return
+		}
+		switch frontType {
+		case "cloudflare":
+			err := cloudflare()
+			if err != nil {
+				this.Logger().Warn(err)
+				go func() {
+					var tryCnt = 0
+					for {
+						err := cloudflare()
+						if err != nil {
+							tryCnt++
+							if tryCnt >= ipFetchMaxTry {
+								this.Logger().Warn("fetch cloudflare ip range fail, max try %d reached", ipFetchMaxTry)
+								return
+							}
+							time.Sleep(time.Second * 30)
+						} else {
+							return
+						}
+					}
+				}()
 			}
 		case "proxy":
 			ipsProxy := this.Config().GetStringSlice("frontend.ips")
@@ -405,7 +430,7 @@ func (this *Ctx) ClientIP() (ip string) {
 					}
 					_, cloudFlareIPsNetwork, _ := net.ParseCIDR(v)
 					if cloudFlareIPsNetwork != nil {
-						ipNetwork = append(ipNetwork,cloudFlareIPsNetwork)
+						ipNetwork = append(ipNetwork, cloudFlareIPsNetwork)
 					}
 				}
 			}

@@ -251,7 +251,13 @@ format="$req_time $client_ip $host $uri?$query $status_code ${time_used}ms"
 # 1.2 when type is proxy, you should set ip or ip range of your
 #     frontend server, such as nginx, apache. ips is an array
 #     of ip or ip of CIDR. such as: 192.168.1.1, 192.168.0.0/16
+# 2. header is the HTTP header key to acquires the client ip.
+# 2.1 cloudflare can be: True-Client-IP or CF-Connecting-IP,
+#     default is CF-Connecting-IP
+# 2.2 proxy can be: X-Real-IP or X-Forwarded-For,
+#     default is X-Forwarded-For
 ##############################################################
 [frontend]
 #type="proxy"
 #ips=["192.168.1.1","192.168.0.0/16"]
+#header=""

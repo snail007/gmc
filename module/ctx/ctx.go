@@ -365,6 +365,7 @@ type CloudFlareIPS struct {
 func (this *Ctx) ClientIP() (ip string) {
 	clientIP, _, _ := net.SplitHostPort(this.Request().RemoteAddr)
 	frontType := this.Config().GetString("frontend.type")
+	headerKey := this.Config().GetString("frontend.header")
 	ipOnce.Do(func() {
 		var cloudflare = func() (err error) {
 			client := http.Client{
@@ -449,18 +450,16 @@ func (this *Ctx) ClientIP() (ip string) {
 	if check {
 		switch frontType {
 		case "cloudflare":
-			// CF-Connecting-IP
-			ip = this.Header("True-Client-IP")
-			if ip == "" {
-				// CF-Connecting-IP
-				ip = this.Header("CF-Connecting-IP")
+			if headerKey==""{
+				headerKey="CF-Connecting-IP"
 			}
+			ip = this.Header(headerKey)
 		case "proxy":
-			// X-Real-IP
-			ip = this.Header("X-Real-IP")
-			if ip == "" {
-				// X-Forwarded-For
-				xForwardedFor := this.Header("X-Forwarded-For")
+			if headerKey==""{
+				headerKey="X-Forwarded-For"
+			}
+			if strings.ToLower(headerKey) == strings.ToLower("X-Forwarded-For") {
+				xForwardedFor := this.Header(headerKey)
 				if xForwardedFor != "" {
 					xForwardedFor = strings.Replace(xForwardedFor, ":", " ", -1)
 					xForwardedFor = strings.Replace(xForwardedFor, ",", " ", -1)
@@ -469,6 +468,8 @@ func (this *Ctx) ClientIP() (ip string) {
 						ip = proxyIps[0]
 					}
 				}
+			} else {
+				ip = this.Header(headerKey)
 			}
 		}
 	}

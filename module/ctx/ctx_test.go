@@ -308,8 +308,9 @@ func TestCtx_GetXXX(t *testing.T) {
 			ipNetwork = []*net.IPNet{}
 			ctx.request.Header.Set("X-Real-IP", "1.1.1.1")
 			ctx.Config().Set("frontend", map[string]interface{}{
-				"type": "proxy",
-				"ips":  []string{"192.0.0.0/8", "172.0.0.0/8", "127.0.0.0/8"},
+				"type":   "proxy",
+				"ips":    []string{"192.0.0.0/8", "172.0.0.0/8", "127.0.0.0/8"},
+				"header": "X-Real-IP",
 			})
 		}, func(ctx *Ctx) interface{} {
 			return ctx.ClientIP()

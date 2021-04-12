@@ -6,6 +6,8 @@
 package ghttputil
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 	"sync"
 )
@@ -75,4 +77,9 @@ func WriteCount(w http.ResponseWriter) int64 {
 		return v.writeByteCnt
 	}
 	return 0
+}
+
+func (this *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hj, _ := this.ResponseWriter.(http.Hijacker)
+	return hj.Hijack()
 }

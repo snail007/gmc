@@ -10,6 +10,7 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	"io"
+	"io/ioutil"
 	logger "log"
 	"os"
 	"os/exec"
@@ -106,7 +107,7 @@ func Start() (err error) {
 		var w io.Writer
 		w = os.Stdout
 		if flog == "null" {
-			w = io.Discard
+			w = ioutil.Discard
 		} else if flog != "" {
 			f, e := os.OpenFile(flog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 			if e != nil {

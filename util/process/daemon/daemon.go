@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	"io"
 	logger "log"
 	"os"
 	"os/exec"
@@ -77,20 +78,14 @@ func Start() (err error) {
 		}
 	}
 	os.Args = append([]string{os.Args[0]}, args...)
-
-	w := os.Stdout
-	if flog != "" {
-		f, e := os.OpenFile(flog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-		if e != nil {
-			log.Fatal(e)
-		}
-		log.SetOutput(f)
-		w = f
-	}
 	if isDaemon {
+		args := trimArgs("daemon", a)
+		if flog == "" {
+			args = append(args, "-flog", "null")
+		}
 		var cmd *exec.Cmd
 		//fmt.Println("$$" + serviceArgsStr + "$$")
-		cmd = exec.Command(os.Args[0], trimArgs("daemon", a)...)
+		cmd = exec.Command(os.Args[0], args...)
 		err = cmd.Start()
 		if err != nil {
 			err = fmt.Errorf("starting forever fail, error: %s", err)
@@ -108,6 +103,18 @@ func Start() (err error) {
 		os.Exit(0)
 	}
 	if isForever || flog != "" {
+		var w io.Writer
+		w = os.Stdout
+		if flog == "null" {
+			w = io.Discard
+		} else if flog != "" {
+			f, e := os.OpenFile(flog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+			if e != nil {
+				log.Fatal(e)
+			}
+			log.SetOutput(f)
+			w = f
+		}
 		go func() {
 			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
 				fmt.Fprintf(w, "crashed, err: %s", gcore.Providers.Error("")().StackError(e))

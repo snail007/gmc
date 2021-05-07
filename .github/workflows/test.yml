@@ -104,7 +104,7 @@ jobs:
            mkdir -p $GOPATH/src/github.com/snail007
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
            echo GOPATH: $GOPATH
-           cd ../ && mv gmc $SNAIL007PATH/
+           cd ../ && cp -R gmc $SNAIL007PATH/
            cd $SNAIL007PATH/gmc/
            ./gmct/gmct cover -s -k
            pwd && ls

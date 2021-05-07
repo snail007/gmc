@@ -86,6 +86,7 @@ jobs:
 
       - name: Install gmct
         run: |
+          export GOPATH=$(go env GOPATH)
           git clone https://github.com/snail007/gmct.git
           cd gmct
           go build -o gmct ./cmd/gmct
@@ -93,12 +94,17 @@ jobs:
           ls
       - name: Get dependencies
         run: |
+          export GOPATH=$(go env GOPATH)
           go get -v -t -d ./...
 
       - name: Generate coverage report
         run: |
            export GOPATH=$(go env GOPATH)
+           mkdir -p $GOPATH/src/github.com/snail007
+           export SNAIL007PATH=$GOPATH/src/github.com/snail007/
            echo GOPATH: $GOPATH
+           cd ../ && mv gmc $SNAIL007PATH/
+           cd $SNAIL007PATH/gmc/
            ./gmct/gmct cover -s -k
            pwd
            tree -d -L 2

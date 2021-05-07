@@ -87,7 +87,7 @@ jobs:
       - name: Install gmct
         run: |
           git clone https://github.com/snail007/gmct.git
-          cd gmct && git checkout -f master
+          cd gmct
           go build -o gmct ./cmd/gmct
           pwd
           ls
@@ -97,6 +97,8 @@ jobs:
 
       - name: Generate coverage report
         run: |
+           export GOPATH=$(go env GOPATH)
+           echo GOPATH: $GOPATH
            ./gmct/gmct cover -s -k
            pwd
            tree -d -L 2

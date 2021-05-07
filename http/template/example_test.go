@@ -12,9 +12,9 @@ import (
 )
 
 func Example() {
-	ctx := gcore.Providers.Ctx("")()
+	ctx := gcore.ProviderCtx()()
 	ctx.Logger().SetOutput(ioutil.Discard)
-	ctx.SetConfig(gcore.Providers.Config("")())
+	ctx.SetConfig(gcore.ProviderConfig()())
 	tpl, err := NewTemplate(ctx, "tests/views")
 	if err != nil {
 		fmt.Println(err)

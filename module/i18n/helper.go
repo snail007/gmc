@@ -51,13 +51,13 @@ func initFromBinData(cfg gcore.Config) (err error) {
 		fallbackLang: fallbackLang,
 	}
 	for lang, v := range bindata {
-		c := gcore.Providers.Config("")()
+		c := gcore.ProviderConfig()()
 		err = c.ReadConfig(bytes.NewReader(v))
 		if err != nil {
 			return
 		}
 		if _, e := language.Parse(lang); e != nil {
-			return gcore.Providers.Error("")().New(e)
+			return gcore.ProviderError()().New(e)
 		}
 		data := map[string]string{}
 		for _, k := range c.AllKeys() {
@@ -84,7 +84,7 @@ func initFromDisk(cfg gcore.Config) (err error) {
 		fallbackLang: fallbackLang,
 	}
 	for _, f := range files {
-		c := gcore.Providers.Config("")()
+		c := gcore.ProviderConfig()()
 		c.SetConfigFile(f)
 		err = c.ReadInConfig()
 		if err != nil {
@@ -93,7 +93,7 @@ func initFromDisk(cfg gcore.Config) (err error) {
 		lang := filepath.Base(f)
 		lang = strings.TrimSuffix(lang, filepath.Ext(lang))
 		if _, e := language.Parse(lang); e != nil {
-			return gcore.Providers.Error("")().New(e)
+			return gcore.ProviderError()().New(e)
 		}
 		data := map[string]string{}
 		for _, k := range c.AllKeys() {

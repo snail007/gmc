@@ -24,7 +24,7 @@ var (
 	// I18n shortcut of gmc i18n
 	I18n = &I18nAssistant{}
 	// Err shortcut of gerror
-	Err  = &ErrorAssistant{}
+	Err = &ErrorAssistant{}
 )
 
 // #########################################
@@ -35,7 +35,7 @@ type NewAssistant struct {
 
 // Config creates a new object of gconfig.Config
 func (s *NewAssistant) Config() gcore.Config {
-	return gcore.Providers.Config("")()
+	return gcore.ProviderConfig()()
 }
 
 // ConfigFile creates a new object of gconfig.Config from a toml file.
@@ -52,12 +52,12 @@ func (s *NewAssistant) ConfigFile(file string) (cfg gcore.Config, err error) {
 
 // Ctx creates an new object of gcore.Ctx
 func (s *NewAssistant) Ctx() gcore.Ctx {
-	return gcore.Providers.Ctx("")()
+	return gcore.ProviderCtx()()
 }
 
 // App creates an new object of gcore.App
 func (s *NewAssistant) App() gcore.App {
-	return gcore.Providers.App("")(false)
+	return gcore.ProviderApp()(false)
 }
 
 // Captcha creates an captcha object
@@ -74,7 +74,7 @@ func (s *NewAssistant) CaptchaDefault() *gcaptcha.Captcha {
 // This only worked after gmc.I18n.Init() called.
 // lang is the language translation to.
 func (s *NewAssistant) Tr(lang string) (tr gcore.I18n) {
-	tr, _ = gcore.Providers.I18n("")(nil)
+	tr, _ = gcore.ProviderI18n()(nil)
 	tr.Lang(lang)
 	return
 }
@@ -82,28 +82,28 @@ func (s *NewAssistant) Tr(lang string) (tr gcore.I18n) {
 // AppDefault creates a new object of APP and search config file locations:
 // ./app.toml or ./conf/app.toml or ./config/app.toml
 func (s *NewAssistant) AppDefault() gcore.App {
-	return gcore.Providers.App("")(true)
+	return gcore.ProviderApp()(true)
 }
 
 // Router creates a new object of gcore.HTTPRouter
 func (s *NewAssistant) Router(ctx gcore.Ctx) gcore.HTTPRouter {
-	return gcore.Providers.HTTPRouter("")(ctx)
+	return gcore.ProviderHTTPRouter()(ctx)
 }
 
 // HTTPServer creates a new object of gmc.HTTPServer
 func (s *NewAssistant) HTTPServer(ctx gcore.Ctx) gcore.HTTPServer {
-	return gcore.Providers.HTTPServer("")(ctx)
+	return gcore.ProviderHTTPServer()(ctx)
 }
 
 // APIServer creates a new object of gmc.APIServer
 func (s *NewAssistant) APIServer(ctx gcore.Ctx, address string) (gcore.APIServer, error) {
-	return gcore.Providers.APIServer("")(ctx, address)
+	return gcore.ProviderAPIServer()(ctx, address)
 }
 
 // APIServer creates a new object of gmc.APIServer and initialized from app.toml [apiserver] section.
 // cfg is a gconfig.Config object contains section [apiserver] in `app.toml`.
 func (s *NewAssistant) APIServerDefault(ctx gcore.Ctx) (gcore.APIServer, error) {
-	return gcore.Providers.APIServer("")(ctx, "")
+	return gcore.ProviderAPIServer()(ctx, "")
 }
 
 // Map creates a gmap.Map object, gmap.Map's keys are sequenced.
@@ -213,7 +213,7 @@ type ErrorAssistant struct {
 }
 
 func NewErrorAssistant() *ErrorAssistant {
-	return &ErrorAssistant{p: gcore.Providers.Error("")}
+	return &ErrorAssistant{p: gcore.ProviderError()}
 }
 
 // ErrStack acquires an error full stack info string
@@ -236,7 +236,7 @@ func (e *ErrorAssistant) New(err interface{}) error {
 // Wrap wraps an error to gcore.Error, which keeps
 // the full stack information.
 func (e *ErrorAssistant) Wrap(err interface{}) error {
-	return e.p().WrapN(err,2)
+	return e.p().WrapN(err, 2)
 }
 
 func initHelper() {

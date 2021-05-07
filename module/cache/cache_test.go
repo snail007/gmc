@@ -13,13 +13,13 @@ import (
 
 func Test_Cache(t *testing.T) {
 	assert := assert2.New(t)
-	ctx := gcore.Providers.Ctx("")()
-	c := gcore.Providers.Config("")()
+	ctx := gcore.ProviderCtx()()
+	c := gcore.ProviderConfig()()
 	c.SetConfigFile("../app/app.toml")
 	err := c.ReadInConfig()
 	assert.Nil(err)
 	ctx.SetConfig(c)
-	_, err = gcore.Providers.Cache("")(ctx)
+	_, err = gcore.ProviderCache()(ctx)
 	assert.Nil(err)
 	assert.NotNil(Memory())
 	assert.NotNil(Redis())

@@ -21,7 +21,7 @@ type RedisStoreConfig struct {
 func NewRedisStoreConfig() RedisStoreConfig {
 	return RedisStoreConfig{
 		TTL:      3600,
-		Logger:   gcore.Providers.Logger("")(nil, "[redisstore]"),
+		Logger:   gcore.ProviderLogger()(nil, "[redisstore]"),
 		RedisCfg: gcache.NewRedisCacheConfig(),
 	}
 }

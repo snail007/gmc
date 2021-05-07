@@ -25,7 +25,7 @@ type M map[string]interface{}
 
 //InitFromFile parse foo.toml database configuration, `cfg` is Config object of foo.toml
 func InitFromFile(cfgFile string) (err error) {
-	cfg := gcore.Providers.Config("")()
+	cfg := gcore.ProviderConfig()()
 	cfg.SetConfigFile(cfgFile)
 	err = cfg.ReadInConfig()
 	if err != nil {

@@ -25,36 +25,35 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	providers := gcore.Providers
 
-	providers.RegisterSession("", func() gcore.Session {
+	gcore.RegisterSession(gcore.DefaultProviderKey, func() gcore.Session {
 		return gsession.NewSession()
 	})
 
-	providers.RegisterSessionStorage("", func(ctx gcore.Ctx) (gcore.SessionStorage, error) {
+	gcore.RegisterSessionStorage(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.SessionStorage, error) {
 		return gsession.Init(ctx.Config())
 	})
 
-	providers.RegisterView("", func(w io.Writer, tpl gcore.Template) gcore.View {
+	gcore.RegisterView(gcore.DefaultProviderKey, func(w io.Writer, tpl gcore.Template) gcore.View {
 		return gview.New(w, tpl)
 	})
 
-	providers.RegisterTemplate("", func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
+	gcore.RegisterTemplate(gcore.DefaultProviderKey, func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
 		if ctx.Config().Sub("template") != nil {
 			return gtemplate.Init(ctx)
 		}
 		return gtemplate.NewTemplate(ctx, rootDir)
 	})
 
-	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
+	gcore.RegisterHTTPRouter(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.HTTPRouter {
 		return grouter.NewHTTPRouter(ctx)
 	})
 
-	providers.RegisterConfig("", func() gcore.Config {
+	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.NewConfig()
 	})
 
-	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
+	gcore.RegisterI18n(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
 		OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
@@ -62,28 +61,28 @@ func TestMain(m *testing.M) {
 		return gi18n.I18N, err
 	})
 
-	providers.RegisterError("", func() gcore.Error {
+	gcore.RegisterError(gcore.DefaultProviderKey, func() gcore.Error {
 		return gerror.New()
 	})
 
-	providers.RegisterCtx("", func() gcore.Ctx {
+	gcore.RegisterCtx(gcore.DefaultProviderKey, func() gcore.Ctx {
 		return gctx.NewCtx()
 	})
 
-	providers.RegisterController("", func(ctx gcore.Ctx) gcore.Controller {
+	gcore.RegisterController(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.Controller {
 		c := &gcontroller.Controller{}
 		c.Ctx = ctx
 		return c
 	})
 
-	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewLogger(prefix)
 		}
 		return glog.NewFromConfig(ctx.Config(), prefix)
 	})
 
-	providers.RegisterCookies("", func(ctx gcore.Ctx) gcore.Cookies {
+	gcore.RegisterCookies(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.Cookies {
 		return gcookie.New(ctx.Response(), ctx.Request())
 	})
 

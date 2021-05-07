@@ -8,8 +8,8 @@ import (
 
 func TestVal(t *testing.T) {
 	assert := assert2.New(t)
-	ctx := gcore.Providers.Ctx("")()
-	ctx.SetConfig(gcore.Providers.Config("")())
+	ctx := gcore.ProviderCtx()()
+	ctx.SetConfig(gcore.ProviderConfig()())
 	tpl, _ := NewTemplate(ctx, "tests/views")
 	tpl.Delims("{{", "}}")
 	tpl.Funcs(map[string]interface{}{

@@ -44,8 +44,8 @@ func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 	this.Router = ctx.WebServer().Router()
 	this.Config = ctx.WebServer().Config()
 	this.Logger = ctx.WebServer().Logger()
-	this.View = gcore.Providers.View("")(ctx.Response(), ctx.Template())
-	this.Cookie = gcore.Providers.Cookies("")(ctx)
+	this.View = gcore.ProviderView()(ctx.Response(), ctx.Template())
+	this.Cookie = gcore.ProviderCookies()(ctx)
 	// 2.init stuff below
 	this.View.SetLayoutDir(this.Config.GetString("template.layout"))
 
@@ -202,7 +202,7 @@ func (this *Controller) SessionStart() (err error) {
 		this.Session, isExists = this.SessionStore.Load(sid)
 	}
 	if !isExists {
-		sess := gcore.Providers.Session("")()
+		sess := gcore.ProviderSession()()
 		sess.Touch()
 		this.Cookie.Set(sessionCookieName, sess.SessionID(), &gcore.CookieOptions{
 			Path:     "/",

@@ -156,7 +156,7 @@ func find(typ string, id ...string) gcore.Cache {
 }
 func logf(f string, v ...interface{}) {
 	if logger != nil {
-		logger.Infof(gcore.Providers.Error("")().New(fmt.Sprintf(f, v...)).Error())
+		logger.Infof(gcore.ProviderError()().New(fmt.Sprintf(f, v...)).Error())
 	}
 }
 

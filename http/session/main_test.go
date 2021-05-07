@@ -25,21 +25,19 @@ var (
 
 func TestMain(m *testing.M) {
 
-	providers := gcore.Providers
-
-	providers.RegisterSession("", func() gcore.Session {
+	gcore.RegisterSession(gcore.DefaultProviderKey, func() gcore.Session {
 		return NewSession()
 	})
 
-	providers.RegisterSessionStorage("", func(ctx gcore.Ctx) (gcore.SessionStorage, error) {
+	gcore.RegisterSessionStorage(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.SessionStorage, error) {
 		return Init(ctx.Config())
 	})
 
-	providers.RegisterConfig("", func() gcore.Config {
+	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.NewConfig()
 	})
 
-	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
+	gcore.RegisterCache(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
 		gsync.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
@@ -50,11 +48,11 @@ func TestMain(m *testing.M) {
 		return gcache.Cache(), nil
 	})
 
-	providers.RegisterError("", func() gcore.Error {
+	gcore.RegisterError(gcore.DefaultProviderKey, func() gcore.Error {
 		return gerror.New()
 	})
 
-	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewLogger(prefix)
 		}

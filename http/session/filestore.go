@@ -35,7 +35,7 @@ func NewFileStoreConfig() FileStoreConfig {
 		GCtime: 300,
 		TTL:    15 * 60,
 		Prefix: ".gmcsession_",
-		Logger: gcore.Providers.Logger("")(nil, "[filestore]"),
+		Logger: gcore.ProviderLogger()(nil, "[filestore]"),
 	}
 }
 
@@ -136,8 +136,8 @@ func (s *FileStore) file(sessionID string) string {
 	return path
 }
 func (s *FileStore) gc() {
-	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-		fmt.Printf("filestore gc error: %s", gcore.Providers.Error("")().StackError(e))
+	defer gcore.ProviderError()().Recover(func(e interface{}) {
+		fmt.Printf("filestore gc error: %s", gcore.ProviderError()().StackError(e))
 	})
 	var files []string
 	var err error

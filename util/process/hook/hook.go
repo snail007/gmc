@@ -30,8 +30,8 @@ func WaitShutdown() {
 }
 
 func waitShutdown() {
-	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-		fmt.Printf("shutdown hook manager crashed, err: %s", gcore.Providers.Error("")().StackError(e))
+	defer gcore.ProviderError()().Recover(func(e interface{}) {
+		fmt.Printf("shutdown hook manager crashed, err: %s", gcore.ProviderError()().StackError(e))
 	})
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan,
@@ -54,8 +54,8 @@ func MockShutdown() {
 
 func runHooks() {
 	caller := func(fn func()) {
-		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-			fmt.Printf("shutdown hook crashed, err: %s", gcore.Providers.Error("")().StackError(e))
+		defer gcore.ProviderError()().Recover(func(e interface{}) {
+			fmt.Printf("shutdown hook crashed, err: %s", gcore.ProviderError()().StackError(e))
 		})
 		fn()
 	}

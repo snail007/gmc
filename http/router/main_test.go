@@ -13,13 +13,11 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	providers := gcore.Providers
-
-	providers.RegisterHTTPRouter("", func(ctx gcore.Ctx) gcore.HTTPRouter {
+	gcore.RegisterHTTPRouter(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.HTTPRouter {
 		return NewHTTPRouter(ctx)
 	})
 
-	providers.RegisterConfig("", func() gcore.Config {
+	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.NewConfig()
 	})
 	os.Exit(m.Run())

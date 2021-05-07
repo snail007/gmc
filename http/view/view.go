@@ -78,7 +78,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 	}
 	d, this.lasterr = this.tpl.Execute(tpl, data0)
 	if this.lasterr != nil {
-		msg := gcore.Providers.Error("")().StackError(this.lasterr)
+		msg := gcore.ProviderError()().StackError(this.lasterr)
 		ghttputil.Stop(this.writer, msg)
 		return
 	}
@@ -90,7 +90,7 @@ func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte)
 		}
 		d, this.lasterr = this.tpl.Execute(layout, data0)
 		if this.lasterr != nil {
-			msg := gcore.Providers.Error("")().StackError(this.lasterr)
+			msg := gcore.ProviderError()().StackError(this.lasterr)
 			ghttputil.Stop(this.writer, msg)
 			return
 		}

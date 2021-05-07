@@ -40,7 +40,7 @@ func Table(table string, db ...interface{}) *Model {
 		m.db = v
 	}
 	if m.db == nil {
-		panic(gcore.Providers.Error("")().New((fmt.Errorf("table db arguments must be 'db string ID' or *gmysql.SQLite3DB or *gsqlite3.SQLite3DB"))))
+		panic(gcore.ProviderError()().New((fmt.Errorf("table db arguments must be 'db string ID' or *gmysql.SQLite3DB or *gsqlite3.SQLite3DB"))))
 	}
 	return m
 }

@@ -96,7 +96,7 @@ func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	connCnt := int64(0)
 	s.config = cfg
 	s.server = &http.Server{}
-	s.logger = gcore.Providers.Logger("")(s.ctx, "")
+	s.logger = gcore.ProviderLogger()(s.ctx, "")
 	s.connCnt = &connCnt
 	s.isTestNotClosedError = false
 	s.server.ConnState = s.connState
@@ -115,7 +115,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init i18n
 	if s.config.GetBool("i18n.enable") {
-		s.i18n, err = gcore.Providers.I18n("")(s.ctx)
+		s.i18n, err = gcore.ProviderI18n()(s.ctx)
 		if err != nil {
 			return
 		}
@@ -123,14 +123,14 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 
 	// init template
-	s.tpl, err = gcore.Providers.Template("")(s.ctx, "")
+	s.tpl, err = gcore.ProviderTemplate()(s.ctx, "")
 	if err != nil {
 		return
 	}
 
 	// init session store
 
-	s.sessionStore, err = gcore.Providers.SessionStorage("")(s.ctx)
+	s.sessionStore, err = gcore.ProviderSessionStorage()(s.ctx)
 	if err != nil {
 		return
 	}
@@ -142,7 +142,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 	}
 
 	// init http server router
-	s.router = gcore.Providers.HTTPRouter("")(s.ctx)
+	s.router = gcore.ProviderHTTPRouter()(s.ctx)
 	s.addr = s.config.GetString("httpserver.listen")
 
 	// init static files handler, must be after router inited
@@ -208,8 +208,8 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func (s *HTTPServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-			err = gcore.Providers.Error("")().Wrap(e)
+		defer gcore.ProviderError()().Recover(func(e interface{}) {
+			err = gcore.ProviderError()().Wrap(e)
 		})
 		fn()
 	}()
@@ -235,7 +235,7 @@ func (s *HTTPServer) handle40x(ctx gcore.Ctx) {
 
 // called in httprouter
 func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
-	msg := gcore.Providers.Error("")().StackError(err)
+	msg := gcore.ProviderError()().StackError(err)
 	if s.handler500 == nil {
 		c.WriteHeader(http.StatusInternalServerError)
 		c.Response().Header().Set("Content-Type", "text/plain")
@@ -441,7 +441,7 @@ func (s *HTTPServer) initTLSConfig() (err error) {
 		}
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
-			err = gcore.Providers.Error("")().New(("failed to parse tls clients root certificate"))
+			err = gcore.ProviderError()().New(("failed to parse tls clients root certificate"))
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -541,8 +541,8 @@ func (s *HTTPServer) SetLog(l gcore.Logger) {
 func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-				s.logger.Warnf("middleware panic error : %s", gcore.Providers.Error("")().StackError(e))
+			defer gcore.ProviderError()().Recover(func(e interface{}) {
+				s.logger.Warnf("middleware panic error : %s", gcore.ProviderError()().StackError(e))
 				isStop = false
 			})
 			isStop = fn(ctx)

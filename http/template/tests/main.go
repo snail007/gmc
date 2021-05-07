@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	ctx := gcore.Providers.Ctx("")()
+	ctx := gcore.ProviderCtx()()
 	t, err := gtemplate.NewTemplate(ctx, "views")
 	if err != nil {
 		fmt.Println(err)

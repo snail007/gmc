@@ -228,17 +228,17 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 		})
 	}
 	if method != "" && !allMethods[method] {
-		panic(gcore.Providers.Error("")().New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
+		panic(gcore.ProviderError()().New("route [ " + urlPath + " ], method [ " + method + " ] not found"))
 	}
 }
 
 func (s *HTTPRouter) call(fn func()) {
 	func() {
-		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+		defer gcore.ProviderError()().Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
 				return
 			}
-			panic(gcore.Providers.Error("")().Wrap(e))
+			panic(gcore.ProviderError()().Wrap(e))
 		})
 		fn()
 	}()

@@ -17,14 +17,14 @@ func TestNew(t *testing.T) {
 	assert := assert2.New(t)
 	b := new(bytes.Buffer)
 	tpl, _ := mockTpl()
-	v := gcore.Providers.View("")(b, tpl)
+	v := gcore.ProviderView()(b, tpl)
 	assert.NotNil(v)
 }
 func TestView_Render(t *testing.T) {
 	assert := assert2.New(t)
 	b := new(bytes.Buffer)
 	tpl, _ := mockTpl()
-	v := gcore.Providers.View("")(b, tpl)
+	v := gcore.ProviderView()(b, tpl)
 	v.SetMap(map[string]interface{}{
 		"name": "b",
 	})
@@ -35,14 +35,14 @@ func TestView_Layout(t *testing.T) {
 	assert := assert2.New(t)
 	b := new(bytes.Buffer)
 	tpl, _ := mockTpl()
-	v := gcore.Providers.View("")(b, tpl).Layout("layout/page")
+	v := gcore.ProviderView()(b, tpl).Layout("layout/page")
 	v.Set("name", "b")
 	v.Render("user/profile")
 	assert.Equal("abc", b.String())
 }
 func mockTpl() (t *gtemplate.Template, ctx gcore.Ctx) {
-	ctx = gcore.Providers.Ctx("")()
-	ctx.SetConfig(gcore.Providers.Config("")())
+	ctx = gcore.ProviderCtx()()
+	ctx.SetConfig(gcore.ProviderConfig()())
 	t, _ = gtemplate.NewTemplate(ctx, "tests")
 	t.Parse()
 	return

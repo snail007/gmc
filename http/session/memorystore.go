@@ -22,7 +22,7 @@ func NewMemoryStoreConfig() MemoryStoreConfig {
 	return MemoryStoreConfig{
 		GCtime: 300,
 		TTL:    15 * 60,
-		Logger: gcore.Providers.Logger("")(nil, "[memorystore]"),
+		Logger: gcore.ProviderLogger()(nil, "[memorystore]"),
 	}
 }
 
@@ -68,8 +68,8 @@ func (s *MemoryStore) Delete(sessionID string) (err error) {
 }
 
 func (s *MemoryStore) gc() {
-	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-		fmt.Printf("memorystore gc error: %s", gcore.Providers.Error("")().StackError(e))
+	defer gcore.ProviderError()().Recover(func(e interface{}) {
+		fmt.Printf("memorystore gc error: %s", gcore.ProviderError()().StackError(e))
 	})
 	first := true
 	for {

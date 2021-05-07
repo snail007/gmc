@@ -52,7 +52,7 @@ func New() gcore.App {
 		attachConfig:      map[string]gcore.Config{},
 		attachConfigfiles: map[string]string{},
 	}
-	c := gcore.Providers.Ctx("")()
+	c := gcore.ProviderCtx()()
 	c.SetApp(app)
 	app.ctx = c
 	return app
@@ -60,14 +60,14 @@ func New() gcore.App {
 
 func Default() gcore.App {
 	// default config dir and name
-	cfg := gcore.Providers.Config("")()
+	cfg := gcore.ProviderConfig()()
 	cfg.SetConfigName("app")
 	cfg.AddConfigPath(".")
 	cfg.AddConfigPath("conf")
 	cfg.AddConfigPath("config")
 	a := New()
 	a.SetConfig(cfg)
-	c := gcore.Providers.Ctx("")()
+	c := gcore.ProviderCtx()()
 	c.SetApp(a)
 	a.(*GMCApp).ctx = c
 	return a
@@ -75,7 +75,7 @@ func Default() gcore.App {
 func (s *GMCApp) initialize() (err error) {
 	defer func() {
 		if s.logger == nil {
-			s.logger = gcore.Providers.Logger("")(nil, "")
+			s.logger = gcore.ProviderLogger()(nil, "")
 		}
 		if s.logger.Async() {
 			s.OnShutdown(func() {
@@ -90,12 +90,12 @@ func (s *GMCApp) initialize() (err error) {
 
 	// initialize logging
 	if s.config.Sub("log") != nil && s.logger == nil {
-		s.logger = gcore.Providers.Logger("")(s.ctx, "")
+		s.logger = gcore.ProviderLogger()(s.ctx, "")
 	}
 
 	// initialize database
 	if s.config.Sub("database") != nil {
-		_, err = gcore.Providers.Database("")(s.ctx)
+		_, err = gcore.ProviderDatabase()(s.ctx)
 		if err != nil {
 			return
 		}
@@ -103,7 +103,7 @@ func (s *GMCApp) initialize() (err error) {
 
 	// initialize cache
 	if s.config.Sub("cache") != nil {
-		_, err = gcore.Providers.Cache("")(s.ctx)
+		_, err = gcore.ProviderCache()(s.ctx)
 		if err != nil {
 			return
 		}
@@ -112,7 +112,7 @@ func (s *GMCApp) initialize() (err error) {
 	// initialize i18n if needed
 	if s.config.Sub("i18n") != nil {
 		var i18n gcore.I18n
-		i18n, err = gcore.Providers.I18n("")(s.ctx)
+		i18n, err = gcore.ProviderI18n()(s.ctx)
 		if err != nil {
 			return err
 		}
@@ -147,7 +147,7 @@ func (s *GMCApp) parseConfigFile() (err error) {
 	parse := false
 	if s.configFile != "" {
 		if s.config == nil {
-			s.config = gcore.Providers.Config("")()
+			s.config = gcore.ProviderConfig()()
 		}
 		s.config.SetConfigFile(s.configFile)
 		parse = true
@@ -162,7 +162,7 @@ func (s *GMCApp) parseConfigFile() (err error) {
 		s.configFile = s.config.ConfigFileUsed()
 	}
 	for id, cfgfile := range s.attachConfigfiles {
-		cfg := gcore.Providers.Config("")()
+		cfg := gcore.ProviderConfig()()
 		cfg.SetConfigFile(cfgfile)
 		err = cfg.ReadInConfig()
 		if err != nil {
@@ -176,9 +176,9 @@ func (s *GMCApp) callRunE(fns []func(gcore.Config) error) (err error) {
 	hasError := false
 	for _, fn := range fns {
 		func() {
-			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
+			defer gcore.ProviderError()().Recover(func(e interface{}) {
 				hasError = true
-				err = gcore.Providers.Error("")().Wrap(e)
+				err = gcore.ProviderError()().Wrap(e)
 			})
 			err = fn(s.config)
 			if err != nil {
@@ -224,8 +224,8 @@ func (s *GMCApp) Run() (err error) {
 func (s *GMCApp) Stop() {
 	for _, fn := range s.onShutdown {
 		func() {
-			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-				s.logger.Infof("run beforeShutdown hook fail, error : %s", gcore.Providers.Error("")().StackError(e))
+			defer gcore.ProviderError()().Recover(func(e interface{}) {
+				s.logger.Infof("run beforeShutdown hook fail, error : %s", gcore.ProviderError()().StackError(e))
 			})
 			fn()
 		}()

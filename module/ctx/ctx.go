@@ -98,7 +98,7 @@ func (this *Ctx) Config() gcore.Config {
 		this.config = this.webServer.Config()
 	}
 	if this.config == nil {
-		this.config = gcore.Providers.Config("")()
+		this.config = gcore.ProviderConfig()()
 	}
 	return this.config
 }
@@ -118,7 +118,7 @@ func (this *Ctx) Logger() gcore.Logger {
 		this.logger = this.apiServer.Logger()
 	}
 	if this.logger == nil {
-		this.logger = gcore.Providers.Logger("")(this, "")
+		this.logger = gcore.ProviderLogger()(this, "")
 	}
 	return this.logger
 }
@@ -770,7 +770,7 @@ func NewCtxFromConfig(c gcore.Config) *Ctx {
 }
 
 func NewCtxFromConfigFile(file string) (ctx *Ctx, err error) {
-	c := gcore.Providers.Config("")()
+	c := gcore.ProviderConfig()()
 	c.SetConfigFile(file)
 	err = c.ReadInConfig()
 	if err != nil {

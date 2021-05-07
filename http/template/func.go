@@ -13,7 +13,7 @@ import (
 )
 
 func addFunc(ctx gcore.Ctx) map[string]interface{} {
-	i18n, _ := gcore.Providers.I18n("")(ctx)
+	i18n, _ := gcore.ProviderI18n()(ctx)
 	funcMap := sprig.FuncMap()
 	f2 := map[string]interface{}{
 		"tr":     i18n.TrV,

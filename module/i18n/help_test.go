@@ -15,7 +15,7 @@ import (
 
 func TestNew(t *testing.T) {
 	assert := assert2.New(t)
-	cfg := gcore.Providers.Config("")()
+	cfg := gcore.ProviderConfig()()
 	cfg.Set("i18n.enable", true)
 	cfg.Set("i18n.dir", "tests")
 	cfg.Set("i18n.default", "none")
@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 }
 func TestNew_2(t *testing.T) {
 	assert := assert2.New(t)
-	cfg := gcore.Providers.Config("")()
+	cfg := gcore.ProviderConfig()()
 	cfg.Set("i18n.enable", true)
 	cfg.Set("i18n.dir", "tests")
 	cfg.Set("i18n.default", "zh-cn")
@@ -67,7 +67,7 @@ func TestParseAcceptLanguage(t *testing.T) {
 
 func TestMatch(t *testing.T) {
 	assert := assert2.New(t)
-	cfg := gcore.Providers.Config("")()
+	cfg := gcore.ProviderConfig()()
 	cfg.Set("i18n.enable", true)
 	cfg.Set("i18n.dir", "tests")
 	cfg.Set("i18n.default", "zh-cn")

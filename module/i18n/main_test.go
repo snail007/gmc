@@ -15,9 +15,7 @@ import (
 
 func TestMain(m *testing.M) {
 
-	providers := gcore.Providers
-
-	providers.RegisterI18n("", func(ctx gcore.Ctx) (gcore.I18n, error) {
+	gcore.RegisterI18n(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
 		OnceDo("gmc-i18n-init", func() {
 			err = Init(ctx.Config())
@@ -25,7 +23,7 @@ func TestMain(m *testing.M) {
 		return I18N, err
 	})
 
-	providers.RegisterConfig("", func() gcore.Config {
+	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.NewConfig()
 	})
 

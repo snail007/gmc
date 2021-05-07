@@ -42,7 +42,7 @@ func (s *GPool) SetDebug(debug bool) {
 func NewGPool(workerCount int) (p *GPool) {
 	p = &GPool{
 		tasks:   glist.NewList(),
-		logger:  gcore.Providers.Logger("")(nil, ""),
+		logger:  gcore.ProviderLogger()(nil, ""),
 		workers: gmap.NewMap(),
 	}
 	p.addWorker(workerCount)
@@ -121,8 +121,8 @@ func (s *GPool) newWorkerID() string {
 
 //run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.Providers.Error("")().StackError(e))
+	defer gcore.ProviderError()().Recover(func(e interface{}) {
+		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.ProviderError()().StackError(e))
 	})
 	fn()
 }
@@ -211,7 +211,7 @@ func (w *worker) SetStatus(status int) {
 }
 
 func (w *worker) Wakeup() bool {
-	defer gcore.Providers.Error("")().Recover()
+	defer gcore.ProviderError()().Recover()
 	select {
 	case w.wakeupSig <- true:
 	default:
@@ -231,7 +231,7 @@ func (w *worker) isBreak() bool {
 }
 
 func (w *worker) breakLoop() bool {
-	defer gcore.Providers.Error("")().Recover()
+	defer gcore.ProviderError()().Recover()
 	select {
 	case w.breakSig <- true:
 	default:
@@ -241,7 +241,7 @@ func (w *worker) breakLoop() bool {
 }
 
 func (w *worker) Stop() {
-	defer gcore.Providers.Error("")().Recover()
+	defer gcore.ProviderError()().Recover()
 	w.breakLoop()
 	close(w.wakeupSig)
 }

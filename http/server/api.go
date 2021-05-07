@@ -59,7 +59,7 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 			TLSConfig: &tls.Config{},
 		},
 		address:           address,
-		router:            gcore.Providers.HTTPRouter("")(ctx),
+		router:            gcore.ProviderHTTPRouter()(ctx),
 		isShowErrorStack:  true,
 		middleware0:       []gcore.Middleware{},
 		middleware1:       []gcore.Middleware{},
@@ -71,7 +71,7 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 	ctx.SetAPIServer(api)
 	api.server.Handler = api
 	api.server.SetKeepAlivesEnabled(false)
-	api.logger = gcore.Providers.Logger("")(ctx, "")
+	api.logger = gcore.ProviderLogger()(ctx, "")
 	api.server.ErrorLog = func() *log.Logger {
 		ns := api.logger.Namespace()
 		if ns != "" {
@@ -100,7 +100,7 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, er
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
 			api = nil
-			err = gcore.Providers.Error("")().New(("failed to parse tls clients root certificate"))
+			err = gcore.ProviderError()().New(("failed to parse tls clients root certificate"))
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -299,7 +299,7 @@ func (this *APIServer) handler404(ctx gcore.Ctx) {
 	}
 }
 func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
-	msg := gcore.Providers.Error("")().StackError(err)
+	msg := gcore.ProviderError()().StackError(err)
 	if this.handle500 == nil {
 		ctx.WriteHeader(http.StatusInternalServerError)
 		ctx.Response().Header().Set("Content-Type", "text/plain")
@@ -315,8 +315,8 @@ func (this *APIServer) handler500(ctx gcore.Ctx, err interface{}) {
 }
 func (s *APIServer) call(fn func()) (err interface{}) {
 	func() {
-		defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-			err = gcore.Providers.Error("")().Wrap(e)
+		defer gcore.ProviderError()().Recover(func(e interface{}) {
+			err = gcore.ProviderError()().Wrap(e)
 		})
 		fn()
 	}()
@@ -325,8 +325,8 @@ func (s *APIServer) call(fn func()) (err interface{}) {
 func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
-			defer gcore.Providers.Error("")().Recover(func(e interface{}) {
-				s.logger.Warn("middleware panic error : %s", gcore.Providers.Error("")().StackError(e))
+			defer gcore.ProviderError()().Recover(func(e interface{}) {
+				s.logger.Warn("middleware panic error : %s", gcore.ProviderError()().StackError(e))
 				isStop = false
 			})
 			isStop = fn(ctx)

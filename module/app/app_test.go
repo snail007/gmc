@@ -25,7 +25,7 @@ func TestRun(t *testing.T) {
 	assert.NotNil(app.Ctx())
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
-	server := gcore.Providers.HTTPServer("")(app.Ctx())
+	server := gcore.ProviderHTTPServer()(app.Ctx())
 	assert.NotNil(server)
 	app.AddService(gcore.ServiceItem{
 		Service: server.(gcore.Service),
@@ -49,10 +49,10 @@ func TestRun_1(t *testing.T) {
 	app.SetConfigFile("app.toml")
 	app.AttachConfigFile("007", "app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service),
+		Service: gcore.ProviderHTTPServer()(app.Ctx()).(gcore.Service),
 	})
 	app.AddService(gcore.ServiceItem{
-		Service:  gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service),
+		Service:  gcore.ProviderHTTPServer()(app.Ctx()).(gcore.Service),
 		ConfigID: "007",
 	})
 	err := app.Run()
@@ -64,7 +64,7 @@ func TestRun_2(t *testing.T) {
 	app := New()
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
-	server := gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service)
+	server := gcore.ProviderHTTPServer()(app.Ctx()).(gcore.Service)
 	app.AddService(gcore.ServiceItem{
 		Service: server,
 		BeforeInit: func(srv gcore.Service, config gcore.Config) (err error) {
@@ -83,7 +83,7 @@ func TestRun_3(t *testing.T) {
 	app.SetBlock(false)
 	app.SetConfigFile("app.toml")
 	app.AddService(gcore.ServiceItem{
-		Service: gcore.Providers.HTTPServer("")(app.Ctx()).(gcore.Service),
+		Service: gcore.ProviderHTTPServer()(app.Ctx()).(gcore.Service),
 		AfterInit: func(srv *gcore.ServiceItem) (err error) {
 			err = fmt.Errorf("error")
 			return

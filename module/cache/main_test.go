@@ -24,13 +24,11 @@ var (
 func TestMain(m *testing.M) {
 	var err error
 
-	providers := gcore.Providers
-
-	providers.RegisterConfig("", func() gcore.Config {
+	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.NewConfig()
 	})
 
-	providers.RegisterCache("", func(ctx gcore.Ctx) (gcore.Cache, error) {
+	gcore.RegisterCache(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
 		OnceDo("gmc-cache-init", func() {
 			err = Init(ctx.Config())
@@ -41,14 +39,14 @@ func TestMain(m *testing.M) {
 		return Cache(), nil
 	})
 
-	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewLogger(prefix)
 		}
 		return glog.NewFromConfig(ctx.Config(), prefix)
 	})
 
-	providers.RegisterCtx("", func() gcore.Ctx {
+	gcore.RegisterCtx(gcore.DefaultProviderKey, func() gcore.Ctx {
 		return gctx.NewCtx()
 	})
 
@@ -57,7 +55,7 @@ func TestMain(m *testing.M) {
 		panic(e)
 	}
 
-	logger = gcore.Providers.Logger("")(c, "")
+	logger = gcore.ProviderLogger()(c, "")
 
 	cFile, err = NewFileCache(NewFileCacheConfig())
 	if err != nil {

@@ -89,7 +89,6 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           go get -v github.com/snail007/gmct/...@master
           go install github.com/snail007/gmct/cmd/gmct
-          ls $(go env GOPATH)/bin
 
       - name: Get dependencies
         run: |
@@ -97,6 +96,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
+           export PATH=$PATH:$(go env GOPATH)/bin
            gmct cover -s
 #          go test `go list ./... | grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
 

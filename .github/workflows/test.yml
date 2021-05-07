@@ -87,11 +87,10 @@ jobs:
       - name: Install gmct
         run: |
           export GOPATH=$(go env GOPATH)
-          git clone https://github.com/snail007/gmct.git
-          cd gmct
-          go build -o gmct ./cmd/gmct
-          pwd
-          ls
+          git clone https://github.com/snail007/gmct.git ./tmp
+          cd tmp/gmct && go build -o gmct ./cmd/gmct && mv gmct ../../
+          rm -rf tmp
+
       - name: Get dependencies
         run: |
           export GOPATH=$(go env GOPATH)
@@ -101,13 +100,10 @@ jobs:
         run: |
            export WORKPATH=$(pwd)
            export GOPATH=$(go env GOPATH)
-           mkdir -p $GOPATH/src/github.com/snail007
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
-           echo GOPATH: $GOPATH
+           mkdir -p $GOPATH/src/github.com/snail007
            cd ../ && cp -R gmc $SNAIL007PATH/
-           cd $SNAIL007PATH/gmc/
-           ./gmct/gmct cover -s -k
-           pwd && ls
+           cd $SNAIL007PATH/gmc/ && ./gmct cover -s -k
            mv coverage.txt $WORKPATH/
 #          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
 

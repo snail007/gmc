@@ -150,14 +150,13 @@ func TestAwaiting(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	providers := gcore.Providers
-	providers.RegisterLogger("", func(ctx gcore.Ctx, prefix string) gcore.Logger {
+ 	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewLogger(prefix)
 		}
 		return glog.NewFromConfig(ctx.Config(), prefix)
 	})
-	providers.RegisterError("", func() gcore.Error {
+	gcore.RegisterError(gcore.DefaultProviderKey, func() gcore.Error {
 		return gerror.New()
 	})
 

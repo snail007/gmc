@@ -13,9 +13,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	providers := gcore.Providers
-
-	providers.RegisterConfig("", func() gcore.Config {
+	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.NewConfig()
 	})
 

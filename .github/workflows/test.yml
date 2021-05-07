@@ -86,7 +86,9 @@ jobs:
 
       - name: Install gmct
         run: |
-          go get github.com/snail007/gmct/...@master || go install github.com/snail007/gmct/cmd/gmct
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go get -v github.com/snail007/gmct/...@master
+          go install github.com/snail007/gmct/cmd/gmct
 
       - name: Get dependencies
         run: |

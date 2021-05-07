@@ -87,8 +87,8 @@ jobs:
       - name: Install gmct
         run: |
           export GOPATH=$(go env GOPATH)
-          git clone https://github.com/snail007/gmct.git ./tmp
-          cd tmp/gmct && go build -o gmct ./cmd/gmct && mv gmct ../../
+          git clone https://github.com/snail007/gmct.git ./tmp_gmct
+          cd tmp_gmct && go build -o gmct ./cmd/gmct && mv gmct ../
           rm -rf tmp
 
       - name: Get dependencies

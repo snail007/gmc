@@ -105,7 +105,6 @@ jobs:
            cd ../ && cp -R gmc $SNAIL007PATH/
            cd $SNAIL007PATH/gmc/ && ./gmct cover -s -k
            mv coverage.txt $WORKPATH/
-#          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v1.0.2

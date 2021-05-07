@@ -99,6 +99,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
+           export WORKPATH=$(pwd)
            export GOPATH=$(go env GOPATH)
            mkdir -p $GOPATH/src/github.com/snail007
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
@@ -106,6 +107,7 @@ jobs:
            cd ../ && mv gmc $SNAIL007PATH/
            cd $SNAIL007PATH/gmc/
            ./gmct/gmct cover -s -k
+           mv coverage.txt $WORKPATH/
            pwd
            tree -d -L 2
 #          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic

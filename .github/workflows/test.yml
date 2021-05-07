@@ -107,9 +107,8 @@ jobs:
            cd ../ && mv gmc $SNAIL007PATH/
            cd $SNAIL007PATH/gmc/
            ./gmct/gmct cover -s -k
+           pwd && ls
            mv coverage.txt $WORKPATH/
-           pwd
-           ls
 #          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload coverage report

@@ -109,7 +109,7 @@ jobs:
            ./gmct/gmct cover -s -k
            mv coverage.txt $WORKPATH/
            pwd
-           tree -d -L 2
+           ls
 #          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload coverage report

@@ -99,13 +99,12 @@ jobs:
           GOPATH: $(go env GOPATH)
           PATH: $PATH:$GOPATH/bin
         run: |
+           gmct cover -s -k
+           pwd
+           tree -d -L 2
+#          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
 #          export GOPATH=$(go env GOPATH)
 #          export PATH=$PATH:$GOPATH/bin
-          gmct cover -s -k
-          pwd
-          tree -d -L 2
-#          go test `go list ./... |  grep -v main| grep -v examples | grep -v grep` -coverprofile=coverage.txt -covermode=atomic
-
       - name: Upload coverage report
         uses: codecov/codecov-action@v1.0.2
         with:

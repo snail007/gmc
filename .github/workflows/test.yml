@@ -89,6 +89,7 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           go get -v github.com/snail007/gmct/...@master
           go install github.com/snail007/gmct/cmd/gmct
+          ls $(go env GOPATH)/bin
 
       - name: Get dependencies
         run: |

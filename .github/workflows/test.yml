@@ -95,9 +95,12 @@ jobs:
           go get -v -t -d ./...
 
       - name: Generate coverage report
+        env:
+          GOPATH: $(go env GOPATH)
+          PATH: $PATH:$GOPATH/bin
         run: |
-          export GOPATH=$(go env GOPATH)
-          export PATH=$PATH:$GOPATH/bin
+#          export GOPATH=$(go env GOPATH)
+#          export PATH=$PATH:$GOPATH/bin
           gmct cover -s -k
           pwd
           tree -d -L 2

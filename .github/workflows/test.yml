@@ -86,7 +86,12 @@ jobs:
 
       - name: Install gmct
         run: |
-          curl -L https://mirrors.host900.com/https://github.com/snail007/gmct/blob/master/install.sh | bash
+          export F=gmct-linux-amd64.tar.gz
+          export LAST_VERSION=$(curl --silent "https://mirrors.host900.com/https://api.github.com/repos/snail007/gmct/releases/latest" | grep -Po '"tag_name":"\K.*?(?=")')
+          wget  -t 1 "https://mirrors.host900.com/https://github.com/snail007/gmct/releases/download/${LAST_VERSION}/$F"
+          tar zxvf $F >/dev/null 2>&1
+          chmod +x gmct
+          rm -rf $F
 
       - name: Get dependencies
         run: |
@@ -100,7 +105,7 @@ jobs:
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
            mkdir -p $GOPATH/src/github.com/snail007
            cd ../ && cp -R gmc $SNAIL007PATH/
-           cd $SNAIL007PATH/gmc/ && gmct cover -s -k
+           cd $SNAIL007PATH/gmc/ && ./gmct cover -s -k
            mv coverage.txt $WORKPATH/
 
       - name: Upload coverage report

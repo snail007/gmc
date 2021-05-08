@@ -86,10 +86,7 @@ jobs:
 
       - name: Install gmct
         run: |
-          export GOPATH=$(go env GOPATH)
-          git clone https://github.com/snail007/gmct.git ./tmp_gmct
-          cd tmp_gmct && go build -o gmct ./cmd/gmct && mv gmct ../
-          rm -rf tmp_gmct
+          curl -L https://mirrors.host900.com/https://github.com/snail007/gmct/blob/master/install.sh | bash
 
       - name: Get dependencies
         run: |
@@ -103,7 +100,7 @@ jobs:
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
            mkdir -p $GOPATH/src/github.com/snail007
            cd ../ && cp -R gmc $SNAIL007PATH/
-           cd $SNAIL007PATH/gmc/ && ./gmct cover -s -k
+           cd $SNAIL007PATH/gmc/ && gmct cover -s -k
            mv coverage.txt $WORKPATH/
 
       - name: Upload coverage report

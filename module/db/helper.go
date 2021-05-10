@@ -66,8 +66,8 @@ func Init(cfg0 gcore.Config) (err error) {
 					Timeout:                  gcast.ToInt(vvv["timeout"]),
 					ReadTimeout:              gcast.ToInt(vvv["readtimeout"]),
 					WriteTimeout:             gcast.ToInt(vvv["writetimeout"]),
-					SetMaxIdleConns:          gcast.ToInt(vvv["maxidle"]),
-					SetMaxOpenConns:          gcast.ToInt(vvv["maxconns"]),
+					MaxIdleConns:             gcast.ToInt(vvv["maxidle"]),
+					MaxOpenConns:             gcast.ToInt(vvv["maxconns"]),
 				})
 				if err != nil {
 					return

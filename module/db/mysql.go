@@ -120,8 +120,8 @@ func (db *MySQLDB) getDB() (connPool *sql.DB, err error) {
 	if err != nil {
 		return
 	}
-	connPool.SetMaxOpenConns(db.Config.SetMaxOpenConns)
-	connPool.SetMaxIdleConns(db.Config.SetMaxIdleConns)
+	connPool.SetMaxOpenConns(db.Config.MaxOpenConns)
+	connPool.SetMaxIdleConns(db.Config.MaxIdleConns)
 	err = connPool.Ping()
 	return
 }
@@ -343,8 +343,8 @@ type MySQLDBConfig struct {
 	Timeout                  int
 	ReadTimeout              int
 	WriteTimeout             int
-	SetMaxIdleConns          int
-	SetMaxOpenConns          int
+	MaxIdleConns             int
+	MaxOpenConns             int
 	Cache                    gcore.DBCache
 }
 
@@ -371,8 +371,8 @@ func NewMySQLDBConfig() MySQLDBConfig {
 		Timeout:                  3000,
 		ReadTimeout:              5000,
 		WriteTimeout:             5000,
-		SetMaxOpenConns:          500,
-		SetMaxIdleConns:          50,
+		MaxOpenConns:             500,
+		MaxIdleConns:             50,
 	}
 }
 

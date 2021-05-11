@@ -155,30 +155,34 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 	p.SetDebug(true)
 	assert.True(p.IsDebug())
 	p.SetMaxTaskAwaitCount(2)
-	p.ResetTo(2)
-	assert.Equal(2,p.WorkerCount())
-	p.ResetTo(1)
-	assert.Equal(1,p.WorkerCount())
+	assert.Equal(2, p.MaxTaskAwaitCount())
 
-	p.Submit(func() {
+	// trigger lazy start
+	assert.True(p.Submit(func() {
 		time.Sleep(time.Second)
-	})
-	p.Submit(func() {
+	}))
+
+	p.ResetTo(2)
+	assert.Equal(2, p.WorkerCount())
+	p.ResetTo(1)
+	assert.Equal(1, p.WorkerCount())
+
+	assert.True(p.Submit(func() {
 		time.Sleep(time.Second)
-	})
-	p.Submit(func() {
+	}))
+	assert.True(p.Submit(func() {
 		time.Sleep(time.Second)
-	})
+	}))
 	assert.False(p.Submit(func() {
 		time.Sleep(time.Second)
 	}))
-	assert.Equal(2,p.MaxTaskAwaitCount())
 	time.Sleep(time.Millisecond * 40)
+	assert.Equal(1, p.Running())
 	p.Stop()
 }
 
 func TestMain(m *testing.M) {
- 	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
+	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
 			return glog.NewLogger(prefix)
 		}

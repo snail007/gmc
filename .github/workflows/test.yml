@@ -49,6 +49,7 @@ jobs:
       - name: Run tests
         run: go test -v -covermode=count ./...
   codecov:
+    environment: gmc
     name: codecov
     runs-on: ubuntu-latest
     services:
@@ -111,7 +112,7 @@ jobs:
       - name: Upload coverage report
         uses: codecov/codecov-action@v1.0.2
         with:
-          token: 4aba5ae6-8e6d-45f6-a049-d4517b562c28
+          token: ${{ env.CODECOV_TOKEN }}
           file: ./coverage.txt
           flags: unittests
           name: codecov-umbrella

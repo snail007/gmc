@@ -47,7 +47,10 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Run tests
-        run: go test -v -covermode=count ./...
+        run: |
+          export GOPATH=$(go env GOPATH)
+          go get -v -t -d ./...
+          go test -v -covermode=count ./...
   codecov:
     environment: gmc
     name: codecov

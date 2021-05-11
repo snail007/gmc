@@ -32,12 +32,12 @@ type GPool struct {
 }
 
 //MaxWaitCount returns the max waiting task count.
-func (s *GPool) MaxWaitCount() int {
+func (s *GPool) MaxTaskAwaitCount() int {
 	return s.maxWaitCount
 }
 
 //SetMaxWaitCount sets the max waiting task count.
-func (s *GPool) SetMaxWaitCount(maxWaitCount int) {
+func (s *GPool) SetMaxTaskAwaitCount(maxWaitCount int) {
 	s.maxWaitCount = maxWaitCount
 }
 

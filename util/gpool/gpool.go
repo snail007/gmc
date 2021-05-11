@@ -311,6 +311,7 @@ func newWorker(pool *GPool) *worker {
 		id:        pool.newWorkerID(),
 		wakeupSig: make(chan bool, 1),
 		breakSig:  make(chan bool, 1),
+		status: statusWaiting,
 	}
 	w.start()
 	return w

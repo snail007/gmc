@@ -155,16 +155,14 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 	p.SetDebug(true)
 	assert.True(p.IsDebug())
 	p.SetMaxTaskAwaitCount(2)
-
-	p.Submit(func() {
-		time.Sleep(time.Second)
-	})
-
 	p.ResetTo(2)
 	assert.Equal(2,p.WorkerCount())
 	p.ResetTo(1)
 	assert.Equal(1,p.WorkerCount())
 
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})

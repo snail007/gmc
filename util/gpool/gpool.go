@@ -23,12 +23,13 @@ const (
 
 // GPool is a goroutine pool, you can increase or decrease pool size in runtime.
 type GPool struct {
-	tasks        *glist.List
-	logger       gcore.Logger
-	workers      *gmap.Map
-	debug        bool
-	maxWaitCount int
-	submitLock   sync.Mutex
+	tasks         *glist.List
+	logger        gcore.Logger
+	workers       *gmap.Map
+	debug         bool
+	maxWaitCount  int
+	lazy          sync.Once
+	initWorkCount int
 }
 
 //MaxWaitCount returns the max waiting task count.
@@ -54,11 +55,11 @@ func (s *GPool) SetDebug(debug bool) {
 // NewGPool create a gpool object to using
 func NewGPool(workerCount int) (p *GPool) {
 	p = &GPool{
-		tasks:   glist.NewList(),
-		logger:  gcore.ProviderLogger()(nil, ""),
-		workers: gmap.NewMap(),
+		tasks:         glist.NewList(),
+		logger:        gcore.ProviderLogger()(nil, ""),
+		workers:       gmap.NewMap(),
+		initWorkCount: workerCount,
 	}
-	p.addWorker(workerCount)
 	return
 }
 
@@ -142,6 +143,9 @@ func (s *GPool) run(fn func()) {
 
 //Submit adds a function as a task ready to run
 func (s *GPool) Submit(task func()) bool {
+	s.lazy.Do(func() {
+		s.addWorker(s.initWorkCount)
+	})
 	if s.maxWaitCount > 0 && s.tasks.Len() > s.maxWaitCount {
 		return false
 	}

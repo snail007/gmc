@@ -149,6 +149,27 @@ func TestAwaiting(t *testing.T) {
 	p.Stop()
 }
 
+func TestGPool_MaxWaitCount(t *testing.T) {
+	assert := assert2.New(t)
+	p := NewGPool(1)
+	p.SetMaxWaitCount(2)
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
+	assert.False(p.Submit(func() {
+		time.Sleep(time.Second)
+	}))
+	assert.Equal(2,p.MaxWaitCount())
+	time.Sleep(time.Millisecond * 40)
+	p.Stop()
+}
+
 func TestMain(m *testing.M) {
  	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {

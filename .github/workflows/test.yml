@@ -99,10 +99,10 @@ jobs:
            export GOPATH=$(go env GOPATH)
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
            export F=gmct-linux-amd64.tar.gz
-           export LAST_VERSION=$(curl --silent "https://mirrors.host900.com/https://api.github.com/repos/snail007/gmct/releases/latest" | grep -Po '"tag_name":"\K.*?(?=")')
+           export LAST_VERSION=$(curl --silent "https://api.github.com/repos/snail007/gmct/releases/latest" | grep -Po '"tag_name": ?"\K.*?(?=")')
            mkdir -p $GOPATH/src/github.com/snail007
            mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
-           wget -q -t 1 "https://mirrors.host900.com/https://github.com/snail007/gmct/releases/download/${LAST_VERSION}/$F"
+           wget -q -t 1 "https://github.com/snail007/gmct/releases/download/${LAST_VERSION}/$F"
            tar zxf $F && chmod +x gmct && rm -rf $F
            cd ../ && cp -R gmc $SNAIL007PATH/
            cd $SNAIL007PATH/gmc/ && go get -v -t -d ./... && ./gmct cover -s -k -o

@@ -36,16 +36,20 @@ jobs:
           while ! mysqladmin ping -h"127.0.0.1" -P"$PORT" --silent; do
             sleep 1
           done
+
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Setting Up DB
         run: |
           mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
+
       - name: Install Go
         if: success()
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
+
       - name: Run tests
         run: |
           export GOPATH=$(go env GOPATH)
@@ -55,6 +59,7 @@ jobs:
     environment: gmc
     name: codecov
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:5.5
@@ -69,6 +74,7 @@ jobs:
         ports:
           - 6379:6379
         options: --name redis
+
     steps:
       - name: Verify MYSQL connection
         env:
@@ -77,39 +83,29 @@ jobs:
           while ! mysqladmin ping -h"127.0.0.1" -P"$PORT" --silent; do
           sleep 1
           done
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Setting Up DB
-        run: |
-          mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
+
       - name: Set up Go 1.15
         uses: actions/setup-go@v1
         with:
           go-version: 1.15.x
         id: go
 
-      - name: Install gmct
-        run: |
-          export F=gmct-linux-amd64.tar.gz
-          export LAST_VERSION=$(curl --silent "https://mirrors.host900.com/https://api.github.com/repos/snail007/gmct/releases/latest" | grep -Po '"tag_name":"\K.*?(?=")')
-          wget -q -t 1 "https://mirrors.host900.com/https://github.com/snail007/gmct/releases/download/${LAST_VERSION}/$F"
-          tar zxvf $F >/dev/null 2>&1
-          chmod +x gmct
-          rm -rf $F
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Get dependencies
-        run: |
-          export GOPATH=$(go env GOPATH)
-          go get -v -t -d ./...
-
-      - name: Generate coverage report
+      - name: Init & Run
         run: |
            export WORKPATH=$(pwd)
            export GOPATH=$(go env GOPATH)
            export SNAIL007PATH=$GOPATH/src/github.com/snail007/
+           export F=gmct-linux-amd64.tar.gz
+           export LAST_VERSION=$(curl --silent "https://mirrors.host900.com/https://api.github.com/repos/snail007/gmct/releases/latest" | grep -Po '"tag_name":"\K.*?(?=")')
            mkdir -p $GOPATH/src/github.com/snail007
+           mysql -h 127.0.0.1 -P 3306 --protocol=tcp -u root -padmin < .ci/tests.db.sql
+           wget -q -t 1 "https://mirrors.host900.com/https://github.com/snail007/gmct/releases/download/${LAST_VERSION}/$F"
+           tar zxf $F && chmod +x gmct && rm -rf $F
            cd ../ && cp -R gmc $SNAIL007PATH/
-           cd $SNAIL007PATH/gmc/ && ./gmct cover -s -k -o
+           cd $SNAIL007PATH/gmc/ && go get -v -t -d ./... && ./gmct cover -s -k -o
            mv coverage.txt $WORKPATH/
 
       - name: Upload coverage report

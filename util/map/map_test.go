@@ -367,6 +367,18 @@ func TestMap_StoreFront(t *testing.T) {
 	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
 }
 
+func TestMap_StoreFront2(t *testing.T) {
+	assert := assert.New(t)
+	l := NewMap()
+	for i := 0; i < 3; i++ {
+		l.StoreFront(i, i)
+	}
+	for i := 0; i < 3; i++ {
+		l.StoreFront(i, i)
+	}
+	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
+}
+
 func TestMap_LoadOrStoreFront(t *testing.T) {
 	assert := assert.New(t)
 	l := NewMap()

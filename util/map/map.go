@@ -6,8 +6,8 @@
 package gmap
 
 import (
-	"container/list"
 	"fmt"
+	"github.com/snail007/gmc/util/linklist"
 	"sync"
 )
 
@@ -21,26 +21,38 @@ type (
 )
 
 // Map a map can kept the sequence of keys when range the map
-// have more useful function, Len(), Shift(), Pop(), Keys(), etc.
+// have more useful function, Len(), Shift(), Pop(),gKeys(), etc.
 type Map struct {
-	keys     *list.List
+	keys     *glinklist.LinkList
 	data     sync.Map
-	lock     sync.Mutex
-	keyElMap map[interface{}]*list.Element
+	keyElMap sync.Map
+	sync.RWMutex
 }
 
 // Clone duplicates the map s.
 func (s *Map) Clone() *Map {
+	s.RLock()
+	defer s.RUnlock()
 	m := NewMap()
-	for _, k := range s.Keys() {
-		v, _ := s.data.Load(k)
-		m.Store(k, v)
+	p := s.keys.Front()
+	for {
+		if p == nil {
+			break
+		}
+		v, _ := s.data.Load(p.Value)
+		m.Store(p.Value, v)
+		p = p.Next()
 	}
 	return m
 }
 
 // ToMap duplicates the map s.
 func (s *Map) ToMap() map[interface{}]interface{} {
+	s.RLock()
+	defer s.RUnlock()
+	return s.toMap()
+}
+func (s *Map) toMap() map[interface{}]interface{} {
 	m := map[interface{}]interface{}{}
 	s.data.Range(func(key, value interface{}) bool {
 		m[key] = value
@@ -51,6 +63,12 @@ func (s *Map) ToMap() map[interface{}]interface{} {
 
 // ToStringMap duplicates the map s.
 func (s *Map) ToStringMap() map[string]interface{} {
+	s.RLock()
+	defer s.RUnlock()
+	return s.toStringMap()
+}
+
+func (s *Map) toStringMap() map[string]interface{} {
 	m := map[string]interface{}{}
 	s.data.Range(func(key, value interface{}) bool {
 		m[fmt.Sprintf("%v", key)] = value
@@ -61,6 +79,12 @@ func (s *Map) ToStringMap() map[string]interface{} {
 
 // Merge merges a Map to Map s.
 func (s *Map) Merge(m *Map) {
+	s.Lock()
+	defer s.Unlock()
+	s.merge(m)
+}
+
+func (s *Map) merge(m *Map) {
 	m.data.Range(func(key, value interface{}) bool {
 		s.Store(key, value)
 		return true
@@ -69,13 +93,25 @@ func (s *Map) Merge(m *Map) {
 
 // MergeMap merges a map to Map s.
 func (s *Map) MergeMap(m Mii) {
+	s.Lock()
+	defer s.Unlock()
+	s.mergeMap(m)
+}
+
+func (s *Map) mergeMap(m Mii) {
 	for key, value := range m {
 		s.Store(key, value)
 	}
 }
 
-// MergeStringMap merges a map to Map s.
+// MergeStrMap merges a map to Map s.
 func (s *Map) MergeStrMap(m M) {
+	s.Lock()
+	defer s.Unlock()
+	s.mergeStrMap(m)
+}
+
+func (s *Map) mergeStrMap(m M) {
 	for key, value := range m {
 		s.Store(key, value)
 	}
@@ -83,6 +119,12 @@ func (s *Map) MergeStrMap(m M) {
 
 // MergeStrStrMap merges a map to Map s.
 func (s *Map) MergeStrStrMap(m Mss) {
+	s.Lock()
+	defer s.Unlock()
+	s.mergeStrStrMap(m)
+}
+
+func (s *Map) mergeStrStrMap(m Mss) {
 	for key, value := range m {
 		s.Store(key, value)
 	}
@@ -90,6 +132,12 @@ func (s *Map) MergeStrStrMap(m Mss) {
 
 // MergeSyncMap merges a sync.Map to Map s.
 func (s *Map) MergeSyncMap(m *sync.Map) {
+	s.Lock()
+	defer s.Unlock()
+	s.mergeSyncMap(m)
+}
+
+func (s *Map) mergeSyncMap(m *sync.Map) {
 	m.Range(func(key, value interface{}) bool {
 		s.Store(key, value)
 		return true
@@ -98,16 +146,20 @@ func (s *Map) MergeSyncMap(m *sync.Map) {
 
 // Pop returns the last element of map s or nil if the map is empty.
 func (s *Map) Pop() (k, v interface{}, ok bool) {
+	s.Lock()
+	defer s.Unlock()
 	return s.removeElement(s.keys.Back())
 }
 
 // Shift returns the first element of map s or nil if the map is empty.
 func (s *Map) Shift() (k, v interface{}, ok bool) {
+	s.Lock()
+	defer s.Unlock()
 	return s.removeElement(s.keys.Front())
 }
 
 // used for shift and pop
-func (s *Map) removeElement(el *list.Element) (k, v interface{}, ok bool) {
+func (s *Map) removeElement(el *glinklist.Element) (k, v interface{}, ok bool) {
 	if el == nil {
 		return
 	}
@@ -123,6 +175,12 @@ func (s *Map) removeElement(el *list.Element) (k, v interface{}, ok bool) {
 // value is present.
 // The ok result indicates whether value was found in the map.
 func (s *Map) Load(key interface{}) (value interface{}, ok bool) {
+	s.RLock()
+	defer s.RUnlock()
+	return s.load(key)
+}
+
+func (s *Map) load(key interface{}) (value interface{}, ok bool) {
 	value, ok = s.data.Load(key)
 	return
 }
@@ -131,11 +189,15 @@ func (s *Map) Load(key interface{}) (value interface{}, ok bool) {
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
 func (s *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
+	s.Lock()
+	defer s.Unlock()
+	return s.loadOrStore(key, value)
+}
+
+func (s *Map) loadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
 	actual, loaded = s.data.LoadOrStore(key, value)
 	if !loaded {
-		s.lock.Lock()
-		s.keyElMap[key] = s.keys.PushBack(key)
-		s.lock.Unlock()
+		s.keyElMap.Store(key, s.keys.PushBack(key))
 	}
 	return
 }
@@ -145,11 +207,15 @@ func (s *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bo
 // The loaded result is true if the value was loaded, false if stored.
 // The key will be stored the first in keys queue if key not exists.
 func (s *Map) LoadOrStoreFront(key, value interface{}) (actual interface{}, loaded bool) {
+	s.Lock()
+	defer s.Unlock()
+	return s.loadOrStoreFront(key, value)
+}
+
+func (s *Map) loadOrStoreFront(key, value interface{}) (actual interface{}, loaded bool) {
 	actual, loaded = s.data.LoadOrStore(key, value)
 	if !loaded {
-		s.lock.Lock()
-		s.keyElMap[key] = s.keys.PushFront(key)
-		s.lock.Unlock()
+		s.keyElMap.Store(key, s.keys.PushFront(key))
 	}
 	return
 }
@@ -157,51 +223,65 @@ func (s *Map) LoadOrStoreFront(key, value interface{}) (actual interface{}, load
 // StoreFront sets the value for a key.
 // The key will be stored the first in keys queue.
 func (s *Map) StoreFront(key, value interface{}) {
+	s.Lock()
+	defer s.Unlock()
+	s.storeFront(key, value)
+}
+
+func (s *Map) storeFront(key, value interface{}) {
 	s.data.Store(key, value)
-	s.lock.Lock()
-	if v, ok := s.keyElMap[key]; ok {
-		s.keys.Remove(v)
+	if v, ok := s.keyElMap.Load(key); ok {
+		s.keys.Remove(v.(*glinklist.Element))
 	}
-	s.keyElMap[key] = s.keys.PushFront(key)
-	s.lock.Unlock()
+	s.keyElMap.Store(key, s.keys.PushFront(key))
 }
 
 // Store sets the value for a key.
 func (s *Map) Store(key, value interface{}) {
+	s.Lock()
+	defer s.Unlock()
+	s.store(key, value)
+}
+
+func (s *Map) store(key, value interface{}) {
 	s.data.Store(key, value)
-	s.lock.Lock()
-	if v, ok := s.keyElMap[key]; ok {
-		s.keys.Remove(v)
+	if v, ok := s.keyElMap.Load(key); ok {
+		s.keys.Remove(v.(*glinklist.Element))
 	}
-	s.keyElMap[key] = s.keys.PushBack(key)
-	s.lock.Unlock()
+	s.keyElMap.Store(key, s.keys.PushBack(key))
 }
 
 // Delete deletes the value for a key.
 func (s *Map) Delete(key interface{}) {
+	s.Lock()
+	defer s.Unlock()
+	s.delete(key)
+}
+
+func (s *Map) delete(key interface{}) {
 	s.data.Delete(key)
-	s.lock.Lock()
-	if el, ok := s.keyElMap[key]; ok {
-		s.keys.Remove(el)
-		delete(s.keyElMap, key)
+	if el, ok := s.keyElMap.Load(key); ok {
+		s.keys.Remove(el.(*glinklist.Element))
+		s.keyElMap.Delete(key)
 	}
-	s.lock.Unlock()
 }
 
 // Len returns the length of the map s.
 func (s *Map) Len() int {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	return s.keys.Len()
+	return int(s.keys.Len())
 }
 
 // Clear deletes all data in the map s.
 func (s *Map) Clear() {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Lock()
+	defer s.Unlock()
+	s.clear()
+}
+
+func (s *Map) clear() {
 	s.data = sync.Map{}
-	s.keys = list.New()
-	s.keyElMap = map[interface{}]*list.Element{}
+	s.keys = glinklist.New()
+	s.keyElMap = sync.Map{}
 }
 
 // Range calls f sequentially for each key and value present in the map.
@@ -209,13 +289,12 @@ func (s *Map) Clear() {
 //
 // Range keep the sequence of store sequence.
 func (s *Map) Range(f func(key, value interface{}) bool) {
-	snapshot := s.Clone()
-	for _, k := range snapshot.Keys() {
-		v, _ := snapshot.data.Load(k)
-		if !f(k, v) {
-			break
+	s.keys.Clone().Range(func(k interface{}) bool {
+		if v, ok := s.data.Load(k); ok {
+			return f(k, v)
 		}
-	}
+		return true
+	})
 }
 
 // RangeFast calls f sequentially for each key and value present in the map.
@@ -226,22 +305,26 @@ func (s *Map) Range(f func(key, value interface{}) bool) {
 // RangeFast do not create a snapshot for range, so you can not
 // modify map s in range loop, indicate do not call Delete(), Store(), LoadOrStore(), Merge(), etc.
 func (s *Map) RangeFast(f func(key, value interface{}) bool) {
-	for _, k := range s.Keys() {
-		v, _ := s.data.Load(k)
-		if !f(k, v) {
-			break
-		}
-	}
+	s.keys.Range(func(k interface{}) bool {
+		_, v := s.data.Load(k)
+		return f(k, v)
+	})
 }
 
 // Keys returns all keys in map s and keep the sequence of store sequence.
 func (s *Map) Keys() (keys []interface{}) {
+	s.RLock()
+	defer s.RUnlock()
+	return s.keysArr()
+}
+
+func (s *Map) keysArr() (keyArr []interface{}) {
 	p := s.keys.Front()
 	for {
 		if p == nil {
 			break
 		}
-		keys = append(keys, p.Value)
+		keyArr = append(keyArr, p.Value)
 		p = p.Next()
 	}
 	return
@@ -249,8 +332,19 @@ func (s *Map) Keys() (keys []interface{}) {
 
 // StringKeys returns all keys in map s and keep the sequence of store sequence.
 func (s *Map) StringKeys() (keys []string) {
-	for _, v := range s.Keys() {
-		keys = append(keys, fmt.Sprintf("%v", v))
+	s.RLock()
+	defer s.RUnlock()
+	return s.stringKeys()
+}
+
+func (s *Map) stringKeys() (keys []string) {
+	p := s.keys.Front()
+	for {
+		if p == nil {
+			break
+		}
+		keys = append(keys, fmt.Sprintf("%v", p.Value))
+		p = p.Next()
 	}
 	return
 }
@@ -264,23 +358,7 @@ func (s *Map) IsEmpty() bool {
 //
 // idx start with 0.
 func (s *Map) IndexOf(k interface{}) int {
-	p := s.keys.Front()
-	p0 := s.keys.Back()
-	for i := 0; i <= s.keys.Len()/2; i++ {
-		if p != nil {
-			if p.Value == k {
-				return i
-			}
-			p = p.Next()
-		}
-		if p0 != nil {
-			if p0.Value == k {
-				return s.keys.Len() - 1 - i
-			}
-			p0 = p0.Prev()
-		}
-	}
-	return -1
+	return s.keys.IndexOf(k)
 }
 
 // String returns string format of the Set.
@@ -291,9 +369,8 @@ func (s *Map) String() string {
 // NewMap creates a Map object.
 func NewMap() *Map {
 	return &Map{
-		keys:     list.New(),
+		keys:     glinklist.New(),
 		data:     sync.Map{},
-		lock:     sync.Mutex{},
-		keyElMap: map[interface{}]*list.Element{},
+		keyElMap: sync.Map{},
 	}
 }

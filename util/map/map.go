@@ -86,7 +86,7 @@ func (s *Map) Merge(m *Map) {
 
 func (s *Map) merge(m *Map) {
 	m.data.Range(func(key, value interface{}) bool {
-		s.Store(key, value)
+		s.store(key, value)
 		return true
 	})
 }
@@ -100,7 +100,7 @@ func (s *Map) MergeMap(m Mii) {
 
 func (s *Map) mergeMap(m Mii) {
 	for key, value := range m {
-		s.Store(key, value)
+		s.store(key, value)
 	}
 }
 
@@ -113,7 +113,7 @@ func (s *Map) MergeStrMap(m M) {
 
 func (s *Map) mergeStrMap(m M) {
 	for key, value := range m {
-		s.Store(key, value)
+		s.store(key, value)
 	}
 }
 
@@ -126,7 +126,7 @@ func (s *Map) MergeStrStrMap(m Mss) {
 
 func (s *Map) mergeStrStrMap(m Mss) {
 	for key, value := range m {
-		s.Store(key, value)
+		s.store(key, value)
 	}
 }
 
@@ -139,7 +139,7 @@ func (s *Map) MergeSyncMap(m *sync.Map) {
 
 func (s *Map) mergeSyncMap(m *sync.Map) {
 	m.Range(func(key, value interface{}) bool {
-		s.Store(key, value)
+		s.store(key, value)
 		return true
 	})
 }

@@ -166,7 +166,7 @@ func (s *Map) removeElement(el *glinklist.Element) (k, v interface{}, ok bool) {
 	v, ok = s.data.Load(el.Value)
 	if ok {
 		k = el.Value
-		s.Delete(el.Value)
+		s.delete(el.Value)
 	}
 	return
 }

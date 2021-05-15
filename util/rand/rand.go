@@ -29,18 +29,15 @@ func IntString(length int) string {
 		return ""
 	}
 	r := New()
-	var rIntChar= func() string{
-		return strconv.FormatInt(r.Int63n(10), 10)
+	var rIntChar= func(max int64,add int64) string{
+		return strconv.FormatInt(r.Int63n(max)+add, 10)
 	}
 	if length==1{
-		return rIntChar()
+		return rIntChar(10,0)
 	}
-	str := rIntChar()
-	for str == "0" {
-		str = rIntChar()
-	}
+	str := rIntChar(9,1)
 	for i := 0; i < length-1; i++ {
-		str+=rIntChar()
+		str+=rIntChar(10,0)
 	}
 	return str
 }

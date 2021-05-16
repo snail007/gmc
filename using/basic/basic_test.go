@@ -21,6 +21,14 @@ func TestGMCImplements(t *testing.T) {
 		msg     string
 	}{
 		{func() (obj interface{}, err error) {
+			obj = gcore.ProviderApp()(false)
+			return
+		}, (*gcore.App)(nil), "default app"},
+		{func() (obj interface{}, err error) {
+			obj = gcore.ProviderApp()(true)
+			return
+		}, (*gcore.App)(nil), "default appDefault"},
+		{func() (obj interface{}, err error) {
 			obj = gcore.ProviderConfig()()
 			return
 		}, (*gcore.Config)(nil), "default config server"},

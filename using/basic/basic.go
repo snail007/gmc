@@ -7,6 +7,7 @@ package basic
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	gapp "github.com/snail007/gmc/module/app"
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
 	gerror "github.com/snail007/gmc/module/error"
@@ -25,6 +26,11 @@ func init() {
 }
 
 func initialize() {
+
+	gcore.RegisterApp(gcore.DefaultProviderKey, func(isDefault bool) gcore.App {
+		return gapp.NewApp(isDefault)
+	})
+
 	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.New()
 	})

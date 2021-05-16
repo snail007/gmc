@@ -9,7 +9,6 @@ import (
 	gcore "github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	ghttpserver "github.com/snail007/gmc/http/server"
-	_ "github.com/snail007/gmc/using/app"
 	_ "github.com/snail007/gmc/using/cache"
 	_ "github.com/snail007/gmc/using/db"
 	_ "github.com/snail007/gmc/using/web"

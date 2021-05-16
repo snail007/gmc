@@ -21,9 +21,9 @@ type bufChnItem struct {
 	level gcore.LogLevel
 	msg   string
 }
-type GMCLog struct {
+type Logger struct {
 	l          *log.Logger
-	parent     *GMCLog
+	parent     *Logger
 	ns         string
 	level      gcore.LogLevel
 	async      bool
@@ -33,21 +33,21 @@ type GMCLog struct {
 	callerSkip int
 }
 
-func (s *GMCLog) CallerSkip() int {
+func (s *Logger) CallerSkip() int {
 	return s.callerSkip
 }
 
-func (s *GMCLog) SetCallerSkip(callerSkip int) {
+func (s *Logger) SetCallerSkip(callerSkip int) {
 	s.callerSkip = callerSkip
 }
 
-func NewLogger(prefix ...string) gcore.Logger {
+func New(prefix ...string) gcore.Logger {
 	pre := ""
 	if len(prefix) == 1 {
 		pre = prefix[0]
 	}
 	l := log.New(os.Stdout, pre, log.LstdFlags|log.Lmicroseconds)
-	return &GMCLog{
+	return &Logger{
 		l:          l,
 		level:      gcore.LDEBUG,
 		asyncOnce:  &sync.Once{},
@@ -55,17 +55,17 @@ func NewLogger(prefix ...string) gcore.Logger {
 	}
 }
 
-func (s *GMCLog) WaitAsyncDone() {
+func (s *Logger) WaitAsyncDone() {
 	if s.async {
 		s.asyncWG.Wait()
 	}
 }
 
-func (s *GMCLog) Async() bool {
+func (s *Logger) Async() bool {
 	return s.async
 }
 
-func (s *GMCLog) asyncWriterInit() {
+func (s *Logger) asyncWriterInit() {
 	s.bufChn = make(chan bufChnItem, 2048)
 	s.asyncWG = &sync.WaitGroup{}
 	go func() {
@@ -82,23 +82,23 @@ func (s *GMCLog) asyncWriterInit() {
 	}()
 }
 
-func (s *GMCLog) EnableAsync() {
+func (s *Logger) EnableAsync() {
 	s.async = true
 	s.asyncOnce.Do(func() {
 		s.asyncWriterInit()
 	})
 }
 
-func (s *GMCLog) Level() gcore.LogLevel {
+func (s *Logger) Level() gcore.LogLevel {
 	return s.level
 }
 
-func (s *GMCLog) SetLevel(i gcore.LogLevel) {
+func (s *Logger) SetLevel(i gcore.LogLevel) {
 	s.level = i
 }
 
-func (s *GMCLog) With(namespace string) gcore.Logger {
-	return &GMCLog{
+func (s *Logger) With(namespace string) gcore.Logger {
+	return &Logger{
 		l:      s.l,
 		parent: s,
 		ns:     namespace,
@@ -106,7 +106,7 @@ func (s *GMCLog) With(namespace string) gcore.Logger {
 	}
 }
 
-func (s *GMCLog) Namespace() string {
+func (s *Logger) Namespace() string {
 	ns := s.ns
 	if s.parent != nil {
 		ns = s.parent.Namespace() + "/" + s.ns
@@ -114,14 +114,14 @@ func (s *GMCLog) Namespace() string {
 	return strings.TrimLeft(ns, "/")
 }
 
-func (s *GMCLog) namespace() string {
+func (s *Logger) namespace() string {
 	if s.parent != nil {
 		return "[" + s.Namespace() + "] "
 	}
 	return ""
 }
 
-func (s *GMCLog) Panicf(format string, v ...interface{}) {
+func (s *Logger) Panicf(format string, v ...interface{}) {
 	if s.level > gcore.LPANIC {
 		return
 	}
@@ -131,7 +131,7 @@ func (s *GMCLog) Panicf(format string, v ...interface{}) {
 	panic(str)
 }
 
-func (s *GMCLog) Panic(v ...interface{}) {
+func (s *Logger) Panic(v ...interface{}) {
 	if s.level > gcore.LPANIC {
 		return
 	}
@@ -142,7 +142,7 @@ func (s *GMCLog) Panic(v ...interface{}) {
 	panic(str)
 }
 
-func (s *GMCLog) Errorf(format string, v ...interface{}) {
+func (s *Logger) Errorf(format string, v ...interface{}) {
 	if s.level > gcore.LERROR {
 		return
 	}
@@ -151,7 +151,7 @@ func (s *GMCLog) Errorf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func (s *GMCLog) Error(v ...interface{}) {
+func (s *Logger) Error(v ...interface{}) {
 	if s.level > gcore.LERROR {
 		return
 	}
@@ -161,14 +161,14 @@ func (s *GMCLog) Error(v ...interface{}) {
 	os.Exit(1)
 }
 
-func (s *GMCLog) Warnf(format string, v ...interface{}) {
+func (s *Logger) Warnf(format string, v ...interface{}) {
 	if s.level > gcore.LWARN {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip()))
 }
 
-func (s *GMCLog) Warn(v ...interface{}) {
+func (s *Logger) Warn(v ...interface{}) {
 	if s.level > gcore.LWARN {
 		return
 	}
@@ -176,7 +176,7 @@ func (s *GMCLog) Warn(v ...interface{}) {
 	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
-func (s *GMCLog) Infof(format string, v ...interface{}) {
+func (s *Logger) Infof(format string, v ...interface{}) {
 	if s.level > gcore.LINFO {
 		return
 	}
@@ -184,7 +184,7 @@ func (s *GMCLog) Infof(format string, v ...interface{}) {
 
 }
 
-func (s *GMCLog) Info(v ...interface{}) {
+func (s *Logger) Info(v ...interface{}) {
 	if s.level > gcore.LINFO {
 		return
 	}
@@ -192,14 +192,14 @@ func (s *GMCLog) Info(v ...interface{}) {
 	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
-func (s *GMCLog) Debugf(format string, v ...interface{}) {
+func (s *Logger) Debugf(format string, v ...interface{}) {
 	if s.level > gcore.LDEBUG {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip()))
 }
 
-func (s *GMCLog) Debug(v ...interface{}) {
+func (s *Logger) Debug(v ...interface{}) {
 	if s.level > gcore.LDEBUG {
 		return
 	}
@@ -207,14 +207,14 @@ func (s *GMCLog) Debug(v ...interface{}) {
 	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
-func (s *GMCLog) Tracef(format string, v ...interface{}) {
+func (s *Logger) Tracef(format string, v ...interface{}) {
 	if s.level > gcore.LTRACE {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip()))
 }
 
-func (s *GMCLog) Trace(v ...interface{}) {
+func (s *Logger) Trace(v ...interface{}) {
 	if s.level > gcore.LTRACE {
 		return
 	}
@@ -222,19 +222,19 @@ func (s *GMCLog) Trace(v ...interface{}) {
 	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
-func (s *GMCLog) Writer() io.Writer {
+func (s *Logger) Writer() io.Writer {
 	return s.l.Writer()
 }
 
-func (s *GMCLog) SetOutput(w io.Writer) {
+func (s *Logger) SetOutput(w io.Writer) {
 	s.l.SetOutput(w)
 }
 
-func (s *GMCLog) SetFlags(f int) {
+func (s *Logger) SetFlags(f int) {
 	s.l.SetFlags(f)
 }
 
-func (s *GMCLog) Write(str string) {
+func (s *Logger) Write(str string) {
 	if s.async {
 		select {
 		case s.bufChn <- bufChnItem{
@@ -249,16 +249,16 @@ func (s *GMCLog) Write(str string) {
 	s.output(str)
 }
 
-func (s *GMCLog) output(str string) {
+func (s *Logger) output(str string) {
 	s.l.Print(str)
 }
 
-func (s *GMCLog) skip() int {
+func (s *Logger) skip() int {
 	skip := s.callerSkip
 	return skip
 }
 
-func (s *GMCLog) caller(msg string, skip int) string {
+func (s *Logger) caller(msg string, skip int) string {
 	file := "unknown"
 	line := 0
 	if _, file0, line0, ok := runtime.Caller(skip); ok {

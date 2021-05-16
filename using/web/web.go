@@ -3,29 +3,36 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package gtemplate
+package web
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	gcontroller "github.com/snail007/gmc/http/controller"
+	gcookie "github.com/snail007/gmc/http/cookie"
 	grouter "github.com/snail007/gmc/http/router"
+	ghttpserver "github.com/snail007/gmc/http/server"
 	gsession "github.com/snail007/gmc/http/session"
+	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
-	gconfig "github.com/snail007/gmc/module/config"
-	gctx "github.com/snail007/gmc/module/ctx"
 	gi18n "github.com/snail007/gmc/module/i18n"
-	glog "github.com/snail007/gmc/module/log"
+	_ "github.com/snail007/gmc/using/basic"
+	gonce "github.com/snail007/gmc/util/sync/once"
 	"io"
-	"os"
 	"sync"
-	"testing"
 )
 
 var (
-	tpl *Template
+	once sync.Once
 )
 
-func TestMain(m *testing.M) {
-	
+func init() {
+	once.Do(func() {
+		initialize()
+	})
+}
+
+func initialize() {
+
 	gcore.RegisterSession(gcore.DefaultProviderKey, func() gcore.Session {
 		return gsession.NewSession()
 	})
@@ -40,50 +47,38 @@ func TestMain(m *testing.M) {
 
 	gcore.RegisterTemplate(gcore.DefaultProviderKey, func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
 		if ctx.Config().Sub("template") != nil {
-			return Init(ctx)
+			return gtemplate.Init(ctx)
 		}
-		return NewTemplate(ctx, rootDir)
+		return gtemplate.NewTemplate(ctx, rootDir)
 	})
 
 	gcore.RegisterHTTPRouter(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.HTTPRouter {
 		return grouter.NewHTTPRouter(ctx)
 	})
 
-	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
-		return gconfig.New()
+	gcore.RegisterCookies(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.Cookies {
+		return gcookie.New(ctx.Response(), ctx.Request())
 	})
 
 	gcore.RegisterI18n(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		OnceDo("gmc-i18n-init", func() {
+		gonce.OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
 	})
 
-	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
-		if ctx == nil {
-			return glog.New(prefix)
-		}
-		return glog.NewFromConfig(ctx.Config(), prefix)
+	gcore.RegisterController(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.Controller {
+		c := &gcontroller.Controller{}
+		c.Ctx = ctx
+		return c
 	})
 
-	gcore.RegisterCtx(gcore.DefaultProviderKey, func() gcore.Ctx {
-		return gctx.NewCtx()
+	gcore.RegisterHTTPServer(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.HTTPServer {
+		return ghttpserver.NewHTTPServer(ctx)
 	})
 
-	ctx := gcore.ProviderCtx()()
-	ctx.SetConfig(gcore.ProviderConfig()())
-	tpl, _ = NewTemplate(ctx, "tests/views")
-	tpl.Delims("{{", "}}")
-	tpl.Parse()
-	os.Exit(m.Run())
-}
-
-var onceDoDataMap = sync.Map{}
-
-func OnceDo(uniqueKey string, f func()) {
-	once, _ := onceDoDataMap.LoadOrStore(uniqueKey, &sync.Once{})
-	once.(*sync.Once).Do(f)
-	return
+	gcore.RegisterAPIServer(gcore.DefaultProviderKey, func(ctx gcore.Ctx, address string) (gcore.APIServer, error) {
+		return ghttpserver.NewAPIServerForProvider(ctx, address)
+	})
 }

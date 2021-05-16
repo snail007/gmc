@@ -189,16 +189,14 @@ func (p *AutoProvider) find(providerKeys []string, callback func(key string) int
 }
 
 func (p *AutoProvider) addKey(providerKeys *[]string, key string) {
-	found := false
+	newKeys := []string{}
 	for _, v := range *providerKeys {
-		if v == key {
-			found = true
-			break
+		if v != key {
+			newKeys = append(newKeys, v)
 		}
 	}
-	if !found {
-		*providerKeys = append(*providerKeys, key)
-	}
+	newKeys = append(newKeys, key)
+	*providerKeys = newKeys
 }
 
 func (p *AutoProvider) RegisterSession(key string, session SessionProvider) {

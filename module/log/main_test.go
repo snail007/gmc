@@ -44,12 +44,12 @@ func TestMain(m *testing.M) {
 	})
 
 	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
-		return gconfig.NewConfig()
+		return gconfig.New()
 	})
 
 	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
-			return NewLogger(prefix)
+			return New(prefix)
 		}
 		return NewFromConfig(ctx.Config(), prefix)
 	})

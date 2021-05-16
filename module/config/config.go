@@ -26,7 +26,7 @@ func (c *Config) Sub(key string) gcore.SubConfig {
 	return v
 }
 
-func NewConfig() *Config {
+func New() *Config {
 	c := &Config{
 		Viper: viper.New(),
 	}
@@ -34,7 +34,7 @@ func NewConfig() *Config {
 	return c
 }
 
-func NewConfigFile(file string) (c *Config, err error) {
+func NewFromFile(file string) (c *Config, err error) {
 	cfg := viper.New()
 	cfg.SetConfigFile(file)
 	err = cfg.ReadInConfig()

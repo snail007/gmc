@@ -3,40 +3,34 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package gcache
+package basic
 
 import (
 	gcore "github.com/snail007/gmc/core"
 	gconfig "github.com/snail007/gmc/module/config"
 	gctx "github.com/snail007/gmc/module/ctx"
+	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
-	"os"
 	"sync"
-	"testing"
 )
 
 var (
-	cFile  gcore.Cache
-	cMem   gcore.Cache
-	cRedis gcore.Cache
+	once sync.Once
 )
 
-func TestMain(m *testing.M) {
-	var err error
+func init() {
+	once.Do(func() {
+		initialize()
+	})
+}
 
+func initialize() {
 	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.New()
 	})
 
-	gcore.RegisterCache(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Cache, error) {
-		var err error
-		OnceDo("gmc-cache-init", func() {
-			err = Init(ctx.Config())
-		})
-		if err != nil {
-			return nil, err
-		}
-		return Cache(), nil
+	gcore.RegisterError(gcore.DefaultProviderKey, func() gcore.Error {
+		return gerror.New()
 	})
 
 	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
@@ -49,26 +43,4 @@ func TestMain(m *testing.M) {
 	gcore.RegisterCtx(gcore.DefaultProviderKey, func() gcore.Ctx {
 		return gctx.NewCtx()
 	})
-
-	c, e := gctx.NewCtxFromConfigFile("../app/app.toml")
-	if e != nil {
-		panic(e)
-	}
-
-	logger = gcore.ProviderLogger()(c, "")
-
-	cFile, err = NewFileCache(NewFileCacheConfig())
-	if err != nil {
-		panic(err)
-	}
-	cMem = NewMemCache(NewMemCacheConfig())
-	os.Exit(m.Run())
-}
-
-var onceDoDataMap = sync.Map{}
-
-func OnceDo(uniqueKey string, f func()) {
-	once, _ := onceDoDataMap.LoadOrStore(uniqueKey, &sync.Once{})
-	once.(*sync.Once).Do(f)
-	return
 }

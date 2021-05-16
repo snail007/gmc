@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	})
 
 	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
-		return gconfig.NewConfig()
+		return gconfig.New()
 	})
 
 	gcore.RegisterCache(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Cache, error) {
@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 
 	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
-			return glog.NewLogger(prefix)
+			return glog.New(prefix)
 		}
 		return glog.NewFromConfig(ctx.Config(), prefix)
 	})

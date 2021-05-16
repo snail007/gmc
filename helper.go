@@ -55,6 +55,11 @@ func (s *NewAssistant) Ctx() gcore.Ctx {
 	return gcore.ProviderCtx()()
 }
 
+// Ctx creates an new object of gcore.Logger
+func (s *NewAssistant) Logger(ctx gcore.Ctx, prefix string) gcore.Logger {
+	return gcore.ProviderLogger()(ctx, prefix)
+}
+
 // App creates an new object of gcore.App
 func (s *NewAssistant) App() gcore.App {
 	return gcore.ProviderApp()(false)

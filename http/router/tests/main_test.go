@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	})
 
 	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
-		return gconfig.NewConfig()
+		return gconfig.New()
 	})
 
 	os.Exit(m.Run())

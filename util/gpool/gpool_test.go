@@ -184,7 +184,7 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 func TestMain(m *testing.M) {
 	gcore.RegisterLogger(gcore.DefaultProviderKey, func(ctx gcore.Ctx, prefix string) gcore.Logger {
 		if ctx == nil {
-			return glog.NewLogger(prefix)
+			return glog.New(prefix)
 		}
 		return glog.NewFromConfig(ctx.Config(), prefix)
 	})

@@ -15,12 +15,12 @@ import (
 	"testing"
 )
 
-func TestNewGMCLog(t *testing.T) {
+func TestNewLogger(t *testing.T) {
 	assert := assert2.New(t)
 	assert.Implements(new(gcore.Logger), gcore.ProviderLogger()(nil, ""))
 }
 
-func TestGMCLog_SetOutput(t *testing.T) {
+func TestLogger_SetOutput(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -29,7 +29,7 @@ func TestGMCLog_SetOutput(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "INFO a\n"))
 }
 
-func TestGMCLog_Writer(t *testing.T) {
+func TestLogger_Writer(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -37,7 +37,7 @@ func TestGMCLog_Writer(t *testing.T) {
 	assert.Equal(&out, l.Writer())
 }
 
-func TestGMCLog_SetLevel(t *testing.T) {
+func TestLogger_SetLevel(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -47,7 +47,7 @@ func TestGMCLog_SetLevel(t *testing.T) {
 	assert.Empty(out.String())
 }
 
-func TestGMCLog_With_1(t *testing.T) {
+func TestLogger_With_1(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -59,7 +59,7 @@ func TestGMCLog_With_1(t *testing.T) {
 	assert.Equal(l0.Namespace(), "api")
 }
 
-func TestGMCLog_With_2(t *testing.T) {
+func TestLogger_With_2(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -70,7 +70,7 @@ func TestGMCLog_With_2(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "[api/user/list] INFO a\n"))
 }
 
-func TestGMCLog_Infof(t *testing.T) {
+func TestLogger_Infof(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -80,7 +80,7 @@ func TestGMCLog_Infof(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "INFO a10\n"))
 }
 
-func TestGMCLog_Trace(t *testing.T) {
+func TestLogger_Trace(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -91,7 +91,7 @@ func TestGMCLog_Trace(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "TRACE a\n"))
 }
 
-func TestGMCLog_Tracef(t *testing.T) {
+func TestLogger_Tracef(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -102,7 +102,7 @@ func TestGMCLog_Tracef(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "TRACE a10\n"))
 }
 
-func TestGMCLog_Debug(t *testing.T) {
+func TestLogger_Debug(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -112,7 +112,7 @@ func TestGMCLog_Debug(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "DEBUG a\n"))
 }
 
-func TestGMCLog_Debugf(t *testing.T) {
+func TestLogger_Debugf(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -122,7 +122,7 @@ func TestGMCLog_Debugf(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "DEBUG a10\n"))
 }
 
-func TestGMCLog_Warn(t *testing.T) {
+func TestLogger_Warn(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -132,7 +132,7 @@ func TestGMCLog_Warn(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "WARN a\n"))
 }
 
-func TestGMCLog_Warnf(t *testing.T) {
+func TestLogger_Warnf(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
@@ -142,7 +142,7 @@ func TestGMCLog_Warnf(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "WARN a10\n"))
 }
 
-func TestGMCLog_Panic(t *testing.T) {
+func TestLogger_Panic(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	defer gcore.ProviderError()().Recover(func(e interface{}) {
@@ -151,7 +151,7 @@ func TestGMCLog_Panic(t *testing.T) {
 	l.Panic("a")
 }
 
-func TestGMCLog_Panicf(t *testing.T) {
+func TestLogger_Panicf(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	defer gcore.ProviderError()().Recover(func(e interface{}) {
@@ -160,7 +160,7 @@ func TestGMCLog_Panicf(t *testing.T) {
 	l.Panicf("a%d", 10)
 }
 
-func TestGMCLog_Error(t *testing.T) {
+func TestLogger_Error(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
@@ -179,7 +179,7 @@ func TestGMCLog_Error(t *testing.T) {
 	}
 }
 
-func TestGMCLog_Errorf(t *testing.T) {
+func TestLogger_Errorf(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {

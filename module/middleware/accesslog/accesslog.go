@@ -15,13 +15,13 @@ import (
 )
 
 type accesslog struct {
-	logger *glog.GMCLog
+	logger *glog.Logger
 	format string
 }
 
 func newFromConfig(c gcore.Config) *accesslog {
 	cfg := c.Sub("accesslog")
-	logger := glog.New().(*glog.GMCLog)
+	logger := glog.New().(*glog.Logger)
 	logger.SetFlags(0)
 	logger.SetOutput(glog.NewFileWriter(cfg.GetString("filename"),
 		cfg.GetString("dir"), cfg.GetBool("gzip")))

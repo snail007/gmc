@@ -53,4 +53,4 @@ var _ gcore.ResultSet = &gdb.ResultSet{}
 var _ gcore.Error = &gerror.Error{}
 var _ gcore.Database = &gdb.SQLite3DB{}
 var _ gcore.Config = &gconfig.Config{}
-var _ gcore.Logger = &glog.GMCLog{}
+var _ gcore.Logger = &glog.Logger{}

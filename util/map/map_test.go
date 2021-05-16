@@ -390,3 +390,45 @@ func TestMap_LoadOrStoreFront(t *testing.T) {
 	}
 	assert.Equal("[2 1 0]", fmt.Sprintf("%v", l.StringKeys()))
 }
+
+func TestMap_LoadOrStoreFunc(t *testing.T) {
+	assert := assert.New(t)
+	l := NewMap()
+	for i := 0; i < 3; i++ {
+		j := i
+		l.LoadOrStoreFunc(i, func() interface{} {
+			return j
+		})
+	}
+	k := 0
+	for i := 0; i < 3; i++ {
+		j := i
+		l.LoadOrStoreFunc(i, func() interface{} {
+			k++
+			return j
+		})
+	}
+	assert.Equal(0, k)
+	assert.Equal("[0 1 2]", fmt.Sprintf("%v", l.StringKeys()))
+}
+
+func TestMap_LoadAndStoreFunc(t *testing.T) {
+	assert := assert.New(t)
+	l := NewMap()
+	for i := 0; i < 3; i++ {
+		l.LoadAndStoreFunc(i, func(_ interface{}, loaded bool) (newValue interface{}) {
+			assert.False(loaded)
+			return i + 3
+		})
+	}
+	k := 0
+	for i := 0; i < 3; i++ {
+		l.LoadAndStoreFunc(i, func(oldValue interface{}, loaded bool) (newValue interface{}) {
+			k++
+			assert.Equal(i+3, oldValue)
+			return i
+		})
+	}
+	assert.Equal(3, k)
+	assert.Equal("[0 1 2]", fmt.Sprintf("%v", l.StringKeys()))
+}

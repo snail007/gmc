@@ -12,7 +12,7 @@ import (
 	gconfig "github.com/snail007/gmc/module/config"
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
-	"github.com/snail007/gmc/util/sync"
+	"github.com/snail007/gmc/util/sync/once"
 	"os"
 	"testing"
 )
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 	gcore.RegisterCache(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		gsync.OnceDo("gmc-cache-init", func() {
+		gonce.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {

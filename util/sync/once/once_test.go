@@ -1,4 +1,4 @@
-package gsync
+package gonce
 
 import (
 	assert2 "github.com/stretchr/testify/assert"

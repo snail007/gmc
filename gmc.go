@@ -22,7 +22,7 @@ import (
 	gerror "github.com/snail007/gmc/module/error"
 	gi18n "github.com/snail007/gmc/module/i18n"
 	glog "github.com/snail007/gmc/module/log"
-	"github.com/snail007/gmc/util/sync"
+	"github.com/snail007/gmc/util/sync/once"
 	"io"
 	"net/http"
 )
@@ -79,7 +79,7 @@ func init() {
 
 	gcore.RegisterI18n(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.I18n, error) {
 		var err error
-		gsync.OnceDo("gmc-i18n-init", func() {
+		gonce.OnceDo("gmc-i18n-init", func() {
 			err = gi18n.Init(ctx.Config())
 		})
 		return gi18n.I18N, err
@@ -98,7 +98,7 @@ func init() {
 
 	gcore.RegisterCache(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Cache, error) {
 		var err error
-		gsync.OnceDo("gmc-cache-init", func() {
+		gonce.OnceDo("gmc-cache-init", func() {
 			err = gcache.Init(ctx.Config())
 		})
 		if err != nil {
@@ -109,7 +109,7 @@ func init() {
 
 	gcore.RegisterDatabase(gcore.DefaultProviderKey, func(ctx gcore.Ctx) (gcore.Database, error) {
 		var err error
-		gsync.OnceDo("gmc-cache-init", func() {
+		gonce.OnceDo("gmc-cache-init", func() {
 			err = gdb.Init(ctx.Config())
 		})
 		if err != nil {

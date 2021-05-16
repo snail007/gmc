@@ -7,6 +7,9 @@ import (
 	"math/rand"
 	"strconv"
 )
+var (
+	defaultRand =New()
+)
 
 // String returns the length random string.
 func String(length int) string {
@@ -17,8 +20,8 @@ func String(length int) string {
 
 // New returns a new rand.Rand object of safe source.
 func New() *rand.Rand {
-	b := make([]byte, 8)
-	crand.Read(b)
+	b:=make([]byte,8)
+ 	crand.Read(b)
 	return rand.New(rand.NewSource(int64(binary.BigEndian.Uint64(b))))
 }
 
@@ -28,9 +31,8 @@ func IntString(length int) string {
 	if length == 0 {
 		return ""
 	}
-	r := New()
 	var rIntChar= func(max int64,add int64) string{
-		return strconv.FormatInt(r.Int63n(max)+add, 10)
+		return strconv.FormatInt(defaultRand.Int63n(max)+add, 10)
 	}
 	if length==1{
 		return rIntChar(10,0)

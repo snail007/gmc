@@ -8,9 +8,12 @@ package glog_test
 import (
 	"bytes"
 	"github.com/snail007/gmc/core"
+	glog "github.com/snail007/gmc/module/log"
 	assert2 "github.com/stretchr/testify/assert"
+	"io"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -195,5 +198,330 @@ func TestLogger_Errorf(t *testing.T) {
 		return
 	} else {
 		assert.Fail("expecting unsuccessful exit")
+	}
+}
+
+func TestAsync(t *testing.T) {
+	glog.EnableAsync()
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"Async()", true,},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := glog.Async(); got != tt.want {
+				t.Errorf("Async() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDebug(t *testing.T) {
+	type args struct {
+		v []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestDebugf(t *testing.T) {
+	type args struct {
+		format string
+		v      []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestEnableAsync(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestError(t *testing.T) {
+	type args struct {
+		v []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestErrorf(t *testing.T) {
+	type args struct {
+		format string
+		v      []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestInfo(t *testing.T) {
+	type args struct {
+		v []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestInfof(t *testing.T) {
+	type args struct {
+		format string
+		v      []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := glog.Namespace(); got != tt.want {
+				t.Errorf("Namespace() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPanic(t *testing.T) {
+	type args struct {
+		v []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestPanicf(t *testing.T) {
+	type args struct {
+		format string
+		v      []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestSetLevel(t *testing.T) {
+	type args struct {
+		level gcore.LogLevel
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestSetOutput(t *testing.T) {
+	tests := []struct {
+		name  string
+		wantW string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			glog.SetOutput(w)
+			if gotW := w.String(); gotW != tt.wantW {
+				t.Errorf("SetOutput() = %v, want %v", gotW, tt.wantW)
+			}
+		})
+	}
+}
+
+func TestTrace(t *testing.T) {
+	type args struct {
+		v []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestTracef(t *testing.T) {
+	type args struct {
+		format string
+		v      []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestWaitAsyncDone(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestWarn(t *testing.T) {
+	type args struct {
+		v []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestWarnf(t *testing.T) {
+	type args struct {
+		format string
+		v      []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestWith(t *testing.T) {
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want gcore.Logger
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := glog.With(tt.args.name); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("With() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWriter(t *testing.T) {
+	tests := []struct {
+		name string
+		want io.Writer
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := glog.Writer(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Writer() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

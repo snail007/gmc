@@ -17,6 +17,94 @@ import (
 	"sync"
 )
 
+var (
+	logger = New("")
+)
+
+func init() {
+	logger.SetCallerSkip(logger.CallerSkip()+1)
+}
+
+func Panic(v ...interface{}) {
+	logger.Panic(v...)
+}
+
+func Panicf(format string, v ...interface{}) {
+	logger.Panicf(format, v...)
+}
+
+func Error(v ...interface{}) {
+	logger.Error(v...)
+}
+
+func Errorf(format string, v ...interface{}) {
+	logger.Errorf(format, v...)
+}
+
+func Warn(v ...interface{}) {
+	logger.Warn(v...)
+}
+
+func Warnf(format string, v ...interface{}) {
+	logger.Warnf(format, v...)
+}
+
+func Info(v ...interface{}) {
+	logger.Info(v...)
+}
+
+func Infof(format string, v ...interface{}) {
+	logger.Infof(format, v...)
+}
+
+func Debug(v ...interface{}) {
+	logger.Debug(v...)
+}
+
+func Debugf(format string, v ...interface{}) {
+	logger.Debugf(format, v...)
+}
+
+func Trace(v ...interface{}) {
+	logger.Trace(v...)
+}
+
+func Tracef(format string, v ...interface{}) {
+	logger.Tracef(format, v...)
+}
+
+func SetLevel(level gcore.LogLevel) {
+	logger.SetLevel(level)
+}
+
+func With(name string) gcore.Logger {
+	return logger.With(name)
+}
+
+func Namespace() string {
+	return logger.Namespace()
+}
+
+func Writer() io.Writer {
+	return logger.Writer()
+}
+
+func SetOutput(w io.Writer) {
+	logger.SetOutput(w)
+}
+
+func Async() bool {
+	return logger.Async()
+}
+
+func WaitAsyncDone() {
+	logger.WaitAsyncDone()
+}
+
+func EnableAsync() {
+	logger.EnableAsync()
+}
+
 type bufChnItem struct {
 	level gcore.LogLevel
 	msg   string

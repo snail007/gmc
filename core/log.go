@@ -48,4 +48,7 @@ type Logger interface {
 	Async() bool
 	WaitAsyncDone()
 	EnableAsync()
+
+	CallerSkip() int
+	SetCallerSkip(callerSkip int)
 }

@@ -13,6 +13,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"testing"
+)
+
+const (
+	execFlagPrefix = "GMCT_COVER_EXEC_"
 )
 
 func newCmdFromEnv(runName string) string {
@@ -40,7 +45,20 @@ func newCmdFromEnv(runName string) string {
 		runName, cover, race, pkg)
 }
 
-func ExecTestFunc(testFuncName string) (out string, err error) {
+// CanExec checking if testing is called in PrepareExec,
+// if true, then call the function f and returns true,
+// you should return current testing t function after call CanExec.
+func CanExec(t *testing.T, f func()) bool {
+	if os.Getenv(execFlagPrefix+t.Name()) == "true" {
+		f()
+		return true
+	}
+	return false
+}
+
+// PrepareExec fork a subprocess runs current testing t function.
+func PrepareExec(t *testing.T) (out string, err error) {
+	testFuncName := t.Name()
 	isVerbose := os.Getenv("GMCT_COVER_VERBOSE") == "true"
 	defer func() {
 		if isVerbose {
@@ -57,6 +75,7 @@ func ExecTestFunc(testFuncName string) (out string, err error) {
 	}
 	c := exec.Command("bash", "-c", cmdStr)
 	c.Env = append(c.Env, os.Environ()...)
+	c.Env = append(c.Env, execFlagPrefix+t.Name()+"=true")
 	b, err := c.CombinedOutput()
 	out = string(b)
 	return

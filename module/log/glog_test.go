@@ -108,7 +108,7 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"WARN a"}
 		}},
 		{"glog.Error", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
-			oldExit:=glog.ExitFunc()
+			oldExit := glog.ExitFunc()
 			glog.SetLevel(gcore.LPANIC)
 			glog.Error("b")
 			glog.SetLevel(gcore.LERROR)
@@ -126,7 +126,7 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
 		}},
 		{"glog.Errorf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
-			oldExit:=glog.ExitFunc()
+			oldExit := glog.ExitFunc()
 			glog.SetLevel(gcore.LPANIC)
 			glog.Errorf("b")
 			glog.SetLevel(gcore.LERROR)
@@ -218,31 +218,30 @@ func TestGlog_Writer(t *testing.T) {
 }
 
 func TestGlog_Write(t *testing.T) {
-	if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
+	if gtest.CanExec(t, func() {
 		glog.Write("abc")
+	}) {
 		return
 	}
 	assert := assert2.New(t)
-	os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-	//os.Setenv("GMCT_COVER_VERBOSE","true")
-	out, err := gtest.ExecTestFunc(t.Name())
+	out, err := gtest.PrepareExec(t)
 	assert.Nil(err)
 	assert.Contains(out, "abc")
 }
 
 func TestGlog_Async(t *testing.T) {
 	assert := assert2.New(t)
-	if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
+	if gtest.CanExec(t, func() {
 		glog.SetOutput(os.Stdout)
 		glog.EnableAsync()
 		assert.True(glog.Async())
 		assert.Equal(1, glog.ExitCode())
 		glog.Info("a")
 		glog.WaitAsyncDone()
+	}) {
 		return
 	}
-	os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-	out, err := gtest.ExecTestFunc(t.Name())
+	out, err := gtest.PrepareExec(t)
 	assert.Nil(err)
 	assert.Contains(string(out), "INFO a")
 }

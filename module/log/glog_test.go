@@ -21,7 +21,6 @@ import (
 func TestGlog(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
-	glog.SetLevel(gcore.LTRACE)
 	glog.SetOutput(&out)
 	tests := []struct {
 		name    string
@@ -29,6 +28,9 @@ func TestGlog(t *testing.T) {
 		test    func(args []interface{}) (out string, contains []string)
 	}{
 		{"glog.Trace", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LDEBUG)
+			glog.Trace("b")
+			glog.SetLevel(gcore.LTRACE)
 			out.Reset()
 			glog.Trace("a")
 			return []interface{}{&out}, false
@@ -36,6 +38,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"TRACE a"}
 		}},
 		{"glog.Tracef", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LDEBUG)
+			glog.Tracef("b")
+			glog.SetLevel(gcore.LTRACE)
 			out.Reset()
 			glog.Tracef("%s", "a")
 			return []interface{}{&out}, false
@@ -43,6 +48,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"TRACE a"}
 		}},
 		{"glog.Debug", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LINFO)
+			glog.Debug("b")
+			glog.SetLevel(gcore.LDEBUG)
 			out.Reset()
 			glog.Debug("a")
 			return []interface{}{&out}, false
@@ -50,6 +58,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"DEBUG a"}
 		}},
 		{"glog.Debugf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LINFO)
+			glog.Debugf("b")
+			glog.SetLevel(gcore.LDEBUG)
 			out.Reset()
 			glog.Debugf("%s", "a")
 			return []interface{}{&out}, false
@@ -57,6 +68,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"DEBUG a"}
 		}},
 		{"glog.Info", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LWARN)
+			glog.Info("b")
+			glog.SetLevel(gcore.LINFO)
 			out.Reset()
 			glog.Info("a")
 			return []interface{}{&out}, false
@@ -64,6 +78,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"INFO a"}
 		}},
 		{"glog.Infof", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LWARN)
+			glog.Infof("b")
+			glog.SetLevel(gcore.LINFO)
 			out.Reset()
 			glog.Infof("%s", "a")
 			return []interface{}{&out}, false
@@ -71,6 +88,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"INFO a"}
 		}},
 		{"glog.Warn", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LERROR)
+			glog.Warn("b")
+			glog.SetLevel(gcore.LWARN)
 			out.Reset()
 			glog.Warn("a")
 			return []interface{}{&out}, false
@@ -78,6 +98,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"WARN a"}
 		}},
 		{"glog.Warnf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LERROR)
+			glog.Warnf("b")
+			glog.SetLevel(gcore.LWARN)
 			out.Reset()
 			glog.Warnf("%s", "a")
 			return []interface{}{&out}, false
@@ -86,6 +109,9 @@ func TestGlog(t *testing.T) {
 		}},
 		{"glog.Error", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
 			if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
+				glog.SetLevel(gcore.LPANIC)
+				glog.Error("b")
+				glog.SetLevel(gcore.LERROR)
 				glog.SetExitCode(-1)
 				glog.SetOutput(os.Stdout)
 				glog.Error("a")
@@ -101,6 +127,9 @@ func TestGlog(t *testing.T) {
 		}},
 		{"glog.Errorf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
 			if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
+				glog.SetLevel(gcore.LPANIC)
+				glog.Errorf("b")
+				glog.SetLevel(gcore.LERROR)
 				glog.SetExitCode(-1)
 				glog.SetOutput(os.Stdout)
 				glog.Errorf("%s", "a")
@@ -115,6 +144,9 @@ func TestGlog(t *testing.T) {
 			return args[0].(string), []string{"ERROR a"}
 		}},
 		{"glog.Panic", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LNONE)
+			glog.Panic("b")
+			glog.SetLevel(gcore.LPANIC)
 			out.Reset()
 			args = []interface{}{&out}
 			defer func() {
@@ -126,6 +158,9 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"PANIC a"}
 		}},
 		{"glog.Panicf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LNONE)
+			glog.Panicf("b")
+			glog.SetLevel(gcore.LPANIC)
 			out.Reset()
 			args = []interface{}{&out}
 			defer func() {
@@ -156,6 +191,7 @@ func TestGlog(t *testing.T) {
 }
 
 func testGlog_SetFlags(t *testing.T, assert *assert2.Assertions) {
+	glog.SetLevel(gcore.LTRACE)
 	var out bytes.Buffer
 	glog.SetFlags(log.LstdFlags | log.Llongfile)
 	glog.SetOutput(&out)

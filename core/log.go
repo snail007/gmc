@@ -14,6 +14,7 @@ const (
 	LWARN
 	LERROR
 	LPANIC
+	LNONE
 )
 
 type LogLevel int

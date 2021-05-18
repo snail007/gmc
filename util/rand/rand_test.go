@@ -16,7 +16,7 @@ func TestString(t *testing.T) {
 	assert.Len(String(0), 0)
 	assert.Len(String(3), 3)
 	for i := 0; i < 10; i++ {
-		assert.NotEqual(String(2), String(2))
+		assert.NotEqual(String(3), String(3))
 	}
 }
 func TestNew(t *testing.T) {

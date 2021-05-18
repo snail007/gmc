@@ -8,7 +8,7 @@ package gcore
 import "io"
 
 const (
-	LTRACE = iota + 1
+	LTRACE LogLevel = iota + 1
 	LDEBUG
 	LINFO
 	LWARN
@@ -37,6 +37,7 @@ type Logger interface {
 	Trace(v ...interface{})
 	Tracef(format string, v ...interface{})
 
+	Level() LogLevel
 	SetLevel(LogLevel)
 
 	With(name string) Logger
@@ -44,6 +45,7 @@ type Logger interface {
 
 	Writer() io.Writer
 	SetOutput(w io.Writer)
+	SetFlags(f int)
 
 	Async() bool
 	WaitAsyncDone()
@@ -51,4 +53,8 @@ type Logger interface {
 
 	CallerSkip() int
 	SetCallerSkip(callerSkip int)
+	Write(string)
+
+	ExitCode() int
+	SetExitCode(exitCode int)
 }

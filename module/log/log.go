@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	logger.SetCallerSkip(logger.CallerSkip()+1)
+	logger.SetCallerSkip(logger.CallerSkip() + 1)
 }
 
 func Panic(v ...interface{}) {
@@ -105,6 +105,26 @@ func EnableAsync() {
 	logger.EnableAsync()
 }
 
+func SetFlags(f int) {
+	logger.SetFlags(f)
+}
+
+func Write(s string) {
+	logger.Write(s)
+}
+
+func Level() gcore.LogLevel {
+	return logger.Level()
+}
+
+func SetExitCode(code int) {
+	logger.SetExitCode(code)
+}
+
+func ExitCode() int {
+	return logger.ExitCode()
+}
+
 type bufChnItem struct {
 	level gcore.LogLevel
 	msg   string
@@ -119,6 +139,15 @@ type Logger struct {
 	bufChn     chan bufChnItem
 	asyncWG    *sync.WaitGroup
 	callerSkip int
+	exitCode   int
+}
+
+func (s *Logger) ExitCode() int {
+	return s.exitCode
+}
+
+func (s *Logger) SetExitCode(exitCode int) {
+	s.exitCode = exitCode
 }
 
 func (s *Logger) CallerSkip() int {
@@ -140,6 +169,7 @@ func New(prefix ...string) gcore.Logger {
 		level:      gcore.LDEBUG,
 		asyncOnce:  &sync.Once{},
 		callerSkip: 2,
+		exitCode:   1,
 	}
 }
 
@@ -236,7 +266,7 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip()))
 	s.WaitAsyncDone()
-	os.Exit(1)
+	s.exit()
 }
 
 func (s *Logger) Error(v ...interface{}) {
@@ -246,7 +276,13 @@ func (s *Logger) Error(v ...interface{}) {
 	v0 := []interface{}{s.namespace() + "ERROR "}
 	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 	s.WaitAsyncDone()
-	os.Exit(1)
+	s.exit()
+}
+
+func (s *Logger) exit() {
+	if s.exitCode >= 0 {
+		os.Exit(s.exitCode)
+	}
 }
 
 func (s *Logger) Warnf(format string, v ...interface{}) {

@@ -13,7 +13,7 @@ require (
 	github.com/snail007/gmct v0.0.23
 	github.com/snail007/go-sqlcipher v0.0.0-20210114093415-fb27975e042f
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.3.0
 	github.com/ulikunitz/xz v0.5.8
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b

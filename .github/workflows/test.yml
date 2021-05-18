@@ -52,6 +52,7 @@ jobs:
 
       - name: Run tests
         run: |
+          export GO111MODULE=on
           export WORKPATH=$(pwd)
           export GOPATH=$(go env GOPATH)
           export SNAIL007PATH=$GOPATH/src/github.com/snail007/

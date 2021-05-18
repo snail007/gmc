@@ -58,4 +58,6 @@ type Logger interface {
 
 	ExitCode() int
 	SetExitCode(exitCode int)
+	ExitFunc() func(int)
+	SetExitFunc(exitFunc func(int))
 }

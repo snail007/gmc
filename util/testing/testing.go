@@ -28,7 +28,7 @@ func newCmdFromEnv(runName string) string {
 	packages := os.Getenv("GMCT_COVER_PACKAGES")
 	pkg := strings.TrimPrefix(d, filepath.Join(os.Getenv("GOPATH"), "src"))[1:]
 	if race == "true" {
-		race = "-v"
+		race = "-race"
 	} else {
 		race = ""
 	}

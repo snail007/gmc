@@ -125,6 +125,14 @@ func ExitCode() int {
 	return logger.ExitCode()
 }
 
+func ExitFunc() func(int) {
+	return logger.ExitFunc()
+}
+
+func SetExitFunc(exitFunc func(int)) {
+	logger.SetExitFunc(exitFunc)
+}
+
 type bufChnItem struct {
 	level gcore.LogLevel
 	msg   string
@@ -140,6 +148,21 @@ type Logger struct {
 	asyncWG    *sync.WaitGroup
 	callerSkip int
 	exitCode   int
+	exitFunc   func(int)
+}
+
+func (s *Logger) exit() {
+	if s.exitCode >= 0 {
+		s.exitFunc(s.exitCode)
+	}
+}
+
+func (s *Logger) ExitFunc() func(int) {
+	return s.exitFunc
+}
+
+func (s *Logger) SetExitFunc(exitFunc func(int)) {
+	s.exitFunc = exitFunc
 }
 
 func (s *Logger) ExitCode() int {
@@ -170,6 +193,7 @@ func New(prefix ...string) gcore.Logger {
 		asyncOnce:  &sync.Once{},
 		callerSkip: 2,
 		exitCode:   1,
+		exitFunc:   os.Exit,
 	}
 }
 
@@ -277,12 +301,6 @@ func (s *Logger) Error(v ...interface{}) {
 	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 	s.WaitAsyncDone()
 	s.exit()
-}
-
-func (s *Logger) exit() {
-	if s.exitCode >= 0 {
-		os.Exit(s.exitCode)
-	}
 }
 
 func (s *Logger) Warnf(format string, v ...interface{}) {

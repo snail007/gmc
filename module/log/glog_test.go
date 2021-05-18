@@ -108,40 +108,40 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"WARN a"}
 		}},
 		{"glog.Error", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
-			if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
-				glog.SetLevel(gcore.LPANIC)
-				glog.Error("b")
-				glog.SetLevel(gcore.LERROR)
-				glog.SetExitCode(-1)
-				glog.SetOutput(os.Stdout)
-				glog.Error("a")
-				return nil, true
-			}
-			os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-			out, err := gtest.ExecTestFunc(t.Name())
-			assert.Nil(err)
-			//assert.Contains(err.Error(), "exit status 1")
-			return []interface{}{out}, false
+			oldExit:=glog.ExitFunc()
+			glog.SetLevel(gcore.LPANIC)
+			glog.Error("b")
+			glog.SetLevel(gcore.LERROR)
+			out.Reset()
+			gotCode := 0
+			glog.SetExitCode(2)
+			glog.SetExitFunc(func(code int) {
+				gotCode = code
+			})
+			glog.Error("a")
+			assert.Equal(2, gotCode)
+			glog.SetExitFunc(oldExit)
+			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
-			return args[0].(string), []string{"ERROR a"}
+			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
 		}},
 		{"glog.Errorf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
-			if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
-				glog.SetLevel(gcore.LPANIC)
-				glog.Errorf("b")
-				glog.SetLevel(gcore.LERROR)
-				glog.SetExitCode(-1)
-				glog.SetOutput(os.Stdout)
-				glog.Errorf("%s", "a")
-				return nil, true
-			}
-			os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-			out, err := gtest.ExecTestFunc(t.Name())
-			assert.Nil(err)
-			//assert.Contains(err.Error(), "exit status 1")
-			return []interface{}{string(out)}, false
+			oldExit:=glog.ExitFunc()
+			glog.SetLevel(gcore.LPANIC)
+			glog.Errorf("b")
+			glog.SetLevel(gcore.LERROR)
+			out.Reset()
+			gotCode := 0
+			glog.SetExitCode(3)
+			glog.SetExitFunc(func(code int) {
+				gotCode = code
+			})
+			glog.Errorf("%s", "a")
+			assert.Equal(3, gotCode)
+			glog.SetExitFunc(oldExit)
+			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
-			return args[0].(string), []string{"ERROR a"}
+			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
 		}},
 		{"glog.Panic", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
 			glog.SetLevel(gcore.LNONE)

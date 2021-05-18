@@ -24,5 +24,5 @@ func Test_Cache(t *testing.T) {
 	assert.NotNil(Memory())
 	assert.NotNil(Redis())
 	assert.NotNil(File())
-	assert.Same(Cache(), Redis())
+	assert.Equal(Cache(), Redis())
 }

@@ -57,7 +57,7 @@ func TestRun_1(t *testing.T) {
 	})
 	err := app.Run()
 	assert.NotNil(err)
-	assert.NotSame(app.Config(), app.Config("007"))
+	assert.NotEqual(app.Config(), app.Config("007"))
 }
 func TestRun_2(t *testing.T) {
 	assert := assert.New(t)

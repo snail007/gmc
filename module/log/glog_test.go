@@ -10,7 +10,7 @@ import (
 	"github.com/snail007/gmc/core"
 	glog "github.com/snail007/gmc/module/log"
 	_ "github.com/snail007/gmc/using/basic"
-	gtcover "github.com/snail007/gmct/module/cover"
+	gtest "github.com/snail007/gmc/util/testing"
 	assert2 "github.com/stretchr/testify/assert"
 	"io"
 	"log"
@@ -92,7 +92,7 @@ func TestGlog(t *testing.T) {
 				return nil, true
 			}
 			os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-			out, err := gtcover.ExecTestFunc(t.Name())
+			out, err := gtest.ExecTestFunc(t.Name())
 			assert.Nil(err)
 			//assert.Contains(err.Error(), "exit status 1")
 			return []interface{}{out}, false
@@ -107,7 +107,7 @@ func TestGlog(t *testing.T) {
 				return nil, true
 			}
 			os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-			out, err := gtcover.ExecTestFunc(t.Name())
+			out, err := gtest.ExecTestFunc(t.Name())
 			assert.Nil(err)
 			//assert.Contains(err.Error(), "exit status 1")
 			return []interface{}{string(out)}, false
@@ -189,7 +189,7 @@ func TestGlog_Write(t *testing.T) {
 	assert := assert2.New(t)
 	os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
 	//os.Setenv("GMCT_COVER_VERBOSE","true")
-	out, err := gtcover.ExecTestFunc(t.Name())
+	out, err := gtest.ExecTestFunc(t.Name())
 	assert.Nil(err)
 	assert.Contains(out, "abc")
 }
@@ -206,7 +206,7 @@ func TestGlog_Async(t *testing.T) {
 		return
 	}
 	os.Setenv("ASSERT_EXISTS_"+t.Name(), "1")
-	out, err := gtcover.ExecTestFunc(t.Name())
+	out, err := gtest.ExecTestFunc(t.Name())
 	assert.Nil(err)
 	assert.Contains(string(out), "INFO a")
 }

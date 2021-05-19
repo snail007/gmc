@@ -46,18 +46,13 @@ func newCmdFromEnv(runName string) (cmd, binName string) {
 		cover := ""
 		rb := make([]byte, 16)
 		io.ReadFull(rand.Reader, rb)
-		binName = fmt.Sprintf("gmct_testing_%x.bin", rb)
+		binName = filepath.Join(os.TempDir(), fmt.Sprintf("gmct_testing_%x.bin", rb))
 		cover = fmt.Sprintf("-covermode=atomic -coverpkg=%s", packages)
 		testCompileCmd := fmt.Sprintf(`go test -c -o %s -run=%s %s %s %s`,
 			binName, runName, race, cover, pkg)
 		c := exec.Command("bash", "-c", testCompileCmd)
 		c.Env = append(c.Env, os.Environ()...)
-		out, err := c.CombinedOutput()
-		if err != nil {
-			fmt.Println(out)
-			os.Exit(0)
-		}
-		binName = filepath.Join(d, binName)
+		c.Run()
 		os.Chmod(binName, 0755)
 		cmd = fmt.Sprintf("%s -test.v=true -test.run=%s -test.coverprofile=%s",
 			binName, runName, coverfile)
@@ -98,7 +93,7 @@ func NewProcess(t *testing.T) *Process {
 	isVerbose := os.Getenv("GMCT_COVER_VERBOSE") == "true"
 	cmdStr, binName := newCmdFromEnv(testFuncName)
 	cleanFile := ""
-	if binName!="" {
+	if binName != "" {
 		cleanFile = strings.SplitN(cmdStr, " ", 2)[0]
 	}
 	c := exec.Command("bash", "-c", cmdStr)
@@ -110,6 +105,7 @@ func NewProcess(t *testing.T) *Process {
 		isVerbose:    isVerbose,
 		cmdStr:       cmdStr,
 		cleanFile:    cleanFile,
+		exitChn:      make(chan bool, 1),
 	}
 }
 
@@ -120,11 +116,20 @@ type Process struct {
 	isVerbose    bool
 	cmdStr       string
 	buf          bytes.Buffer
+	exitChn      chan bool
+	exited       bool
+	started      bool
+	startCalled  bool
 }
 
 // Wait starts testing subprocess and wait for it exited.
 func (s *Process) Wait() (out string, exitCode int, err error) {
+	if s.started {
+		return "", 0, fmt.Errorf("already started")
+	}
+	s.started = true
 	defer func() {
+		s.exited = true
 		os.Remove(s.cleanFile)
 		if s.isVerbose {
 			fmt.Printf("OUTPUT:\n %s", out)
@@ -145,17 +150,33 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 
 // Start starts testing subprocess and return immediately with no wait.
 func (s *Process) Start() (err error) {
+	if s.started {
+		return fmt.Errorf("already started")
+	}
+	s.started = true
+	s.startCalled = true
 	if s.isVerbose {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
 		fmt.Println(s.cmdStr)
 	}
 	s.c.Stdout = &s.buf
 	s.c.Stderr = &s.buf
-	return s.c.Start()
+	err = s.c.Start()
+	if err == nil {
+		go func() {
+			s.c.Process.Wait()
+			s.exitChn <- true
+			s.exited = true
+		}()
+	}
+	return err
 }
 
 // Kill killing testing subprocess.
 func (s *Process) Kill() (err error) {
+	if !s.startCalled {
+		return fmt.Errorf("not run")
+	}
 	// s.cleanFile is empty, means not run with gmct.
 	if s.cleanFile == "" {
 		if s.c.Process != nil {
@@ -175,14 +196,14 @@ func (s *Process) Kill() (err error) {
 		if err != nil {
 			return err
 		}
-		_, err = s.c.Process.Wait()
+		<-s.exitChn
 	}
 	return nil
 }
 
 // IsRunning returns true if testing subprocess is running, otherwise returns false.
 func (s *Process) IsRunning() bool {
-	return s.c.Process != nil && s.c.ProcessState != nil && !s.c.ProcessState.Exited()
+	return !s.exited
 }
 
 // Output acquires the subprocess stdout and stderr output after Start called.

@@ -7,7 +7,7 @@ package glog
 
 import (
 	"compress/gzip"
-	gcore "github.com/snail007/gmc/core"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,7 +20,6 @@ type FileWriter struct {
 	filepath string
 	file     *os.File
 	isGzip   bool
-	logger   gcore.Logger
 }
 
 func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter) {
@@ -40,29 +39,10 @@ func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter) {
 		dir:      dir,
 		file:     w0,
 		isGzip:   isGzip,
-		logger:   logger,
 	}
 	return
 }
 
-func (f *FileWriter) Filename() string {
-	return f.filename
-}
-
-func (f *FileWriter) SetFilename(filename string) {
-	f.filename = filename
-}
-
-func (f *FileWriter) Dir() string {
-	return f.dir
-}
-
-func (f *FileWriter) SetDir(dir string) {
-	f.dir = dir
-}
-func (f *FileWriter) SetLogger(logger gcore.Logger) {
-	f.logger = logger
-}
 func (f *FileWriter) Write(p []byte) (n int, err error) {
 	filename0 := filepath.Join(f.dir, timeFormatText(time.Now(), f.filename))
 	if filename0 != f.filepath {
@@ -73,13 +53,13 @@ func (f *FileWriter) Write(p []byte) (n int, err error) {
 			go func() {
 				fgz, e := os.OpenFile(oldFilepath+".gz", os.O_CREATE|os.O_WRONLY, 0700)
 				if e != nil {
-					f.logger.Warnf("compress log file fail, error :%v", e)
+					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
 					return
 				}
 				defer fgz.Close()
 				flog, e := os.OpenFile(oldFilepath, os.O_RDONLY, 0700)
 				if e != nil {
-					f.logger.Warnf("compress log file fail, error :%v", e)
+					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
 					return
 				}
 				defer flog.Close()
@@ -87,7 +67,7 @@ func (f *FileWriter) Write(p []byte) (n int, err error) {
 				defer zipWriter.Close()
 				_, e = io.Copy(zipWriter, flog)
 				if e != nil {
-					f.logger.Warnf("compress log file fail, error :%v", e)
+					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
 					return
 				}
 				os.Remove(oldFilepath)

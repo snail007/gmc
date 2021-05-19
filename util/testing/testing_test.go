@@ -22,9 +22,14 @@ func TestNewProcess(t *testing.T) {
 			os.Setenv("GMCT_COVER_VERBOSE", "true")
 		}
 		p := NewProcess(t)
+		assert.Contains(p.Kill().Error(), "not run")
 		p.Start()
+		_, _, e := p.Wait()
+		assert.Contains(e.Error(), "already started")
+		e = p.Start()
+		assert.Contains(e.Error(), "already started")
 		time.Sleep(time.Second * 3)
-		//assert.True(p.IsRunning())
+		assert.True(p.IsRunning())
 		p.Kill()
 		assert.Contains(p.Output(), "abc")
 		if InGMCT() {
@@ -40,9 +45,9 @@ func TestNewProcess(t *testing.T) {
 		}
 		os.Setenv("GMCT_COVER_VERBOSE", "true")
 		p := NewProcess(t)
-		out,code,err:=p.Wait()
+		out, code, err := p.Wait()
 		assert.Nil(err)
-		assert.Equal(0,code)
+		assert.Equal(0, code)
 		assert.Contains(out, "abc")
 	})
 }

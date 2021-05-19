@@ -13,12 +13,16 @@ import (
 	"time"
 )
 
-func NewFromConfig(c gcore.Config, prefix string) (l gcore.Logger) {
-	l = New(prefix)
+func NewFromConfig(c gcore.Config, prefix ...string) (l gcore.Logger) {
+	prefix0 := ""
+	if len(prefix) == 1 {
+		prefix0 = prefix[0]
+	}
 	cfg := c.Sub("log")
 	if cfg == nil {
 		return
 	}
+	l = New(prefix0)
 	l.SetLevel(gcore.LogLevel(cfg.GetInt("level")))
 	if cfg.GetBool("async") {
 		l.EnableAsync()
@@ -32,7 +36,6 @@ func NewFromConfig(c gcore.Config, prefix string) (l gcore.Logger) {
 		case 1:
 			w0 := NewFileWriter(cfg.GetString("filename"),
 				cfg.GetString("dir"), cfg.GetBool("gzip"))
-			w0.SetLogger(l)
 			writers = append(writers, w0)
 		}
 	}

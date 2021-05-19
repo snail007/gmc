@@ -218,20 +218,20 @@ func TestGlog_Writer(t *testing.T) {
 }
 
 func TestGlog_Write(t *testing.T) {
-	if gtest.CanExec(t, func() {
+	if gtest.RunProcess(t, func() {
 		glog.Write("abc")
 	}) {
 		return
 	}
 	assert := assert2.New(t)
-	out, err := gtest.PrepareExec(t)
+	out, _, err := gtest.NewProcess(t).Wait()
 	assert.Nil(err)
 	assert.Contains(out, "abc")
 }
 
 func TestGlog_Async(t *testing.T) {
 	assert := assert2.New(t)
-	if gtest.CanExec(t, func() {
+	if gtest.RunProcess(t, func() {
 		glog.SetOutput(os.Stdout)
 		glog.EnableAsync()
 		assert.True(glog.Async())
@@ -241,7 +241,7 @@ func TestGlog_Async(t *testing.T) {
 	}) {
 		return
 	}
-	out, err := gtest.PrepareExec(t)
+	out, _, err := gtest.NewProcess(t).Wait()
 	assert.Nil(err)
 	assert.Contains(string(out), "INFO a")
 }

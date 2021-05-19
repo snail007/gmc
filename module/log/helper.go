@@ -18,11 +18,11 @@ func NewFromConfig(c gcore.Config, prefix ...string) (l gcore.Logger) {
 	if len(prefix) == 1 {
 		prefix0 = prefix[0]
 	}
+	l = New(prefix0)
 	cfg := c.Sub("log")
 	if cfg == nil {
 		return
 	}
-	l = New(prefix0)
 	l.SetLevel(gcore.LogLevel(cfg.GetInt("level")))
 	if cfg.GetBool("async") {
 		l.EnableAsync()

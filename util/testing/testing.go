@@ -17,11 +17,17 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 )
 
 const (
 	execFlagPrefix = "GMCT_COVER_EXEC_"
 )
+
+func encodeTestName(n string) string {
+	r := strings.NewReplacer("/", "_", ".", "_")
+	return r.Replace(n)
+}
 
 func newCmdFromEnv(runName string) (cmd, binName string) {
 	if strings.Contains(runName, "/") {
@@ -54,7 +60,8 @@ func newCmdFromEnv(runName string) (cmd, binName string) {
 		c.Env = append(c.Env, os.Environ()...)
 		c.Run()
 		os.Chmod(binName, 0755)
-		cmd = fmt.Sprintf("%s -test.v=true -test.run=%s -test.coverprofile=%s",
+		cmd = fmt.Sprintf("export GMCT_COVER=true;export GMCT_COVER_SHOW_KILLED=cover_killed;export GMCT_COVER_VERBOSE=true;"+
+			"export GMCT_COVER_EXEC_TestStartAndKill=true; %s -test.v=true -test.run=%s -test.coverprofile=%s",
 			binName, runName, coverfile)
 		return
 	}
@@ -71,14 +78,20 @@ func InGMCT() bool {
 // if true, then call the function f and returns true,
 // you should return current testing t function after call CanExec.
 func RunProcess(t *testing.T, f func()) bool {
-	if os.Getenv(execFlagPrefix+t.Name()) == "true" {
+	if os.Getenv(execFlagPrefix+encodeTestName(t.Name())) == "true" {
 		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGUSR2)
+		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT, syscall.SIGUSR2)
+		fmt.Println("00000")
+		fmt.Println(os.Getpid(),os.Args[0])
 		go func() {
+			fmt.Println("33333")
 			f()
+			fmt.Println("4444")
 			signalChan <- syscall.SIGUSR2
 		}()
+		fmt.Println("11111")
 		<-signalChan
+		fmt.Println("22222")
 		if msg := os.Getenv("GMCT_COVER_SHOW_KILLED"); msg != "" {
 			fmt.Println(msg)
 		}
@@ -97,8 +110,6 @@ func NewProcess(t *testing.T) *Process {
 		cleanFile = strings.SplitN(cmdStr, " ", 2)[0]
 	}
 	c := exec.Command("bash", "-c", cmdStr)
-	c.Env = append(c.Env, os.Environ()...)
-	c.Env = append(c.Env, execFlagPrefix+t.Name()+"=true")
 	return &Process{
 		c:            c,
 		testFuncName: testFuncName,
@@ -140,6 +151,8 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
 		fmt.Println(s.cmdStr)
 	}
+	s.c.Env = append(s.c.Env, os.Environ()...)
+	s.c.Env = append(s.c.Env, execFlagPrefix+encodeTestName(s.testFuncName)+"=true")
 	b, err := s.c.CombinedOutput()
 	out = string(b)
 	if s.c.ProcessState != nil {
@@ -159,14 +172,17 @@ func (s *Process) Start() (err error) {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
 		fmt.Println(s.cmdStr)
 	}
+	s.c.Env = append(s.c.Env, os.Environ()...)
+	s.c.Env = append(s.c.Env, execFlagPrefix+encodeTestName(s.testFuncName)+"=true")
 	s.c.Stdout = &s.buf
 	s.c.Stderr = &s.buf
 	err = s.c.Start()
 	if err == nil {
 		go func() {
-			s.c.Process.Wait()
+			s.c.Wait()
 			s.exitChn <- true
 			s.exited = true
+			//os.Remove(s.cleanFile)
 		}()
 	}
 	return err
@@ -180,23 +196,30 @@ func (s *Process) Kill() (err error) {
 	// s.cleanFile is empty, means not run with gmct.
 	if s.cleanFile == "" {
 		if s.c.Process != nil {
-			return s.c.Process.Kill()
+			s.c.Process.Kill()
+			_, err = s.c.Process.Wait()
+			return
 		}
 		return
 	}
 	defer func() {
-		os.Remove(s.cleanFile)
 		if s.isVerbose {
 			fmt.Printf("OUTPUT:\n %s", s.Output())
 			fmt.Printf(">>> end child testing process %s\n", s.testFuncName)
 		}
 	}()
 	if s.c.Process != nil {
+		fmt.Println("c.process pid",s.c.Process.Pid)
 		err = s.c.Process.Signal(syscall.SIGUSR2)
 		if err != nil {
 			return err
 		}
-		<-s.exitChn
+		select {
+		case <-s.exitChn:
+		case <-time.After(time.Second * 5):
+			fmt.Println("kill pid",s.c.Process.Pid)
+			s.c.Process.Kill()
+		}
 	}
 	return nil
 }
@@ -208,5 +231,12 @@ func (s *Process) IsRunning() bool {
 
 // Output acquires the subprocess stdout and stderr output after Start called.
 func (s *Process) Output() string {
-	return s.buf.String()
+	var b bytes.Buffer
+	for _, line := range strings.Split(s.buf.String(), "\n") {
+		if strings.Contains(line, "warning: no packages being tested depend on matches for pattern") {
+			continue
+		}
+		b.WriteString(line + "\n")
+	}
+	return b.String()
 }

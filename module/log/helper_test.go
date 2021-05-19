@@ -68,7 +68,7 @@ func TestNewFromConfig2(t *testing.T) {
 	cfg.SetConfigType("toml")
 	cfg.ReadConfig(bytes.NewReader([]byte(` `)))
 	l := NewFromConfig(cfg, "")
-	assert.Nil(t, l)
+	assert.Implements(t, (*gcore.Logger)(nil), l)
 }
 
 func Test_existsDir(t *testing.T) {

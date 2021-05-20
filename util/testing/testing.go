@@ -85,6 +85,7 @@ func panicErr(e interface{}) {
 func RunProcess(t *testing.T, f func()) bool {
 	if os.Getenv(execFlagPrefix+encodeTestName(t.Name())) == "true" {
 		addrFile := os.Getenv("GMCT_COVER_ADDR_FILE")
+		defer os.Remove(addrFile)
 		exitChan := make(chan bool, 1)
 		go func() {
 			l, err := net.Listen("tcp", "127.0.0.1:0")

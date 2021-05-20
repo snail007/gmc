@@ -38,6 +38,7 @@ func TestNewFromConfig(t *testing.T) {
 	time.Sleep(time.Second)
 	l.Info("test")
 	assert.Implements(t, (*gcore.Logger)(nil), l)
+	time.Sleep(time.Second)
 	assert.DirExists(t, "logs")
 	assert.Nil(t, os.RemoveAll("logs"))
 }

@@ -10,12 +10,12 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -60,8 +60,7 @@ func newCmdFromEnv(runName string) (cmd, binName string) {
 		c.Env = append(c.Env, os.Environ()...)
 		c.Run()
 		os.Chmod(binName, 0755)
-		cmd = fmt.Sprintf("export GMCT_COVER=true;export GMCT_COVER_SHOW_KILLED=cover_killed;export GMCT_COVER_VERBOSE=true;"+
-			"export GMCT_COVER_EXEC_TestStartAndKill=true; %s -test.v=true -test.run=%s -test.coverprofile=%s",
+		cmd = fmt.Sprintf("%s -test.v=true -test.run=%s -test.coverprofile=%s",
 			binName, runName, coverfile)
 		return
 	}
@@ -74,24 +73,34 @@ func InGMCT() bool {
 	return os.Getenv("GMCT_COVER") == "true"
 }
 
+func panicErr(e interface{}) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 // RunProcess checking if testing is called in NewProcess,
 // if true, then call the function f and returns true,
 // you should return current testing t function after call CanExec.
 func RunProcess(t *testing.T, f func()) bool {
 	if os.Getenv(execFlagPrefix+encodeTestName(t.Name())) == "true" {
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT, syscall.SIGUSR2)
-		fmt.Println("00000")
-		fmt.Println(os.Getpid(),os.Args[0])
+		addrFile := os.Getenv("GMCT_COVER_ADDR_FILE")
+		exitChan := make(chan bool, 1)
 		go func() {
-			fmt.Println("33333")
-			f()
-			fmt.Println("4444")
-			signalChan <- syscall.SIGUSR2
+			l, err := net.Listen("tcp", "127.0.0.1:0")
+			panicErr(err)
+			if err == nil {
+				ioutil.WriteFile(addrFile, []byte(l.Addr().String()), 0755)
+			}
+			_, err = l.Accept()
+			panicErr(err)
+			exitChan <- true
 		}()
-		fmt.Println("11111")
-		<-signalChan
-		fmt.Println("22222")
+		go func() {
+			f()
+			exitChan <- true
+		}()
+		<-exitChan
 		if msg := os.Getenv("GMCT_COVER_SHOW_KILLED"); msg != "" {
 			fmt.Println(msg)
 		}
@@ -105,18 +114,36 @@ func NewProcess(t *testing.T) *Process {
 	testFuncName := t.Name()
 	isVerbose := os.Getenv("GMCT_COVER_VERBOSE") == "true"
 	cmdStr, binName := newCmdFromEnv(testFuncName)
-	cleanFile := ""
-	if binName != "" {
-		cleanFile = strings.SplitN(cmdStr, " ", 2)[0]
+	rb := make([]byte, 16)
+	io.ReadFull(rand.Reader, rb)
+	addrFile := filepath.Join(os.TempDir(), fmt.Sprintf("%x", rb)) + ".addr.tmp"
+	os.Setenv("GMCT_COVER_ADDR_FILE", addrFile)
+	export := []string{}
+	for _, v := range os.Environ() {
+		if strings.ContainsAny(v, `./\ &^*()`) {
+			continue
+		}
+		ev := strings.Split(v, "=")
+		if len(ev) != 2 {
+			continue
+		}
+		if ev[0] == "" || ev[1] == "" {
+			continue
+		}
+		export = append(export, "export "+v)
 	}
-	c := exec.Command("bash", "-c", cmdStr)
+	exportStr := strings.Join(export, ";") + ";"
+	c := exec.Command("bash", "-c", exportStr+cmdStr)
+	c.Env = append(c.Env, os.Environ()...)
+	c.Env = append(c.Env, execFlagPrefix+encodeTestName(testFuncName)+"=true")
 	return &Process{
 		c:            c,
 		testFuncName: testFuncName,
 		isVerbose:    isVerbose,
 		cmdStr:       cmdStr,
-		cleanFile:    cleanFile,
+		cleanFile:    binName,
 		exitChn:      make(chan bool, 1),
+		addrFile:     addrFile,
 	}
 }
 
@@ -131,6 +158,7 @@ type Process struct {
 	exited       bool
 	started      bool
 	startCalled  bool
+	addrFile     string
 }
 
 // Wait starts testing subprocess and wait for it exited.
@@ -151,8 +179,7 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
 		fmt.Println(s.cmdStr)
 	}
-	s.c.Env = append(s.c.Env, os.Environ()...)
-	s.c.Env = append(s.c.Env, execFlagPrefix+encodeTestName(s.testFuncName)+"=true")
+
 	b, err := s.c.CombinedOutput()
 	out = string(b)
 	if s.c.ProcessState != nil {
@@ -172,17 +199,15 @@ func (s *Process) Start() (err error) {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
 		fmt.Println(s.cmdStr)
 	}
-	s.c.Env = append(s.c.Env, os.Environ()...)
-	s.c.Env = append(s.c.Env, execFlagPrefix+encodeTestName(s.testFuncName)+"=true")
 	s.c.Stdout = &s.buf
 	s.c.Stderr = &s.buf
 	err = s.c.Start()
 	if err == nil {
 		go func() {
-			s.c.Wait()
+			s.c.Process.Wait()
 			s.exitChn <- true
 			s.exited = true
-			//os.Remove(s.cleanFile)
+			os.Remove(s.cleanFile)
 		}()
 	}
 	return err
@@ -208,16 +233,25 @@ func (s *Process) Kill() (err error) {
 			fmt.Printf(">>> end child testing process %s\n", s.testFuncName)
 		}
 	}()
-	if s.c.Process != nil {
-		fmt.Println("c.process pid",s.c.Process.Pid)
-		err = s.c.Process.Signal(syscall.SIGUSR2)
-		if err != nil {
-			return err
+	i := 0
+	for i < 10 {
+		time.Sleep(time.Second)
+		i++
+		contents, _ := ioutil.ReadFile(s.addrFile)
+		if len(contents) == 0 {
+			continue
 		}
-		select {
-		case <-s.exitChn:
-		case <-time.After(time.Second * 5):
-			fmt.Println("kill pid",s.c.Process.Pid)
+		os.Remove(s.addrFile)
+		_, err = net.Dial("tcp", string(contents))
+		if err == nil {
+			break
+		}
+	}
+	select {
+	case <-s.exitChn:
+	case <-time.After(time.Second * 3):
+		fmt.Println("[WARN] kill timeout, force kill pid", s.c.Process.Pid)
+		if s.c.Process != nil {
 			s.c.Process.Kill()
 		}
 	}

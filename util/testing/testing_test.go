@@ -3,9 +3,7 @@ package gtest
 import (
 	"fmt"
 	assert2 "github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -13,7 +11,6 @@ import (
 func TestStartAndKill(t *testing.T) {
 	assert := assert2.New(t)
 	if RunProcess(t, func() {
-		ioutil.WriteFile("b.txt", []byte(strings.Join(os.Environ(), "\n")), 0755)
 		fmt.Println("abc")
 		select {}
 	}) {
@@ -31,25 +28,27 @@ func TestStartAndKill(t *testing.T) {
 	e = p.Start()
 	assert.Contains(e.Error(), "already started")
 	time.Sleep(time.Second * 3)
+	assert.True(p.IsRunning())
 	p.Kill()
 	assert.Contains(p.Output(), "abc")
 	if InGMCT() {
 		assert.Contains(p.Output(), "cover_killed")
 	}
 }
-func TestNewProcess(t *testing.T) {
-	//t.Run("gtest.Wait", func(t *testing.T) {
-	//	assert := assert2.New(t)
-	//	if RunProcess(t, func() {
-	//		fmt.Println("abc")
-	//	}) {
-	//		return
-	//	}
-	//	os.Setenv("GMCT_COVER_VERBOSE", "true")
-	//	p := NewProcess(t)
-	//	out, code, err := p.Wait()
-	//	assert.Nil(err)
-	//	assert.Equal(0, code)
-	//	assert.Contains(out, "abc")
-	//})
+func TestWait(t *testing.T) {
+	assert := assert2.New(t)
+	if RunProcess(t, func() {
+		fmt.Println("abc")
+	}) {
+		return
+	}
+	os.Setenv("GMCT_COVER_VERBOSE", "true")
+	p := NewProcess(t)
+	out, code, err := p.Wait()
+	assert.Nil(err)
+	assert.Equal(0, code)
+	assert.Contains(out, "abc")
+	assert.PanicsWithValue("abc", func() {
+		panicErr("abc")
+	})
 }

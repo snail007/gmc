@@ -1,10 +1,12 @@
 package ghttp
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +23,9 @@ func TestHTTPClient_Post(t *testing.T) {
 	client := NewHTTPClient()
 	body, _, _, _ := client.Post(httpServerURL+"/post", map[string]string{"name": "snail007"}, time.Second, map[string]string{"token": "200"})
 	assert.Equal("snail007", string(body))
+
+	body, _, _, _ = Post(httpServerURL+"/post", map[string]string{"name": "snail007"}, time.Second, map[string]string{"token": "200"})
+	assert.Equal("snail007", string(body))
 }
 
 func TestHTTPClient_PostOfReader(t *testing.T) {
@@ -28,18 +33,37 @@ func TestHTTPClient_PostOfReader(t *testing.T) {
 	client := NewHTTPClient()
 	body, _, _, _ := client.PostOfReader(httpServerURL+"/post", strings.NewReader("name=snail007"), time.Second, map[string]string{"token": "200"})
 	assert.Equal("snail007", string(body))
+
+	body, _, _, _ = PostOfReader(httpServerURL+"/post", strings.NewReader("name=snail007"), time.Second, map[string]string{"token": "200"})
+	assert.Equal("snail007", string(body))
 }
 
 func TestHTTPClient_Upload(t *testing.T) {
 	assert := assert2.New(t)
-	client := NewHTTPClient()
 	f, _ := os.Create("upload.bin")
 	f.WriteString("a")
 	f.Close()
 	h := md5.New()
 	h.Write([]byte("a"))
 	s := fmt.Sprintf("%x", h.Sum(nil))
-	body, _, err := client.Upload(httpServerURL+"/upload", "test", "upload.bin", map[string]string{"uid": "007"})
+	body, _, err := Upload(httpServerURL+"/upload", "test", "upload.bin", map[string]string{"uid": "007"})
+	assert.Nil(err)
+	assert.Equal("007"+s, body)
+	assert.FileExists("test.bin")
+	os.Remove("test.bin")
+	os.Remove("upload.bin")
+}
+
+func TestHTTPClient_UploadOfReader(t *testing.T) {
+	assert := assert2.New(t)
+	f, _ := os.Create("upload.bin")
+	f.WriteString("a")
+	f.Seek(0,0)
+	defer f.Close()
+	h := md5.New()
+	h.Write([]byte("a"))
+	s := fmt.Sprintf("%x", h.Sum(nil))
+	body, _, err := UploadOfReader(httpServerURL+"/upload", "test", "upload.bin",f, map[string]string{"uid": "007"})
 	assert.Nil(err)
 	assert.Equal("007"+s, body)
 	assert.FileExists("test.bin")
@@ -139,5 +163,172 @@ func TestHTTPClient_SetDNS(t *testing.T) {
 	body1, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, map[string]string{"token": "200"})
 	client.SetDNS("8.8.8.8:53")
 	body2, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, map[string]string{"token": "200"})
-	assert.True(strings.Contains(string(body1), "STATUS OK")||strings.Contains(string(body2), "STATUS OK"))
+	assert.True(strings.Contains(string(body1), "STATUS OK") || strings.Contains(string(body2), "STATUS OK"))
+}
+
+func TestDownload(t *testing.T) {
+	type args struct {
+		u       string
+		timeout time.Duration
+		header  map[string]string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantData []byte
+		wantErr  bool
+	}{
+		{"", args{
+			u:       httpServerURL + "/hello",
+			timeout: time.Second,
+			header:  nil,
+		}, []byte("hello"), false},
+		{"", args{
+			u:       httpServerURL + "/none",
+			timeout: time.Second,
+			header:  nil,
+		}, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotData, err := Download(tt.args.u, tt.args.timeout, tt.args.header)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotData, tt.wantData) {
+				t.Errorf("Download() gotData = %v, want %v", gotData, tt.wantData)
+			}
+		})
+	}
+}
+
+func TestDownloadToFile(t *testing.T) {
+	type args struct {
+		u       string
+		timeout time.Duration
+		header  map[string]string
+		file    string
+	}
+	os.Mkdir("abc.txt", 0755)
+	defer func() {
+		os.Remove("abc.txt")
+		os.Remove("a.txt")
+		os.Remove("b.txt")
+	}()
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"normal", args{
+			u:       httpServerURL + "/hello",
+			timeout: time.Second,
+			header:  nil,
+			file:    "a.txt",
+		}, false},
+		{"wrong_file", args{
+			u:       httpServerURL + "/hello",
+			timeout: time.Second,
+			header:  nil,
+			file:    "abc.txt",
+		}, true},
+		{"wrong_url", args{
+			u:       httpServerURL + "/none",
+			timeout: time.Second,
+			header:  nil,
+			file:    "b.txt",
+		}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := DownloadToFile(tt.args.u, tt.args.timeout, tt.args.header, tt.args.file); (err != nil) != tt.wantErr {
+				t.Errorf("DownloadToFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDownloadToWriter(t *testing.T) {
+	type args struct {
+		u       string
+		timeout time.Duration
+		header  map[string]string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantWriter string
+		wantErr    bool
+	}{
+		{"okay_url", args{
+			u:       httpServerURL + "/hello",
+			timeout: 0,
+			header:  nil,
+		}, "hello", false},
+		{"wrong_url", args{
+			u:       httpServerURL + "/none",
+			timeout: 0,
+			header:  nil,
+		}, "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer := &bytes.Buffer{}
+			err := DownloadToWriter(tt.args.u, tt.args.timeout, tt.args.header, writer)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DownloadToWriter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotWriter := writer.String(); gotWriter != tt.wantWriter {
+				t.Errorf("DownloadToWriter() gotWriter = %v, want %v", gotWriter, tt.wantWriter)
+			}
+		})
+	}
+}
+
+func TestGet(t *testing.T) {
+	type args struct {
+		u       string
+		timeout time.Duration
+		header  map[string]string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantBody []byte
+		wantCode int
+		wantErr  bool
+	}{
+		{"okay_url", args{
+			u:       httpServerURL + "/hello",
+			timeout: time.Second,
+			header:  nil,
+		}, []byte("hello"), 200, false},
+		{"wrong_url", args{
+			u:       httpServerURL + "/none",
+			timeout: time.Second,
+			header:  nil,
+		}, []byte("404 page not found\n"), 404, false},
+		{"wrong_host", args{
+			u:         "http://none/none",
+			timeout: time.Second,
+			header:  nil,
+		}, nil, 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotBody, gotCode, _, err := Get(tt.args.u, tt.args.timeout, tt.args.header)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotBody, tt.wantBody) {
+				t.Errorf("Get() gotBody = %v, want %v", string(gotBody), string(tt.wantBody))
+			}
+			if gotCode != tt.wantCode {
+				t.Errorf("Get() gotCode = %v, want %v", gotCode, tt.wantCode)
+			}
+		})
+	}
 }

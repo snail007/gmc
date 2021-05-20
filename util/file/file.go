@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// IsExists checks whether a file or directory exists.
+// Exists checks whether a file or directory exists.
 // It returns false when the file or directory does not exists.
 func Exists(path string) bool {
 	_, e := os.Stat(path)
@@ -80,10 +80,10 @@ func FileSize(file string) (int64, error) {
 	return f.Size(), nil
 }
 
-// GetHomeDir returns the home directory.
+// HomeDir returns the home directory.
 //
 // Return "" if the home directory is empty.
-func GetHomeDir() string {
+func HomeDir() string {
 	if v := os.Getenv("HOME"); v != "" { // For Unix/Linux
 		return v
 	} else if v := os.Getenv("HOMEPATH"); v != "" { // For Windows
@@ -92,7 +92,7 @@ func GetHomeDir() string {
 	return ""
 }
 
-var homeDir = GetHomeDir()
+var homeDir = HomeDir()
 
 // Abs is similar to Abs in the std library "path/filepath",
 // but firstly convert "~"" and "$HOME" to the home directory.
@@ -127,8 +127,7 @@ func FileName(filePath string) string {
 	return strings.TrimSuffix(basename, filepath.Ext(filePath))
 }
 
-// FileBaseName returns file name end of the path with extension.
-func FileBaseName(filePath string) string {
-
+// BaseName returns file name end of the path with extension.
+func BaseName(filePath string) string {
 	return filepath.Base(filePath)
 }

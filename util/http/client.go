@@ -27,6 +27,38 @@ var (
 	Client = NewHTTPClient()
 )
 
+func Get(u string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
+	return Client.Get(u, timeout, header)
+}
+
+func Post(u string, data map[string]string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
+	return Client.Post(u, data, timeout, header)
+}
+
+func PostOfReader(u string, r io.Reader, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
+	return Client.PostOfReader(u, r, timeout, header)
+}
+
+func Upload(u, fieldName, filename string, data map[string]string) (body string, resp *http.Response, err error) {
+	return Client.Upload(u, fieldName, filename, data)
+}
+
+func UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {
+	return Client.UploadOfReader(u, fieldName, filename, reader, data)
+}
+
+func Download(u string, timeout time.Duration, header map[string]string) (data []byte, err error) {
+	return Client.Download(u, timeout, header)
+}
+
+func DownloadToFile(u string, timeout time.Duration, header map[string]string, file string) (err error) {
+	return Client.DownloadToFile(u, timeout, header, file)
+}
+
+func DownloadToWriter(u string, timeout time.Duration, header map[string]string, writer io.Writer) (err error) {
+	return Client.DownloadToWriter(u, timeout, header, writer)
+}
+
 // HTTPClient do http get, post etc.
 type HTTPClient struct {
 	pinCert         *x509.Certificate
@@ -220,13 +252,13 @@ func (s *HTTPClient) Upload(u, fieldName, filename string, data map[string]strin
 	if err != nil {
 		return
 	}
-	return s.UploadReader(u, fieldName, filename, file, data)
+	return s.UploadOfReader(u, fieldName, filename, file, data)
 }
 
 // UploadReader upload a file from a io.Reader `reader`,
 // fieldName is the form filed name in form, filename is the value of filed `fieldName`.
 // data is the additional form data.
-func (s *HTTPClient) UploadReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {
+func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {
 	r, w := io.Pipe()
 	m := multipart.NewWriter(w)
 	go func() {
@@ -275,6 +307,66 @@ func (s *HTTPClient) UploadReader(u, fieldName string, filename string, reader i
 	body = string(b)
 	return
 }
+
+//Download gets url bytes contents.
+func (s *HTTPClient) Download(u string, timeout time.Duration, header map[string]string) (data []byte, err error) {
+	body, code, resp, err := s.Get(u, timeout, header)
+	if err != nil {
+		return
+	}
+	if code != 200 {
+		err = fmt.Errorf("WARN HTTP REQUEST FAIL, HTTP_CODE: %d, BODY: %s", resp.StatusCode, string(body))
+		return
+	}
+	defer resp.Body.Close()
+	data = body
+	return
+}
+
+//DownloadToFile gets url bytes contents and save to the file.
+func (s *HTTPClient) DownloadToFile(u string, timeout time.Duration, header map[string]string, file string) (err error) {
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_RDWR, 0755)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	return s.DownloadToWriter(u, timeout, header, f)
+}
+
+//DownloadToWriter gets url bytes contents and copy to the writer at realtime.
+func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header map[string]string, writer io.Writer) (err error) {
+	var resp *http.Response
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+	client, err := s.newClient(timeout)
+	if err != nil {
+		return
+	}
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return
+	}
+	if header != nil {
+		for k, v := range header {
+			req.Header.Set(k, v)
+		}
+	}
+	resp, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		err = fmt.Errorf("WARN HTTP REQUEST FAIL, HTTP_CODE: %d, BODY: %s", resp.StatusCode, string(body))
+		return
+	}
+	_, err = io.Copy(writer, resp.Body)
+	return
+}
+
 func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, err error) {
 	proxyURL := s.getProxyURL()
 	resolver := s.newResolver(timeout)

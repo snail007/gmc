@@ -13,7 +13,6 @@ import (
 	gtest "github.com/snail007/gmc/util/testing"
 	assert2 "github.com/stretchr/testify/assert"
 	"io"
-	"log"
 	"os"
 	"testing"
 )
@@ -193,10 +192,10 @@ func TestGlog(t *testing.T) {
 func testGlog_SetFlags(t *testing.T, assert *assert2.Assertions) {
 	glog.SetLevel(gcore.LTRACE)
 	var out bytes.Buffer
-	glog.SetFlags(log.LstdFlags | log.Llongfile)
+	glog.SetFlag(gcore.LFLAG_SHORT)
 	glog.SetOutput(&out)
 	glog.Info("a")
-	assert.Contains(out.String(), "gmc/module/log/log.go:")
+	assert.Contains(out.String(), "/module/log/glog_test.go:")
 	assert.Contains(out.String(), "INFO a")
 }
 

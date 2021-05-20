@@ -105,8 +105,8 @@ func EnableAsync() {
 	logger.EnableAsync()
 }
 
-func SetFlags(f int) {
-	logger.SetFlags(f)
+func SetFlag(f gcore.LogFlag) {
+	logger.SetFlag(f)
 }
 
 func Write(s string) {
@@ -149,6 +149,7 @@ type Logger struct {
 	callerSkip int
 	exitCode   int
 	exitFunc   func(int)
+	flag       gcore.LogFlag
 }
 
 func (s *Logger) exit() {
@@ -194,6 +195,7 @@ func New(prefix ...string) gcore.Logger {
 		callerSkip: 2,
 		exitCode:   1,
 		exitFunc:   os.Exit,
+		flag:       gcore.LFLAG_SHORT,
 	}
 }
 
@@ -372,8 +374,8 @@ func (s *Logger) SetOutput(w io.Writer) {
 	s.l.SetOutput(w)
 }
 
-func (s *Logger) SetFlags(f int) {
-	s.l.SetFlags(f)
+func (s *Logger) SetFlag(f gcore.LogFlag) {
+	s.flag = f
 }
 
 func (s *Logger) Write(str string) {
@@ -401,16 +403,24 @@ func (s *Logger) skip() int {
 }
 
 func (s *Logger) caller(msg string, skip int) string {
+	if s.flag == gcore.LFLAG_NORMAL {
+		return msg
+	}
 	file := "unknown"
 	line := 0
 	if _, file0, line0, ok := runtime.Caller(skip); ok {
 		file0 = strings.Replace(file0, "\\", "/", -1)
 		p := "github.com/snail007/gmc"
-		if strings.Contains(file0, p) &&
+		if strings.Contains(file0, p) && !strings.Contains(file0, p+"t") &&
 			!strings.Contains(file0, p+"demos") {
+			// gmc
 			file = "[gmc]" + file0[strings.Index(file0, p)+len(p):]
-		} else {
+		} else if s.flag == gcore.LFLAG_SHORT {
+			//short
 			file = filepath.Base(filepath.Dir(file0)) + "/" + filepath.Base(file0)
+		} else {
+			//long
+			file = file0 + "/" + filepath.Base(file0)
 		}
 		line = line0
 	}

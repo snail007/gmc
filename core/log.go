@@ -16,8 +16,14 @@ const (
 	LPANIC
 	LNONE
 )
+const (
+	LFLAG_NORMAL LogFlag = iota + 1
+	LFLAG_SHORT
+	LFLAG_LONG
+)
 
 type LogLevel int
+type LogFlag int
 
 type Logger interface {
 	Panic(v ...interface{})
@@ -46,7 +52,7 @@ type Logger interface {
 
 	Writer() io.Writer
 	SetOutput(w io.Writer)
-	SetFlags(f int)
+	SetFlag(f LogFlag)
 
 	Async() bool
 	WaitAsyncDone()

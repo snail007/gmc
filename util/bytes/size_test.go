@@ -1,7 +1,6 @@
-package gbyte
+package gbytes
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -157,35 +156,6 @@ func TestByteSize_MBytes(t *testing.T) {
 	}
 }
 
-func TestByteSize_MarshalText(t *testing.T) {
-	tests := []struct {
-		name    string
-		b       ByteSize
-		want    []byte
-		wantErr bool
-	}{
-		{"B", B, []byte("1B"), false},
-		{"KB", KB, []byte("1KB"), false},
-		{"MB", MB, []byte("1MB"), false},
-		{"GB", GB, []byte("1GB"), false},
-		{"TB", TB, []byte("1TB"), false},
-		{"PB", PB, []byte("1PB"), false},
-		{"EB", EB, []byte("1EB"), false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.b.MarshalText()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MarshalText() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MarshalText() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestByteSize_PBytes(t *testing.T) {
 	tests := []struct {
 		name string
@@ -299,7 +269,7 @@ func TestByteSize_UnmarshalText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			old := tt.b
-			if err := tt.b.UnmarshalText(tt.args.t); (err != nil) != tt.wantErr {
+			if err := tt.b.Parse(string(tt.args.t)); (err != nil) != tt.wantErr {
 				t.Errorf("UnmarshalText() error = %v, wantErr %v", err, tt.wantErr)
 			} else if tt.b != old {
 				t.Errorf("UnmarshalText() want = %v, actual %v", tt.b, old)
@@ -334,7 +304,7 @@ func TestSizeToStr(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotS, err := SizeToStr(tt.args.bytes)
+			gotS, err := SizeStr(tt.args.bytes)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SizeToStr() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -375,7 +345,7 @@ func TestStrToSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotBytes, err := StrToSize(tt.args.s)
+			gotBytes, err := ParseSize(tt.args.s)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("StrToSize() error = %v, wantErr %v", err, tt.wantErr)
 				return

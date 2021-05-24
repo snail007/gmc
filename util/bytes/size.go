@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package gbyte
+package gbytes
 
 import (
 	"errors"
@@ -24,24 +24,23 @@ const (
 	EB          = PB << 10
 
 	fnUnmarshalText string = "UnmarshalText"
-	maxUint64       uint64 = (1 << 64) - 1
 )
 
 var ErrBits = errors.New("unit with capital unit prefix and lower case unit (b) - bits, not bytes ")
 
-var defaultDatasize ByteSize
-
-func StrToSize(s string) (bytes uint64, err error) {
-	err = defaultDatasize.UnmarshalText([]byte(s))
+func ParseSize(s string) (bytes uint64, err error) {
+	b := new(ByteSize)
+	err = b.Parse(s)
 	if err != nil {
 		return
 	}
-	bytes = defaultDatasize.Bytes()
+	bytes = b.Bytes()
 	return
 }
-func SizeToStr(bytes uint64) (s string, err error) {
-	defaultDatasize.UnmarshalText([]byte(fmt.Sprintf("%d", bytes)))
-	s = defaultDatasize.HumanReadable()
+func SizeStr(bytes uint64) (s string, err error) {
+	b := new(ByteSize)
+	b.Parse(fmt.Sprintf("%d", bytes))
+	s = b.HumanReadable()
 	return
 }
 
@@ -122,13 +121,9 @@ func (b ByteSize) String() (s string) {
 	return strings.Replace(b.HumanReadable(), " ", "", 1)
 }
 
-func (b ByteSize) MarshalText() ([]byte, error) {
-	return []byte(b.String()), nil
-}
-
-func (b *ByteSize) UnmarshalText(t []byte) (err error) {
-	t0 := t
-	e := &strconv.NumError{Func: fnUnmarshalText, Num: string(t0), Err: ErrBits}
+func (b *ByteSize) Parse(str string) (err error) {
+	t := []byte(str)
+	e := &strconv.NumError{Func: fnUnmarshalText, Num: str, Err: ErrBits}
 	var val float64 = -1
 	var unit string
 	if len(t) == 0 {

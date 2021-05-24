@@ -40,69 +40,43 @@ func StrToSize(s string) (bytes uint64, err error) {
 	return
 }
 func SizeToStr(bytes uint64) (s string, err error) {
-	err = defaultDatasize.UnmarshalText([]byte(fmt.Sprintf("%d", bytes)))
-	if err != nil {
-		return
-	}
+	defaultDatasize.UnmarshalText([]byte(fmt.Sprintf("%d", bytes)))
 	s = defaultDatasize.HumanReadable()
 	return
 }
+
+func (b ByteSize) toBytes(unit ByteSize) float64 {
+	v := b / unit
+	r := b % unit
+	return float64(uint64((float64(v)+float64(r)/float64(unit))*100)) / 100
+}
+
 func (b ByteSize) Bytes() uint64 {
 	return uint64(b)
 }
 
 func (b ByteSize) KBytes() float64 {
-	if b < KB {
-		return 0
-	}
-	v := b / KB
-	r := b % KB
-	return float64(v) + float64(r)/float64(KB)
+	return b.toBytes(KB)
 }
 
 func (b ByteSize) MBytes() float64 {
-	if b < MB {
-		return 0
-	}
-	v := b / MB
-	r := b % MB
-	return float64(v) + float64(r)/float64(MB)
+	return b.toBytes(MB)
 }
 
 func (b ByteSize) GBytes() float64 {
-	if b < GB {
-		return 0
-	}
-	v := b / GB
-	r := b % GB
-	return float64(v) + float64(r)/float64(GB)
+	return b.toBytes(GB)
 }
 
 func (b ByteSize) TBytes() float64 {
-	if b < TB {
-		return 0
-	}
-	v := b / TB
-	r := b % TB
-	return float64(v) + float64(r)/float64(TB)
+	return b.toBytes(TB)
 }
 
 func (b ByteSize) PBytes() float64 {
-	if b < PB {
-		return 0
-	}
-	v := b / PB
-	r := b % PB
-	return float64(v) + float64(r)/float64(PB)
+	return b.toBytes(PB)
 }
 
 func (b ByteSize) EBytes() float64 {
-	if b < EB {
-		return 0
-	}
-	v := b / EB
-	r := b % EB
-	return float64(v) + float64(r)/float64(EB)
+	return b.toBytes(EB)
 }
 
 func (b ByteSize) HumanReadable() (s string) {
@@ -153,13 +127,13 @@ func (b ByteSize) MarshalText() ([]byte, error) {
 }
 
 func (b *ByteSize) UnmarshalText(t []byte) (err error) {
+	t0 := t
+	e := &strconv.NumError{Func: fnUnmarshalText, Num: string(t0), Err: ErrBits}
 	var val float64 = -1
 	var unit string
 	if len(t) == 0 {
 		return &strconv.NumError{Func: fnUnmarshalText, Err: ErrBits}
 	}
-	// copy for error message
-	t0 := t
 	for i, v := range t {
 		if !(v >= '0' && v <= '9' || v == '.') {
 			unit = strings.TrimSpace(string(t[i:]))
@@ -170,74 +144,35 @@ func (b *ByteSize) UnmarshalText(t []byte) (err error) {
 			break
 		}
 	}
-
 	switch unit {
-	case "Kb", "Mb", "Gb", "Tb", "Pb", "Eb":
-		goto BitsError
+	case "Kb", "Mb", "Gb", "Tb", "Pb", "Eb", "kB", "mB", "gB", "tB", "pB", "eB":
+		return e
 	}
 	unit = strings.ToLower(unit)
 	switch unit {
 	case "", "b", "byte":
-		defer func() {
-			*b = ByteSize(val)
-		}()
-		if val >= 0 {
-			return
-		}
-		val, err = strconv.ParseFloat(string(t), 10)
-		if err != nil {
-			return
+		if val == -1 {
+			val, err = strconv.ParseFloat(string(t), 10)
+			if err != nil {
+				return
+			}
 		}
 	case "k", "kb", "kilo", "kilobyte", "kilobytes":
-		if val > float64(maxUint64/uint64(KB)) {
-			goto Overflow
-		}
 		val *= float64(KB)
-
 	case "m", "mb", "mega", "megabyte", "megabytes":
-		if val > float64(maxUint64/uint64(MB)) {
-			goto Overflow
-		}
 		val *= float64(MB)
-
 	case "g", "gb", "giga", "gigabyte", "gigabytes":
-		if val > float64(maxUint64/uint64(GB)) {
-			goto Overflow
-		}
 		val *= float64(GB)
-
 	case "t", "tb", "tera", "terabyte", "terabytes":
-		if val > float64(maxUint64/uint64(TB)) {
-			goto Overflow
-		}
 		val *= float64(TB)
-
 	case "p", "pb", "peta", "petabyte", "petabytes":
-		if val > float64(maxUint64/uint64(PB)) {
-			goto Overflow
-		}
 		val *= float64(PB)
 	case "e", "eb":
-		if val > float64(maxUint64/uint64(EB)) {
-			goto Overflow
-		}
 		val *= float64(EB)
-
 	default:
-		goto SyntaxError
+		*b = 0
+		return e
 	}
 	*b = ByteSize(val)
-	return nil
-
-Overflow:
-	*b = ByteSize(maxUint64)
-	return &strconv.NumError{Func: fnUnmarshalText, Num: string(t0), Err: strconv.ErrRange}
-
-SyntaxError:
-	*b = 0
-	return &strconv.NumError{Func: fnUnmarshalText, Num: string(t0), Err: strconv.ErrSyntax}
-
-BitsError:
-	*b = 0
-	return &strconv.NumError{Func: fnUnmarshalText, Num: string(t0), Err: ErrBits}
+	return
 }

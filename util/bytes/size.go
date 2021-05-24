@@ -121,6 +121,11 @@ func (b ByteSize) String() (s string) {
 	return strings.Replace(b.HumanReadable(), " ", "", 1)
 }
 
+func (b *ByteSize) MustParse(str string) *ByteSize {
+	b.Parse(str)
+	return b
+}
+
 func (b *ByteSize) Parse(str string) (err error) {
 	t := []byte(str)
 	e := &strconv.NumError{Func: fnUnmarshalText, Num: str, Err: ErrBits}

@@ -1,6 +1,7 @@
 package gbytes
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -225,7 +226,7 @@ func TestByteSize_TBytes(t *testing.T) {
 	}
 }
 
-func TestByteSize_UnmarshalText(t *testing.T) {
+func TestByteSize_Parse(t *testing.T) {
 	type args struct {
 		t []byte
 	}
@@ -269,16 +270,19 @@ func TestByteSize_UnmarshalText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			old := tt.b
+			if tt.b.MustParse(string(tt.args.t)); !reflect.DeepEqual(tt.b, old) {
+				t.Errorf("MustParse() = %v, want %v", tt.b, old)
+			}
 			if err := tt.b.Parse(string(tt.args.t)); (err != nil) != tt.wantErr {
-				t.Errorf("UnmarshalText() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 			} else if tt.b != old {
-				t.Errorf("UnmarshalText() want = %v, actual %v", tt.b, old)
+				t.Errorf("Parse() want = %v, actual %v", tt.b, old)
 			}
 		})
 	}
 }
 
-func TestSizeToStr(t *testing.T) {
+func TestSizeStr(t *testing.T) {
 	type args struct {
 		bytes uint64
 	}
@@ -306,17 +310,17 @@ func TestSizeToStr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotS, err := SizeStr(tt.args.bytes)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SizeToStr() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SizeStr() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotS != tt.wantS {
-				t.Errorf("SizeToStr() gotS = %v, want %v", gotS, tt.wantS)
+				t.Errorf("SizeStr() gotS = %v, want %v", gotS, tt.wantS)
 			}
 		})
 	}
 }
 
-func TestStrToSize(t *testing.T) {
+func TestParse(t *testing.T) {
 	type args struct {
 		s string
 	}
@@ -347,11 +351,32 @@ func TestStrToSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotBytes, err := ParseSize(tt.args.s)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("StrToSize() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotBytes != tt.wantBytes {
-				t.Errorf("StrToSize() gotBytes = %v, want %v", gotBytes, tt.wantBytes)
+				t.Errorf("Parse() gotBytes = %v, want %v", gotBytes, tt.wantBytes)
+			}
+		})
+	}
+}
+
+func TestByteSize_MustParse(t *testing.T) {
+	type args struct {
+		str string
+	}
+	tests := []struct {
+		name string
+		b    ByteSize
+		args args
+		want *ByteSize
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.b.MustParse(tt.args.str); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MustParse() = %v, want %v", got, tt.want)
 			}
 		})
 	}

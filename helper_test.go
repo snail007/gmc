@@ -242,7 +242,7 @@ func TestErrorAssistant_RecoverString(t *testing.T) {
 	a := 1
 	b := 0
 	go func() {
-		defer Err.Recover("abc",true)
+		defer Err.Recover("abc", true)
 		defer g.Done()
 		_ = a / b
 	}()
@@ -255,7 +255,7 @@ func TestErrorAssistant_RecoverObj(t *testing.T) {
 	a := 1
 	b := 0
 	go func() {
-		defer Err.Recover(fmt.Errorf(""),true)
+		defer Err.Recover(fmt.Errorf(""), true)
 		defer g.Done()
 		_ = a / b
 	}()

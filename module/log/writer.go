@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,8 @@ type FileWriter struct {
 	filepath string
 	file     *os.File
 	isGzip   bool
+	openLock sync.Mutex
+	opened   *bool
 }
 
 func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter) {
@@ -28,9 +31,9 @@ func NewFileWriter(filename string, dir string, isGzip bool) (w *FileWriter) {
 	}
 	logger := New()
 	filename0 := filepath.Join(dir, timeFormatText(time.Now(), filename))
-	w0, err := os.OpenFile(filename0, os.O_CREATE|os.O_APPEND, 0700)
+	w0, err := os.OpenFile(filename0, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
 	if err != nil {
-		logger.Warnf("new writer fail, error: %s", err)
+		logger.Warnf("[FileWriter] WARN: new writer fail, error: %s", err)
 		return
 	}
 	w = &FileWriter{
@@ -48,21 +51,36 @@ func (f *FileWriter) Write(p []byte) (n int, err error) {
 	if filename0 != f.filepath {
 		oldFilepath := f.filepath
 		f.filepath = filename0
+		// close old log file
 		f.file.Close()
+		// open new logging file only once by locking.
+		f.openLock.Lock()
+		_, err = f.file.Write([]byte(""))
+		// Double checking, avoid multiple open the new file.
+		// If file is closed, err will be: file already closed, indicates file is old.
+		if err != nil {
+			f.file, err = os.OpenFile(filename0, os.O_CREATE|os.O_WRONLY, 0700)
+		}
+		f.openLock.Unlock()
+		if err != nil {
+			return
+		}
 		if f.isGzip {
 			go func() {
-				fgz, e := os.OpenFile(oldFilepath+".gz", os.O_CREATE|os.O_WRONLY, 0700)
-				if e != nil {
-					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
-					return
-				}
-				defer fgz.Close()
 				flog, e := os.OpenFile(oldFilepath, os.O_RDONLY, 0700)
 				if e != nil {
 					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
 					return
 				}
 				defer flog.Close()
+
+				fgz, e := os.OpenFile(oldFilepath+".gz", os.O_CREATE|os.O_WRONLY, 0700)
+				if e != nil {
+					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
+					return
+				}
+				defer fgz.Close()
+
 				zipWriter := gzip.NewWriter(fgz)
 				defer zipWriter.Close()
 				_, e = io.Copy(zipWriter, flog)
@@ -73,10 +91,6 @@ func (f *FileWriter) Write(p []byte) (n int, err error) {
 				os.Remove(oldFilepath)
 			}()
 		}
-	}
-	f.file, err = os.OpenFile(filename0, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0700)
-	if err != nil {
-		return
 	}
 	n, err = f.file.Write(p)
 	return

@@ -7,6 +7,7 @@ package gfile
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,8 +22,8 @@ func Exists(path string) bool {
 
 // IsFile checks whether the path is a file,
 // it returns false when it's a directory or does not exists.
-func IsFile(filePath string) bool {
-	f, e := os.Stat(filePath)
+func IsFile(file string) bool {
+	f, e := os.Stat(file)
 	if e != nil {
 		return false
 	}
@@ -31,8 +32,8 @@ func IsFile(filePath string) bool {
 
 // IsDir checks whether the path is a directory,
 // it returns false when it's not a directory or does not exists.
-func IsDir(filePath string) bool {
-	f, e := os.Stat(filePath)
+func IsDir(file string) bool {
+	f, e := os.Stat(file)
 	if e != nil {
 		return false
 	}
@@ -41,7 +42,7 @@ func IsDir(filePath string) bool {
 
 // IsLink returns true if path is a Symlink
 func IsLink(path string) bool {
-	s, err := os.Stat(path)
+	s, err := os.Lstat(path)
 	if err != nil {
 		return false
 	}
@@ -119,15 +120,48 @@ func Abs(p string) string {
 }
 
 // FileName returns file name end of the path without extension.
-func FileName(filePath string) string {
-	basename := filepath.Base(filePath)
+func FileName(file string) string {
+	basename := filepath.Base(file)
 	if !strings.Contains(basename, ".") {
 		return basename
 	}
-	return strings.TrimSuffix(basename, filepath.Ext(filePath))
+	return strings.TrimSuffix(basename, filepath.Ext(file))
 }
 
 // BaseName returns file name end of the path with extension.
-func BaseName(filePath string) string {
-	return filepath.Base(filePath)
+func BaseName(file string) string {
+	return filepath.Base(file)
+}
+
+// ReadAll returns string contents of file,
+// if read fail, returns empty.
+func ReadAll(file string) string {
+	return string(Bytes(file))
+}
+
+// Bytes returns the []byte contents of file,
+// if read fail, returns nil.
+func Bytes(file string) (d []byte) {
+	d, _ = ioutil.ReadFile(file)
+	return
+}
+
+// Write writes []byte to file.
+func Write(file string, data []byte, append bool) (err error) {
+	mode := os.O_CREATE | os.O_WRONLY
+	if append {
+		mode |= os.O_APPEND
+	}
+	f, err := os.OpenFile(file, mode, 0755)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	_, err = f.Write(data)
+	return
+}
+
+// WriteString writes string to file.
+func WriteString(file string, data string, append bool) (err error) {
+	return Write(file, []byte(data), append)
 }

@@ -9,6 +9,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/klauspost/pgzip v1.2.5
+	github.com/magiconair/properties v1.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/snail007/go-sqlcipher v0.0.0-20210114093415-fb27975e042f
 	github.com/spf13/viper v1.7.1

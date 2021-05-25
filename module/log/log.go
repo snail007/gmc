@@ -138,18 +138,20 @@ type bufChnItem struct {
 	msg   string
 }
 type Logger struct {
-	l          *log.Logger
-	parent     *Logger
-	ns         string
-	level      gcore.LogLevel
-	async      bool
-	asyncOnce  *sync.Once
-	bufChn     chan bufChnItem
-	asyncWG    *sync.WaitGroup
-	callerSkip int
-	exitCode   int
-	exitFunc   func(int)
-	flag       gcore.LogFlag
+	l            *log.Logger
+	parent       *Logger
+	ns           string
+	level        gcore.LogLevel
+	async        bool
+	asyncOnce    *sync.Once
+	bufChn       chan bufChnItem
+	asyncWG      *sync.WaitGroup
+	callerSkip   int
+	exitCode     int
+	exitFunc     func(int)
+	flag         gcore.LogFlag
+	// for testing purpose
+	skipCheckGMC bool
 }
 
 func (s *Logger) exit() {
@@ -189,13 +191,14 @@ func New(prefix ...string) gcore.Logger {
 	}
 	l := log.New(os.Stdout, pre, log.LstdFlags|log.Lmicroseconds)
 	return &Logger{
-		l:          l,
-		level:      gcore.LDEBUG,
-		asyncOnce:  &sync.Once{},
-		callerSkip: 2,
-		exitCode:   1,
-		exitFunc:   os.Exit,
-		flag:       gcore.LFLAG_SHORT,
+		l:            l,
+		level:        gcore.LDEBUG,
+		asyncOnce:    &sync.Once{},
+		callerSkip:   2,
+		exitCode:     1,
+		exitFunc:     os.Exit,
+		flag:         gcore.LFLAG_SHORT,
+		skipCheckGMC: os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
 	}
 }
 
@@ -411,7 +414,7 @@ func (s *Logger) caller(msg string, skip int) string {
 	if _, file0, line0, ok := runtime.Caller(skip); ok {
 		file0 = strings.Replace(file0, "\\", "/", -1)
 		p := "github.com/snail007/gmc"
-		if strings.Contains(file0, p) && !strings.Contains(file0, p+"t") &&
+		if !s.skipCheckGMC && strings.Contains(file0, p) && !strings.Contains(file0, p+"t") &&
 			!strings.Contains(file0, p+"demos") {
 			// gmc
 			file = "[gmc]" + file0[strings.Index(file0, p)+len(p):]

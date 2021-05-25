@@ -244,3 +244,38 @@ func TestGlog_Async(t *testing.T) {
 	assert.Nil(err)
 	assert.Contains(string(out), "INFO a")
 }
+
+func TestGlog_Normal(t *testing.T) {
+	assert := assert2.New(t)
+	log := glog.New()
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	log.SetFlag(gcore.LFLAG_NORMAL)
+	log.Info("abc")
+	assert.Contains(buf.String(), "abc")
+	assert.NotContains(buf.String(), ".go")
+}
+
+func TestGlog_Short(t *testing.T) {
+	assert := assert2.New(t)
+	os.Setenv("LOG_SKIP_CHECK_GMC","yes")
+	log := glog.New()
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	log.SetFlag(gcore.LFLAG_SHORT)
+	log.Info("abc")
+	assert.Contains(buf.String(), "abc")
+	assert.Contains(buf.String(), ".go")
+}
+
+func TestGlog_Long(t *testing.T) {
+	os.Setenv("LOG_SKIP_CHECK_GMC","yes")
+	assert := assert2.New(t)
+	log := glog.New()
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	log.SetFlag(gcore.LFLAG_LONG)
+	log.Info("abc")
+	assert.Contains(buf.String(), "abc")
+	assert.Contains(buf.String(), ".go")
+}

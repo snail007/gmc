@@ -4,13 +4,15 @@ import (
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestTempFile(t *testing.T) {
 	assert2.Contains(t, TempFile("prefix", "suffix"), "prefix")
 	assert2.Contains(t, TempFile("prefix", "suffix"), "suffix")
-	assert2.Equal(t, os.TempDir(), filepath.Dir(TempFile("prefix", "suffix"))+string(filepath.Separator))
+	assert2.Equal(t, strings.TrimSuffix(os.TempDir(),string(filepath.Separator)),
+		strings.TrimSuffix(filepath.Dir(TempFile("prefix", "suffix")),string(filepath.Separator)))
 	assert2.Equal(t, 44, len(filepath.Base(TempFile("prefix", "suffix"))))
 }
 

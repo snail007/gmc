@@ -7,34 +7,42 @@ package gatomic
 
 import (
 	assert2 "github.com/stretchr/testify/assert"
-	"runtime"
+	"sync"
 	"testing"
-	"time"
 )
 
 func TestNew(t *testing.T) {
 	assert := assert2.New(t)
-	type vt struct {
+	type data struct {
 		cnt int
 	}
-	value := NewValue(vt{1})
+	g:=sync.WaitGroup{}
+	g.Add(6)
+	value := NewValue(data{1})
 	for i := 0; i < 2; i++ {
 		go func() {
-			value.Store(vt{1})
+			defer g.Done()
+			value.Store(data{1})
 		}()
 	}
+
 	for i := 0; i < 2; i++ {
 		go func() {
-			assert.Equal(1, value.Load().(vt).cnt)
+			defer g.Done()
+			assert.Equal(1, value.Load().(data).cnt)
 		}()
 	}
+
 	for i := 0; i < 2; i++ {
 		go func() {
+			defer g.Done()
 			value.LoadAndStore(func(x interface{}) interface{} {
-				assert.Equal(1, x.(vt).cnt)
-				return 1
+				assert.Equal(1, x.(data).cnt)
+				d := x.(data)
+				d.cnt =1
+				return d
 			})
 		}()
 	}
-	time.Sleep(time.Millisecond *200 * time.Duration(runtime.NumCPU()))
+	g.Wait()
 }

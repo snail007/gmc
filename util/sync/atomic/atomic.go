@@ -36,5 +36,5 @@ func (s *Value) Load() interface{} {
 func (s *Value) LoadAndStore(f func(x interface{}) interface{}) {
 	s.Lock()
 	defer s.Unlock()
-	s.Store(f(s.Load()))
+	s.Value.Store(f(s.Value.Load()))
 }

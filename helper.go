@@ -6,12 +6,13 @@
 package gmc
 
 import (
+	"fmt"
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/module/cache"
 	gdb "github.com/snail007/gmc/module/db"
 	gi18n "github.com/snail007/gmc/module/i18n"
 	gcaptcha "github.com/snail007/gmc/util/captcha"
-	_map "github.com/snail007/gmc/util/map"
+	gmap "github.com/snail007/gmc/util/map"
 )
 
 var (
@@ -78,8 +79,8 @@ func (s *NewAssistant) CaptchaDefault() *gcaptcha.Captcha {
 // Tr creates an new object of gi18n.I18nTool
 // This only worked after gmc.I18n.Init() called.
 // lang is the language translation to.
-func (s *NewAssistant) Tr(lang string) (tr gcore.I18n) {
-	tr, _ = gcore.ProviderI18n()(nil)
+func (s *NewAssistant) Tr(lang string,ctx gcore.Ctx) (tr gcore.I18n) {
+	tr, _ = gcore.ProviderI18n()(ctx)
 	tr.Lang(lang)
 	return
 }
@@ -112,8 +113,8 @@ func (s *NewAssistant) APIServerDefault(ctx gcore.Ctx) (gcore.APIServer, error) 
 }
 
 // Map creates a gmap.Map object, gmap.Map's keys are sequenced.
-func (s *NewAssistant) Map() *_map.Map {
-	return _map.NewMap()
+func (s *NewAssistant) Map() *gmap.Map {
+	return gmap.NewMap()
 }
 
 // ##################################################
@@ -211,7 +212,7 @@ func (s *I18nAssistant) Init(cfg gcore.Config) (i18n gcore.I18n, err error) {
 }
 
 // ##################################################
-// # Error helper
+// # ErrorAssistant helper
 // ##################################################
 type ErrorAssistant struct {
 	p gcore.ErrorProvider
@@ -221,15 +222,38 @@ func NewErrorAssistant() *ErrorAssistant {
 	return &ErrorAssistant{p: gcore.ProviderError()}
 }
 
-// ErrStack acquires an error full stack info string
+// Stack acquires an error full stack info string
 func (e *ErrorAssistant) Stack(err interface{}) string {
 	return e.p().StackError(err)
 }
 
-// ErrRecover catch fatal error in defer,
+// Recover catch fatal error in defer,
 // f can be func(err interface{}) or string or object as string
 func (e *ErrorAssistant) Recover(f ...interface{}) {
-	e.p().Recover(f)
+	if err := recover(); err != nil {
+		eObj := e.p().New(nil)
+		var f0 interface{}
+		var printStack bool
+		if len(f) == 0 {
+			return
+		}
+		if len(f) == 2 {
+			printStack = f[1].(bool)
+		}
+		f0 = f[0]
+		switch v := f0.(type) {
+		case func(interface{}):
+			v(err)
+		case string:
+			s := ""
+			if printStack {
+				s = fmt.Sprintf(",stack: %s", eObj.StackError(err))
+			}
+			fmt.Printf("\nrecover error, %s%s\n", f, s)
+		default:
+			fmt.Printf("\nrecover error %s\n", eObj.Wrap(err).ErrorStack())
+		}
+	}
 }
 
 // New creates a gcore.Error from an error or string, the gcore.Error

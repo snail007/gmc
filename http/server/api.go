@@ -124,7 +124,7 @@ func (this *APIServer) initRequestCtx(w http.ResponseWriter, r *http.Request) gc
 		c0.SetRemoteAddr(v.remoteAddr)
 		c0.SetConn(v.conn)
 	}
-	w.(*ghttputil.ResponseWriter).SetData("ctx", c0)
+	gcore.SetCtx(w,c0)
 	return c0
 }
 
@@ -222,7 +222,7 @@ func (this *APIServer) API(path string, handle func(ctx gcore.Ctx), ext ...strin
 		ext1 = ext[0]
 	}
 	this.router.HandleAny(path+ext1, func(w http.ResponseWriter, _ *http.Request, _ gcore.Params) {
-		handle(w.(*ghttputil.ResponseWriter).Data("ctx").(gcore.Ctx))
+		handle(gcore.GetCtx(w))
 	})
 }
 

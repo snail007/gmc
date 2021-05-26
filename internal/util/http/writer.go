@@ -35,17 +35,6 @@ func (this *ResponseWriter) SetData(k interface{}, v interface{}) {
 	this.data.Store(k, v)
 }
 
-func NewResponseWriter(w http.ResponseWriter) http.ResponseWriter {
-	if _, ok := w.(*ResponseWriter); ok {
-		return w
-	}
-	return &ResponseWriter{
-		ResponseWriter: w,
-		statusCode:     200,
-		data:           &sync.Map{},
-	}
-}
-
 func (this *ResponseWriter) WriteHeader(status int) {
 	this.statusCode = status
 	this.ResponseWriter.WriteHeader(status)
@@ -58,7 +47,7 @@ func (this *ResponseWriter) Write(b []byte) (n int, err error) {
 	return
 }
 
-//WriteCount acquires outgoing bytes count by writer
+// WriteCount acquires outgoing bytes count by writer
 func (this *ResponseWriter) WriteCount() int64 {
 	return this.writeByteCnt
 }
@@ -82,4 +71,15 @@ func WriteCount(w http.ResponseWriter) int64 {
 func (this *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hj, _ := this.ResponseWriter.(http.Hijacker)
 	return hj.Hijack()
+}
+
+func NewResponseWriter(w http.ResponseWriter) http.ResponseWriter {
+	if _, ok := w.(*ResponseWriter); ok {
+		return w
+	}
+	return &ResponseWriter{
+		ResponseWriter: w,
+		statusCode:     200,
+		data:           &sync.Map{},
+	}
 }

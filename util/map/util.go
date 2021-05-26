@@ -24,4 +24,3 @@ func InterfaceToStr(a map[string]interface{}) (b map[string]string) {
 	}
 	return
 }
-

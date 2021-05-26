@@ -138,18 +138,18 @@ type bufChnItem struct {
 	msg   string
 }
 type Logger struct {
-	l            *log.Logger
-	parent       *Logger
-	ns           string
-	level        gcore.LogLevel
-	async        bool
-	asyncOnce    *sync.Once
-	bufChn       chan bufChnItem
-	asyncWG      *sync.WaitGroup
-	callerSkip   int
-	exitCode     int
-	exitFunc     func(int)
-	flag         gcore.LogFlag
+	l          *log.Logger
+	parent     *Logger
+	ns         string
+	level      gcore.LogLevel
+	async      bool
+	asyncOnce  *sync.Once
+	bufChn     chan bufChnItem
+	asyncWG    *sync.WaitGroup
+	callerSkip int
+	exitCode   int
+	exitFunc   func(int)
+	flag       gcore.LogFlag
 	// for testing purpose
 	skipCheckGMC bool
 }

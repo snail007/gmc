@@ -80,7 +80,7 @@ func TestWrite(t *testing.T) {
 	w := glog.NewFileWriter("a.log", dir, false)
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
-	_,err:=w.Write([]byte("abc"))
+	_, err := w.Write([]byte("abc"))
 	assert.Nil(err)
 	assert.Contains(gfile.ReadAll(dir+"/a.log"), "abc")
 }

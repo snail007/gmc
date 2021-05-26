@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Cache gmc abstract cache layer, to access cache.
 type Cache interface {
 	// Has returns true if cached value exists.
 	Has(key string) (bool, error)

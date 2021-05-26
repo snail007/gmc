@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	gmchttp "github.com/snail007/gmc/http"
 	"net"
 	"net/http"
 	"strings"
@@ -64,12 +63,12 @@ func main() {
 	// access ctx
 	// http://foo.com/ctxfoo
 	api.Router().HandlerFunc("GET", "/ctx:name", func(w http.ResponseWriter, r *http.Request) {
-		ctx := gmchttp.GetCtx(w)
+		ctx := gcore.GetCtx(w)
 		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
 	})
 	// http://foo.com/2ctxfoo
 	api.Router().Handle("GET", "/2ctx:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
-		ctx := gmchttp.GetCtx(w)
+		ctx := gcore.GetCtx(w)
 		ctx.Write(ctx.Param().ByName("name"), " ", ctx.Conn().LocalAddr().String(), " ", ctx.Conn().RemoteAddr().String())
 	})
 	// routing by group is supported

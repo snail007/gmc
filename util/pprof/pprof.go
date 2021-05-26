@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package httppprof
+package ghttppprof
 
 import (
 	gcore "github.com/snail007/gmc/core"
@@ -24,6 +24,7 @@ func BindRouter(r gcore.HTTPRouter, prefix string) {
 	r.HandlerAny(root+"/block", pprof.Handler("block"))
 	r.HandlerAny(root+"/goroutine", pprof.Handler("goroutine"))
 	r.HandlerAny(root+"/mutex", pprof.Handler("mutex"))
+	r.HandlerAny(root+"/heap", pprof.Handler("heap"))
 	r.HandlerAny(root+"/threadcreate", pprof.Handler("threadcreate"))
 	r.HandlerAny(root+"/profile", pprofHandler(pprof.Profile))
 	r.HandlerAny(root+"/cmdline", pprofHandler(pprof.Cmdline))

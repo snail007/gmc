@@ -19,15 +19,15 @@ func TestInterfaceToStr(t *testing.T) {
 		args  args
 		wantB map[string]string
 	}{
-		{"map",args{a: map[string]interface{}{
-			"a":1,"b":2,
+		{"map", args{a: map[string]interface{}{
+			"a": 1, "b": 2,
 		}}, map[string]string{
-			"a":"1","b":"2",
+			"a": "1", "b": "2",
 		}},
-		{"map",args{a: map[string]interface{}{
-			"a":"1","b":"2",
+		{"map", args{a: map[string]interface{}{
+			"a": "1", "b": "2",
 		}}, map[string]string{
-			"a":"1","b":"2",
+			"a": "1", "b": "2",
 		}},
 	}
 	for _, tt := range tests {
@@ -48,10 +48,10 @@ func Test_strToInterface(t *testing.T) {
 		args  args
 		wantB map[string]interface{}
 	}{
-		{"map",args{a: map[string]string{
-			"a":"1","b":"2",
+		{"map", args{a: map[string]string{
+			"a": "1", "b": "2",
 		}}, map[string]interface{}{
-			"a":"1","b":"2",
+			"a": "1", "b": "2",
 		}},
 	}
 	for _, tt := range tests {

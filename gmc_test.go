@@ -4,4 +4,3 @@
 // More information at https://github.com/snail007/gmc
 
 package gmc_test
-

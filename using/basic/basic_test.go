@@ -33,11 +33,11 @@ func TestGMCImplements(t *testing.T) {
 			return
 		}, (*gcore.Config)(nil), "default config server"},
 		{func() (obj interface{}, err error) {
-			obj = gcore.ProviderLogger()(ctx,"")
+			obj = gcore.ProviderLogger()(ctx, "")
 			return
 		}, (*gcore.Logger)(nil), "default logger"},
 		{func() (obj interface{}, err error) {
-			obj = gcore.ProviderLogger()(nil,"")
+			obj = gcore.ProviderLogger()(nil, "")
 			return
 		}, (*gcore.Logger)(nil), "default logger, ctx is nil"},
 		{func() (obj interface{}, err error) {
@@ -45,7 +45,7 @@ func TestGMCImplements(t *testing.T) {
 			return
 		}, (*gcore.Error)(nil), "default error"},
 		{func() (obj interface{}, err error) {
-			obj =gcore.ProviderCtx()()
+			obj = gcore.ProviderCtx()()
 			return
 		}, (*gcore.Ctx)(nil), "default ctx"},
 	} {

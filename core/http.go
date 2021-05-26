@@ -6,6 +6,7 @@
 package gcore
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"net"
@@ -218,4 +219,15 @@ type Controller interface {
 func ParamsFromContext(ctx context.Context) Params {
 	p, _ := ctx.Value(ParamsKey).(Params)
 	return p
+}
+
+type ResponseWriter interface {
+	ClearData()
+	Data(k interface{}) interface{}
+	SetData(k interface{}, v interface{})
+	WriteHeader(status int)
+	Write(b []byte) (n int, err error)
+	WriteCount() int64
+	StatusCode() int
+	Hijack() (net.Conn, *bufio.ReadWriter, error)
 }

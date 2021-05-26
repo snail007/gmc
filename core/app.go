@@ -5,6 +5,7 @@
 
 package gcore
 
+// App gmc abstract app layer, to run gmc service or common purpose.
 type App interface {
 	SetConfigFile(file string)
 	SetConfig(cfg Config)

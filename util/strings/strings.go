@@ -18,4 +18,3 @@ func BytesRef(s string) []byte {
 func StringRef(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
-

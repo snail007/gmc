@@ -14,6 +14,7 @@ import (
 	gsession "github.com/snail007/gmc/http/session"
 	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 	gapp "github.com/snail007/gmc/module/app"
 	gcache "github.com/snail007/gmc/module/cache"
 	gconfig "github.com/snail007/gmc/module/config"
@@ -54,3 +55,4 @@ var _ gcore.Error = &gerror.Error{}
 var _ gcore.Database = &gdb.SQLite3DB{}
 var _ gcore.Config = &gconfig.Config{}
 var _ gcore.Logger = &glog.Logger{}
+var _ gcore.ResponseWriter = &ghttputil.ResponseWriter{}

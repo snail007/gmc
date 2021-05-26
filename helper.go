@@ -28,9 +28,7 @@ var (
 	Err = &ErrorAssistant{}
 )
 
-// #########################################
-// # New stuff helper
-// #########################################
+// NewAssistant helper to new different gmc objects.
 type NewAssistant struct {
 }
 
@@ -56,7 +54,7 @@ func (s *NewAssistant) Ctx() gcore.Ctx {
 	return gcore.ProviderCtx()()
 }
 
-// Ctx creates an new object of gcore.Logger
+// Logger creates an new object of gcore.Logger
 func (s *NewAssistant) Logger(ctx gcore.Ctx, prefix string) gcore.Logger {
 	return gcore.ProviderLogger()(ctx, prefix)
 }
@@ -71,7 +69,7 @@ func (s *NewAssistant) Captcha() *gcaptcha.Captcha {
 	return gcaptcha.New()
 }
 
-// Captcha creates an captcha object, and sets default configuration
+// CaptchaDefault creates an captcha object, and sets default configuration
 func (s *NewAssistant) CaptchaDefault() *gcaptcha.Captcha {
 	return gcaptcha.NewDefault()
 }
@@ -79,7 +77,7 @@ func (s *NewAssistant) CaptchaDefault() *gcaptcha.Captcha {
 // Tr creates an new object of gi18n.I18nTool
 // This only worked after gmc.I18n.Init() called.
 // lang is the language translation to.
-func (s *NewAssistant) Tr(lang string,ctx gcore.Ctx) (tr gcore.I18n) {
+func (s *NewAssistant) Tr(lang string, ctx gcore.Ctx) (tr gcore.I18n) {
 	tr, _ = gcore.ProviderI18n()(ctx)
 	tr.Lang(lang)
 	return
@@ -106,7 +104,7 @@ func (s *NewAssistant) APIServer(ctx gcore.Ctx, address string) (gcore.APIServer
 	return gcore.ProviderAPIServer()(ctx, address)
 }
 
-// APIServer creates a new object of gmc.APIServer and initialized from app.toml [apiserver] section.
+// APIServerDefault creates a new object of gmc.APIServer and initialized from app.toml [apiserver] section.
 // cfg is a gconfig.Config object contains section [apiserver] in `app.toml`.
 func (s *NewAssistant) APIServerDefault(ctx gcore.Ctx) (gcore.APIServer, error) {
 	return gcore.ProviderAPIServer()(ctx, "")
@@ -117,11 +115,7 @@ func (s *NewAssistant) Map() *gmap.Map {
 	return gmap.NewMap()
 }
 
-// ##################################################
-// # Database helper
-// # Init Must be called firstly with config object
-// # of app.toml.
-// ##################################################
+// DBAssistant helper to access database, DB.Init Must be called firstly with config object of app.toml.
 type DBAssistant struct {
 }
 
@@ -137,7 +131,7 @@ func (s *DBAssistant) InitFromFile(cfgFile string) error {
 	return gdb.InitFromFile(cfgFile)
 }
 
-// SQLite3DB acquires the default db group object, you must be call Init firstly.
+// DB acquires the default db group object, you must be call Init firstly.
 // And you must assert it to the correct type to use.
 func (s *DBAssistant) DB(id ...string) gcore.Database {
 	return gdb.DB(id...)
@@ -158,11 +152,7 @@ func (s *DBAssistant) Table(tableName string) *gdb.Model {
 	return gdb.Table(tableName)
 }
 
-// #################################################
-// # Cache helper
-// # Init Must be called firstly with config object
-// # of app.toml.
-// ##################################################
+// CacheAssistant helper to access cache, Init Must be called firstly with config object of app.toml.
 type CacheAssistant struct {
 }
 
@@ -192,11 +182,7 @@ func (s *CacheAssistant) Memory(id ...string) *gcache.MemCache {
 	return gcache.Memory(id...)
 }
 
-// ##################################################
-// # I18n helper
-// # Init Must be called firstly with config object
-// # of app.toml.
-// ##################################################
+// I18nAssistant helper to using i18n, Init Must be called firstly with config object of app.toml.
 type I18nAssistant struct {
 }
 
@@ -211,13 +197,12 @@ func (s *I18nAssistant) Init(cfg gcore.Config) (i18n gcore.I18n, err error) {
 	return
 }
 
-// ##################################################
-// # ErrorAssistant helper
-// ##################################################
+// ErrorAssistant helper to using error or add stack info to error.
 type ErrorAssistant struct {
 	p gcore.ErrorProvider
 }
 
+// NewErrorAssistant returns new a ErrorAssistant object.
 func NewErrorAssistant() *ErrorAssistant {
 	return &ErrorAssistant{p: gcore.ProviderError()}
 }
@@ -249,7 +234,7 @@ func (e *ErrorAssistant) Recover(f ...interface{}) {
 			if printStack {
 				s = fmt.Sprintf(",stack: %s", eObj.StackError(err))
 			}
-			fmt.Printf("\nrecover error, %s%s\n", f, s)
+			fmt.Printf("\nrecover error, %v%s\n", f, s)
 		default:
 			fmt.Printf("\nrecover error %s\n", eObj.Wrap(err).ErrorStack())
 		}

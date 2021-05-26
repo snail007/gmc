@@ -16,7 +16,7 @@ func TestNew(t *testing.T) {
 	type data struct {
 		cnt int
 	}
-	g:=sync.WaitGroup{}
+	g := sync.WaitGroup{}
 	g.Add(6)
 	value := NewValue(data{1})
 	for i := 0; i < 2; i++ {
@@ -39,7 +39,7 @@ func TestNew(t *testing.T) {
 			value.LoadAndStore(func(x interface{}) interface{} {
 				assert.Equal(1, x.(data).cnt)
 				d := x.(data)
-				d.cnt =1
+				d.cnt = 1
 				return d
 			})
 		}()

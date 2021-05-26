@@ -8,9 +8,9 @@ import (
 )
 
 func TestAbs(t *testing.T) {
-	path:=Abs("file.go")
-	assert2.Contains(t, path,"file.go")
-	assert2.Contains(t, path,"file.go")
+	path := Abs("file.go")
+	assert2.Contains(t, path, "file.go")
+	assert2.Contains(t, path, "file.go")
 }
 
 func TestBaseName(t *testing.T) {
@@ -48,7 +48,7 @@ func TestFileSize(t *testing.T) {
 	size, err := FileSize(f)
 	assert2.Nil(t, err)
 	assert.Equal(t, size, int64(1))
-	size, err = FileSize(f+"1")
+	size, err = FileSize(f + "1")
 	assert2.NotNil(t, err)
 	assert.Equal(t, size, int64(0))
 }

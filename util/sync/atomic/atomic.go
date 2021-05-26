@@ -18,7 +18,7 @@ type Value struct {
 func NewValue(x interface{}) *Value {
 	var val atomic.Value
 	val.Store(x)
-	return &Value{Value:val}
+	return &Value{Value: val}
 }
 
 func (s *Value) Store(x interface{}) {

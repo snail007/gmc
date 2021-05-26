@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// CommonConfig gmc basic abstract config layer.
 type CommonConfig interface {
 	SetConfigFile(in string)
 	SetEnvPrefix(in string)
@@ -62,10 +63,12 @@ type CommonConfig interface {
 	Debug()
 }
 
+// SubConfig gmc abstract sub config layer.
 type SubConfig interface {
 	CommonConfig
 }
 
+// Config gmc abstract config layer, to access config.
 type Config interface {
 	CommonConfig
 	Sub(key string) SubConfig

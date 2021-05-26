@@ -26,12 +26,12 @@ func TestLoadOnce_1(t *testing.T) {
 	assert := assert2.New(t)
 	once := LoadOnce("test")
 	once1 := LoadOnce("test")
-	assert.Equal(fmt.Sprintf("%p",once), fmt.Sprintf("%p",once1))
+	assert.Equal(fmt.Sprintf("%p", once), fmt.Sprintf("%p", once1))
 }
 
 func TestLoadOnce_2(t *testing.T) {
 	assert := assert2.New(t)
 	once := LoadOnce("")
 	once1 := LoadOnce("")
-	assert.NotEqual(fmt.Sprintf("%p",once), fmt.Sprintf("%p",once1))
+	assert.NotEqual(fmt.Sprintf("%p", once), fmt.Sprintf("%p", once1))
 }

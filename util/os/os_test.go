@@ -11,8 +11,8 @@ import (
 func TestTempFile(t *testing.T) {
 	assert2.Contains(t, TempFile("prefix", "suffix"), "prefix")
 	assert2.Contains(t, TempFile("prefix", "suffix"), "suffix")
-	assert2.Equal(t, strings.TrimSuffix(os.TempDir(),string(filepath.Separator)),
-		strings.TrimSuffix(filepath.Dir(TempFile("prefix", "suffix")),string(filepath.Separator)))
+	assert2.Equal(t, strings.TrimSuffix(os.TempDir(), string(filepath.Separator)),
+		strings.TrimSuffix(filepath.Dir(TempFile("prefix", "suffix")), string(filepath.Separator)))
 	assert2.Equal(t, 44, len(filepath.Base(TempFile("prefix", "suffix"))))
 }
 
@@ -31,7 +31,7 @@ func TestCreateTempFile(t *testing.T) {
 	assert2.NoError(t, err)
 	assert2.IsType(t, &os.File{}, f)
 	assert2.Contains(t, f.Name(), ".suffix")
-	if f!=nil{
+	if f != nil {
 		defer func() {
 			f.Close()
 			os.Remove(f.Name())

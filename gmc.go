@@ -9,6 +9,7 @@ import (
 	gcore "github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	ghttpserver "github.com/snail007/gmc/http/server"
+	// using gmc basic: cache, db, web
 	_ "github.com/snail007/gmc/using/cache"
 	_ "github.com/snail007/gmc/using/db"
 	_ "github.com/snail007/gmc/using/web"
@@ -17,19 +18,19 @@ import (
 )
 
 type (
-	// Alias of type gcontroller.Controller
+	// Controller Alias of type gcontroller.Controller
 	Controller = gcontroller.Controller
-	// Alias of type ghttpserver.HTTPServer
+	// HTTPServer Alias of type ghttpserver.HTTPServer
 	HTTPServer = ghttpserver.HTTPServer
-	// Alias of type ghttpserver.APIServer
+	// APIServer Alias of type ghttpserver.APIServer
 	APIServer = ghttpserver.APIServer
-	// Alias of type gcore.Params
+	// P Alias of type gcore.Params
 	P = gcore.Params
-	// Alias of type http.ResponseWriter
+	// W Alias of type http.ResponseWriter
 	W = http.ResponseWriter
-	// Alias of type *http.Request
+	// R Alias of type *http.Request
 	R = *http.Request
-	// Alias of type gcore.Ctx
+	// C Alias of type gcore.Ctx
 	C = gcore.Ctx
 )
 

@@ -35,7 +35,7 @@ func TestGMCImplements(t *testing.T) {
 				ttl=3600
 				[session.memory]
 				gctime=300`)))
-			obj,err = gcore.ProviderSessionStorage()(ctx)
+			obj, err = gcore.ProviderSessionStorage()(ctx)
 			return
 		}, (*gcore.SessionStorage)(nil), "default ProviderSessionStorage server"},
 		{func() (obj interface{}, err error) {
@@ -43,11 +43,11 @@ func TestGMCImplements(t *testing.T) {
 			return
 		}, (*gcore.Session)(nil), "default ProviderSession"},
 		{func() (obj interface{}, err error) {
-			obj = gcore.ProviderView()(nil,nil)
+			obj = gcore.ProviderView()(nil, nil)
 			return
 		}, (*gcore.View)(nil), "default ProviderView"},
 		{func() (obj interface{}, err error) {
-			obj,err = gcore.ProviderTemplate()(ctx,".")
+			obj, err = gcore.ProviderTemplate()(ctx, ".")
 			return
 		}, (*gcore.Template)(nil), "default ProviderTemplate"},
 		{func() (obj interface{}, err error) {
@@ -61,7 +61,7 @@ func TestGMCImplements(t *testing.T) {
 				delimiterleft="{{"
 				delimiterright="}}"
 				layout="layout"`)))
-			obj,err = gcore.ProviderTemplate()(ctx,".")
+			obj, err = gcore.ProviderTemplate()(ctx, ".")
 			return
 		}, (*gcore.Template)(nil), "default ProviderTemplate, form [template]"},
 		{func() (obj interface{}, err error) {
@@ -73,7 +73,7 @@ func TestGMCImplements(t *testing.T) {
 			return
 		}, (*gcore.Cookies)(nil), "default ProviderCookies"},
 		{func() (obj interface{}, err error) {
-			obj,err = gcore.ProviderI18n()(ctx)
+			obj, err = gcore.ProviderI18n()(ctx)
 			return
 		}, (*gcore.I18n)(nil), "default I18nProvider"},
 		{func() (obj interface{}, err error) {
@@ -85,13 +85,13 @@ func TestGMCImplements(t *testing.T) {
 			return
 		}, (*gcore.HTTPServer)(nil), "default ProviderHTTPServer"},
 		{func() (obj interface{}, err error) {
-			obj,err = gcore.ProviderAPIServer()(ctx,":0")
+			obj, err = gcore.ProviderAPIServer()(ctx, ":0")
 			return
 		}, (*gcore.APIServer)(nil), "default ProviderAPIServer"},
 	} {
 		obj, err := v.factory()
-		assert.Nilf(err,v.msg)
-		assert.NotNilf(obj,v.msg)
-		assert.Implementsf(v.impl, obj,v.msg)
+		assert.Nilf(err, v.msg)
+		assert.NotNilf(obj, v.msg)
+		assert.Implementsf(v.impl, obj, v.msg)
 	}
 }

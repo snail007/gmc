@@ -58,12 +58,12 @@ func TestHTTPClient_UploadOfReader(t *testing.T) {
 	assert := assert2.New(t)
 	f, _ := os.Create("upload.bin")
 	f.WriteString("a")
-	f.Seek(0,0)
+	f.Seek(0, 0)
 	defer f.Close()
 	h := md5.New()
 	h.Write([]byte("a"))
 	s := fmt.Sprintf("%x", h.Sum(nil))
-	body, _, err := UploadOfReader(httpServerURL+"/upload", "test", "upload.bin",f, map[string]string{"uid": "007"})
+	body, _, err := UploadOfReader(httpServerURL+"/upload", "test", "upload.bin", f, map[string]string{"uid": "007"})
 	assert.Nil(err)
 	assert.Equal("007"+s, body)
 	assert.FileExists("test.bin")
@@ -311,7 +311,7 @@ func TestGet(t *testing.T) {
 			header:  nil,
 		}, []byte("404 page not found\n"), 404, false},
 		{"wrong_host", args{
-			u:         "http://none/none",
+			u:       "http://none/none",
 			timeout: time.Second,
 			header:  nil,
 		}, nil, 0, true},

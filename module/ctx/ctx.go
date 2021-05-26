@@ -450,13 +450,13 @@ func (this *Ctx) ClientIP() (ip string) {
 	if check {
 		switch frontType {
 		case "cloudflare":
-			if headerKey==""{
-				headerKey="CF-Connecting-IP"
+			if headerKey == "" {
+				headerKey = "CF-Connecting-IP"
 			}
 			ip = this.Header(headerKey)
 		case "proxy":
-			if headerKey==""{
-				headerKey="X-Forwarded-For"
+			if headerKey == "" {
+				headerKey = "X-Forwarded-For"
 			}
 			if strings.ToLower(headerKey) == strings.ToLower("X-Forwarded-For") {
 				xForwardedFor := this.Header(headerKey)

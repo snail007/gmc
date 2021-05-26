@@ -15,7 +15,6 @@ import (
 
 func TestMain(m *testing.M) {
 
-
 	gcore.RegisterHTTPRouter(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.HTTPRouter {
 		return grouter.NewHTTPRouter(ctx)
 	})

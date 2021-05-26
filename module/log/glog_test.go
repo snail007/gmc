@@ -258,7 +258,7 @@ func TestGlog_Normal(t *testing.T) {
 
 func TestGlog_Short(t *testing.T) {
 	assert := assert2.New(t)
-	os.Setenv("LOG_SKIP_CHECK_GMC","yes")
+	os.Setenv("LOG_SKIP_CHECK_GMC", "yes")
 	log := glog.New()
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
@@ -269,7 +269,7 @@ func TestGlog_Short(t *testing.T) {
 }
 
 func TestGlog_Long(t *testing.T) {
-	os.Setenv("LOG_SKIP_CHECK_GMC","yes")
+	os.Setenv("LOG_SKIP_CHECK_GMC", "yes")
 	assert := assert2.New(t)
 	log := glog.New()
 	var buf bytes.Buffer

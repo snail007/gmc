@@ -33,13 +33,13 @@ func TestGMCImplements(t *testing.T) {
 				enable=true
 				id="default"
 				cleanupinterval=30`)))
-			obj,err = gcore.ProviderCache()(ctx)
+			obj, err = gcore.ProviderCache()(ctx)
 			return
 		}, (*gcore.Cache)(nil), "default ProviderCache server"},
 	} {
 		obj, err := v.factory()
-		assert.Nilf(err,v.msg)
-		assert.NotNilf(obj,v.msg)
-		assert.Implementsf(v.impl, obj,v.msg)
+		assert.Nilf(err, v.msg)
+		assert.NotNilf(obj, v.msg)
+		assert.Implementsf(v.impl, obj, v.msg)
 	}
 }

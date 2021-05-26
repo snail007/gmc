@@ -86,10 +86,10 @@ func (this *Error) WrapN(e interface{}, skip int) gcore.Error {
 	case error:
 		err = ev
 	default:
-		vp:=reflect.ValueOf(ev)
-		if vp.Kind()==reflect.Ptr{
-			err = fmt.Errorf("%s->%v",reflect.TypeOf(ev).String() ,vp.Interface())
-		}else{
+		vp := reflect.ValueOf(ev)
+		if vp.Kind() == reflect.Ptr {
+			err = fmt.Errorf("%s->%v", reflect.TypeOf(ev).String(), vp.Interface())
+		} else {
 			err = fmt.Errorf("%v", ev)
 		}
 	}
@@ -220,7 +220,7 @@ func (this *Error) Recover(f ...interface{}) {
 			if printStack {
 				s = fmt.Sprintf(",stack: %s", this.StackError(e))
 			}
-			fmt.Printf("\nrecover error, %s%s\n", f, s)
+			fmt.Printf("\nrecover error, %v%s\n", f, s)
 		default:
 			fmt.Printf("\nrecover error %s\n", this.Wrap(e).ErrorStack())
 		}

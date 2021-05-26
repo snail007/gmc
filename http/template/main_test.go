@@ -25,7 +25,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	
+
 	gcore.RegisterSession(gcore.DefaultProviderKey, func() gcore.Session {
 		return gsession.NewSession()
 	})

@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/internal/util/http"
 	"io"
 	"net/http"
 	"os"
@@ -201,7 +200,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 		}
 		objMethod0 := objMethod
 		s.HandleAny(path, func(w http.ResponseWriter, _ *http.Request, ps gcore.Params) {
-			reqCtx := w.(*ghttputil.ResponseWriter).Data("ctx").(gcore.Ctx)
+			reqCtx := gcore.GetCtx(w)
 			// fix param not contains matched route path
 			reqCtx.SetParam(ps)
 			reqCtx.SetControllerMethod(objMethod0)

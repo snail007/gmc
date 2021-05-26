@@ -8,7 +8,7 @@ package db
 import (
 	"bytes"
 	"fmt"
- 	gconfig "github.com/snail007/gmc/module/config"
+	gconfig "github.com/snail007/gmc/module/config"
 	gdb "github.com/snail007/gmc/module/db"
 
 	gcore "github.com/snail007/gmc/core"
@@ -102,7 +102,7 @@ func TestGMCImplements(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if db !=gdb.DB() {
+			if db != gdb.DB() {
 				err = fmt.Errorf("gcore.Provider.DB() not match gmc.DB.DB()")
 				return
 			}
@@ -110,8 +110,8 @@ func TestGMCImplements(t *testing.T) {
 		}, (*gcore.Database)(nil), "default database sqlite3"},
 	} {
 		obj, err := v.factory()
-		assert.Nilf(err,v.msg)
-		assert.NotNilf(obj,v.msg)
-		assert.Implementsf(v.impl, obj,v.msg)
+		assert.Nilf(err, v.msg)
+		assert.NotNilf(obj, v.msg)
+		assert.Implementsf(v.impl, obj, v.msg)
 	}
 }

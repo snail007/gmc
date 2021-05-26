@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// Ctx gmc context layer in gmc web.
 type Ctx interface {
 	Conn() net.Conn
 	SetConn(conn net.Conn)
@@ -92,5 +93,25 @@ type Ctx interface {
 	SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	ControllerMethod() string
 	SetControllerMethod(controllerMethod string)
-	IsTLSRequest()bool
+	IsTLSRequest() bool
+}
+
+const ctxKeyInResponseWriter = "CtxKeyInResponseWriter"
+
+func SetCtx(w http.ResponseWriter, c Ctx) http.ResponseWriter{
+	if v, ok := w.(ResponseWriter); ok {
+		v.SetData(ctxKeyInResponseWriter, c)
+	}
+	return w
+}
+
+func GetCtx(w http.ResponseWriter) Ctx {
+	if v, ok := w.(ResponseWriter); ok {
+		ctx := v.Data(ctxKeyInResponseWriter)
+		if ctx == nil {
+			return nil
+		}
+		return ctx.(Ctx)
+	}
+	return nil
 }

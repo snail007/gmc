@@ -73,6 +73,10 @@ func InGMCT() bool {
 	return os.Getenv("GMCT_COVER") == "true"
 }
 
+func DebugRunProcess(t *testing.T) {
+	os.Setenv(execFlagPrefix+encodeTestName(t.Name()), fmt.Sprintf("%v", true))
+}
+
 func panicErr(e interface{}) {
 	if e != nil {
 		panic(e)
@@ -163,7 +167,7 @@ type Process struct {
 }
 
 // Verbose sets verbose output of testing process.
-func (s *Process) Verbose(isVerbose bool)(*Process) {
+func (s *Process) Verbose(isVerbose bool) *Process {
 	s.isVerbose = isVerbose
 	return s
 }

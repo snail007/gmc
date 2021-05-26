@@ -9,11 +9,13 @@ import (
 	"database/sql"
 )
 
+// DBCache gmc abstract db cache layer, to cache db query.
 type DBCache interface {
 	Set(key string, val []byte, expire uint) (err error)
 	Get(key string) (data []byte, err error)
 }
 
+// ActiveRecord gmc abstract sql statement builder layer.
 type ActiveRecord interface {
 	Cache(key string, seconds uint) ActiveRecord
 	Delete(table string, where map[string]interface{}) ActiveRecord
@@ -44,6 +46,7 @@ type ActiveRecord interface {
 	Wrap(v string) string
 }
 
+// Database gmc abstract db access layer, to connect to db and execute sql.
 type Database interface {
 	AR() (ar ActiveRecord)
 	Stats() sql.DBStats

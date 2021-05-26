@@ -70,6 +70,7 @@ func (c *Captcha) LoadDefaultFonts() {
 		return
 	}
 	c.loaded = true
+
 	for _, v := range fonts {
 		c.AddFontFromBytes(v)
 	}

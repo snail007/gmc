@@ -10,9 +10,8 @@
 
 Download and install it:
 ```
-go get github.com/snail007/util/captcha
+go get github.com/snail007/gmc/util/captcha
 ```
-**必须设置font**
 
 #### 最简单的示例 sample use
 
@@ -26,9 +25,9 @@ img,str := cap.Create(4,captcha.NUM)
 #### 设置 set options
 
 ```go
-cap = gcaptcha.New()
+cap := gcaptcha.New()
 // 可以设置多个字体 或使用cap.AddFont("xx.ttf")追加
-cap.SetFont("comic.ttf", "xxx.ttf")
+cap.SetFont("comic.ttf", "xxx.ttf") //必须设置font
 // 设置验证码大小
 cap.SetSize(128, 64)
 // 设置干扰强度
@@ -52,9 +51,9 @@ img := cap.CreateCustom("hello")
 ```
 
 
-#### 网站中如果使用? how to use for web
+#### 网页中使用? how to use for web
 
-look `examples/main.go`
+read: `examples/main.go`
 
 
 

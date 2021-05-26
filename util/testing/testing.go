@@ -162,8 +162,15 @@ type Process struct {
 	addrFile     string
 }
 
+// Verbose sets verbose output of testing process.
+func (s *Process) Verbose(isVerbose bool)(*Process) {
+	s.isVerbose = isVerbose
+	return s
+}
+
 // Wait starts testing subprocess and wait for it exited.
 func (s *Process) Wait() (out string, exitCode int, err error) {
+	exitCode = -1
 	if s.started {
 		return "", 0, fmt.Errorf("already started")
 	}
@@ -180,13 +187,17 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
 		fmt.Println(s.cmdStr)
 	}
-	b, _ := s.c.CombinedOutput()
+	b, err := s.c.CombinedOutput()
 	out = string(b)
 	if s.c.ProcessState != nil {
 		exitCode = s.c.ProcessState.ExitCode()
 	}
 	if exitCode != 0 {
-		err = fmt.Errorf("testing process fail, exit %d", exitCode)
+		output := ""
+		if err != nil {
+			output = fmt.Sprintf(", output: %s", err.Error())
+		}
+		err = fmt.Errorf("testing process FAIL, expect exit 0, but got %d"+output, exitCode)
 	}
 	return
 }

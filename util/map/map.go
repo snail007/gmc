@@ -71,10 +71,11 @@ func (s *Map) toStringMap() map[string]interface{} {
 }
 
 // Merge merges a Map to Map s.
-func (s *Map) Merge(m *Map) {
+func (s *Map) Merge(m *Map) *Map {
 	s.Lock()
 	defer s.Unlock()
 	s.merge(m)
+	return s
 }
 
 func (s *Map) merge(m *Map) {
@@ -84,10 +85,11 @@ func (s *Map) merge(m *Map) {
 }
 
 // MergeMap merges a map to Map s.
-func (s *Map) MergeMap(m Mii) {
+func (s *Map) MergeMap(m Mii) *Map {
 	s.Lock()
 	defer s.Unlock()
 	s.mergeMap(m)
+	return s
 }
 
 func (s *Map) mergeMap(m Mii) {
@@ -97,10 +99,11 @@ func (s *Map) mergeMap(m Mii) {
 }
 
 // MergeStrMap merges a map to Map s.
-func (s *Map) MergeStrMap(m M) {
+func (s *Map) MergeStrMap(m M) *Map {
 	s.Lock()
 	defer s.Unlock()
 	s.mergeStrMap(m)
+	return s
 }
 
 func (s *Map) mergeStrMap(m M) {
@@ -110,10 +113,11 @@ func (s *Map) mergeStrMap(m M) {
 }
 
 // MergeStrStrMap merges a map to Map s.
-func (s *Map) MergeStrStrMap(m Mss) {
+func (s *Map) MergeStrStrMap(m Mss) *Map {
 	s.Lock()
 	defer s.Unlock()
 	s.mergeStrStrMap(m)
+	return s
 }
 
 func (s *Map) mergeStrStrMap(m Mss) {
@@ -123,10 +127,11 @@ func (s *Map) mergeStrStrMap(m Mss) {
 }
 
 // MergeSyncMap merges a sync.Map to Map s.
-func (s *Map) MergeSyncMap(m *sync.Map) {
+func (s *Map) MergeSyncMap(m *sync.Map) *Map {
 	s.Lock()
 	defer s.Unlock()
 	s.mergeSyncMap(m)
+	return s
 }
 
 func (s *Map) mergeSyncMap(m *sync.Map) {

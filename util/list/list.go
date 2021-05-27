@@ -74,26 +74,29 @@ func (s *List) AddFront(v interface{}) {
 }
 
 // MergeSlice merge a array slice to end of list s.
-func (s *List) MergeSlice(arr []interface{}) {
+func (s *List) MergeSlice(arr []interface{}) *List {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.data = append(s.data, arr...)
+	return s
 }
 
 // MergeStringSlice merge a array slice to end of list s.
-func (s *List) MergeStringSlice(arr []string) {
+func (s *List) MergeStringSlice(arr []string) *List {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	for _, v := range arr {
 		s.data = append(s.data, v)
 	}
+	return s
 }
 
 // Merge merges a List to end of list s.
-func (s *List) Merge(l *List) {
+func (s *List) Merge(l *List) *List {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.data = append(s.data, l.data...)
+	return s
 }
 
 // Pop returns last value of list s, and remove it.

@@ -240,12 +240,12 @@ func (this *Ctx) SetParam(param gcore.Params) {
 	return
 }
 
-// acquires the method cost time, only for middleware2 and middleware3.
+// TimeUsed acquires the method cost time, only for middleware2 and middleware3.
 func (this *Ctx) TimeUsed() time.Duration {
 	return this.timeUsed
 }
 
-// sets the method cost time, only for middleware2 and middleware3, do not call this.
+// SetTimeUsed sets the method cost time, only for middleware2 and middleware3, do not call this.
 func (this *Ctx) SetTimeUsed(t time.Duration) {
 	this.timeUsed = t
 }
@@ -316,7 +316,7 @@ func (this *Ctx) IsOPTIONS() bool {
 	return http.MethodOptions == this.Request().Method
 }
 
-// IsOPTIONS returns true if the request is jquery AJAX request.
+// IsAJAX returns true if the request is jquery AJAX request.
 func (this *Ctx) IsAJAX() bool {
 	return strings.EqualFold(this.Header("X-Requested-With"), "XMLHttpRequest")
 }
@@ -657,12 +657,12 @@ func (this *Ctx) Cookie(name string) string {
 	return val
 }
 
-// File writes the specified file into the body stream in an efficient way.
+// WriteFile writes the specified file into the body stream in an efficient way.
 func (this *Ctx) WriteFile(filepath string) {
 	http.ServeFile(this.response, this.request, filepath)
 }
 
-// FileFromFS writes the specified file from http.FileSystem into the body stream in an efficient way.
+// WriteFileFromFS writes the specified file from http.FileSystem into the body stream in an efficient way.
 func (this *Ctx) WriteFileFromFS(filepath string, fs http.FileSystem) {
 	defer func(old string) {
 		this.request.URL.Path = old

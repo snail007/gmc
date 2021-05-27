@@ -23,7 +23,7 @@ func TestBindRouter(t *testing.T) {
 		return
 	}
 	port := getFreeTCPPort()
-	os.Setenv("API_PORT",port)
+	os.Setenv("API_PORT", port)
 	p := gtest.NewProcess(t).Verbose(false)
 	err := p.Start()
 	defer p.Kill()
@@ -60,5 +60,4 @@ func getFreeTCPPort() (p string) {
 			return
 		}
 	}
-	return ""
 }

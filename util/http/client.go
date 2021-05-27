@@ -255,7 +255,7 @@ func (s *HTTPClient) Upload(u, fieldName, filename string, data map[string]strin
 	return s.UploadOfReader(u, fieldName, filename, file, data)
 }
 
-// UploadReader upload a file from a io.Reader `reader`,
+// UploadOfReader upload a file from a io.Reader `reader`,
 // fieldName is the form filed name in form, filename is the value of filed `fieldName`.
 // data is the additional form data.
 func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {

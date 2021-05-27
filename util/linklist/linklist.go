@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-// Package list implements a doubly linked list.
+// Package glinklist implements a doubly linked list.
 //
 // To iterate over a list (where l is a *LinkList):
 //	for e := l.Front(); e != nil; e = e.Next() {

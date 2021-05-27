@@ -8,7 +8,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// Package cast provides easy and safe casting in Go.
+// Package gcast provides easy and safe casting in Go.
 package gcast
 
 import "time"

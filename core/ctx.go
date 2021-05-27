@@ -98,7 +98,7 @@ type Ctx interface {
 
 const ctxKeyInResponseWriter = "CtxKeyInResponseWriter"
 
-func SetCtx(w http.ResponseWriter, c Ctx) http.ResponseWriter{
+func SetCtx(w http.ResponseWriter, c Ctx) http.ResponseWriter {
 	if v, ok := w.(ResponseWriter); ok {
 		v.SetData(ctxKeyInResponseWriter, c)
 	}

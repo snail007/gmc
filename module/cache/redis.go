@@ -57,7 +57,7 @@ func (c *RedisCache) Pool() *redis.Pool {
 	return c.pool
 }
 
-// New redis cache
+// NewRedisCache returns a new redis cache object.
 func NewRedisCache(cfg interface{}) *RedisCache {
 	cfg0 := cfg.(*RedisCacheConfig)
 	rc := &RedisCache{
@@ -116,7 +116,7 @@ func (c *RedisCache) Decr(key string) (val int64, err error) {
 	return
 }
 
-// Incr value N by key
+// IncrN value N by key
 func (c *RedisCache) IncrN(key string, n int64) (val int64, err error) {
 	c.connect()
 	val, err = redis.Int64(c.exec("IncrBy", c.key(key), n))
@@ -124,7 +124,7 @@ func (c *RedisCache) IncrN(key string, n int64) (val int64, err error) {
 	return
 }
 
-// Decr value N by key
+// DecrN value N by key
 func (c *RedisCache) DecrN(key string, n int64) (val int64, err error) {
 	c.connect()
 	val, err = redis.Int64(c.exec("DecrBy", c.key(key), n))

@@ -46,7 +46,7 @@ func waitShutdown() {
 	os.Exit(0)
 }
 
-//just for testing
+//MockShutdown just for testing
 func MockShutdown() {
 	log.Println("Received an interrupt, mock stopping service...")
 	runHooks()

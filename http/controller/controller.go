@@ -15,6 +15,7 @@ import (
 	"net/textproto"
 )
 
+// Controller gmc web and api controller implements gcore.Controller.
 type Controller struct {
 	Response     http.ResponseWriter
 	Request      *http.Request

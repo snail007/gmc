@@ -22,7 +22,7 @@ type accesslog struct {
 func newFromConfig(c gcore.Config) *accesslog {
 	cfg := c.Sub("accesslog")
 	logger := glog.New().(*glog.Logger)
-	logger.SetFlag(gcore.LFLAG_SHORT)
+	logger.SetFlag(gcore.LogFlagShort)
 	logger.SetOutput(glog.NewFileWriter(cfg.GetString("filename"),
 		cfg.GetString("dir"), cfg.GetBool("gzip")))
 	logger.EnableAsync()

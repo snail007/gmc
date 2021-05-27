@@ -61,7 +61,7 @@ func (this *View) Render(tpl string, data ...map[string]interface{}) gcore.View 
 	return this
 }
 
-//Render renders template `tpl` with `data`, and returns render result.
+//RenderR renders template `tpl` with `data`, and returns render result.
 func (this *View) RenderR(tpl string, data ...map[string]interface{}) (d []byte) {
 	// init GPSC
 	if this.onceFn != nil {

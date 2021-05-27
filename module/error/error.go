@@ -13,7 +13,7 @@ import (
 	"runtime"
 )
 
-// The maximum number of stackframes on any error.
+// MaxStackDepth the maximum number of stack frames on any error.
 var MaxStackDepth = 50
 
 // Error is an error with an attached stacktrace. It can be used

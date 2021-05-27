@@ -85,7 +85,7 @@ func (c *FileCache) filepath(key string) string {
 	return filepath.Join(c.cfg.Dir, string(hash[0]), string(hash[1]), hash)
 }
 
-// Put puts value into cache with key and expire time.
+// Set sets value into cache with key and expire time.
 // If expired is 0, it will be deleted by next GC operation.
 func (c *FileCache) Set(key string, val string, ttl time.Duration) error {
 	filename := c.filepath(key)
@@ -128,7 +128,7 @@ func (c *FileCache) Get(key string) (val string, err error) {
 	return gcast.ToString(item.Val), nil
 }
 
-// Delete deletes cached value by given key.
+// Del deletes cached value by given key.
 func (c *FileCache) Del(key string) error {
 	return os.Remove(c.filepath(key))
 }
@@ -151,7 +151,7 @@ func (c *FileCache) Incr(key string) (int64, error) {
 	return gcast.ToInt64(item.Val), nil
 }
 
-// Decrease cached int value.
+// Decr decrease cached int value.
 func (c *FileCache) Decr(key string) (int64, error) {
 	item, err := c.read(key)
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *FileCache) Decr(key string) (int64, error) {
 	return gcast.ToInt64(item.Val), nil
 }
 
-// Incr value N by key
+// IncrN increase value N by key
 func (c *FileCache) IncrN(key string, n int64) (val int64, err error) {
 	item, err := c.read(key)
 	if err != nil {
@@ -179,7 +179,7 @@ func (c *FileCache) IncrN(key string, n int64) (val int64, err error) {
 	return gcast.ToInt64(item.Val), nil
 }
 
-// Decr value N by key
+// DecrN decrease value N by key
 func (c *FileCache) DecrN(key string, n int64) (val int64, err error) {
 	item, err := c.read(key)
 	if err != nil {
@@ -193,16 +193,17 @@ func (c *FileCache) DecrN(key string, n int64) (val int64, err error) {
 	return gcast.ToInt64(item.Val), nil
 }
 
-// IsExist returns true if cached value exists.
+// Has returns true if cached value exists.
 func (c *FileCache) Has(key string) (bool, error) {
 	return Exists(c.filepath(key)), nil
 }
 
-// Flush deletes all cached data.
+// Clear deletes all cached data.
 func (c *FileCache) Clear() error {
 	return os.RemoveAll(c.cfg.Dir)
 }
 
+//GetMulti get multiple keys values.
 func (c *FileCache) GetMulti(keys []string) (map[string]string, error) {
 	d := map[string]string{}
 	for _, key := range keys {
@@ -251,7 +252,7 @@ func (c *FileCache) startGC() {
 
 		data, err := ioutil.ReadFile(path)
 		if err != nil && !os.IsNotExist(err) {
-			fmt.Errorf("ReadFile: %v", err)
+			log.Printf("ReadFile: %v", err)
 		}
 
 		item := new(Item)

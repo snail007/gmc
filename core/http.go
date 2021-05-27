@@ -59,7 +59,7 @@ func (ps Params) MatchedRoutePath() string {
 	return ps.ByName(MatchedRoutePathParam)
 }
 
-// Options is used to setting cookie.
+// CookieOptions is used to setting cookie.
 type CookieOptions struct {
 	MaxAge   int    // optional
 	Path     string // optional, default to "/"

@@ -8,6 +8,7 @@ package db
 import (
 	gcore "github.com/snail007/gmc/core"
 	gdb "github.com/snail007/gmc/module/db"
+	// basic requirements
 	_ "github.com/snail007/gmc/using/basic"
 	gonce "github.com/snail007/gmc/util/sync/once"
 	"sync"

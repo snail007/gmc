@@ -8,18 +8,18 @@ package gcore
 import "io"
 
 const (
-	LTRACE LogLevel = iota + 1
-	LDEBUG
-	LINFO
-	LWARN
-	LERROR
-	LPANIC
-	LNONE
+	LogLevelTrace LogLevel = iota + 1
+	LogLeveDebug
+	LogLeveInfo
+	LogLeveWarn
+	LogLeveError
+	LogLevePanic
+	LogLeveNone
 )
 const (
-	LFLAG_NORMAL LogFlag = iota + 1
-	LFLAG_SHORT
-	LFLAG_LONG
+	LogFlagNormal LogFlag = iota + 1
+	LogFlagShort
+	LogFlagLong
 )
 
 type LogLevel int

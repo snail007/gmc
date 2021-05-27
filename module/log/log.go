@@ -192,12 +192,12 @@ func New(prefix ...string) gcore.Logger {
 	l := log.New(os.Stdout, pre, log.LstdFlags|log.Lmicroseconds)
 	return &Logger{
 		l:            l,
-		level:        gcore.LDEBUG,
+		level:        gcore.LogLeveDebug,
 		asyncOnce:    &sync.Once{},
 		callerSkip:   2,
 		exitCode:     1,
 		exitFunc:     os.Exit,
-		flag:         gcore.LFLAG_SHORT,
+		flag:         gcore.LogFlagShort,
 		skipCheckGMC: os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
 	}
 }
@@ -269,7 +269,7 @@ func (s *Logger) namespace() string {
 }
 
 func (s *Logger) Panicf(format string, v ...interface{}) {
-	if s.level > gcore.LPANIC {
+	if s.level > gcore.LogLevePanic {
 		return
 	}
 	str := s.caller(fmt.Sprintf(s.namespace()+"PANIC "+format, v...), s.skip())
@@ -279,7 +279,7 @@ func (s *Logger) Panicf(format string, v ...interface{}) {
 }
 
 func (s *Logger) Panic(v ...interface{}) {
-	if s.level > gcore.LPANIC {
+	if s.level > gcore.LogLevePanic {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "PANIC "}
@@ -290,7 +290,7 @@ func (s *Logger) Panic(v ...interface{}) {
 }
 
 func (s *Logger) Errorf(format string, v ...interface{}) {
-	if s.level > gcore.LERROR {
+	if s.level > gcore.LogLeveError {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip()))
@@ -299,7 +299,7 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 }
 
 func (s *Logger) Error(v ...interface{}) {
-	if s.level > gcore.LERROR {
+	if s.level > gcore.LogLeveError {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "ERROR "}
@@ -309,14 +309,14 @@ func (s *Logger) Error(v ...interface{}) {
 }
 
 func (s *Logger) Warnf(format string, v ...interface{}) {
-	if s.level > gcore.LWARN {
+	if s.level > gcore.LogLeveWarn {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip()))
 }
 
 func (s *Logger) Warn(v ...interface{}) {
-	if s.level > gcore.LWARN {
+	if s.level > gcore.LogLeveWarn {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "WARN "}
@@ -324,7 +324,7 @@ func (s *Logger) Warn(v ...interface{}) {
 }
 
 func (s *Logger) Infof(format string, v ...interface{}) {
-	if s.level > gcore.LINFO {
+	if s.level > gcore.LogLeveInfo {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"INFO "+format, v...), s.skip()))
@@ -332,7 +332,7 @@ func (s *Logger) Infof(format string, v ...interface{}) {
 }
 
 func (s *Logger) Info(v ...interface{}) {
-	if s.level > gcore.LINFO {
+	if s.level > gcore.LogLeveInfo {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "INFO "}
@@ -340,14 +340,14 @@ func (s *Logger) Info(v ...interface{}) {
 }
 
 func (s *Logger) Debugf(format string, v ...interface{}) {
-	if s.level > gcore.LDEBUG {
+	if s.level > gcore.LogLeveDebug {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip()))
 }
 
 func (s *Logger) Debug(v ...interface{}) {
-	if s.level > gcore.LDEBUG {
+	if s.level > gcore.LogLeveDebug {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "DEBUG "}
@@ -355,14 +355,14 @@ func (s *Logger) Debug(v ...interface{}) {
 }
 
 func (s *Logger) Tracef(format string, v ...interface{}) {
-	if s.level > gcore.LTRACE {
+	if s.level > gcore.LogLevelTrace {
 		return
 	}
 	s.Write(s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip()))
 }
 
 func (s *Logger) Trace(v ...interface{}) {
-	if s.level > gcore.LTRACE {
+	if s.level > gcore.LogLevelTrace {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "TRACE "}
@@ -406,7 +406,7 @@ func (s *Logger) skip() int {
 }
 
 func (s *Logger) caller(msg string, skip int) string {
-	if s.flag == gcore.LFLAG_NORMAL {
+	if s.flag == gcore.LogFlagNormal {
 		return msg
 	}
 	file := "unknown"
@@ -418,7 +418,7 @@ func (s *Logger) caller(msg string, skip int) string {
 			!strings.Contains(file0, p+"demos") {
 			// gmc
 			file = "[gmc]" + file0[strings.Index(file0, p)+len(p):]
-		} else if s.flag == gcore.LFLAG_SHORT {
+		} else if s.flag == gcore.LogFlagShort {
 			//short
 			file = filepath.Base(filepath.Dir(file0)) + "/" + filepath.Base(file0)
 		} else {

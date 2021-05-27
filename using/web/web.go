@@ -15,6 +15,7 @@ import (
 	gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
 	gi18n "github.com/snail007/gmc/module/i18n"
+	// basic  requirements
 	_ "github.com/snail007/gmc/using/basic"
 	gonce "github.com/snail007/gmc/util/sync/once"
 	"io"

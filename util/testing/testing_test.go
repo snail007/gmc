@@ -54,7 +54,7 @@ func TestWait(t *testing.T) {
 }
 
 func TestDebugRunProcess(t *testing.T) {
-	k:=execFlagPrefix+encodeTestName(t.Name())
+	k := execFlagPrefix + encodeTestName(t.Name())
 	DebugRunProcess(t)
 	assert2.Contains(t, os.Getenv(k), "true")
 	os.Unsetenv(k)

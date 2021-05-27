@@ -123,7 +123,7 @@ func (img *Image) Rotate(angle float64) image.Image {
 	return new(rotate).Rotate(angle, img.RGBA).transformRGBA()
 }
 
-// 填充背景
+// FillBkg 填充背景
 func (img *Image) FillBkg(c image.Image) {
 	draw.Draw(img, img.Bounds(), c, image.ZP, draw.Over)
 }

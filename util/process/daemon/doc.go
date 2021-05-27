@@ -4,7 +4,7 @@
 // More information at https://github.com/snail007/gmc
 
 /*
-daemon package does add daemon, logging and forever function to your program.
+Package gdaemon  does add daemon, logging and forever function to your program.
 
 the below command line arguments you can passed to your program after you using daemon package.
 

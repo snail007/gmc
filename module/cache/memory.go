@@ -21,7 +21,7 @@ type MemoryCacheItem struct {
 	Expiration int64
 }
 
-// Returns true if the item has expired.
+// Expired returns true if the item has expired.
 func (item MemoryCacheItem) Expired() bool {
 	if item.Expiration == 0 {
 		return false
@@ -30,9 +30,9 @@ func (item MemoryCacheItem) Expired() bool {
 }
 
 const (
-	// For use with functions that take an expiration time.
+	// NoExpiration for use with functions that take an expiration time.
 	NoExpiration time.Duration = -1
-	// For use with functions that take an expiration time. Equivalent to
+	// DefaultExpiration for use with functions that take an expiration time. Equivalent to
 	// passing in the same expiration duration as was given to New() or
 	// NewFrom() when the cache was created (e.g. 5 minutes.)
 	DefaultExpiration time.Duration = 0
@@ -1134,7 +1134,7 @@ func newMemoryCacheWithJanitor(de time.Duration, ci time.Duration, m map[string]
 	return C
 }
 
-// Return a new cache with a given default expiration duration and cleanup
+// NewMemoryCache returns a new cache with a given default expiration duration and cleanup
 // interval. If the expiration duration is less than one (or NoExpiration),
 // the items in the cache never expire (by default), and must be deleted
 // manually. If the cleanup interval is less than one, expired items are not
@@ -1144,7 +1144,7 @@ func NewMemoryCache(defaultExpiration, cleanupInterval time.Duration) *MemoryCac
 	return newMemoryCacheWithJanitor(defaultExpiration, cleanupInterval, items)
 }
 
-// Return a new cache with a given default expiration duration and cleanup
+// NewMemoryCacheFrom returns a new cache with a given default expiration duration and cleanup
 // interval. If the expiration duration is less than one (or NoExpiration),
 // the items in the cache never expire (by default), and must be deleted
 // manually. If the cleanup interval is less than one, expired items are not

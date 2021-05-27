@@ -4,6 +4,6 @@
 // More information at https://github.com/snail007/gmc
 
 /*
-profiling package help you do profiling your program in easy way.
+Package gprofiling package help you do profiling your program in easy way.
 */
 package gprofiling

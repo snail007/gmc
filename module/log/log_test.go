@@ -43,7 +43,7 @@ func TestLogger_SetLevel(t *testing.T) {
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
 	l.SetOutput(&out)
-	l.SetLevel(gcore.LWARN)
+	l.SetLevel(gcore.LogLeveWarn)
 	l.Info("a")
 	assert.Empty(out.String())
 }
@@ -85,7 +85,7 @@ func TestLogger_Trace(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetLevel(gcore.LTRACE)
+	l.SetLevel(gcore.LogLevelTrace)
 	l.SetOutput(&out)
 	l.Trace("a")
 	t.Log(out.String(), len(out.String()))
@@ -96,7 +96,7 @@ func TestLogger_Tracef(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetLevel(gcore.LTRACE)
+	l.SetLevel(gcore.LogLevelTrace)
 	l.SetOutput(&out)
 	l.Tracef("a%d", 10)
 	t.Log(out.String(), len(out.String()))

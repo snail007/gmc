@@ -32,12 +32,12 @@ type GPool struct {
 	initWorkCount int
 }
 
-//MaxWaitCount returns the max waiting task count.
+//MaxTaskAwaitCount returns the max waiting task count.
 func (s *GPool) MaxTaskAwaitCount() int {
 	return s.maxWaitCount
 }
 
-//SetMaxWaitCount sets the max waiting task count.
+//SetMaxTaskAwaitCount sets the max waiting task count.
 func (s *GPool) SetMaxTaskAwaitCount(maxWaitCount int) {
 	s.maxWaitCount = maxWaitCount
 }
@@ -248,7 +248,6 @@ func (w *worker) isBreak() bool {
 	default:
 		return false
 	}
-	return false
 }
 
 func (w *worker) breakLoop() bool {

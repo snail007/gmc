@@ -124,7 +124,7 @@ func (this *APIServer) initRequestCtx(w http.ResponseWriter, r *http.Request) gc
 		c0.SetRemoteAddr(v.remoteAddr)
 		c0.SetConn(v.conn)
 	}
-	gcore.SetCtx(w,c0)
+	gcore.SetCtx(w, c0)
 	return c0
 }
 
@@ -338,24 +338,24 @@ func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware)
 	return
 }
 
-//Init implements service.Service Init
+//Init implements gcore.Service Init
 func (s *APIServer) Init(cfg gcore.Config) (err error) {
 
 	return
 }
 
-//Start implements service.Service Start
+//Start implements gcore.Service Start
 func (this *APIServer) Start() (err error) {
 	this.Run()
 	return
 }
 
-//Stop implements service.Service Stop
+//Stop implements gcore.Service Stop
 func (this *APIServer) Stop() {
 	this.server.Close()
 }
 
-//GracefulStop implements service.Service GracefulStop
+//GracefulStop implements gcore.Service GracefulStop
 func (this *APIServer) GracefulStop() {
 	if this.isShutdown {
 		return
@@ -367,17 +367,17 @@ func (this *APIServer) GracefulStop() {
 	return
 }
 
-//SetLog implements service.Service SetLog
+//SetLog implements gcore.Service SetLog
 func (this *APIServer) SetLog(l gcore.Logger) {
 	this.logger = l
 }
 
-//InjectListeners implements service.Service InjectListeners
+//InjectListeners implements gcore.Service InjectListeners
 func (this *APIServer) InjectListeners(l []net.Listener) {
 	this.listener = l[0]
 }
 
-//Listener implements service.Service Listener
+//Listeners implements gcore.Service Listeners
 func (this *APIServer) Listeners() []net.Listener {
 	return []net.Listener{this.listener}
 }

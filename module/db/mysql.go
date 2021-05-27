@@ -17,7 +17,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
+	// require mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
 

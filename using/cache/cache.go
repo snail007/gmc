@@ -8,6 +8,7 @@ package cache
 import (
 	gcore "github.com/snail007/gmc/core"
 	gcache "github.com/snail007/gmc/module/cache"
+	// imports basic requirements
 	_ "github.com/snail007/gmc/using/basic"
 	gonce "github.com/snail007/gmc/util/sync/once"
 	"sync"

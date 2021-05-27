@@ -158,7 +158,7 @@ func (this *HTTPServer) initRequestCtx(w http.ResponseWriter, r *http.Request) g
 		c0.SetRemoteAddr(v.remoteAddr)
 		c0.SetConn(v.conn)
 	}
-	gcore.SetCtx(w,c0)
+	gcore.SetCtx(w, c0)
 	return c0
 }
 func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {

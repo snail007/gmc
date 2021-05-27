@@ -42,6 +42,7 @@ func init() {
 	gob.Register(map[int]int64{})
 	gob.Register(sData{})
 }
+
 func NewSession() *Session {
 	s := &Session{
 		id:     newSessionID(),
@@ -50,6 +51,7 @@ func NewSession() *Session {
 	}
 	return s
 }
+
 func (s *Session) Set(k interface{}, v interface{}) {
 	if s.isDestroy {
 		return
@@ -61,6 +63,7 @@ func (s *Session) Set(k interface{}, v interface{}) {
 	s.touch()
 	return
 }
+
 func (s *Session) Get(k interface{}) (value interface{}) {
 	if s.isDestroy {
 		return
@@ -115,9 +118,7 @@ func (s *Session) SessionID() (sessionID string) {
 	return s.id
 }
 
-//Touchtime return the last access unix time seconds of session
-//
-//time: unix time seconds
+// TouchTime return the last access unix time seconds of session.
 func (s *Session) TouchTime() (time int64) {
 	return s.touchtime
 }

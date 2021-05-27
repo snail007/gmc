@@ -7,7 +7,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-// Package httprouter is a trie based high performance HTTP request router.
+// Package grouter is a trie based high performance HTTP request router.
 //
 // A trivial example is:
 //

@@ -26,7 +26,7 @@ func SetLogger(l gcore.Logger) {
 	logger = l
 }
 
-//RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
+//Init parse app.toml database configuration, `cfg` is Config object of app.toml
 func Init(cfg0 gcore.Config) (err error) {
 	defaultCache = cfg0.GetString("cache.default")
 	for k, v := range cfg0.Sub("cache").AllSettings() {
@@ -89,7 +89,6 @@ func Cache(id ...string) gcore.Cache {
 	default:
 		return CacheU(id...)
 	}
-	return nil
 }
 
 //Redis acquires a redis cache object associated the id, id default is : `default`

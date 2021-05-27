@@ -174,19 +174,19 @@ func TestTreeWildcard(t *testing.T) {
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
-		{"/cmd/test/", false, "/cmd/:tool/", gcore.Params{gcore.Param{"tool", "test"}}},
-		{"/cmd/test", true, "", gcore.Params{gcore.Param{"tool", "test"}}},
-		{"/cmd/test/3", false, "/cmd/:tool/:sub", gcore.Params{gcore.Param{"tool", "test"}, gcore.Param{"sub", "3"}}},
-		{"/src/", false, "/src/*filepath", gcore.Params{gcore.Param{"filepath", "/"}}},
-		{"/src/some/file.png", false, "/src/*filepath", gcore.Params{gcore.Param{"filepath", "/some/file.png"}}},
+		{path: "/cmd/test/", route: "/cmd/:tool/", ps: gcore.Params{gcore.Param{Key: "tool", Value: "test"}}},
+		{path: "/cmd/test", nilHandler: true, ps: gcore.Params{gcore.Param{Key: "tool", Value: "test"}}},
+		{path: "/cmd/test/3", route: "/cmd/:tool/:sub", ps: gcore.Params{gcore.Param{Key: "tool", Value: "test"}, gcore.Param{Key: "sub", Value: "3"}}},
+		{path: "/src/", route: "/src/*filepath", ps: gcore.Params{gcore.Param{Key: "filepath", Value: "/"}}},
+		{path: "/src/some/file.png", route: "/src/*filepath", ps: gcore.Params{gcore.Param{Key: "filepath", Value: "/some/file.png"}}},
 		{"/search/", false, "/search/", nil},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", gcore.Params{gcore.Param{"query", "someth!ng+in+ünìcodé"}}},
-		{"/search/someth!ng+in+ünìcodé/", true, "", gcore.Params{gcore.Param{"query", "someth!ng+in+ünìcodé"}}},
-		{"/user_gopher", false, "/user_:name", gcore.Params{gcore.Param{"name", "gopher"}}},
-		{"/user_gopher/about", false, "/user_:name/about", gcore.Params{gcore.Param{"name", "gopher"}}},
-		{"/files/js/inc/framework.js", false, "/files/:dir/*filepath", gcore.Params{gcore.Param{"dir", "js"}, gcore.Param{"filepath", "/inc/framework.js"}}},
-		{"/info/gordon/public", false, "/info/:user/public", gcore.Params{gcore.Param{"user", "gordon"}}},
-		{"/info/gordon/project/go", false, "/info/:user/project/:project", gcore.Params{gcore.Param{"user", "gordon"}, gcore.Param{"project", "go"}}},
+		{path: "/search/someth!ng+in+ünìcodé", route: "/search/:query", ps: gcore.Params{gcore.Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
+		{path: "/search/someth!ng+in+ünìcodé/", nilHandler: true, ps: gcore.Params{gcore.Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
+		{path: "/user_gopher", route: "/user_:name", ps: gcore.Params{gcore.Param{Key: "name", Value: "gopher"}}},
+		{path: "/user_gopher/about", route: "/user_:name/about", ps: gcore.Params{gcore.Param{Key: "name", Value: "gopher"}}},
+		{path: "/files/js/inc/framework.js", route: "/files/:dir/*filepath", ps: gcore.Params{gcore.Param{Key: "dir", Value: "js"}, gcore.Param{Key: "filepath", Value: "/inc/framework.js"}}},
+		{path: "/info/gordon/public", route: "/info/:user/public", ps: gcore.Params{gcore.Param{Key: "user", Value: "gordon"}}},
+		{path: "/info/gordon/project/go", route: "/info/:user/project/:project", ps: gcore.Params{gcore.Param{Key: "user", Value: "gordon"}, gcore.Param{Key: "project", Value: "go"}}},
 	})
 
 	checkPriorities(t, tree)
@@ -297,9 +297,9 @@ func TestTreeDupliatePath(t *testing.T) {
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
 		{"/doc/", false, "/doc/", nil},
-		{"/src/some/file.png", false, "/src/*filepath", gcore.Params{gcore.Param{"filepath", "/some/file.png"}}},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", gcore.Params{gcore.Param{"query", "someth!ng+in+ünìcodé"}}},
-		{"/user_gopher", false, "/user_:name", gcore.Params{gcore.Param{"name", "gopher"}}},
+		{path: "/src/some/file.png", route: "/src/*filepath", ps: gcore.Params{gcore.Param{Key: "filepath", Value: "/some/file.png"}}},
+		{path: "/search/someth!ng+in+ünìcodé", route: "/search/:query", ps: gcore.Params{gcore.Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
+		{path: "/user_gopher", route: "/user_:name", ps: gcore.Params{gcore.Param{Key: "name", Value: "gopher"}}},
 	})
 }
 

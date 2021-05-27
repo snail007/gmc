@@ -30,7 +30,7 @@ func _init() {
 	//fmt.Println(os.Args, argv, found)
 }
 
-//bind command line argument, no - or -- prefix, such as: profiling
+//StartArg bind command line argument, no - or -- prefix, such as: profiling
 //
 //./foobar -profiling=debug
 //
@@ -39,7 +39,7 @@ func StartArg(argName string) {
 	start(argName)
 }
 
-//Start's arguments is store floder path,
+//Start arguments is store folder path,
 //
 //all profiling files will be stored in "storePath" folder, folder must be exists
 func Start(storePath string) {

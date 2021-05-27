@@ -37,9 +37,9 @@ func (m *mockResponseWriter) WriteHeader(int) {}
 
 func TestParams(t *testing.T) {
 	ps := gcore.Params{
-		gcore.Param{"param1", "value1"},
-		gcore.Param{"param2", "value2"},
-		gcore.Param{"param3", "value3"},
+		gcore.Param{Key: "param1", Value: "value1"},
+		gcore.Param{Key: "param2", Value: "value2"},
+		gcore.Param{Key: "param3", Value: "value3"},
 	}
 	for i := range ps {
 		if val := ps.ByName(ps[i].Key); val != ps[i].Value {
@@ -57,7 +57,7 @@ func TestRouter(t *testing.T) {
 	routed := false
 	router.Handle(http.MethodGet, "/user/:name", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
 		routed = true
-		want := gcore.Params{gcore.Param{"name", "gopher"}}
+		want := gcore.Params{gcore.Param{Key: "name", Value: "gopher"}}
 		if !reflect.DeepEqual(ps, want) {
 			t.Fatalf("wrong wildcard values: want %v, got %v", want, ps)
 		}
@@ -510,7 +510,7 @@ func TestRouterLookup(t *testing.T) {
 	wantHandle := func(_ http.ResponseWriter, _ *http.Request, _ gcore.Params) {
 		routed = true
 	}
-	wantParams := gcore.Params{gcore.Param{"name", "gopher"}}
+	wantParams := gcore.Params{gcore.Param{Key: "name", Value: "gopher"}}
 
 	router := New()
 
@@ -574,7 +574,7 @@ func TestRouterLookup(t *testing.T) {
 func TestRouterParamsFromContext(t *testing.T) {
 	routed := false
 
-	wantParams := gcore.Params{gcore.Param{"name", "gopher"}}
+	wantParams := gcore.Params{gcore.Param{Key: "name", Value: "gopher"}}
 	handlerFunc := func(_ http.ResponseWriter, req *http.Request) {
 		// get params from request context
 		params := gcore.ParamsFromContext(req.Context())

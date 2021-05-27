@@ -34,7 +34,7 @@ func InitFromFile(cfgFile string) (err error) {
 	return Init(cfg)
 }
 
-//RegistGroup parse app.toml database configuration, `cfg` is Config object of app.toml
+//Init parse app.toml database configuration, `cfg` is Config object of app.toml
 func Init(cfg0 gcore.Config) (err error) {
 	defaultDB = cfg0.GetString("database.default")
 	cfg = cfg0

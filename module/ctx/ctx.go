@@ -757,7 +757,7 @@ func (this *Ctx) SaveUploadedFile(file *multipart.FileHeader, dst string) error 
 func NewCtx() *Ctx {
 	return &Ctx{
 		param:    gcore.Params{},
-		metadata: gmap.NewMap(),
+		metadata: gmap.New(),
 	}
 }
 
@@ -765,7 +765,7 @@ func NewCtxFromConfig(c gcore.Config) *Ctx {
 	return &Ctx{
 		config:   c,
 		param:    gcore.Params{},
-		metadata: gmap.NewMap(),
+		metadata: gmap.New(),
 	}
 }
 
@@ -779,7 +779,7 @@ func NewCtxFromConfigFile(file string) (ctx *Ctx, err error) {
 	ctx = &Ctx{
 		config:   c,
 		param:    gcore.Params{},
-		metadata: gmap.NewMap(),
+		metadata: gmap.New(),
 	}
 	return
 }

@@ -160,7 +160,7 @@ func (s *List) RangeFast(f func(index int, value interface{}) bool) {
 func (s *List) Clone() *List {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	newList := NewList()
+	newList := New()
 	newList.data = append(newList.data, s.data...)
 	return newList
 }
@@ -199,7 +199,7 @@ func (s *List) Sub(start, end int) *List {
 	if start >= end || start < 0 || end > length {
 		return nil
 	}
-	l := NewList()
+	l := New()
 	l.MergeSlice(s.data[start:end])
 	return l
 }
@@ -253,8 +253,8 @@ func (s *List) String() string {
 	return fmt.Sprintf("%v", s.ToSlice())
 }
 
-// NewList returns a new *List object
-func NewList() *List {
+// New returns a new *List object
+func New() *List {
 	return &List{
 		data: []interface{}{},
 		lock: &sync.RWMutex{},

@@ -120,7 +120,7 @@ func (s *Set) Len() int {
 
 // Clone duplicates the set s.
 func (s *Set) Clone() *Set {
-	set := NewSet()
+	set := New()
 	set.Merge(s)
 	return set
 }
@@ -137,7 +137,7 @@ func (s *Set) String() string {
 	return fmt.Sprintf("%v", s.ToSlice())
 }
 
-// NewSet returns a new *Set object
-func NewSet() *Set {
-	return &Set{data: gmap.NewMap()}
+// New returns a new *Set object
+func New() *Set {
+	return &Set{data: gmap.New()}
 }

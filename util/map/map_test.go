@@ -15,7 +15,7 @@ import (
 
 func TestRange(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "111")
 	assert.Equal(2, m.Len())
@@ -30,7 +30,7 @@ func TestRange(t *testing.T) {
 
 func TestLoad(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	v, _ := m.Load("a")
 	assert.Equal("111", v)
@@ -43,7 +43,7 @@ func TestLoad(t *testing.T) {
 }
 func TestRange_1(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "111")
 	m.Store("c", "111")
@@ -56,7 +56,7 @@ func TestRange_1(t *testing.T) {
 }
 func TestRange_2(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "111")
 	m.Store("c", "111")
@@ -75,7 +75,7 @@ func TestRange_2(t *testing.T) {
 }
 func TestMap_RangeFast(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "111")
 	m.Store("c", "111")
@@ -91,7 +91,7 @@ func TestMap_RangeFast(t *testing.T) {
 }
 func TestKeys(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "111")
 	m.Store("c", "111")
@@ -102,7 +102,7 @@ func TestKeys(t *testing.T) {
 }
 func TestKeys_1(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "111")
 	m.Store("c", "111")
@@ -119,7 +119,7 @@ func TestKeys_1(t *testing.T) {
 }
 func TestKeys_2(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", " 11")
 	m.Store("c", "111")
@@ -132,7 +132,7 @@ func TestKeys_2(t *testing.T) {
 
 func TestShift(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "222")
 	m.Store("c", "333")
@@ -160,7 +160,7 @@ func TestShift(t *testing.T) {
 
 func TestPop(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	m.Store("a", "111")
 	m.Store("b", "222")
 	m.Store("c", "333")
@@ -189,7 +189,7 @@ func TestPop(t *testing.T) {
 
 func TestMap_Clone(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
@@ -207,7 +207,7 @@ func TestMap_Clone(t *testing.T) {
 
 func TestMap_ToMap(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
@@ -225,7 +225,7 @@ func TestMap_ToMap(t *testing.T) {
 
 func TestMap_ToStringMap(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
@@ -243,12 +243,12 @@ func TestMap_ToStringMap(t *testing.T) {
 
 func TestMap_Merge(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
 	assert.Equal(100, m.Len())
-	m1 := NewMap()
+	m1 := New()
 	m1.Merge(m)
 	assert.Equal(100, m1.Len())
 }
@@ -260,7 +260,7 @@ func TestMap_MergeMap(t *testing.T) {
 		m[i] = i
 	}
 	assert.Equal(100, len(m))
-	m1 := NewMap()
+	m1 := New()
 	m1.MergeMap(m)
 	assert.Equal(100, m1.Len())
 }
@@ -272,7 +272,7 @@ func TestMap_MergeStrMap(t *testing.T) {
 		m[fmt.Sprintf("%v", i)] = i
 	}
 	assert.Equal(100, len(m))
-	m1 := NewMap()
+	m1 := New()
 	m1.MergeStrMap(m)
 	assert.Equal(100, m1.Len())
 }
@@ -284,7 +284,7 @@ func TestMap_MergeStrStrMap(t *testing.T) {
 		m[fmt.Sprintf("%v", i)] = fmt.Sprintf("%v", i)
 	}
 	assert.Equal(100, len(m))
-	m1 := NewMap()
+	m1 := New()
 	m1.MergeStrStrMap(m)
 	assert.Equal(100, m1.Len())
 }
@@ -295,14 +295,14 @@ func TestMap_MergeSyncMap(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
-	m1 := NewMap()
+	m1 := New()
 	m1.MergeSyncMap(m)
 	assert.Equal(100, m1.Len())
 }
 
 func TestMap_Clear(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
@@ -313,7 +313,7 @@ func TestMap_Clear(t *testing.T) {
 
 func TestMap_IsEmpty(t *testing.T) {
 	assert := assert.New(t)
-	m := NewMap()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Store(i, i)
 	}
@@ -329,11 +329,11 @@ func TestMap_IndexOf(t *testing.T) {
 		m   *Map
 		max int
 	}{
-		{NewMap(), 0},
-		{NewMap(), 1},
-		{NewMap(), 2},
-		{NewMap(), 3},
-		{NewMap(), 100},
+		{New(), 0},
+		{New(), 1},
+		{New(), 2},
+		{New(), 3},
+		{New(), 100},
 	}
 	for _, v := range data {
 		for i := 0; i < v.max; i++ {
@@ -351,7 +351,7 @@ func TestMap_IndexOf(t *testing.T) {
 
 func TestMap_String(t *testing.T) {
 	assert := assert.New(t)
-	l := NewMap()
+	l := New()
 	for i := 0; i < 1; i++ {
 		l.Store(i, i)
 	}
@@ -360,7 +360,7 @@ func TestMap_String(t *testing.T) {
 
 func TestMap_StoreFront(t *testing.T) {
 	assert := assert.New(t)
-	l := NewMap()
+	l := New()
 	for i := 0; i < 3; i++ {
 		l.StoreFront(i, i)
 	}
@@ -369,7 +369,7 @@ func TestMap_StoreFront(t *testing.T) {
 
 func TestMap_StoreFront2(t *testing.T) {
 	assert := assert.New(t)
-	l := NewMap()
+	l := New()
 	for i := 0; i < 3; i++ {
 		l.StoreFront(i, i)
 	}
@@ -381,7 +381,7 @@ func TestMap_StoreFront2(t *testing.T) {
 
 func TestMap_LoadOrStoreFront(t *testing.T) {
 	assert := assert.New(t)
-	l := NewMap()
+	l := New()
 	for i := 0; i < 3; i++ {
 		l.LoadOrStoreFront(i, i)
 	}
@@ -393,7 +393,7 @@ func TestMap_LoadOrStoreFront(t *testing.T) {
 
 func TestMap_LoadOrStoreFunc(t *testing.T) {
 	assert := assert.New(t)
-	l := NewMap()
+	l := New()
 	for i := 0; i < 3; i++ {
 		j := i
 		l.LoadOrStoreFunc(i, func() interface{} {
@@ -414,7 +414,7 @@ func TestMap_LoadOrStoreFunc(t *testing.T) {
 
 func TestMap_LoadAndStoreFunc(t *testing.T) {
 	assert := assert.New(t)
-	l := NewMap()
+	l := New()
 	for i := 0; i < 3; i++ {
 		l.LoadAndStoreFunc(i, func(_ interface{}, loaded bool) (newValue interface{}) {
 			assert.False(loaded)

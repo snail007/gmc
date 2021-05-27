@@ -33,7 +33,7 @@ type Map struct {
 func (s *Map) Clone() *Map {
 	s.RLock()
 	defer s.RUnlock()
-	m := NewMap()
+	m := New()
 	s.keys.Range(func(v interface{}) bool {
 		m.store(v, s.data[v])
 		return true
@@ -398,8 +398,8 @@ func (s *Map) String() string {
 	return fmt.Sprintf("%v", s.ToMap())
 }
 
-// NewMap creates a Map object.
-func NewMap() *Map {
+// New creates a Map object.
+func New() *Map {
 	return &Map{
 		keys:     glinklist.New(),
 		data:     map[interface{}]interface{}{},

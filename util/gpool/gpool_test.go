@@ -19,17 +19,17 @@ import (
 //testing here
 
 func TestNewGPool(t *testing.T) {
-	p := NewGPool(3)
+	p := New(3)
 	if p != nil {
-		t.Log("NewGPool is okay")
+		t.Log("New is okay")
 	} else {
-		t.Fatalf("NewGPool is failed")
+		t.Fatalf("New is failed")
 	}
 	p.Stop()
 }
 
 func TestSubmit(t *testing.T) {
-	p := NewGPool(3)
+	p := New(3)
 	a := make(chan bool)
 	p.Submit(func() {
 		a <- true
@@ -48,7 +48,7 @@ func TestSubmit(t *testing.T) {
 	time.Sleep(time.Second)
 }
 func TestStop(t *testing.T) {
-	p := NewGPool(3)
+	p := New(3)
 	a := make(chan bool)
 	p.Submit(func() {
 		time.Sleep(time.Second)
@@ -64,12 +64,12 @@ func TestStop(t *testing.T) {
 	p.Stop()
 }
 func TestSetLogger(t *testing.T) {
-	p := NewGPool(3)
+	p := New(3)
 	p.SetLogger(nil)
 	p.Stop()
 }
 func TestRunning(t *testing.T) {
-	p := NewGPool(3)
+	p := New(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})
@@ -93,7 +93,7 @@ func TestRunning(t *testing.T) {
 
 func TestIncrease(t *testing.T) {
 	assert := assert2.New(t)
-	p := NewGPool(3)
+	p := New(3)
 	for i := 0; i < 3; i++ {
 		p.Submit(func() {
 			time.Sleep(time.Second * 5)
@@ -112,7 +112,7 @@ func TestIncrease(t *testing.T) {
 
 func TestDecrease(t *testing.T) {
 	assert := assert2.New(t)
-	p := NewGPool(2)
+	p := New(2)
 	for i := 0; i < 6; i++ {
 		p.Submit(func() {
 			time.Sleep(time.Second)
@@ -127,7 +127,7 @@ func TestDecrease(t *testing.T) {
 }
 
 func TestAwaiting(t *testing.T) {
-	p := NewGPool(3)
+	p := New(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})
@@ -151,7 +151,7 @@ func TestAwaiting(t *testing.T) {
 
 func TestGPool_MaxWaitCount(t *testing.T) {
 	assert := assert2.New(t)
-	p := NewGPool(1)
+	p := New(1)
 	p.SetDebug(true)
 	assert.True(p.IsDebug())
 	p.SetMaxTaskAwaitCount(2)
@@ -192,6 +192,6 @@ func TestMain(m *testing.M) {
 		return gerror.New()
 	})
 
-	pSubmit = NewGPool(500000)
+	pSubmit = New(500000)
 	os.Exit(m.Run())
 }

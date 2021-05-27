@@ -13,7 +13,7 @@ import (
 
 func TestSet_Add(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
@@ -26,7 +26,7 @@ func TestSet_Add(t *testing.T) {
 
 func TestSet_Clone(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
@@ -39,7 +39,7 @@ func TestSet_Clone(t *testing.T) {
 
 func TestSet_Pop(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
@@ -50,7 +50,7 @@ func TestSet_Pop(t *testing.T) {
 
 func TestSet_Contains(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
@@ -65,11 +65,11 @@ func TestSet_Contains(t *testing.T) {
 
 func TestSet_Merge(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
-	s1 := NewSet()
+	s1 := New()
 	s1.Merge(s)
 	assert.Equal(10, s1.Len())
 	for i := 0; i < 10; i++ {
@@ -79,11 +79,11 @@ func TestSet_Merge(t *testing.T) {
 
 func TestSet_MergeSlice(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
-	s1 := NewSet()
+	s1 := New()
 	s1.MergeSlice(s.ToSlice())
 	assert.Equal(10, s1.Len())
 	for i := 0; i < 10; i++ {
@@ -93,11 +93,11 @@ func TestSet_MergeSlice(t *testing.T) {
 
 func TestSet_MergeStringSlice(t *testing.T) {
 	assert := assert.New(t)
-	s := NewSet()
+	s := New()
 	for i := 0; i < 10; i++ {
 		s.Add(i)
 	}
-	s1 := NewSet()
+	s1 := New()
 	s1.MergeStringSlice(s.ToStringSlice())
 	assert.Equal(10, s1.Len())
 	for i := 0; i < 10; i++ {
@@ -107,7 +107,7 @@ func TestSet_MergeStringSlice(t *testing.T) {
 
 func TestRange_1(t *testing.T) {
 	assert := assert.New(t)
-	m := NewSet()
+	m := New()
 	m.Add("a")
 	m.Add("b")
 	m.Add("c")
@@ -120,7 +120,7 @@ func TestRange_1(t *testing.T) {
 }
 func TestRange_2(t *testing.T) {
 	assert := assert.New(t)
-	m := NewSet()
+	m := New()
 	m.Add("a")
 	m.Add("b")
 	m.Add("c")
@@ -139,7 +139,7 @@ func TestRange_2(t *testing.T) {
 }
 func TestMap_RangeFast(t *testing.T) {
 	assert := assert.New(t)
-	m := NewSet()
+	m := New()
 	m.Add("a")
 	m.Add("b")
 	m.Add("c")
@@ -160,11 +160,11 @@ func TestMap_IndexOf(t *testing.T) {
 		m   *Set
 		max int
 	}{
-		{NewSet(), 0},
-		{NewSet(), 1},
-		{NewSet(), 2},
-		{NewSet(), 3},
-		{NewSet(), 100},
+		{New(), 0},
+		{New(), 1},
+		{New(), 2},
+		{New(), 3},
+		{New(), 100},
 	}
 	for _, v := range data {
 		for i := 0; i < v.max; i++ {
@@ -182,7 +182,7 @@ func TestMap_IndexOf(t *testing.T) {
 
 func TestSet_String(t *testing.T) {
 	assert := assert.New(t)
-	l := NewSet()
+	l := New()
 	for i := 0; i < 2; i++ {
 		l.Add(i)
 	}
@@ -191,7 +191,7 @@ func TestSet_String(t *testing.T) {
 
 func TestSet_ToStringSlice(t *testing.T) {
 	assert := assert.New(t)
-	m := NewSet()
+	m := New()
 	for i := 0; i < 100; i++ {
 		m.Add(i)
 	}
@@ -203,7 +203,7 @@ func TestSet_ToStringSlice(t *testing.T) {
 
 func TestSet_AddFront(t *testing.T) {
 	assert := assert.New(t)
-	l := NewSet()
+	l := New()
 	for i := 0; i < 2; i++ {
 		l.AddFront(i)
 	}

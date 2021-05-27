@@ -112,7 +112,7 @@ func (s *NewAssistant) APIServerDefault(ctx gcore.Ctx) (gcore.APIServer, error) 
 
 // Map creates a gmap.Map object, gmap.Map's keys are sequenced.
 func (s *NewAssistant) Map() *gmap.Map {
-	return gmap.NewMap()
+	return gmap.New()
 }
 
 // DBAssistant helper to access database, DB.Init Must be called firstly with config object of app.toml.

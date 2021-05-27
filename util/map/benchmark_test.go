@@ -11,7 +11,7 @@ import (
 )
 
 func BenchmarkGMapLoad(b *testing.B) {
-	gMap := NewMap()
+	gMap := New()
 	b.StopTimer()
 	for i := 0; i < b.N/2; i++ {
 		gMap.Store(i, Map{})
@@ -35,7 +35,7 @@ func BenchmarkGoMapLoad(b *testing.B) {
 }
 
 func BenchmarkGMapLoadOrStore(b *testing.B) {
-	gMap := NewMap()
+	gMap := New()
 	b.StopTimer()
 	for i := 0; i < b.N/2; i++ {
 		gMap.Store(i, Map{})
@@ -59,7 +59,7 @@ func BenchmarkGoMapLoadOrStore(b *testing.B) {
 }
 
 func BenchmarkGMapRange(b *testing.B) {
-	gMap := NewMap()
+	gMap := New()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
 		gMap.Store(i, Map{})
@@ -83,7 +83,7 @@ func BenchmarkGoMapRange(b *testing.B) {
 }
 
 func BenchmarkGMapPop(b *testing.B) {
-	gMap := NewMap()
+	gMap := New()
 	b.StopTimer()
 	for i := 0; i < b.N/2; i++ {
 		gMap.Store(i, Map{})
@@ -95,7 +95,7 @@ func BenchmarkGMapPop(b *testing.B) {
 }
 
 func BenchmarkGMapShift(b *testing.B) {
-	gMap := NewMap()
+	gMap := New()
 	b.StopTimer()
 	for i := 0; i < b.N/2; i++ {
 		gMap.Store(i, Map{})

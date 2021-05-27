@@ -52,12 +52,12 @@ func (s *GPool) SetDebug(debug bool) {
 	s.debug = debug
 }
 
-// NewGPool create a gpool object to using
-func NewGPool(workerCount int) (p *GPool) {
+// New create a gpool object to using
+func New(workerCount int) (p *GPool) {
 	p = &GPool{
-		tasks:         glist.NewList(),
+		tasks:         glist.New(),
 		logger:        gcore.ProviderLogger()(nil, ""),
-		workers:       gmap.NewMap(),
+		workers:       gmap.New(),
 		initWorkCount: workerCount,
 	}
 	return

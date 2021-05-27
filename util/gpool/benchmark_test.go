@@ -22,7 +22,7 @@ func BenchmarkSubmit(b *testing.B) {
 	pSubmit.Stop()
 }
 func BenchmarkWorker(b *testing.B) {
-	pWorker = NewGPool(1)
+	pWorker = New(1)
 	b.StopTimer()
 	g := sync.WaitGroup{}
 	g.Add(b.N)

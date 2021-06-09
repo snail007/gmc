@@ -44,7 +44,7 @@ type initErrorCodec struct {
 	net.Conn
 }
 
-func (i *initErrorCodec) Initialize(context Context) error {
+func (i *initErrorCodec) Initialize(context ConnContext) error {
 	return fmt.Errorf("init error")
 }
 
@@ -52,7 +52,7 @@ type initOkayCodec struct {
 	net.Conn
 }
 
-func (i *initOkayCodec) Initialize(context Context) error {
+func (i *initOkayCodec) Initialize(context ConnContext) error {
 	return nil
 }
 
@@ -85,11 +85,17 @@ func TestNewEventListener(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
+	el.SetConnContextFactory(func(conn net.Conn) Context {
+		ctx:= NewContext()
+		ctx.SetData("cfg","abc")
+		return ctx
+	})
 	el.AddCodecFactory(func() Codec {
 		return NewAESCodec("abc")
 	}).SetFirstReadTimeout(time.Second)
-	el.OnAccept(func(_ *EventListener, c net.Conn) {
+	el.OnAccept(func(_ *EventListener,ctx Context, c net.Conn) {
 		c.Write([]byte("hello"))
+		assert.Equal(t,"abc",c.(*Conn).ctx.Data("cfg"))
 	}).Start()
 	time.Sleep(time.Second)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)

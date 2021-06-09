@@ -160,8 +160,8 @@ func TestMultipleCodec2(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 3)
-	assert.Equal(t, int64(510), conn.ReadBytes())
-	assert.Equal(t, int64(510), conn.WriteBytes())
+	assert.True(t, conn.ReadBytes() > 450)
+	assert.True(t, conn.WriteBytes() > 450)
 	assert.True(t, *outputCnt > 50)
 }
 
@@ -252,14 +252,13 @@ func TestEventConn3(t *testing.T) {
 		c, _ := l.Accept()
 		c.Write([]byte("hello"))
 	}()
-	hasErr:=false
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewEventConn(c)
 	conn.AddCodec(&initOkayCodec{})
 	conn.AddCodec(&initErrorCodec{})
- 	conn.OnCodecInitializeError(func(_ *EventConn, err error) {
-		hasErr=true
+	conn.OnCodecInitializeError(func(ec *EventConn, err error) {
+		ec.SetData("test", "abc")
 	}).Start()
 	time.Sleep(time.Second * 1)
- 	assert.True(t, hasErr)
+	assert.Equal(t, "abc", conn.Data("test"))
 }

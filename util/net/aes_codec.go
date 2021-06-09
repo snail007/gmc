@@ -52,7 +52,7 @@ func (c *AESCodec) Write(p []byte) (n int, err error) {
 	return c.w.Write(p)
 }
 
-func (s *AESCodec) Initialize(ctx Context) (err error) {
+func (s *AESCodec) Initialize(ctx ConnContext) (err error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return err

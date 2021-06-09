@@ -7,6 +7,7 @@ package gnet
 
 import (
 	"bufio"
+	gmap "github.com/snail007/gmc/util/map"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -15,11 +16,11 @@ import (
 
 type Codec interface {
 	net.Conn
-	Initialize(Context) error
+	Initialize(ConnContext) error
 }
 
 type Conn struct {
-	ctx Context
+	ctx ConnContext
 	net.Conn
 	codec        []Codec
 	readTimeout  time.Duration
@@ -111,12 +112,21 @@ func (c *Conn) AddCodec(codec Codec) *Conn {
 }
 
 func NewConn(conn net.Conn) *Conn {
+	return NewContextConn(nil, conn)
+}
+
+func NewContextConn(ctx Context, conn net.Conn) *Conn {
 	c := &Conn{
 		Conn:       conn,
 		writeBytes: new(int64),
 		readBytes:  new(int64),
 	}
-	c.ctx = NewContext(c)
+	if ctx == nil {
+		c.ctx = NewContext().(*defaultContext)
+	} else {
+		c.ctx = ctx.(*defaultContext)
+	}
+	c.ctx.(*defaultContext).conn = c
 	return c
 }
 
@@ -140,6 +150,7 @@ type EventConn struct {
 	writeTimeout           time.Duration
 	closeOnce              sync.Once
 	codec                  []Codec
+	data                   *gmap.Map
 }
 
 func (s *EventConn) ReadBytes() int64 {
@@ -239,6 +250,15 @@ func (s *EventConn) Close() {
 	})
 }
 
+func (s *EventConn) Data(key interface{}) interface{} {
+	v, _ := s.data.Load(key)
+	return v
+}
+
+func (s *EventConn) SetData(key, value interface{}) {
+	s.data.Store(key, value)
+}
+
 func (s *EventConn) AddCodec(codec Codec) *EventConn {
 	s.codec = append(s.codec, codec)
 	return s
@@ -287,6 +307,7 @@ func (s *EventConn) Start() {
 
 func NewEventConn(c net.Conn) *EventConn {
 	return &EventConn{
+		data:           gmap.New(),
 		writeBytes:     new(int64),
 		readBytes:      new(int64),
 		readBufferSize: 1024 * 8,

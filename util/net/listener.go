@@ -17,12 +17,15 @@ type EventListenerFirstReadTimeoutHandler func(l *EventListener, c net.Conn, err
 
 type EventListenerOnCloseHandler func(l *EventListener)
 
-type EventListenerOnAcceptHandler func(l *EventListener, c net.Conn)
+type EventListenerOnAcceptHandler func(l *EventListener, ctx Context, c net.Conn)
 
 type CodecFactory func() Codec
 
+type ContextFactory func(c net.Conn) Context
+
 type EventListener struct {
 	l                      net.Listener
+	contextFactory         ContextFactory
 	codecFactory           []CodecFactory
 	onClose                EventListenerOnCloseHandler
 	onAcceptError          EventListenerErrorHandler
@@ -31,6 +34,10 @@ type EventListener struct {
 	onFistReadTimeoutError EventListenerFirstReadTimeoutHandler
 	firstReadTimeout       time.Duration
 	closeOnce              *sync.Once
+}
+
+func (s *EventListener) SetConnContextFactory(contextFactory ContextFactory) {
+	s.contextFactory = contextFactory
 }
 
 func (s *EventListener) OnFistReadTimeout(h EventListenerFirstReadTimeoutHandler) *EventListener {
@@ -92,8 +99,9 @@ func (s *EventListener) Start() *EventListener {
 				c = bc
 			}
 			// codec check
+			ctx := s.contextFactory(c)
 			if len(s.codecFactory) > 0 {
-				conn := NewConn(c)
+				conn := NewContextConn(ctx.(*defaultContext), c)
 				for _, cf := range s.codecFactory {
 					conn.AddCodec(cf())
 				}
@@ -103,10 +111,10 @@ func (s *EventListener) Start() *EventListener {
 					s.onCodecInitializeError(s, err)
 					continue
 				}
-				c=conn
+				c = conn
 			}
 			// accept
-			s.onAccept(s, c)
+			s.onAccept(s, ctx, c)
 		}
 	}()
 	return s
@@ -122,6 +130,9 @@ func (s *EventListener) Close() *EventListener {
 
 func NewEventListener(l net.Listener) *EventListener {
 	return &EventListener{
+		contextFactory: func(net.Conn) Context {
+			return NewContext()
+		},
 		closeOnce:              &sync.Once{},
 		l:                      l,
 		onAcceptError:          func(*EventListener, error) {},

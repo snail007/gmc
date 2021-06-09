@@ -15,6 +15,10 @@ import (
 type Context interface {
 	Data(key interface{}) interface{}
 	SetData(key, value interface{})
+}
+
+type ConnContext interface {
+	Context
 	ReadTimeout() time.Duration
 	WriteTimeout() time.Duration
 	RemoteAddr() net.Addr
@@ -23,8 +27,6 @@ type Context interface {
 	ReadBytes() int64
 	WriteBytes() int64
 }
-
-
 
 type defaultContext struct {
 	conn *Conn
@@ -68,9 +70,8 @@ func (s *defaultContext) LocalAddr() net.Addr {
 	return s.conn.LocalAddr()
 }
 
-func NewContext(conn *Conn) *defaultContext {
+func NewContext() Context {
 	return &defaultContext{
 		data: gmap.New(),
-		conn: conn,
 	}
 }

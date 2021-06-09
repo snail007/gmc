@@ -230,7 +230,7 @@ func (s *HeartbeatCodec) SetTimeout(timeout time.Duration) *HeartbeatCodec {
 	return s
 }
 
-func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
+func (s *HeartbeatCodec) Initialize(ctx ConnContext) (err error) {
 	s.Conn = ctx.Conn()
 	s.bufReader, s.bufWriter = io.Pipe()
 	if s.timeout == 0 {

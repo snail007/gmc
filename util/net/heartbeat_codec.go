@@ -1,3 +1,8 @@
+// Copyright 2020 The GMC Author. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// More information at https://github.com/snail007/gmc
+
 package gnet
 
 import (
@@ -39,14 +44,14 @@ func (h *heartbeatCodecMsg) SetData(data []byte) {
 	h.data = data
 }
 
-func (h *heartbeatCodecMsg) ReadFrom(r io.Reader) (err error) {
+func (h *heartbeatCodecMsg) ReadFrom(r net.Conn) (err error) {
 	var flag uint16
 	err = binary.Read(r, binary.LittleEndian, &flag)
 	if err != nil {
 		return
 	}
 	if flag != heartbeatCodecMsgFlag {
-		return fmt.Errorf("unrecognized msg type: %x", flag)
+		return fmt.Errorf("unrecognized msg type: %x, remote: %s", flag, r.RemoteAddr().String())
 	}
 	err = binary.Read(r, binary.LittleEndian, &h.len)
 	if err != nil {
@@ -185,6 +190,10 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	go func() {
 		defer close(done)
 		n, err = s.Conn.Write(msg.Bytes())
+		if err == nil {
+			// decrease the n with msg header length 6 bytes
+			n = n - 6
+		}
 	}()
 	select {
 	case <-done:
@@ -221,8 +230,8 @@ func (s *HeartbeatCodec) SetTimeout(timeout time.Duration) *HeartbeatCodec {
 	return s
 }
 
-func (s *HeartbeatCodec) Initialize(conn net.Conn) (err error) {
-	s.Conn = conn
+func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
+	s.Conn = ctx.Conn()
 	s.bufReader, s.bufWriter = io.Pipe()
 	if s.timeout == 0 {
 		s.timeout = time.Second * 5
@@ -237,6 +246,7 @@ func (s *HeartbeatCodec) Initialize(conn net.Conn) (err error) {
 	go s.heartbeat()
 	return
 }
+
 func NewHeartbeatCodec() *HeartbeatCodec {
 	return &HeartbeatCodec{}
 }

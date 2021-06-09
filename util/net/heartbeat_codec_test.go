@@ -1,17 +1,25 @@
+// Copyright 2020 The GMC Author. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// More information at https://github.com/snail007/gmc
+
 package gnet
 
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewConn(t *testing.T) {
+func TestHeartbeatCodec(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
+	outputCnt:=new(int32)
+	errCnt:=new(int32)
 	go func() {
 		c, _ := l.Accept()
 		codec := NewHeartbeatCodec()
@@ -24,6 +32,7 @@ func TestNewConn(t *testing.T) {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
 				if err != nil {
+					atomic.AddInt32(errCnt,1)
 					fmt.Println("server write error", err)
 					return
 				}
@@ -35,10 +44,13 @@ func TestNewConn(t *testing.T) {
 				buf := make([]byte, 1024)
 				n, err := conn.Read(buf)
 				if err != nil {
+					atomic.AddInt32(errCnt,1)
 					fmt.Println("server read error", err)
 					return
 				}
-				fmt.Printf("%s %d\n", string(buf[:n]), n)
+				assert.Equal(t,"hello from client",string(buf[:n]))
+				atomic.AddInt32(outputCnt,1)
+				//fmt.Printf("%s %d\n", string(buf[:n]), n)
 			}
 		}()
 		time.AfterFunc(time.Second*13, func() {
@@ -61,16 +73,19 @@ func TestNewConn(t *testing.T) {
 			buf := make([]byte, 1024)
 			n, err := conn.Read(buf)
 			if err != nil {
+				atomic.AddInt32(errCnt,1)
 				fmt.Println("client read error", err)
 				return
 			}
-			fmt.Printf("%s %d\n", string(buf[:n]), n)
+			atomic.AddInt32(outputCnt,1)
+			assert.Equal(t,"hello from server",string(buf[:n]))
 		}
 	}()
 	go func() {
 		for {
 			_, err := conn.Write([]byte("hello from client"))
 			if err != nil {
+				atomic.AddInt32(errCnt,1)
 				fmt.Println("client write error", err)
 				return
 			}
@@ -78,4 +93,7 @@ func TestNewConn(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 15)
+	assert.Equal(t, *errCnt,int32(4))
+	t.Log("outputCnt:",*outputCnt)
+	assert.True(t, *outputCnt>250)
 }

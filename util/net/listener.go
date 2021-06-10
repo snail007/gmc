@@ -6,18 +6,21 @@
 package gnet
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
 )
 
-type EventListenerErrorHandler func(l *EventListener, err error)
+type ListenerErrorHandler func(l *EventListener, err error)
 
-type EventListenerFirstReadTimeoutHandler func(l *EventListener, c net.Conn, err error)
+type FirstReadTimeoutHandler func(l *EventListener, c net.Conn, err error)
 
-type EventListenerOnCloseHandler func(l *EventListener)
+type OnCloseHandler func(l *EventListener)
 
-type EventListenerOnAcceptHandler func(l *EventListener, ctx Context, c net.Conn)
+type AcceptHandler func(l *EventListener, ctx Context, c net.Conn)
+
+type ConnFilter func(l *EventListener, ctx Context, c net.Conn) (net.Conn, error)
 
 type CodecFactory func() Codec
 
@@ -27,20 +30,26 @@ type EventListener struct {
 	l                      net.Listener
 	contextFactory         ContextFactory
 	codecFactory           []CodecFactory
-	onClose                EventListenerOnCloseHandler
-	onAcceptError          EventListenerErrorHandler
-	onAccept               EventListenerOnAcceptHandler
-	onCodecInitializeError EventListenerErrorHandler
-	onFistReadTimeoutError EventListenerFirstReadTimeoutHandler
+	connFilters            []ConnFilter
+	onClose                OnCloseHandler
+	onAcceptError          ListenerErrorHandler
+	onAccept               AcceptHandler
+	onCodecInitializeError ListenerErrorHandler
+	onFistReadTimeoutError FirstReadTimeoutHandler
 	firstReadTimeout       time.Duration
 	closeOnce              *sync.Once
+}
+
+func (s *EventListener) AddConnFilter(f ConnFilter) *EventListener {
+	s.connFilters = append(s.connFilters, f)
+	return s
 }
 
 func (s *EventListener) SetConnContextFactory(contextFactory ContextFactory) {
 	s.contextFactory = contextFactory
 }
 
-func (s *EventListener) OnFistReadTimeout(h EventListenerFirstReadTimeoutHandler) *EventListener {
+func (s *EventListener) OnFistReadTimeout(h FirstReadTimeoutHandler) *EventListener {
 	s.onFistReadTimeoutError = h
 	return s
 }
@@ -50,17 +59,17 @@ func (s *EventListener) AddCodecFactory(codecFactory CodecFactory) *EventListene
 	return s
 }
 
-func (s *EventListener) OnAcceptError(h EventListenerErrorHandler) *EventListener {
+func (s *EventListener) OnAcceptError(h ListenerErrorHandler) *EventListener {
 	s.onAcceptError = h
 	return s
 }
 
-func (s *EventListener) OnAccept(h EventListenerOnAcceptHandler) *EventListener {
+func (s *EventListener) OnAccept(h AcceptHandler) *EventListener {
 	s.onAccept = h
 	return s
 }
 
-func (s *EventListener) OnCodecInitializeError(h EventListenerErrorHandler) *EventListener {
+func (s *EventListener) OnCodecInitializeError(h ListenerErrorHandler) *EventListener {
 	s.onCodecInitializeError = h
 	return s
 }
@@ -75,6 +84,7 @@ func (s *EventListener) Start() *EventListener {
 		defer func() {
 			s.Close()
 		}()
+	filterError:
 		for {
 			c, err := s.l.Accept()
 			if err != nil {
@@ -85,9 +95,26 @@ func (s *EventListener) Start() *EventListener {
 					return
 				}
 			}
-			// timeout check
+			ctx := s.contextFactory(c)
+
+			// filters
+			for _, f := range s.connFilters {
+				conn, err := f(s, ctx, c)
+				if err != nil {
+					s.onAcceptError(s, err)
+					continue filterError
+				}
+				c = conn
+			}
+
+			// first read timeout check
 			if s.firstReadTimeout > 0 {
-				bc := NewBufferedConn(c)
+				var bc *BufferedConn
+				if v, ok := c.(*BufferedConn); ok {
+					bc = v
+				} else {
+					bc = NewBufferedConn(c)
+				}
 				bc.SetReadDeadline(time.Now().Add(s.firstReadTimeout))
 				_, err = bc.ReadByte()
 				if err != nil {
@@ -99,7 +126,6 @@ func (s *EventListener) Start() *EventListener {
 				c = bc
 			}
 			// codec check
-			ctx := s.contextFactory(c)
 			if len(s.codecFactory) > 0 {
 				conn := NewContextConn(ctx.(*defaultContext), c)
 				for _, cf := range s.codecFactory {
@@ -133,11 +159,29 @@ func NewEventListener(l net.Listener) *EventListener {
 		contextFactory: func(net.Conn) Context {
 			return NewContext()
 		},
-		closeOnce:              &sync.Once{},
-		l:                      l,
+		closeOnce: &sync.Once{},
+		l:         l,
+		onAccept: func(l *EventListener, ctx Context, c net.Conn) {
+			c.Close()
+			fmt.Println("[WARN] you should using OnAccept() to set a accept handler to process the connection")
+		},
 		onAcceptError:          func(*EventListener, error) {},
 		onCodecInitializeError: func(*EventListener, error) {},
 		onClose:                func(*EventListener) {},
 		onFistReadTimeoutError: func(*EventListener, net.Conn, error) {},
 	}
+}
+
+func ListenRandom(ip ...string) (l net.Listener, port string, err error) {
+	ip0 := ""
+	if len(ip) == 1 {
+		ip0 = ip[0]
+	}
+	addr := net.JoinHostPort(ip0, "0")
+	l, err = net.Listen("tcp", addr)
+	if err != nil {
+		return
+	}
+	_, port, _ = net.SplitHostPort(l.Addr().String())
+	return
 }

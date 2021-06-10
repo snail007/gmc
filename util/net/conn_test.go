@@ -262,3 +262,27 @@ func TestEventConn3(t *testing.T) {
 	time.Sleep(time.Second * 1)
 	assert.Equal(t, "abc", conn.Data("test"))
 }
+
+func TestBufferedConn_PeekMax(t *testing.T) {
+	l, p, err := ListenRandom("")
+	assert.NoError(t, err)
+	var d []byte
+	var n int
+	NewEventListener(l).AddConnFilter(func(l *EventListener, ctx Context, c net.Conn) (net.Conn, error) {
+		bc := NewBufferedConn(c)
+		d, err = bc.PeekMax(1024)
+		c = bc
+		n = bc.Buffered()
+		s, _ := Read(bc, 10)
+		assert.Equal(t, "hello", s)
+		return c, nil
+	}).Start()
+	time.Sleep(time.Second)
+	Write(":0", "error")
+	Write(":"+p, "hello")
+	time.Sleep(time.Millisecond * 200)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", string(d))
+	assert.Equal(t, n, 5)
+	time.Sleep(time.Second)
+}

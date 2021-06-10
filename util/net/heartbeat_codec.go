@@ -150,7 +150,7 @@ func (s *HeartbeatCodec) backgroundRead() {
 			if err == nil {
 				break
 			}
-			if e, ok := err.(*net.OpError); ok && e.Temporary() {
+			if e, ok := err.(*net.OpError); ok && !e.Timeout() && e.Temporary() {
 				break
 			}
 			s.sendReadErr(err)

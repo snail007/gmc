@@ -18,8 +18,8 @@ import (
 func TestHeartbeatCodec(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt:=new(int32)
-	errCnt:=new(int32)
+	outputCnt := new(int32)
+	errCnt := new(int32)
 	go func() {
 		c, _ := l.Accept()
 		codec := NewHeartbeatCodec()
@@ -32,7 +32,7 @@ func TestHeartbeatCodec(t *testing.T) {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
 				if err != nil {
-					atomic.AddInt32(errCnt,1)
+					atomic.AddInt32(errCnt, 1)
 					fmt.Println("server write error", err)
 					return
 				}
@@ -44,12 +44,12 @@ func TestHeartbeatCodec(t *testing.T) {
 				buf := make([]byte, 1024)
 				n, err := conn.Read(buf)
 				if err != nil {
-					atomic.AddInt32(errCnt,1)
+					atomic.AddInt32(errCnt, 1)
 					fmt.Println("server read error", err)
 					return
 				}
-				assert.Equal(t,"hello from client",string(buf[:n]))
-				atomic.AddInt32(outputCnt,1)
+				assert.Equal(t, "hello from client", string(buf[:n]))
+				atomic.AddInt32(outputCnt, 1)
 				//fmt.Printf("%s %d\n", string(buf[:n]), n)
 			}
 		}()
@@ -73,19 +73,19 @@ func TestHeartbeatCodec(t *testing.T) {
 			buf := make([]byte, 1024)
 			n, err := conn.Read(buf)
 			if err != nil {
-				atomic.AddInt32(errCnt,1)
+				atomic.AddInt32(errCnt, 1)
 				fmt.Println("client read error", err)
 				return
 			}
-			atomic.AddInt32(outputCnt,1)
-			assert.Equal(t,"hello from server",string(buf[:n]))
+			atomic.AddInt32(outputCnt, 1)
+			assert.Equal(t, "hello from server", string(buf[:n]))
 		}
 	}()
 	go func() {
 		for {
 			_, err := conn.Write([]byte("hello from client"))
 			if err != nil {
-				atomic.AddInt32(errCnt,1)
+				atomic.AddInt32(errCnt, 1)
 				fmt.Println("client write error", err)
 				return
 			}
@@ -93,7 +93,26 @@ func TestHeartbeatCodec(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 15)
-	assert.Equal(t, *errCnt,int32(4))
-	t.Log("outputCnt:",*outputCnt)
-	assert.True(t, *outputCnt>250)
+	assert.Equal(t, *errCnt, int32(4))
+	t.Log("outputCnt:", *outputCnt)
+	assert.True(t, *outputCnt > 250)
+}
+
+func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
+	l, p, err := ListenRandom("")
+	assert.NoError(t, err)
+	el := NewEventListener(l)
+	el.AddCodecFactory(func() Codec {
+		return NewHeartbeatCodec()
+	})
+	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		buf := make([]byte, 1024)
+		_, err = c.Read(buf)
+	})
+	el.Start()
+	time.Sleep(time.Second)
+	c, _ := net.Dial("tcp", ":"+p)
+	c.Write([]byte("hello"))
+	time.Sleep(time.Millisecond * 200)
+	assert.Contains(t, err.Error(), "unrecognized msg type:")
 }

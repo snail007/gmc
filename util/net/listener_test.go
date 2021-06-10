@@ -28,6 +28,55 @@ func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
 	assert.True(t, timeout)
 }
 
+func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	el := NewEventListener(l)
+	timeout := false
+	el.AddConnFilter(func(l *EventListener, ctx Context, c net.Conn) (net.Conn, error) {
+		c = NewBufferedConn(c)
+		return c, nil
+	})
+	el.SetFirstReadTimeout(time.Millisecond * 100).
+		OnFistReadTimeout(func(l *EventListener, c net.Conn, err error) {
+			timeout = true
+		}).Start()
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, timeout)
+}
+
+func TestNewEventListener_FilterError(t *testing.T) {
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	el := NewEventListener(l)
+	hasErr := false
+	el.AddConnFilter(func(l *EventListener, ctx Context, c net.Conn) (net.Conn, error) {
+		return c, nil
+	})
+	el.AddConnFilter(func(l *EventListener, ctx Context, c net.Conn) (net.Conn, error) {
+		return nil, fmt.Errorf("error")
+	})
+	el.OnAcceptError(func(l *EventListener, err error) {
+		hasErr = true
+		assert.Equal(t, "error", err.Error())
+	}).Start()
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, hasErr)
+}
+
+func TestNewEventListener_MissingAccept(t *testing.T) {
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	NewEventListener(l).Start()
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Millisecond * 1000)
+	buf := make([]byte, 1)
+	_, err := c.Read(buf)
+	assert.Error(t, err)
+}
+
 func TestNewEventListener_OnAcceptError(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	el := NewEventListener(l)
@@ -86,16 +135,16 @@ func TestNewEventListener(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	el.SetConnContextFactory(func(conn net.Conn) Context {
-		ctx:= NewContext()
-		ctx.SetData("cfg","abc")
+		ctx := NewContext()
+		ctx.SetData("cfg", "abc")
 		return ctx
 	})
 	el.AddCodecFactory(func() Codec {
 		return NewAESCodec("abc")
 	}).SetFirstReadTimeout(time.Second)
-	el.OnAccept(func(_ *EventListener,ctx Context, c net.Conn) {
+	el.OnAccept(func(_ *EventListener, ctx Context, c net.Conn) {
 		c.Write([]byte("hello"))
-		assert.Equal(t,"abc",c.(*Conn).ctx.Data("cfg"))
+		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg"))
 	}).Start()
 	time.Sleep(time.Second)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)

@@ -7,11 +7,12 @@ package gnet
 
 import (
 	"bufio"
-	gmap "github.com/snail007/gmc/util/map"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gmap "github.com/snail007/gmc/util/map"
 )
 
 type Codec interface {
@@ -130,19 +131,19 @@ func NewContextConn(ctx Context, conn net.Conn) *Conn {
 	return c
 }
 
-type EventConnErrorHandler func(ec *EventConn, err error)
+type ConnErrorHandler func(ec *EventConn, err error)
 
-type EventConnDataHandler func(ec *EventConn, data []byte)
+type DataHandler func(ec *EventConn, data []byte)
 
-type EventConnCloseHandler func(ec *EventConn)
+type ConnCloseHandler func(ec *EventConn)
 
 type EventConn struct {
 	conn                   net.Conn
-	onReadError            EventConnErrorHandler
-	onWriterError          EventConnErrorHandler
-	onClose                EventConnCloseHandler
-	onData                 EventConnDataHandler
-	onCodecInitializeError EventConnErrorHandler
+	onReadError            ConnErrorHandler
+	onWriterError          ConnErrorHandler
+	onClose                ConnCloseHandler
+	onData                 DataHandler
+	onCodecInitializeError ConnErrorHandler
 	readBufferSize         int
 	readBytes              *int64
 	writeBytes             *int64
@@ -166,7 +167,7 @@ func (s *EventConn) SetReadBufferSize(readBufferSize int) *EventConn {
 	return s
 }
 
-func (s *EventConn) OnCodecInitializeError(h EventConnErrorHandler) *EventConn {
+func (s *EventConn) OnCodecInitializeError(h ConnErrorHandler) *EventConn {
 	s.onCodecInitializeError = h
 	return s
 }
@@ -223,22 +224,22 @@ func (s *EventConn) SetWriteTimeout(writeTimeout time.Duration) *EventConn {
 	return s
 }
 
-func (s *EventConn) OnReadError(onReadError EventConnErrorHandler) *EventConn {
+func (s *EventConn) OnReadError(onReadError ConnErrorHandler) *EventConn {
 	s.onReadError = onReadError
 	return s
 }
 
-func (s *EventConn) OnWriterError(onWriterError EventConnErrorHandler) *EventConn {
+func (s *EventConn) OnWriterError(onWriterError ConnErrorHandler) *EventConn {
 	s.onWriterError = onWriterError
 	return s
 }
 
-func (s *EventConn) OnClose(onClose EventConnCloseHandler) *EventConn {
+func (s *EventConn) OnClose(onClose ConnCloseHandler) *EventConn {
 	s.onClose = onClose
 	return s
 }
 
-func (s *EventConn) OnData(onData EventConnDataHandler) *EventConn {
+func (s *EventConn) OnData(onData DataHandler) *EventConn {
 	s.onData = onData
 	return s
 }
@@ -324,27 +325,81 @@ type BufferedConn struct {
 	net.Conn
 }
 
-func NewBufferedConn(c net.Conn) BufferedConn {
+func NewBufferedConn(c net.Conn) *BufferedConn {
 	return NewBufferedConnSize(c, 4096)
 }
 
-func NewBufferedConnSize(c net.Conn, n int) BufferedConn {
-	return BufferedConn{bufio.NewReaderSize(c, n), c}
+func NewBufferedConnSize(c net.Conn, n int) *BufferedConn {
+	return &BufferedConn{
+		r:    bufio.NewReaderSize(c, n),
+		Conn: c,
+	}
 }
 
-func (b BufferedConn) Peek(n int) ([]byte, error) {
+func (b *BufferedConn) Peek(n int) ([]byte, error) {
 	return b.r.Peek(n)
 }
 
-func (b BufferedConn) Read(p []byte) (int, error) {
+func (b *BufferedConn) Read(p []byte) (int, error) {
 	return b.r.Read(p)
 }
-func (b BufferedConn) ReadByte() (byte, error) {
+
+func (b *BufferedConn) ReadByte() (byte, error) {
 	return b.r.ReadByte()
 }
-func (b BufferedConn) UnreadByte() error {
+
+func (b *BufferedConn) UnreadByte() error {
 	return b.r.UnreadByte()
 }
-func (b BufferedConn) Buffered() int {
+
+func (b *BufferedConn) Buffered() int {
 	return b.r.Buffered()
+}
+
+func (b *BufferedConn) PeekMax(n int) (d []byte, err error) {
+	_, err = b.ReadByte()
+	if err != nil {
+		return
+	}
+	err = b.UnreadByte()
+	if err != nil {
+		return
+	}
+	if n > b.r.Buffered() {
+		n = b.r.Buffered()
+	}
+	return b.Peek(n)
+}
+
+func Write(addr, data string) (err error) {
+	return WriteBytes(addr, []byte(data))
+}
+
+func WriteBytes(addr string, data []byte) (err error) {
+	c, err := net.Dial("tcp", addr)
+	if err != nil {
+		return
+	}
+	defer func() {
+		time.AfterFunc(time.Second, func() {
+			c.Close()
+		})
+	}()
+	_, err = c.Write(data)
+	return
+}
+
+func Read(c net.Conn, bufSize int) (d string, err error) {
+	data, err := ReadBytes(c, bufSize)
+	d = string(data)
+	return
+}
+
+func ReadBytes(c net.Conn, bufSize int) (d []byte, err error) {
+	buf := make([]byte, bufSize)
+	n, err := c.Read(buf)
+	if n > 0 {
+		d = buf[:n]
+	}
+	return
 }

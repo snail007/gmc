@@ -74,10 +74,10 @@ func (s *Conn) SetWriteTimeout(writeTimeout time.Duration) *Conn {
 }
 
 func (s *Conn) Initialize() (err error) {
-	okayIdx :=[]int{}
+	okayIdx := []int{}
 	defer func() {
 		if err != nil {
-			for i := range okayIdx{
+			for i := range okayIdx {
 				s.codec[i].Close()
 			}
 		}
@@ -90,7 +90,7 @@ func (s *Conn) Initialize() (err error) {
 			}
 			return
 		}
-		okayIdx=append(okayIdx,i)
+		okayIdx = append(okayIdx, i)
 		s.Conn = c
 	}
 	return nil
@@ -121,9 +121,9 @@ func (s *Conn) Write(b []byte) (n int, err error) {
 	return s.Conn.Write(b)
 }
 
-func (c *Conn) AddCodec(codec Codec) *Conn {
-	c.codec = append(c.codec, codec)
-	return c
+func (s *Conn) AddCodec(codec Codec) *Conn {
+	s.codec = append(s.codec, codec)
+	return s
 }
 
 func NewConn(conn net.Conn) *Conn {

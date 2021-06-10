@@ -44,12 +44,12 @@ type AESCodec struct {
 	w        io.Writer
 }
 
-func (c *AESCodec) Read(p []byte) (n int, err error) {
-	return c.r.Read(p)
+func (s *AESCodec) Read(p []byte) (n int, err error) {
+	return s.r.Read(p)
 }
 
-func (c *AESCodec) Write(p []byte) (n int, err error) {
-	return c.w.Write(p)
+func (s *AESCodec) Write(p []byte) (n int, err error) {
+	return s.w.Write(p)
 }
 
 func (s *AESCodec) Initialize(ctx ConnContext) (err error) {

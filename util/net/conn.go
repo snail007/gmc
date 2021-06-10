@@ -7,12 +7,18 @@ package gnet
 
 import (
 	"bufio"
+	gbytes "github.com/snail007/gmc/util/bytes"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	gmap "github.com/snail007/gmc/util/map"
+)
+
+const (
+	defaultBufferedConnSize        = 4096
+	defaultEventConnReadBufferSize = 8192
 )
 
 type Codec interface {
@@ -285,7 +291,8 @@ func (s *EventConn) Start() {
 			s.conn = conn
 		}
 
-		buf := make([]byte, s.readBufferSize)
+		buf := gbytes.GetPool(s.readBufferSize).Get().([]byte)
+		defer gbytes.GetPool(s.readBufferSize).Put(buf)
 		for {
 			if s.readTimeout > 0 {
 				s.conn.SetReadDeadline(time.Now().Add(s.readTimeout))
@@ -311,7 +318,7 @@ func NewEventConn(c net.Conn) *EventConn {
 		data:           gmap.New(),
 		writeBytes:     new(int64),
 		readBytes:      new(int64),
-		readBufferSize: 1024 * 8,
+		readBufferSize: defaultEventConnReadBufferSize,
 		conn:           c,
 		onReadError:    func(*EventConn, error) {},
 		onWriterError:  func(*EventConn, error) {},
@@ -326,7 +333,7 @@ type BufferedConn struct {
 }
 
 func NewBufferedConn(c net.Conn) *BufferedConn {
-	return NewBufferedConnSize(c, 4096)
+	return NewBufferedConnSize(c, defaultBufferedConnSize)
 }
 
 func NewBufferedConnSize(c net.Conn, n int) *BufferedConn {
@@ -396,10 +403,11 @@ func Read(c net.Conn, bufSize int) (d string, err error) {
 }
 
 func ReadBytes(c net.Conn, bufSize int) (d []byte, err error) {
-	buf := make([]byte, bufSize)
+	buf := gbytes.GetPool(bufSize).Get().([]byte)
+	defer gbytes.GetPool(bufSize).Put(buf)
 	n, err := c.Read(buf)
 	if n > 0 {
-		d = buf[:n]
+		d = append(d, buf[:n]...)
 	}
 	return
 }

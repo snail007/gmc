@@ -16,6 +16,7 @@ import (
 )
 
 func TestHeartbeatCodec(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)
@@ -99,6 +100,7 @@ func TestHeartbeatCodec(t *testing.T) {
 }
 
 func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
+	t.Parallel()
 	l, p, err := ListenRandom("")
 	assert.NoError(t, err)
 	el := NewEventListener(l)

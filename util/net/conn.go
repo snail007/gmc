@@ -7,6 +7,7 @@ package gnet
 
 import (
 	"bufio"
+	"fmt"
 	gbytes "github.com/snail007/gmc/util/bytes"
 	"net"
 	"sync"
@@ -19,6 +20,10 @@ import (
 const (
 	defaultBufferedConnSize        = 4096
 	defaultEventConnReadBufferSize = 8192
+)
+
+var (
+	ErrCodecSkipped = fmt.Errorf("")
 )
 
 type Codec interface {
@@ -69,10 +74,10 @@ func (s *Conn) SetWriteTimeout(writeTimeout time.Duration) *Conn {
 }
 
 func (s *Conn) Initialize() (err error) {
-	errIdx := -1
+	okayIdx :=[]int{}
 	defer func() {
 		if err != nil {
-			for i := 0; i < errIdx; i++ {
+			for i := range okayIdx{
 				s.codec[i].Close()
 			}
 		}
@@ -80,9 +85,12 @@ func (s *Conn) Initialize() (err error) {
 	for i, c := range s.codec {
 		err = c.Initialize(s.ctx)
 		if err != nil {
-			errIdx = i
+			if err == ErrCodecSkipped {
+				continue
+			}
 			return
 		}
+		okayIdx=append(okayIdx,i)
 		s.Conn = c
 	}
 	return nil

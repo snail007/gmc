@@ -14,6 +14,7 @@ import (
 )
 
 func TestContext(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)

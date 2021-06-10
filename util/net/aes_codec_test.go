@@ -16,6 +16,7 @@ import (
 )
 
 func TestAESCodec(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)
@@ -86,6 +87,7 @@ func TestAESCodec(t *testing.T) {
 }
 
 func TestAESCodec128(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)
@@ -159,6 +161,7 @@ func TestAESCodec128(t *testing.T) {
 }
 
 func TestAESCodec192(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)
@@ -232,6 +235,7 @@ func TestAESCodec192(t *testing.T) {
 }
 
 func TestAESCodec256(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)

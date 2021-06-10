@@ -16,6 +16,7 @@ import (
 )
 
 func TestMultipleCodec(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)
@@ -90,6 +91,7 @@ func TestMultipleCodec(t *testing.T) {
 }
 
 func TestMultipleCodec2(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	outputCnt := new(int32)
@@ -166,6 +168,7 @@ func TestMultipleCodec2(t *testing.T) {
 }
 
 func TestEventConn(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	go func() {
@@ -200,6 +203,7 @@ func TestEventConn(t *testing.T) {
 }
 
 func TestEventConn2(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	go func() {
@@ -246,6 +250,7 @@ func TestEventConn2(t *testing.T) {
 }
 
 func TestEventConn3(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	go func() {
@@ -264,6 +269,7 @@ func TestEventConn3(t *testing.T) {
 }
 
 func TestBufferedConn_PeekMax(t *testing.T) {
+	t.Parallel()
 	l, p, err := ListenRandom("")
 	assert.NoError(t, err)
 	var d []byte
@@ -279,7 +285,7 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	}).Start()
 	time.Sleep(time.Second)
 	Write(":0", "error")
-	err=Write(":"+p, "hello")
+	err = Write(":"+p, "hello")
 	assert.NoError(t, err)
 	time.Sleep(time.Millisecond * 200)
 	assert.NoError(t, err)

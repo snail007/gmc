@@ -15,6 +15,7 @@ import (
 )
 
 func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
@@ -29,6 +30,7 @@ func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
 }
 
 func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
@@ -47,6 +49,7 @@ func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
 }
 
 func TestNewEventListener_FilterError(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
@@ -67,6 +70,7 @@ func TestNewEventListener_FilterError(t *testing.T) {
 }
 
 func TestNewEventListener_MissingAccept(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	NewEventListener(l).Start()
@@ -78,6 +82,7 @@ func TestNewEventListener_MissingAccept(t *testing.T) {
 }
 
 func TestNewEventListener_OnAcceptError(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	el := NewEventListener(l)
 	hasErr := false
@@ -97,6 +102,14 @@ func (i *initErrorCodec) Initialize(context ConnContext) error {
 	return fmt.Errorf("init error")
 }
 
+type initSkippedCodec struct {
+	net.Conn
+}
+
+func (i *initSkippedCodec) Initialize(context ConnContext) error {
+	return ErrCodecSkipped
+}
+
 type initOkayCodec struct {
 	net.Conn
 }
@@ -110,12 +123,16 @@ func (i *initOkayCodec) Close() error {
 }
 
 func TestNewEventListener_OnCodecError(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	hasErr := false
 	el := NewEventListener(l)
 	el.AddCodecFactory(func() Codec {
 		return &initOkayCodec{}
+	})
+	el.AddCodecFactory(func() Codec {
+		return &initSkippedCodec{}
 	})
 	el.AddCodecFactory(func() Codec {
 		return &initErrorCodec{}
@@ -131,6 +148,7 @@ func TestNewEventListener_OnCodecError(t *testing.T) {
 }
 
 func TestNewEventListener(t *testing.T) {
+	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)

@@ -8,11 +8,12 @@ package gnet
 import (
 	"bufio"
 	"fmt"
-	gbytes "github.com/snail007/gmc/util/bytes"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gbytes "github.com/snail007/gmc/util/bytes"
 
 	gmap "github.com/snail007/gmc/util/map"
 )
@@ -23,22 +24,39 @@ const (
 )
 
 var (
-	ErrCodecSkipped = fmt.Errorf("")
+	ErrCodecSkipped      = fmt.Errorf("")
+	ErrConnFilterSkipped = fmt.Errorf("")
 )
+
+type BufferedConn interface {
+	net.Conn
+	Peek(n int) ([]byte, error)
+	ReadByte() (byte, error)
+	UnreadByte() error
+	Buffered() int
+	PeekMax(n int) (d []byte, err error)
+}
 
 type Codec interface {
 	net.Conn
 	Initialize(ConnContext) error
 }
 
+type ConnFilter func(ctx Context, c net.Conn) (net.Conn, error)
+
 type Conn struct {
 	ctx ConnContext
 	net.Conn
 	codec        []Codec
+	filters      []ConnFilter
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 	readBytes    *int64
 	writeBytes   *int64
+}
+
+func (s *Conn) AddFilter(f ConnFilter) {
+	s.filters = append(s.filters, f)
 }
 
 func (s *Conn) ReadBytes() int64 {
@@ -74,7 +92,7 @@ func (s *Conn) SetWriteTimeout(writeTimeout time.Duration) *Conn {
 }
 
 func (s *Conn) Initialize() (err error) {
-	okayIdx := []int{}
+	var okayIdx []int
 	defer func() {
 		if err != nil {
 			for i := range okayIdx {
@@ -82,6 +100,20 @@ func (s *Conn) Initialize() (err error) {
 			}
 		}
 	}()
+
+	// init filters
+	for _, f := range s.filters {
+		conn, err := f(s.ctx, s.Conn)
+		if err != nil {
+			if err == ErrConnFilterSkipped {
+				continue
+			}
+			return err
+		}
+		s.Conn = conn
+	}
+
+	// init codec
 	for i, c := range s.codec {
 		err = c.Initialize(s.ctx)
 		if err != nil {
@@ -335,43 +367,46 @@ func NewEventConn(c net.Conn) *EventConn {
 	}
 }
 
-type BufferedConn struct {
+type defaultBufferedConn struct {
 	r *bufio.Reader
 	net.Conn
 }
 
-func NewBufferedConn(c net.Conn) *BufferedConn {
+func NewBufferedConn(c net.Conn) BufferedConn {
 	return NewBufferedConnSize(c, defaultBufferedConnSize)
 }
 
-func NewBufferedConnSize(c net.Conn, n int) *BufferedConn {
-	return &BufferedConn{
+func NewBufferedConnSize(c net.Conn, n int) BufferedConn {
+	if v, ok := c.(BufferedConn); ok {
+		return v
+	}
+	return &defaultBufferedConn{
 		r:    bufio.NewReaderSize(c, n),
 		Conn: c,
 	}
 }
 
-func (b *BufferedConn) Peek(n int) ([]byte, error) {
+func (b *defaultBufferedConn) Peek(n int) ([]byte, error) {
 	return b.r.Peek(n)
 }
 
-func (b *BufferedConn) Read(p []byte) (int, error) {
+func (b *defaultBufferedConn) Read(p []byte) (int, error) {
 	return b.r.Read(p)
 }
 
-func (b *BufferedConn) ReadByte() (byte, error) {
+func (b *defaultBufferedConn) ReadByte() (byte, error) {
 	return b.r.ReadByte()
 }
 
-func (b *BufferedConn) UnreadByte() error {
+func (b *defaultBufferedConn) UnreadByte() error {
 	return b.r.UnreadByte()
 }
 
-func (b *BufferedConn) Buffered() int {
+func (b *defaultBufferedConn) Buffered() int {
 	return b.r.Buffered()
 }
 
-func (b *BufferedConn) PeekMax(n int) (d []byte, err error) {
+func (b *defaultBufferedConn) PeekMax(n int) (d []byte, err error) {
 	_, err = b.ReadByte()
 	if err != nil {
 		return

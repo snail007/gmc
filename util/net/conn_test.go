@@ -274,8 +274,8 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	assert.NoError(t, err)
 	var d []byte
 	var n int
-	NewEventListener(l).AddConnFilter(func(l *EventListener, ctx Context, c net.Conn) (net.Conn, error) {
-		bc := NewBufferedConn(c)
+	NewEventListener(l).AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		bc := NewBufferedConn(NewBufferedConn(c))
 		d, err = bc.PeekMax(1024)
 		c = bc
 		n = bc.Buffered()

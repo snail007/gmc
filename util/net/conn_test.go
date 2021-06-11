@@ -293,3 +293,36 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	assert.Equal(t, n, 5)
 	time.Sleep(time.Second)
 }
+
+func TestNewConnBinder(t *testing.T) {
+	t.Parallel()
+	l1, p1, err := ListenRandom("")
+	assert.NoError(t, err)
+	l2, p2, err := ListenRandom("")
+	assert.NoError(t, err)
+	closed := false
+	srcClosed := false
+	dstClosed := false
+	str := ""
+	NewEventListener(l2).OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		str, _ = Read(c, 3)
+	}).Start()
+	NewEventListener(l1).OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		c2, _ := net.Dial("tcp", ":"+p2)
+		NewConnBinder(c, c2).OnClose(func() {
+			closed = true
+		}).OnSrcClose(func(err error) {
+			srcClosed = true
+		}).OnDstClose(func(err error) {
+			dstClosed = true
+		}).SetReadBufSize(100).Start()
+	}).Start()
+	time.Sleep(time.Second)
+	err = Write(":"+p1, "hello")
+	assert.NoError(t, err)
+	time.Sleep(time.Second * 2)
+	assert.Equal(t, "hel", str)
+	assert.True(t, closed)
+	assert.True(t, srcClosed)
+	assert.True(t, dstClosed)
+}

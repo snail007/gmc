@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	defaultBufferedConnSize        = 4096
-	defaultEventConnReadBufferSize = 8192
+	defaultBufferedConnSize         = 8192
+	defaultEventConnReadBufferSize  = 8192
+	defaultConnBinderReadBufferSize = 8192
 )
 
 var (
@@ -419,6 +420,86 @@ func (b *defaultBufferedConn) PeekMax(n int) (d []byte, err error) {
 		n = b.r.Buffered()
 	}
 	return b.Peek(n)
+}
+
+type CloseHandler func(err error)
+
+type ConnBinder struct {
+	src          net.Conn
+	dst          net.Conn
+	onSrcClose   CloseHandler
+	onDstClose   CloseHandler
+	onClose      func()
+	readBufSize  int
+	trafficBytes *int64
+}
+
+func (s *ConnBinder) SetReadBufSize(readBufSize int) *ConnBinder {
+	s.readBufSize = readBufSize
+	return s
+}
+
+func (s *ConnBinder) OnSrcClose(onSrcClose CloseHandler) *ConnBinder {
+	s.onSrcClose = onSrcClose
+	return s
+}
+
+func (s *ConnBinder) OnDstClose(onDstClose CloseHandler) *ConnBinder {
+	s.onDstClose = onDstClose
+	return s
+}
+
+func (s *ConnBinder) OnClose(onClose func()) *ConnBinder {
+	s.onClose = onClose
+	return s
+}
+
+func (s *ConnBinder) copy(src, dst net.Conn) error {
+	buf := gbytes.GetPool(s.readBufSize).Get().([]byte)
+	defer func() {
+		src.Close()
+		dst.Close()
+		gbytes.GetPool(s.readBufSize).Put(buf)
+	}()
+	for {
+		n, err := src.Read(buf)
+		if n > 0 {
+			_, err = dst.Write(buf[:n])
+			atomic.AddInt64(s.trafficBytes, int64(n))
+		}
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (s *ConnBinder) Start() {
+	g := sync.WaitGroup{}
+	g.Add(2)
+	go func() {
+		go func() {
+			defer g.Done()
+			s.onSrcClose(s.copy(s.src, s.dst))
+		}()
+		go func() {
+			defer g.Done()
+			s.onDstClose(s.copy(s.dst, s.src))
+		}()
+		g.Wait()
+		s.onClose()
+	}()
+}
+
+func NewConnBinder(src net.Conn, dst net.Conn) *ConnBinder {
+	return &ConnBinder{
+		src:          src,
+		dst:          dst,
+		onSrcClose:   func(error) {},
+		onDstClose:   func(error) {},
+		onClose:      func() {},
+		trafficBytes: new(int64),
+		readBufSize:  defaultConnBinderReadBufferSize,
+	}
 }
 
 func Write(addr, data string) (err error) {

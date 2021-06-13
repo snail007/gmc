@@ -14,14 +14,14 @@ func TestGetPool(t *testing.T) {
 	p1 := GetPool(1024)
 	p2 := GetPool(1024)
 	assert.Exactly(t, p1, p2)
-	assert.Equal(t, 1024,len(p1.Get().([]byte)))
+	assert.Equal(t, 1024, len(p1.Get().([]byte)))
 }
 
 func TestPool_Put(t *testing.T) {
 	p := GetPool(1024)
-	buf1:=p.Get()
+	buf1 := p.Get()
 	p.Put(buf1)
-	buf2:=p.Get()
+	buf2 := p.Get()
 	assert.Exactly(t, buf1, buf2)
-	assert.Equal(t, 1024,len(buf1.([]byte)))
+	assert.Equal(t, 1024, len(buf1.([]byte)))
 }

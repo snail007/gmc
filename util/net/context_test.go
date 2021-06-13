@@ -34,4 +34,5 @@ func TestContext(t *testing.T) {
 	assert.Contains(t, ctx.LocalAddr().String(), "127.0.0.1:")
 	assert.Contains(t, ctx.RemoteAddr().String(), "127.0.0.1:")
 	assert.Exactly(t, "abc", ctx.Data("test"))
+	assert.IsType(t, (*net.TCPConn)(nil), ctx.RawConn())
 }

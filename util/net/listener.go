@@ -9,41 +9,219 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-type ListenerErrorHandler func(l *EventListener, err error)
+var (
+	ErrFirstReadTimeout      = fmt.Errorf("ErrFirstReadTimeout")
+	ErrConnInitialize        = fmt.Errorf("ErrConnInitialize")
+	ErrListenerFilterSkipped = fmt.Errorf("ErrConnFilterSkipped")
+)
 
-type FirstReadTimeoutHandler func(l *EventListener, c net.Conn, err error)
+type (
+	ListenerErrorHandler func(l *EventListener, err error)
 
-type OnCloseHandler func(l *EventListener)
+	OnCloseHandler func(l *EventListener)
 
-type AcceptHandler func(l *EventListener, ctx Context, c net.Conn)
+	OnConnCloseHandler func(ConnContext)
 
-type CodecFactory func() Codec
+	AcceptHandler func(l *EventListener, ctx Context, c net.Conn)
 
-type ContextFactory func(c net.Conn) Context
+	CodecFactory func() Codec
 
-type EventListener struct {
-	l                      net.Listener
-	contextFactory         ContextFactory
-	codecFactory           []CodecFactory
-	connFilters            []ConnFilter
-	onClose                OnCloseHandler
-	onAcceptError          ListenerErrorHandler
-	onAccept               AcceptHandler
-	onFistReadTimeoutError FirstReadTimeoutHandler
-	firstReadTimeout       time.Duration
-	closeOnce              *sync.Once
+	ContextFactory func(c net.Conn) Context
+
+	FirstReadTimeoutHandler func(c net.Conn, err error)
+
+	ListenerFilter func(ctx Context, c net.Conn) (net.Conn, error)
+)
+
+type Listener struct {
+	net.Listener
+	*sync.Once
+	contextFactory                ContextFactory
+	codecFactory                  []CodecFactory
+	connFilters                   []ConnFilter
+	onConnClose                   OnConnCloseHandler
+	filters                       []ListenerFilter
+	firstReadTimeout              time.Duration
+	connCount                     *int64
+	autoCloseConnOnReadWriteError bool
 }
 
-func (s *EventListener) AddConnFilter(f ConnFilter) *EventListener {
+func (s *Listener) SetAutoCloseConnOnReadWriteError(b bool) {
+	s.autoCloseConnOnReadWriteError = b
+}
+
+func (s *Listener) SetOnConnClose(onConnClose OnConnCloseHandler) *Listener {
+	s.onConnClose = onConnClose
+	return s
+}
+
+func (s *Listener) AddListenerFilter(f ListenerFilter) *Listener {
+	s.filters = append(s.filters, f)
+	return s
+}
+
+func (s *Listener) SetFirstReadTimeout(firstReadTimeout time.Duration) *Listener {
+	s.firstReadTimeout = firstReadTimeout
+	return s
+}
+
+func (s *Listener) AddConnFilter(f ConnFilter) *Listener {
 	s.connFilters = append(s.connFilters, f)
 	return s
 }
 
-func (s *EventListener) SetConnContextFactory(contextFactory ContextFactory) {
+func (s *Listener) AddCodecFactory(codecFactory CodecFactory) *Listener {
+	s.codecFactory = append(s.codecFactory, codecFactory)
+	return s
+}
+
+func (s *Listener) onConnCloseHook(c *Conn) {
+	atomic.AddInt64(s.connCount, -1)
+	s.onConnClose(c.ctx)
+}
+
+func (s *Listener) onAcceptHook(c net.Conn) {
+	atomic.AddInt64(s.connCount, 1)
+}
+
+func (s *Listener) ConnCount() int64 {
+	return atomic.LoadInt64(s.connCount)
+}
+
+func (s *Listener) SetConnContextFactory(contextFactory ContextFactory) *Listener {
 	s.contextFactory = contextFactory
+	return s
+}
+
+func (s *Listener) Accept() (c net.Conn, err error) {
+	c, err, _ = s.accept()
+	return
+}
+
+func (s *Listener) accept() (c net.Conn, errTyped, err error) {
+retry:
+	c, err = s.Listener.Accept()
+	if err != nil {
+		return nil, err, err
+	}
+	if err != nil {
+		if v, ok := err.(*net.OpError); ok && !v.Timeout() && v.Temporary() {
+			goto retry
+		} else {
+			return nil, err, err
+		}
+	}
+	rawConn := c
+
+	s.onAcceptHook(c)
+
+	// root conn context
+	ctx := s.contextFactory(c)
+
+	// init listener filters
+	for _, f := range s.filters {
+		conn, err := f(ctx, c)
+		if err != nil {
+			if err == ErrListenerFilterSkipped {
+				continue
+			}
+			return nil, err, err
+		}
+		c = conn
+	}
+
+	// first read timeout check
+	if s.firstReadTimeout > 0 {
+		bc := NewBufferedConn(c)
+		bc.SetReadDeadline(time.Now().Add(s.firstReadTimeout))
+		_, err = bc.ReadByte()
+		if err != nil {
+			bc.Close()
+			return nil, ErrFirstReadTimeout, err
+		}
+		bc.UnreadByte()
+		c = bc
+	}
+
+	// init Conn
+	conn := NewContextConn(ctx.(*defaultContext), c)
+	conn.rawConn = rawConn
+	// add filters
+	for _, f := range s.connFilters {
+		conn.AddFilter(f)
+	}
+	// add codec
+	for _, cf := range s.codecFactory {
+		conn.AddCodec(cf())
+	}
+	// init
+	err = conn.Initialize()
+	if err != nil {
+		conn.Close()
+		return nil, ErrConnInitialize, err
+	}
+	// Conn closing hook
+	conn.onClose = s.onConnCloseHook
+
+	// sets Conn auto close?
+	conn.SetAutoCloseOnReadWriteError(s.autoCloseConnOnReadWriteError)
+
+	c = conn
+
+	return
+}
+
+func NewListener(l net.Listener) *Listener {
+	if v, ok := l.(*Listener); ok {
+		return v
+	}
+	return &Listener{
+		Listener: l,
+		contextFactory: func(_ net.Conn) Context {
+			return NewContext()
+		},
+		Once:        &sync.Once{},
+		onConnClose: func(ConnContext) {},
+		connCount:   new(int64),
+	}
+}
+
+type EventListener struct {
+	l                      *Listener
+	onClose                OnCloseHandler
+	onAcceptError          ListenerErrorHandler
+	onAccept               AcceptHandler
+	onFistReadTimeoutError FirstReadTimeoutHandler
+	closeOnce              *sync.Once
+}
+
+func (s *EventListener) SetAutoCloseConnOnReadWriteError(b bool) *EventListener {
+	s.l.SetAutoCloseConnOnReadWriteError(b)
+	return s
+}
+
+func (s *EventListener) SetOnConnClose(onConnClose OnConnCloseHandler) *EventListener {
+	s.l.SetOnConnClose(onConnClose)
+	return s
+}
+
+func (s *EventListener) AddConnFilter(f ConnFilter) *EventListener {
+	s.l.AddConnFilter(f)
+	return s
+}
+
+func (s *EventListener) AddListenerFilter(f ListenerFilter) *EventListener {
+	s.l.AddListenerFilter(f)
+	return s
+}
+
+func (s *EventListener) SetConnContextFactory(contextFactory ContextFactory) *EventListener {
+	s.l.SetConnContextFactory(contextFactory)
+	return s
 }
 
 func (s *EventListener) OnFistReadTimeout(h FirstReadTimeoutHandler) *EventListener {
@@ -52,7 +230,7 @@ func (s *EventListener) OnFistReadTimeout(h FirstReadTimeoutHandler) *EventListe
 }
 
 func (s *EventListener) AddCodecFactory(codecFactory CodecFactory) *EventListener {
-	s.codecFactory = append(s.codecFactory, codecFactory)
+	s.l.AddCodecFactory(codecFactory)
 	return s
 }
 
@@ -67,7 +245,7 @@ func (s *EventListener) OnAccept(h AcceptHandler) *EventListener {
 }
 
 func (s *EventListener) SetFirstReadTimeout(firstReadTimeout time.Duration) *EventListener {
-	s.firstReadTimeout = firstReadTimeout
+	s.l.SetFirstReadTimeout(firstReadTimeout)
 	return s
 }
 
@@ -77,52 +255,21 @@ func (s *EventListener) Start() *EventListener {
 			s.Close()
 		}()
 		for {
-			c, err := s.l.Accept()
-			if err != nil {
-				if v, ok := err.(*net.OpError); ok && !v.Timeout() && v.Temporary() {
-					continue
-				} else {
-					s.onAcceptError(s, err)
-					return
-				}
+			c, errTyped, err := s.l.accept()
+			// root conn context
+			switch errTyped {
+			case ErrFirstReadTimeout:
+				s.onFistReadTimeoutError(c, err)
+				return
+			case nil:
+				// accept
+				s.onAccept(s, c.(*Conn).ctx, c)
+			case ErrConnInitialize:
+				fallthrough
+			default:
+				s.onAcceptError(s, err)
+				return
 			}
-			ctx := s.contextFactory(c)
-
-			// first read timeout check
-			if s.firstReadTimeout > 0 {
-				bc := NewBufferedConn(c)
-				bc.SetReadDeadline(time.Now().Add(s.firstReadTimeout))
-				_, err = bc.ReadByte()
-				if err != nil {
-					c.Close()
-					s.onFistReadTimeoutError(s, c, err)
-					continue
-				}
-				bc.UnreadByte()
-				c = bc
-			}
-			// init Conn
-			if len(s.codecFactory) > 0 || len(s.connFilters) > 0 {
-				conn := NewContextConn(ctx.(*defaultContext), c)
-				// add filters
-				for _, f := range s.connFilters {
-					conn.AddFilter(f)
-				}
-				// add codec
-				for _, cf := range s.codecFactory {
-					conn.AddCodec(cf())
-				}
-				// init
-				err = conn.Initialize()
-				if err != nil {
-					c.Close()
-					s.onAcceptError(s, err)
-					continue
-				}
-				c = conn
-			}
-			// accept
-			s.onAccept(s, ctx, c)
 		}
 	}()
 	return s
@@ -136,20 +283,21 @@ func (s *EventListener) Close() *EventListener {
 	return s
 }
 
+func (s *EventListener) ConnCount() int64 {
+	return s.l.ConnCount()
+}
+
 func NewEventListener(l net.Listener) *EventListener {
 	return &EventListener{
-		contextFactory: func(net.Conn) Context {
-			return NewContext()
-		},
 		closeOnce: &sync.Once{},
-		l:         l,
+		l:         NewListener(l),
 		onAccept: func(l *EventListener, ctx Context, c net.Conn) {
 			c.Close()
 			fmt.Println("[WARN] you should using OnAccept() to set a accept handler to process the connection")
 		},
 		onAcceptError:          func(*EventListener, error) {},
 		onClose:                func(*EventListener) {},
-		onFistReadTimeoutError: func(*EventListener, net.Conn, error) {},
+		onFistReadTimeoutError: func(net.Conn, error) {},
 	}
 }
 

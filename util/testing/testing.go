@@ -236,15 +236,6 @@ func (s *Process) Kill() (err error) {
 	if !s.startCalled {
 		return fmt.Errorf("not run")
 	}
-	// s.cleanFile is empty, means not run with gmct.
-	if s.cleanFile == "" {
-		if s.c.Process != nil {
-			s.c.Process.Kill()
-			_, err = s.c.Process.Wait()
-			return
-		}
-		return
-	}
 	defer func() {
 		if s.isVerbose {
 			fmt.Printf("OUTPUT:\n %s", s.Output())

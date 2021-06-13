@@ -88,6 +88,8 @@ func TestMultipleCodec(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 3)
 	assert.True(t, *outputCnt > 50)
+	assert.IsType(t, (*net.TCPConn)(nil), conn.RawConn())
+	assert.IsType(t, (*AESCodec)(nil), conn.Conn)
 }
 
 func TestMultipleCodec2(t *testing.T) {
@@ -223,6 +225,12 @@ func TestEventConn2(t *testing.T) {
 	closed := false
 	readErr := false
 	writeErr := false
+	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return c, nil
+	})
+	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return nil, ErrConnFilterSkipped
+	})
 	conn.OnData(func(s *EventConn, data []byte) {
 		assert.Equal(t, "hello", string(data))
 		assert.Equal(t, int64(5), s.ReadBytes())
@@ -261,7 +269,7 @@ func TestEventConn3(t *testing.T) {
 	conn := NewEventConn(c)
 	conn.AddCodec(&initOkayCodec{})
 	conn.AddCodec(&initErrorCodec{})
-	conn.OnCodecInitializeError(func(ec *EventConn, err error) {
+	conn.OnConnInitializeError(func(ec *EventConn, err error) {
 		ec.SetData("test", "abc")
 	}).Start()
 	time.Sleep(time.Second * 1)

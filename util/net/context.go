@@ -24,6 +24,7 @@ type ConnContext interface {
 	RemoteAddr() net.Addr
 	LocalAddr() net.Addr
 	Conn() net.Conn
+	RawConn() net.Conn
 	ReadBytes() int64
 	WriteBytes() int64
 }
@@ -52,6 +53,10 @@ func (s *defaultContext) SetData(key, value interface{}) {
 
 func (s *defaultContext) Conn() net.Conn {
 	return s.conn.Conn
+}
+
+func (s *defaultContext) RawConn() net.Conn {
+	return s.conn.RawConn()
 }
 
 func (s *defaultContext) ReadTimeout() time.Duration {

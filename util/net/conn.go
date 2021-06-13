@@ -22,11 +22,12 @@ const (
 	defaultBufferedConnSize         = 8192
 	defaultEventConnReadBufferSize  = 8192
 	defaultConnBinderReadBufferSize = 8192
+	defaultConnKeepAlivePeriod      = time.Second * 15
 )
 
 var (
-	ErrCodecSkipped      = fmt.Errorf("")
-	ErrConnFilterSkipped = fmt.Errorf("")
+	ErrCodecSkipped      = fmt.Errorf("ErrCodecSkipped")
+	ErrConnFilterSkipped = fmt.Errorf("ErrConnFilterSkipped")
 )
 
 type BufferedConn interface {
@@ -48,12 +49,24 @@ type ConnFilter func(ctx Context, c net.Conn) (net.Conn, error)
 type Conn struct {
 	ctx ConnContext
 	net.Conn
-	codec        []Codec
-	filters      []ConnFilter
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	readBytes    *int64
-	writeBytes   *int64
+	codec                     []Codec
+	filters                   []ConnFilter
+	readTimeout               time.Duration
+	writeTimeout              time.Duration
+	readBytes                 *int64
+	writeBytes                *int64
+	rawConn                   net.Conn
+	onClose                   func(*Conn)
+	closeOnce                 *sync.Once
+	autoCloseOnReadWriteError bool
+}
+
+func (s *Conn) SetAutoCloseOnReadWriteError(b bool) {
+	s.autoCloseOnReadWriteError = b
+}
+
+func (s *Conn) RawConn() net.Conn {
+	return s.rawConn
 }
 
 func (s *Conn) AddFilter(f ConnFilter) {
@@ -92,6 +105,14 @@ func (s *Conn) SetWriteTimeout(writeTimeout time.Duration) *Conn {
 	return s
 }
 
+func (s *Conn) Close() (err error) {
+	s.closeOnce.Do(func() {
+		err = s.Conn.Close()
+		s.onClose(s)
+	})
+	return
+}
+
 func (s *Conn) Initialize() (err error) {
 	var okayIdx []int
 	defer func() {
@@ -101,6 +122,11 @@ func (s *Conn) Initialize() (err error) {
 			}
 		}
 	}()
+
+	if v, ok := s.rawConn.(*net.TCPConn); ok {
+		v.SetKeepAlive(true)
+		v.SetKeepAlivePeriod(defaultConnKeepAlivePeriod)
+	}
 
 	// init filters
 	for _, f := range s.filters {
@@ -133,12 +159,16 @@ func (s *Conn) Read(b []byte) (n int, err error) {
 		if n > 0 {
 			atomic.AddInt64(s.readBytes, int64(n))
 		}
+		if err != nil && s.autoCloseOnReadWriteError {
+			s.Close()
+		}
 	}()
 	if s.readTimeout > 0 {
 		s.Conn.SetReadDeadline(time.Now().Add(s.readTimeout))
 		defer s.Conn.SetReadDeadline(time.Time{})
 	}
-	return s.Conn.Read(b)
+	n, err = s.Conn.Read(b)
+	return
 }
 
 func (s *Conn) Write(b []byte) (n int, err error) {
@@ -146,12 +176,16 @@ func (s *Conn) Write(b []byte) (n int, err error) {
 		if n > 0 {
 			atomic.AddInt64(s.writeBytes, int64(n))
 		}
+		if err != nil && s.autoCloseOnReadWriteError {
+			s.Close()
+		}
 	}()
 	if s.writeTimeout > 0 {
 		s.SetWriteDeadline(time.Now().Add(s.readTimeout))
 		defer s.SetWriteDeadline(time.Time{})
 	}
-	return s.Conn.Write(b)
+	n, err = s.Conn.Write(b)
+	return
 }
 
 func (s *Conn) AddCodec(codec Codec) *Conn {
@@ -168,6 +202,9 @@ func NewContextConn(ctx Context, conn net.Conn) *Conn {
 		Conn:       conn,
 		writeBytes: new(int64),
 		readBytes:  new(int64),
+		rawConn:    conn,
+		onClose:    func(conn *Conn) {},
+		closeOnce:  &sync.Once{},
 	}
 	if ctx == nil {
 		c.ctx = NewContext().(*defaultContext)
@@ -182,23 +219,29 @@ type ConnErrorHandler func(ec *EventConn, err error)
 
 type DataHandler func(ec *EventConn, data []byte)
 
-type ConnCloseHandler func(ec *EventConn)
+type EventConnCloseHandler func(ec *EventConn)
 
 type EventConn struct {
-	conn                   net.Conn
-	onReadError            ConnErrorHandler
-	onWriterError          ConnErrorHandler
-	onClose                ConnCloseHandler
-	onData                 DataHandler
-	onCodecInitializeError ConnErrorHandler
-	readBufferSize         int
-	readBytes              *int64
-	writeBytes             *int64
-	readTimeout            time.Duration
-	writeTimeout           time.Duration
-	closeOnce              sync.Once
-	codec                  []Codec
-	data                   *gmap.Map
+	conn                  net.Conn
+	onReadError           ConnErrorHandler
+	onWriterError         ConnErrorHandler
+	onClose               EventConnCloseHandler
+	onData                DataHandler
+	onConnInitializeError ConnErrorHandler
+	connFilters           []ConnFilter
+	readBufferSize        int
+	readBytes             *int64
+	writeBytes            *int64
+	readTimeout           time.Duration
+	writeTimeout          time.Duration
+	closeOnce             sync.Once
+	codec                 []Codec
+	data                  *gmap.Map
+}
+
+func (s *EventConn) AddConnFilter(f ConnFilter) *EventConn {
+	s.connFilters = append(s.connFilters, f)
+	return s
 }
 
 func (s *EventConn) ReadBytes() int64 {
@@ -214,8 +257,8 @@ func (s *EventConn) SetReadBufferSize(readBufferSize int) *EventConn {
 	return s
 }
 
-func (s *EventConn) OnCodecInitializeError(h ConnErrorHandler) *EventConn {
-	s.onCodecInitializeError = h
+func (s *EventConn) OnConnInitializeError(h ConnErrorHandler) *EventConn {
+	s.onConnInitializeError = h
 	return s
 }
 
@@ -281,7 +324,7 @@ func (s *EventConn) OnWriterError(onWriterError ConnErrorHandler) *EventConn {
 	return s
 }
 
-func (s *EventConn) OnClose(onClose ConnCloseHandler) *EventConn {
+func (s *EventConn) OnClose(onClose EventConnCloseHandler) *EventConn {
 	s.onClose = onClose
 	return s
 }
@@ -318,18 +361,29 @@ func (s *EventConn) Start() {
 			s.Close()
 		}()
 
-		// codec check
-		if len(s.codec) > 0 {
+		// init Conn
+		if len(s.codec) > 0 || len(s.connFilters) > 0 {
 			conn := NewConn(s.conn)
+			// add filters
+			for _, f := range s.connFilters {
+				conn.AddFilter(f)
+			}
+			// add codec
 			for _, c := range s.codec {
 				conn.AddCodec(c)
 			}
+			// init
 			err := conn.Initialize()
 			if err != nil {
-				s.onCodecInitializeError(s, err)
+				s.onConnInitializeError(s, err)
 				return
 			}
 			s.conn = conn
+		} else {
+			if v, ok := s.conn.(*net.TCPConn); ok {
+				v.SetKeepAlive(true)
+				v.SetKeepAlivePeriod(defaultConnKeepAlivePeriod)
+			}
 		}
 
 		buf := gbytes.GetPool(s.readBufferSize).Get().([]byte)

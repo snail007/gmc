@@ -8,6 +8,8 @@ package gnet
 import (
 	"fmt"
 	"net"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,7 +23,7 @@ func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
 	el := NewEventListener(l)
 	timeout := false
 	el.SetFirstReadTimeout(time.Millisecond * 100).
-		OnFistReadTimeout(func(l *EventListener, c net.Conn, err error) {
+		OnFistReadTimeout(func(c net.Conn, err error) {
 			timeout = true
 		}).Start()
 	net.Dial("tcp", "127.0.0.1:"+p)
@@ -40,7 +42,7 @@ func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
 		return c, nil
 	})
 	el.SetFirstReadTimeout(time.Millisecond * 100).
-		OnFistReadTimeout(func(l *EventListener, c net.Conn, err error) {
+		OnFistReadTimeout(func(c net.Conn, err error) {
 			timeout = true
 		}).Start()
 	net.Dial("tcp", "127.0.0.1:"+p)
@@ -54,6 +56,12 @@ func TestNewEventListener_FilterError(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	hasErr := false
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return c, nil
+	})
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return nil, ErrListenerFilterSkipped
+	})
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		c = NewBufferedConn(c)
 		return c, nil
@@ -62,6 +70,25 @@ func TestNewEventListener_FilterError(t *testing.T) {
 		return nil, ErrConnFilterSkipped
 	})
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return nil, fmt.Errorf("error")
+	})
+	el.OnAcceptError(func(l *EventListener, err error) {
+		hasErr = true
+		assert.Equal(t, "error", err.Error())
+	}).Start()
+	_, err := net.Dial("tcp", "127.0.0.1:"+p)
+	assert.NoError(t, err)
+	time.Sleep(time.Second)
+	assert.True(t, hasErr)
+}
+
+func TestNewEventListener_ListenerFilterError(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	el := NewEventListener(l)
+	hasErr := false
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return nil, fmt.Errorf("error")
 	})
 	el.OnAcceptError(func(l *EventListener, err error) {
@@ -86,6 +113,50 @@ func TestNewEventListener_MissingAccept(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestListener_Accept(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l1 := NewListener(NewListener(l))
+	addr := ""
+	cnt0 := int64(0)
+	cnt1 := int64(0)
+	var hasErr error
+	l1.SetOnConnClose(func(ctx ConnContext) {
+		addr = ctx.Conn().LocalAddr().String()
+		cnt1 = l1.ConnCount()
+	})
+	l1.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		cnt0 = l1.ConnCount()
+		return c, nil
+	})
+	l1.SetAutoCloseConnOnReadWriteError(true)
+	g := sync.WaitGroup{}
+	g.Add(2)
+
+	go func() {
+		defer g.Done()
+		c, _ := l1.Accept()
+		go func() {
+			defer g.Done()
+			Read(c, 1)
+		}()
+		c.Write([]byte("hello"))
+		time.Sleep(time.Millisecond * 200)
+		_, hasErr = c.Write([]byte("_"))
+	}()
+	time.Sleep(time.Second)
+	c, _ := net.Dial("tcp", ":"+p)
+	str, _ := Read(c, 5)
+	assert.Equal(t, "hello", str)
+	c.Close()
+	g.Wait()
+	assert.Equal(t, int64(1), cnt0)
+	assert.Equal(t, int64(0), cnt1)
+	t.Log(addr)
+	assert.True(t, strings.HasPrefix(addr, "127.0.0.1"))
+	assert.Error(t, hasErr)
+}
+
 func TestNewEventListener_OnAcceptError(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
@@ -97,6 +168,26 @@ func TestNewEventListener_OnAcceptError(t *testing.T) {
 	el.Close()
 	time.Sleep(time.Second)
 	assert.True(t, hasErr)
+}
+
+func TestNewEventListener_OnConnClose(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	el := NewEventListener(l)
+	cnt := int64(0)
+	cnt1 := int64(0)
+	el.SetAutoCloseConnOnReadWriteError(true)
+	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		cnt = el.ConnCount()
+	})
+	el.SetOnConnClose(func(ctx ConnContext) {
+		cnt1 = el.ConnCount()
+	})
+	el.Start()
+	net.Dial("tcp", ":"+p)
+	time.Sleep(time.Millisecond * 300)
+	assert.Equal(t, int64(1), cnt)
+	assert.Equal(t, int64(0), cnt1)
 }
 
 type initErrorCodec struct {

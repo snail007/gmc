@@ -181,7 +181,7 @@ func TestEventConn(t *testing.T) {
 		})
 	}()
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
-	conn := NewEventConn(c)
+	conn := NewEventConn(NewConn(NewConn(c)))
 	conn.SetReadBufferSize(1024)
 	conn.SetTimeout(time.Second)
 	assert.Equal(t, time.Second, conn.ReadTimeout())

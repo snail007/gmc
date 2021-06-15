@@ -112,9 +112,21 @@ func (s *HeartbeatCodec) sendWriteErr(err error) {
 	default:
 	}
 }
-
+func (s *HeartbeatCodec) tempDelay(tempDelay time.Duration) time.Duration {
+	if tempDelay == 0 {
+		tempDelay = time.Millisecond * 5
+	}
+	if tempDelay > time.Second {
+		tempDelay = time.Second
+	} else {
+		tempDelay *= 2
+	}
+	return tempDelay
+}
 func (s *HeartbeatCodec) heartbeat() {
 	done := make(chan error)
+	tempDelay := time.Duration(0)
+retry:
 	for {
 		go func() {
 			s.SetWriteDeadline(time.Now().Add(s.timeout))
@@ -127,20 +139,25 @@ func (s *HeartbeatCodec) heartbeat() {
 			if err == nil {
 				break
 			}
-			if e, ok := err.(*net.OpError); ok && !e.Timeout() && e.Temporary() {
-				break
+			if e, ok := err.(net.Error); ok && e.Temporary() {
+				tempDelay = s.tempDelay(tempDelay)
+				time.Sleep(tempDelay)
+				continue retry
 			}
 			s.sendWriteErr(err)
 			return
 		case <-s.ctx.Done():
 			return
 		}
+		tempDelay = 0
 		time.Sleep(s.interval)
 	}
 }
 func (s *HeartbeatCodec) backgroundRead() {
+	tempDelay := time.Duration(0)
 	msg := newHeartbeatCodecMsg()
 	out := make(chan error)
+retry:
 	for {
 		go func() {
 			out <- msg.ReadFrom(s.Conn)
@@ -150,8 +167,10 @@ func (s *HeartbeatCodec) backgroundRead() {
 			if err == nil {
 				break
 			}
-			if e, ok := err.(*net.OpError); ok && !e.Timeout() && e.Temporary() {
-				break
+			if e, ok := err.(net.Error); ok && e.Temporary() {
+				tempDelay = s.tempDelay(tempDelay)
+				time.Sleep(tempDelay)
+				continue retry
 			}
 			s.sendReadErr(err)
 			return
@@ -230,7 +249,7 @@ func (s *HeartbeatCodec) SetTimeout(timeout time.Duration) *HeartbeatCodec {
 	return s
 }
 
-func (s *HeartbeatCodec) Initialize(ctx ConnContext) (err error) {
+func (s *HeartbeatCodec) Initialize(ctx CodecContext, next NextCodec) (conn net.Conn, err error) {
 	s.Conn = ctx.Conn()
 	s.bufReader, s.bufWriter = io.Pipe()
 	if s.timeout == 0 {
@@ -244,7 +263,7 @@ func (s *HeartbeatCodec) Initialize(ctx ConnContext) (err error) {
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	go s.backgroundRead()
 	go s.heartbeat()
-	return
+	return next.Call(ctx.SetConn(s))
 }
 
 func NewHeartbeatCodec() *HeartbeatCodec {

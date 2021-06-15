@@ -29,6 +29,11 @@ type ConnContext interface {
 	WriteBytes() int64
 }
 
+type CodecContext interface {
+	ConnContext
+	SetConn(net.Conn) CodecContext
+}
+
 type defaultContext struct {
 	conn *Conn
 	data *gmap.Map
@@ -49,6 +54,11 @@ func (s *defaultContext) Data(key interface{}) interface{} {
 
 func (s *defaultContext) SetData(key, value interface{}) {
 	s.data.Store(key, value)
+}
+
+func (s *defaultContext) SetConn(c net.Conn) CodecContext {
+	s.conn.Conn = c
+	return s
 }
 
 func (s *defaultContext) Conn() net.Conn {

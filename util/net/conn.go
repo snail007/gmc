@@ -26,8 +26,8 @@ const (
 )
 
 var (
-	ErrCodecSkipped      = fmt.Errorf("ErrCodecSkipped")
-	ErrConnFilterSkipped = fmt.Errorf("ErrConnFilterSkipped")
+	ErrConnFilterHijacked = fmt.Errorf("ErrConnFilterHijacked")
+	ErrCodecHijacked      = fmt.Errorf("ErrCodecHijacked")
 )
 
 type BufferedConn interface {
@@ -41,10 +41,77 @@ type BufferedConn interface {
 
 type Codec interface {
 	net.Conn
-	Initialize(ConnContext) error
+	Initialize(CodecContext, NextCodec) (net.Conn, error)
 }
 
-type ConnFilter func(ctx Context, c net.Conn) (net.Conn, error)
+type NextCodec interface {
+	Call(CodecContext) (net.Conn, error)
+}
+
+type codecs struct {
+	codecs []Codec
+	idx    int
+}
+
+func (s *codecs) Call(ctx CodecContext) (conn net.Conn, err error) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		// if occurs error, try clean.
+		for _, codec := range s.codecs {
+			func(c Codec) {
+				defer func() { _ = recover() }()
+				c.Close()
+			}(codec)
+		}
+	}()
+	return s.call(ctx)
+}
+func (s *codecs) call(ctx CodecContext) (conn net.Conn, err error) {
+	s.idx++
+	if s.idx == len(s.codecs) {
+		// last call, no next codec, just return conn.
+		return ctx.Conn(), nil
+	}
+	return s.codecs[s.idx].Initialize(ctx, s)
+}
+
+func newCodecs(cs []Codec) *codecs {
+	f := &codecs{
+		idx:    -1,
+		codecs: cs,
+	}
+	return f
+}
+
+type ConnFilter func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error)
+
+type NextConnFilter interface {
+	Call(ctx Context, c net.Conn) (net.Conn, error)
+}
+
+type connFilters struct {
+	filters []ConnFilter
+	idx     int
+}
+
+func (s *connFilters) Call(ctx Context, c net.Conn) (conn net.Conn, err error) {
+	s.idx++
+	if s.idx == len(s.filters) {
+		// last call, no next filter, just return conn.
+		return c, nil
+	}
+	return s.filters[s.idx](ctx, c, s)
+}
+
+func newConnFilters(filters []ConnFilter) *connFilters {
+	f := &connFilters{
+		idx:     -1,
+		filters: filters,
+	}
+	return f
+}
 
 type Conn struct {
 	ctx ConnContext
@@ -114,44 +181,33 @@ func (s *Conn) Close() (err error) {
 }
 
 func (s *Conn) Initialize() (err error) {
-	var okayIdx []int
-	defer func() {
-		if err != nil {
-			for i := range okayIdx {
-				s.codec[i].Close()
-			}
-		}
-	}()
-
+	// sets tcp keepalive
 	if v, ok := s.rawConn.(*net.TCPConn); ok {
 		v.SetKeepAlive(true)
 		v.SetKeepAlivePeriod(defaultConnKeepAlivePeriod)
 	}
 
 	// init filters
-	for _, f := range s.filters {
-		conn, err := f(s.ctx, s.Conn)
-		if err != nil {
-			if err == ErrConnFilterSkipped {
-				continue
-			}
-			return err
+	fConn, err := newConnFilters(s.filters).Call(s.ctx, s.Conn)
+	if err != nil {
+		if err == ErrConnFilterHijacked {
+			// hijacked by filter, just return nil.
+			return nil
 		}
-		s.Conn = conn
+		return err
 	}
+	s.Conn = fConn
 
 	// init codec
-	for i, c := range s.codec {
-		err = c.Initialize(s.ctx)
-		if err != nil {
-			if err == ErrCodecSkipped {
-				continue
-			}
-			return
+	codecConn, err := newCodecs(s.codec).Call(s.ctx.(*defaultContext))
+	if err != nil {
+		if err == ErrCodecHijacked {
+			// hijacked by codec, just return nil.
+			return nil
 		}
-		okayIdx = append(okayIdx, i)
-		s.Conn = c
+		return err
 	}
+	s.Conn = codecConn
 	return nil
 }
 func (s *Conn) Read(b []byte) (n int, err error) {

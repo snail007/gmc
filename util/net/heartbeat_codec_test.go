@@ -118,3 +118,45 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	time.Sleep(time.Millisecond * 200)
 	assert.Contains(t, err.Error(), "unrecognized msg type:")
 }
+
+type tempErrorConn struct {
+	net.Conn
+	writeCnt int
+	readCnt  int
+}
+
+func newTempErrorConn(conn net.Conn) *tempErrorConn {
+	return &tempErrorConn{Conn: conn}
+}
+
+func (s *tempErrorConn) Read(b []byte) (n int, err error) {
+	defer func() { s.readCnt++ }()
+	return 0, newTempNetError()
+}
+
+func (s *tempErrorConn) Write(b []byte) (n int, err error) {
+	defer func() { s.writeCnt++ }()
+	return 0, newTempNetError()
+}
+
+func TestHeartbeatCodec_TempError(t *testing.T) {
+	t.Parallel()
+	l, p, err := ListenRandom("")
+	assert.NoError(t, err)
+	el := NewEventListener(l)
+	el.AddCodecFactory(func() Codec {
+		return NewHeartbeatCodec()
+	})
+	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		buf := make([]byte, 1024)
+		_, err = c.Read(buf)
+	})
+	el.Start()
+	time.Sleep(time.Second)
+	c, _ := net.Dial("tcp", ":"+p)
+	c = newTempErrorConn(c)
+	c1 := NewConn(c)
+	err = c1.AddCodec(NewHeartbeatCodec()).Initialize()
+	assert.NoError(t, err)
+	time.Sleep(time.Second * 5)
+}

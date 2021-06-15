@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ErrFirstReadTimeout      = fmt.Errorf("ErrFirstReadTimeout")
-	ErrConnInitialize        = fmt.Errorf("ErrConnInitialize")
-	ErrListenerFilterSkipped = fmt.Errorf("ErrConnFilterSkipped")
+	ErrFirstReadTimeout       = fmt.Errorf("ErrFirstReadTimeout")
+	ErrConnInitialize         = fmt.Errorf("ErrConnInitialize")
+	ErrListenerFilterHijacked = fmt.Errorf("ErrListenerFilterHijacked")
 )
 
 type (
@@ -34,8 +34,34 @@ type (
 
 	FirstReadTimeoutHandler func(c net.Conn, err error)
 
-	ListenerFilter func(ctx Context, c net.Conn) (net.Conn, error)
+	ListenerFilter func(ctx Context, c net.Conn, next NextListenerFilter) (net.Conn, error)
 )
+
+type NextListenerFilter interface {
+	Call(ctx Context, c net.Conn) (net.Conn, error)
+}
+
+type listenerFilters struct {
+	filters []ListenerFilter
+	idx     int
+}
+
+func (s *listenerFilters) Call(ctx Context, c net.Conn) (conn net.Conn, err error) {
+	s.idx++
+	if s.idx == len(s.filters) {
+		// last call, no next filter, just return conn.
+		return c, nil
+	}
+	return s.filters[s.idx](ctx, c, s)
+}
+
+func newListenerFilters(filters []ListenerFilter) *listenerFilters {
+	f := &listenerFilters{
+		idx:     -1,
+		filters: filters,
+	}
+	return f
+}
 
 type Listener struct {
 	net.Listener
@@ -103,36 +129,48 @@ func (s *Listener) Accept() (c net.Conn, err error) {
 }
 
 func (s *Listener) accept() (c net.Conn, errTyped, err error) {
+	var tempDelay time.Duration // how long to sleep on accept failure
 retry:
-	c, err = s.Listener.Accept()
-	if err != nil {
-		return nil, err, err
-	}
-	if err != nil {
-		if v, ok := err.(*net.OpError); ok && !v.Timeout() && v.Temporary() {
-			goto retry
-		} else {
-			return nil, err, err
+	for {
+		c, err = s.Listener.Accept()
+		if err != nil {
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				if tempDelay == 0 {
+					tempDelay = 5 * time.Millisecond
+				} else {
+					tempDelay *= 2
+				}
+				if max := 1 * time.Second; tempDelay > max {
+					tempDelay = max
+				}
+				time.Sleep(tempDelay)
+				continue
+			} else {
+				return nil, err, err
+			}
 		}
+		break
 	}
+	tempDelay = 0
+	// save raw conn
 	rawConn := c
-
-	s.onAcceptHook(c)
 
 	// root conn context
 	ctx := s.contextFactory(c)
 
 	// init listener filters
-	for _, f := range s.filters {
-		conn, err := f(ctx, c)
-		if err != nil {
-			if err == ErrListenerFilterSkipped {
-				continue
-			}
-			return nil, err, err
+	fConn, err := newListenerFilters(s.filters).Call(ctx, c)
+	if err != nil {
+		if err == ErrListenerFilterHijacked {
+			// hijacked by filter, just call next accept.
+			goto retry
 		}
-		c = conn
+		return nil, err, err
 	}
+	c = fConn
+
+	// hook to count the connection
+	s.onAcceptHook(c)
 
 	// first read timeout check
 	if s.firstReadTimeout > 0 {

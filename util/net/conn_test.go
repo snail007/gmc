@@ -225,11 +225,12 @@ func TestEventConn2(t *testing.T) {
 	closed := false
 	readErr := false
 	writeErr := false
-	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		return c, nil
+	conn.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+		return next.Call(ctx, c)
 	})
-	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		return nil, ErrConnFilterSkipped
+	conn.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+		// just return c, skip the next
+		return c, nil
 	})
 	conn.OnData(func(s *EventConn, data []byte) {
 		assert.Equal(t, "hello", string(data))
@@ -267,8 +268,8 @@ func TestEventConn3(t *testing.T) {
 	}()
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewEventConn(c)
-	conn.AddCodec(&initOkayCodec{})
-	conn.AddCodec(&initErrorCodec{})
+	conn.AddCodec(newInitPassThroughCodec(new(bool)))
+	conn.AddCodec(newInitErrorCodec(new(bool)))
 	conn.OnConnInitializeError(func(ec *EventConn, err error) {
 		ec.SetData("test", "abc")
 	}).Start()
@@ -282,14 +283,14 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	assert.NoError(t, err)
 	var d []byte
 	var n int
-	NewEventListener(l).AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+	NewEventListener(l).AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		bc := NewBufferedConn(NewBufferedConn(c))
 		d, err = bc.PeekMax(1024)
 		c = bc
 		n = bc.Buffered()
 		s, _ := Read(bc, 10)
 		assert.Equal(t, "hello", s)
-		return c, nil
+		return next.Call(ctx, c)
 	}).Start()
 	time.Sleep(time.Second)
 	Write(":0", "error")
@@ -333,4 +334,70 @@ func TestNewConnBinder(t *testing.T) {
 	assert.True(t, closed)
 	assert.True(t, srcClosed)
 	assert.True(t, dstClosed)
+}
+
+func TestConn_FilterHijacked(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := false
+	hijacked := false
+	el := NewEventListener(l)
+	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+		hijacked = true
+		return c, ErrConnFilterHijacked
+	})
+	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+		called = true
+		return next.Call(ctx, c)
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Millisecond * 500)
+	assert.True(t, hijacked)
+	assert.False(t, called)
+}
+
+func TestConn_CodecHijacked(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := false
+	hijacked := new(bool)
+	el := NewEventListener(l)
+
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitHijackedCodec(hijacked)
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *hijacked)
+	assert.False(t, called)
+}
+
+func TestConn_CodecError(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := false
+	hasErr := new(bool)
+	el := NewEventListener(l)
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitErrorCodec(hasErr)
+	})
+	el.Start()
+	time.Sleep(time.Second)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *hasErr)
+	assert.False(t, called)
 }

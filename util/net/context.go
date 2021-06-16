@@ -6,6 +6,7 @@
 package gnet
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 type Context interface {
 	Data(key interface{}) interface{}
 	SetData(key, value interface{})
+	Hijack(c ...Codec) (net.Conn, error)
 }
 
 type ConnContext interface {
@@ -41,6 +43,15 @@ type defaultContext struct {
 
 func (s *defaultContext) ReadBytes() int64 {
 	return s.conn.ReadBytes()
+}
+
+func (s *defaultContext) Hijack(c ...Codec) (net.Conn, error) {
+	if len(c) == 1 {
+		s.conn.Conn = c[0]
+	} else if len(c) >= 2 {
+		return nil, fmt.Errorf("hijack error, unsupported argument")
+	}
+	return nil, ErrHijacked
 }
 
 func (s *defaultContext) WriteBytes() int64 {

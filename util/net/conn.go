@@ -26,8 +26,7 @@ const (
 )
 
 var (
-	ErrConnFilterHijacked = fmt.Errorf("ErrConnFilterHijacked")
-	ErrCodecHijacked      = fmt.Errorf("ErrCodecHijacked")
+	ErrHijacked = fmt.Errorf("ErrHijacked")
 )
 
 type BufferedConn interface {
@@ -190,7 +189,7 @@ func (s *Conn) Initialize() (err error) {
 	// init filters
 	fConn, err := newConnFilters(s.filters).Call(s.ctx, s.Conn)
 	if err != nil {
-		if err == ErrConnFilterHijacked {
+		if err == ErrHijacked {
 			// hijacked by filter, just return nil.
 			return nil
 		}
@@ -201,7 +200,7 @@ func (s *Conn) Initialize() (err error) {
 	// init codec
 	codecConn, err := newCodecs(s.codec).Call(s.ctx.(*defaultContext))
 	if err != nil {
-		if err == ErrCodecHijacked {
+		if err == ErrHijacked {
 			// hijacked by codec, just return nil.
 			return nil
 		}

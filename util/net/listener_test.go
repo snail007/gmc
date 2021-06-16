@@ -301,7 +301,7 @@ func newInitHijackedCodec(called *bool) *initHijackedCodec {
 func (i *initHijackedCodec) Initialize(ctx CodecContext, next NextCodec) (net.Conn, error) {
 	// hijack the conn, do anything with conn, and just return ErrCodecHijacked at return.
 	*i.called = true
-	return nil, ErrCodecHijacked
+	return ctx.Hijack(i)
 }
 
 type initPassThroughCodec struct {

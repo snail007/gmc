@@ -345,7 +345,7 @@ func TestConn_FilterHijacked(t *testing.T) {
 	el := NewEventListener(l)
 	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		hijacked = true
-		return c, ErrConnFilterHijacked
+		return ctx.Hijack()
 	})
 	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		called = true

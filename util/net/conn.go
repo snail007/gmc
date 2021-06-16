@@ -253,13 +253,18 @@ func NewConn(conn net.Conn) *Conn {
 }
 
 func NewContextConn(ctx Context, conn net.Conn) *Conn {
-	c := &Conn{
-		Conn:       conn,
-		writeBytes: new(int64),
-		readBytes:  new(int64),
-		rawConn:    conn,
-		onClose:    func(conn *Conn) {},
-		closeOnce:  &sync.Once{},
+	var c *Conn
+	if v, ok := conn.(*Conn); ok {
+		c = v
+	} else {
+		c = &Conn{
+			Conn:       conn,
+			writeBytes: new(int64),
+			readBytes:  new(int64),
+			rawConn:    conn,
+			onClose:    func(conn *Conn) {},
+			closeOnce:  &sync.Once{},
+		}
 	}
 	if ctx == nil {
 		c.ctx = NewContext().(*defaultContext)

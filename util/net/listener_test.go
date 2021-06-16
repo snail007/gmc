@@ -60,7 +60,7 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 	el.AddListenerFilter(func(ctx Context, c net.Conn, next NextListenerFilter) (net.Conn, error) {
 		// hijack the conn, do anything with c
 		hijacked = true
-		return nil, ErrListenerFilterHijacked
+		return ctx.Hijack()
 	})
 	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
 		called = true
@@ -299,9 +299,33 @@ func newInitHijackedCodec(called *bool) *initHijackedCodec {
 }
 
 func (i *initHijackedCodec) Initialize(ctx CodecContext, next NextCodec) (net.Conn, error) {
+	i.Conn = ctx.Conn()
 	// hijack the conn, do anything with conn, and just return ErrCodecHijacked at return.
 	*i.called = true
 	return ctx.Hijack(i)
+}
+
+type initHijackedFailCodec struct {
+	net.Conn
+	called    *bool
+	modifyCtx func(ctx Context)
+}
+
+func newInitHijackedFailCodec(called *bool, m func(ctx Context)) *initHijackedFailCodec {
+	return &initHijackedFailCodec{
+		called:    called,
+		modifyCtx: m,
+	}
+}
+
+func (i *initHijackedFailCodec) Initialize(ctx CodecContext, next NextCodec) (net.Conn, error) {
+	i.Conn = ctx.Conn()
+	// hijack the conn, do anything with conn, and just return ErrCodecHijacked at return.
+	*i.called = true
+	if i.modifyCtx != nil {
+		i.modifyCtx(ctx)
+	}
+	return ctx.Hijack(nil, nil)
 }
 
 type initPassThroughCodec struct {

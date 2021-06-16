@@ -7,7 +7,6 @@ package gnet
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -23,10 +22,6 @@ const (
 	defaultEventConnReadBufferSize  = 8192
 	defaultConnBinderReadBufferSize = 8192
 	defaultConnKeepAlivePeriod      = time.Second * 15
-)
-
-var (
-	ErrHijacked = fmt.Errorf("ErrHijacked")
 )
 
 type BufferedConn interface {
@@ -53,20 +48,21 @@ type codecs struct {
 }
 
 func (s *codecs) Call(ctx CodecContext) (conn net.Conn, err error) {
-	defer func() {
-		if err == nil {
-			return
-		}
+	conn, err = s.call(ctx)
+	if err != nil {
 		// if occurs error, try clean.
 		for _, codec := range s.codecs {
-			func(c Codec) {
-				defer func() { _ = recover() }()
-				c.Close()
-			}(codec)
+			func() {
+				defer func() {
+					_ = recover()
+				}()
+				codec.Close()
+			}()
 		}
-	}()
-	return s.call(ctx)
+	}
+	return
 }
+
 func (s *codecs) call(ctx CodecContext) (conn net.Conn, err error) {
 	s.idx++
 	if s.idx == len(s.codecs) {
@@ -173,7 +169,10 @@ func (s *Conn) SetWriteTimeout(writeTimeout time.Duration) *Conn {
 
 func (s *Conn) Close() (err error) {
 	s.closeOnce.Do(func() {
-		err = s.Conn.Close()
+		func() {
+			defer func() { _ = recover() }()
+			err = s.Conn.Close()
+		}()
 		s.onClose(s)
 	})
 	return
@@ -188,22 +187,24 @@ func (s *Conn) Initialize() (err error) {
 
 	// init filters
 	fConn, err := newConnFilters(s.filters).Call(s.ctx, s.Conn)
+	// checking hijack
+	if s.ctx.Hijacked() {
+		// hijacked by filter, just return nil.
+		return nil
+	}
 	if err != nil {
-		if err == ErrHijacked {
-			// hijacked by filter, just return nil.
-			return nil
-		}
 		return err
 	}
 	s.Conn = fConn
 
 	// init codec
 	codecConn, err := newCodecs(s.codec).Call(s.ctx.(*defaultContext))
+	// checking hijack
+	if s.ctx.Hijacked() {
+		// hijacked by codec, just return nil.
+		return nil
+	}
 	if err != nil {
-		if err == ErrHijacked {
-			// hijacked by codec, just return nil.
-			return nil
-		}
 		return err
 	}
 	s.Conn = codecConn

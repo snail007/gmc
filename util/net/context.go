@@ -17,6 +17,7 @@ type Context interface {
 	Data(key interface{}) interface{}
 	SetData(key, value interface{})
 	Hijack(c ...Codec) (net.Conn, error)
+	Hijacked() bool
 }
 
 type ConnContext interface {
@@ -36,9 +37,18 @@ type CodecContext interface {
 	SetConn(net.Conn) CodecContext
 }
 
+var (
+	errHijackedFail = fmt.Errorf("hijack error, unsupported argument")
+)
+
 type defaultContext struct {
-	conn *Conn
-	data *gmap.Map
+	conn     *Conn
+	data     *gmap.Map
+	hijacked bool
+}
+
+func (s *defaultContext) Hijacked() bool {
+	return s.hijacked
 }
 
 func (s *defaultContext) ReadBytes() int64 {
@@ -46,12 +56,16 @@ func (s *defaultContext) ReadBytes() int64 {
 }
 
 func (s *defaultContext) Hijack(c ...Codec) (net.Conn, error) {
+	if s.hijacked {
+		return nil, nil
+	}
 	if len(c) == 1 {
 		s.conn.Conn = c[0]
 	} else if len(c) >= 2 {
-		return nil, fmt.Errorf("hijack error, unsupported argument")
+		return nil, errHijackedFail
 	}
-	return nil, ErrHijacked
+	s.hijacked = true
+	return nil, nil
 }
 
 func (s *defaultContext) WriteBytes() int64 {

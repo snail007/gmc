@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	ErrFirstReadTimeout       = fmt.Errorf("ErrFirstReadTimeout")
-	ErrConnInitialize         = fmt.Errorf("ErrConnInitialize")
-	ErrListenerFilterHijacked = fmt.Errorf("ErrListenerFilterHijacked")
+	ErrFirstReadTimeout = fmt.Errorf("ErrFirstReadTimeout")
+	ErrConnInitialize   = fmt.Errorf("ErrConnInitialize")
 )
 
 type (
@@ -160,11 +159,14 @@ retry:
 
 	// init listener filters
 	fConn, err := newListenerFilters(s.filters).Call(ctx, c)
+
+	// checking hijack
+	if ctx.Hijacked() {
+		// hijacked by filter, just call next accept.
+		goto retry
+	}
+
 	if err != nil {
-		if err == ErrListenerFilterHijacked {
-			// hijacked by filter, just call next accept.
-			goto retry
-		}
 		return nil, err, err
 	}
 	c = fConn

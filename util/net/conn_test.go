@@ -363,7 +363,7 @@ func TestConn_CodecHijacked(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := false
+	called := new(bool)
 	hijacked := new(bool)
 	el := NewEventListener(l)
 
@@ -373,12 +373,109 @@ func TestConn_CodecHijacked(t *testing.T) {
 	el.AddCodecFactory(func() Codec {
 		return newInitHijackedCodec(hijacked)
 	})
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(called)
+	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
 	assert.True(t, *hijacked)
-	assert.False(t, called)
+	assert.False(t, *called)
+}
+
+func TestConn_CodecHijackedFail(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := new(bool)
+	hijacked := new(bool)
+	var hasError error
+	el := NewEventListener(l)
+
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitHijackedFailCodec(hijacked, nil)
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(called)
+	})
+	el.OnAcceptError(func(l *EventListener, err error) {
+		hasError = err
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *hijacked)
+	assert.False(t, *called)
+	assert.Equal(t, errHijackedFail, hasError)
+}
+
+func TestConn_CodecHijackedFail1(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := new(bool)
+	hijacked := new(bool)
+	var hasError error
+	el := NewEventListener(l)
+
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitHijackedFailCodec(hijacked, func(ctx Context) {
+			ctx.Hijack()
+		})
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(called)
+	})
+	el.OnAcceptError(func(l *EventListener, err error) {
+		hasError = err
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *hijacked)
+	assert.False(t, *called)
+	assert.NoError(t, hasError)
+}
+
+func TestConn_CodecHijackedFail2(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := new(bool)
+	hijacked := new(bool)
+	var hasError error
+	el := NewEventListener(l)
+
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitHijackedFailCodec(hijacked, func(ctx Context) {
+			ctx.Hijack(nil, nil)
+		})
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(called)
+	})
+	el.OnAcceptError(func(l *EventListener, err error) {
+		hasError = err
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *hijacked)
+	assert.False(t, *called)
+	assert.Equal(t, errHijackedFail, hasError)
 }
 
 func TestConn_CodecError(t *testing.T) {

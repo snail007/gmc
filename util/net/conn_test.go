@@ -169,6 +169,33 @@ func TestMultipleCodec2(t *testing.T) {
 	assert.True(t, *outputCnt > 50)
 }
 
+func TestMultipleCodec3(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := new(bool)
+	el := NewEventListener(l)
+	var conn net.Conn
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitCodec2(called)
+	})
+	el.AddCodecFactory(func() Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		conn = c.(*Conn).Conn
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *called)
+	assert.IsType(t, &initCodec{}, conn)
+}
+
 func TestEventConn(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
@@ -366,7 +393,7 @@ func TestConn_CodecHijacked(t *testing.T) {
 	called := new(bool)
 	hijacked := new(bool)
 	el := NewEventListener(l)
-
+	var conn net.Conn
 	el.AddCodecFactory(func() Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
@@ -376,12 +403,16 @@ func TestConn_CodecHijacked(t *testing.T) {
 	el.AddCodecFactory(func() Codec {
 		return newInitPassThroughCodec(called)
 	})
+	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+		conn = c.(*Conn).Conn
+	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
 	assert.True(t, *hijacked)
 	assert.False(t, *called)
+	assert.IsType(t, &initHijackedCodec{}, conn)
 }
 
 func TestConn_CodecHijackedFail(t *testing.T) {

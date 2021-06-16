@@ -300,7 +300,7 @@ func newInitHijackedCodec(called *bool) *initHijackedCodec {
 
 func (i *initHijackedCodec) Initialize(ctx CodecContext, next NextCodec) (net.Conn, error) {
 	i.Conn = ctx.Conn()
-	// hijack the conn, do anything with conn, and just return ErrCodecHijacked at return.
+	// hijack the conn, do anything with conn, and just call ctx.Hijack at return.
 	*i.called = true
 	return ctx.Hijack(i)
 }
@@ -345,8 +345,24 @@ func (i *initPassThroughCodec) Initialize(ctx CodecContext, next NextCodec) (net
 	return next.Call(ctx)
 }
 
-func (i *initPassThroughCodec) Close() error {
-	return nil
+type initCodec struct {
+	net.Conn
+	called *bool
+}
+
+func newInitCodec2(called *bool) *initCodec {
+	return &initCodec{
+		called: called,
+	}
+}
+
+func (i *initCodec) Initialize(ctx CodecContext, next NextCodec) (net.Conn, error) {
+	// implements the Context's net.Conn
+	i.Conn = ctx.Conn()
+	// do something
+	*i.called = true
+	// call next codec, must call ctx.SetConn inject current codec to context.
+	return next.Call(ctx.SetConn(i))
 }
 
 func TestNewEventListener_OnCodecError(t *testing.T) {

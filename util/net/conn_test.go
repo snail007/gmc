@@ -28,6 +28,7 @@ func TestMultipleCodec(t *testing.T) {
 		conn.AddCodec(NewHeartbeatCodec())
 		conn.AddCodec(NewAESCodec(password))
 		conn.Initialize()
+		assert.Equal(t, conn.ctx,conn.Ctx())
 		go func() {
 			for {
 				n, err := conn.Write([]byte("hello from server"))
@@ -176,16 +177,16 @@ func TestMultipleCodec3(t *testing.T) {
 	called := new(bool)
 	el := NewEventListener(l)
 	var conn net.Conn
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitCodec2(called)
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+	el.OnAccept(func(ctx Context, c net.Conn) {
 		conn = c.(*Conn).Conn
 	})
 	el.Start()
@@ -214,12 +215,13 @@ func TestEventConn(t *testing.T) {
 	assert.Equal(t, time.Second, conn.ReadTimeout())
 	assert.Equal(t, time.Second, conn.WriteTimeout())
 	closed := false
-	conn.OnData(func(s *EventConn, data []byte) {
+	conn.OnData(func(ctx Context, data []byte) {
+		s := ctx.EventConn()
 		assert.Equal(t, "hello", string(data))
 		assert.Equal(t, int64(5), s.ReadBytes())
 		s.Write([]byte("hi"))
 		assert.Equal(t, int64(2), s.WriteBytes())
-	}).OnClose(func(s *EventConn) {
+	}).OnClose(func(ctx Context) {
 		closed = true
 	}).Start()
 	time.AfterFunc(time.Millisecond*1500, func() {
@@ -229,6 +231,7 @@ func TestEventConn(t *testing.T) {
 	assert.Contains(t, conn.LocalAddr().String(), "127.0.0.1:")
 	assert.Contains(t, conn.RemoteAddr().String(), "127.0.0.1:")
 	assert.True(t, closed)
+	assert.Equal(t, conn.ctx,conn.Ctx())
 }
 
 func TestEventConn2(t *testing.T) {
@@ -259,17 +262,18 @@ func TestEventConn2(t *testing.T) {
 		// just return c, skip the next
 		return c, nil
 	})
-	conn.OnData(func(s *EventConn, data []byte) {
+	conn.OnData(func(ctx Context, data []byte) {
+		s := ctx.EventConn()
 		assert.Equal(t, "hello", string(data))
 		assert.Equal(t, int64(5), s.ReadBytes())
 		time.Sleep(time.Millisecond * 300)
 		s.Write([]byte("hi"))
 		assert.Equal(t, int64(2), s.WriteBytes())
-	}).OnReadError(func(s *EventConn, err error) {
+	}).OnReadError(func(ctx Context, err error) {
 		readErr = true
-	}).OnWriterError(func(s *EventConn, err error) {
+	}).OnWriterError(func(ctx Context, err error) {
 		writeErr = true
-	}).OnClose(func(s *EventConn) {
+	}).OnClose(func(ctx Context) {
 		closed = true
 	})
 	conn.Write([]byte("hi"))
@@ -297,11 +301,11 @@ func TestEventConn3(t *testing.T) {
 	conn := NewEventConn(c)
 	conn.AddCodec(newInitPassThroughCodec(new(bool)))
 	conn.AddCodec(newInitErrorCodec(new(bool)))
-	conn.OnConnInitializeError(func(ec *EventConn, err error) {
-		ec.SetData("test", "abc")
+	conn.OnConnInitializeError(func(ctx Context, err error) {
+		ctx.SetData("test", "abc")
 	}).Start()
 	time.Sleep(time.Second * 1)
-	assert.Equal(t, "abc", conn.Data("test"))
+	assert.Equal(t, "abc", conn.Ctx().Data("test"))
 }
 
 func TestBufferedConn_PeekMax(t *testing.T) {
@@ -340,18 +344,20 @@ func TestNewConnBinder(t *testing.T) {
 	srcClosed := false
 	dstClosed := false
 	str := ""
-	NewEventListener(l2).OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+	NewEventListener(l2).OnAccept(func(ctx Context, c net.Conn) {
 		str, _ = Read(c, 3)
 	}).Start()
-	NewEventListener(l1).OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+	NewEventListener(l1).OnAccept(func(ctx Context, c net.Conn) {
 		c2, _ := net.Dial("tcp", ":"+p2)
-		NewConnBinder(c, c2).OnClose(func() {
+		b:=NewConnBinder(c, c2).OnClose(func() {
 			closed = true
-		}).OnSrcClose(func(err error) {
+		}).OnSrcClose(func(ctx Context) {
 			srcClosed = true
-		}).OnDstClose(func(err error) {
+		}).OnDstClose(func(ctx Context) {
 			dstClosed = true
-		}).SetReadBufSize(100).Start()
+		}).SetReadBufSize(100)
+		b.Start()
+		assert.Equal(t,b,b.Ctx().ConnBinder())
 	}).Start()
 	time.Sleep(time.Second)
 	err = Write(":"+p1, "hello")
@@ -394,16 +400,16 @@ func TestConn_CodecHijacked(t *testing.T) {
 	hijacked := new(bool)
 	el := NewEventListener(l)
 	var conn net.Conn
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitHijackedCodec(hijacked)
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+	el.OnAccept(func(ctx Context, c net.Conn) {
 		conn = c.(*Conn).Conn
 	})
 	el.Start()
@@ -424,16 +430,16 @@ func TestConn_CodecHijackedFail(t *testing.T) {
 	var hasError error
 	el := NewEventListener(l)
 
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitHijackedFailCodec(hijacked, nil)
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAcceptError(func(l *EventListener, err error) {
+	el.OnAcceptError(func(ctx Context, err error) {
 		hasError = err
 	})
 	el.Start()
@@ -454,18 +460,18 @@ func TestConn_CodecHijackedFail1(t *testing.T) {
 	var hasError error
 	el := NewEventListener(l)
 
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitHijackedFailCodec(hijacked, func(ctx Context) {
 			ctx.Hijack()
 		})
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAcceptError(func(l *EventListener, err error) {
+	el.OnAcceptError(func(ctx Context, err error) {
 		hasError = err
 	})
 	el.Start()
@@ -486,18 +492,18 @@ func TestConn_CodecHijackedFail2(t *testing.T) {
 	var hasError error
 	el := NewEventListener(l)
 
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitHijackedFailCodec(hijacked, func(ctx Context) {
 			ctx.Hijack(nil, nil)
 		})
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAcceptError(func(l *EventListener, err error) {
+	el.OnAcceptError(func(ctx Context, err error) {
 		hasError = err
 	})
 	el.Start()
@@ -516,10 +522,10 @@ func TestConn_CodecError(t *testing.T) {
 	called := false
 	hasErr := new(bool)
 	el := NewEventListener(l)
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitErrorCodec(hasErr)
 	})
 	el.Start()

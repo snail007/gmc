@@ -13,15 +13,6 @@ import (
 	"time"
 
 	gbytes "github.com/snail007/gmc/util/bytes"
-
-	gmap "github.com/snail007/gmc/util/map"
-)
-
-const (
-	defaultBufferedConnSize         = 8192
-	defaultEventConnReadBufferSize  = 8192
-	defaultConnBinderReadBufferSize = 8192
-	defaultConnKeepAlivePeriod      = time.Second * 15
 )
 
 type BufferedConn interface {
@@ -33,21 +24,12 @@ type BufferedConn interface {
 	PeekMax(n int) (d []byte, err error)
 }
 
-type Codec interface {
-	net.Conn
-	Initialize(CodecContext, NextCodec) (net.Conn, error)
-}
-
-type NextCodec interface {
-	Call(CodecContext) (net.Conn, error)
-}
-
 type codecs struct {
 	codecs []Codec
 	idx    int
 }
 
-func (s *codecs) Call(ctx CodecContext) (conn net.Conn, err error) {
+func (s *codecs) Call(ctx Context) (conn net.Conn, err error) {
 	conn, err = s.call(ctx)
 	if err != nil {
 		// if occurs error, try clean.
@@ -63,7 +45,7 @@ func (s *codecs) Call(ctx CodecContext) (conn net.Conn, err error) {
 	return
 }
 
-func (s *codecs) call(ctx CodecContext) (conn net.Conn, err error) {
+func (s *codecs) call(ctx Context) (conn net.Conn, err error) {
 	s.idx++
 	if s.idx == len(s.codecs) {
 		// last call, no next codec, just return conn.
@@ -78,12 +60,6 @@ func newCodecs(cs []Codec) *codecs {
 		codecs: cs,
 	}
 	return f
-}
-
-type ConnFilter func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error)
-
-type NextConnFilter interface {
-	Call(ctx Context, c net.Conn) (net.Conn, error)
 }
 
 type connFilters struct {
@@ -109,8 +85,8 @@ func newConnFilters(filters []ConnFilter) *connFilters {
 }
 
 type Conn struct {
-	ctx ConnContext
 	net.Conn
+	ctx                       Context
 	codec                     []Codec
 	filters                   []ConnFilter
 	readTimeout               time.Duration
@@ -121,6 +97,10 @@ type Conn struct {
 	onClose                   func(*Conn)
 	closeOnce                 *sync.Once
 	autoCloseOnReadWriteError bool
+}
+
+func (s *Conn) Ctx() Context {
+	return s.ctx
 }
 
 func (s *Conn) SetAutoCloseOnReadWriteError(b bool) {
@@ -250,7 +230,7 @@ func (s *Conn) AddCodec(codec Codec) *Conn {
 }
 
 func NewConn(conn net.Conn) *Conn {
-	return NewContextConn(nil, conn)
+	return NewContextConn(NewContext(), conn)
 }
 
 func NewContextConn(ctx Context, conn net.Conn) *Conn {
@@ -267,28 +247,18 @@ func NewContextConn(ctx Context, conn net.Conn) *Conn {
 			closeOnce:  &sync.Once{},
 		}
 	}
-	if ctx == nil {
-		c.ctx = NewContext().(*defaultContext)
-	} else {
-		c.ctx = ctx.(*defaultContext)
-	}
-	c.ctx.(*defaultContext).conn = c
+	ctx.(*defaultContext).conn = c
+	c.ctx = ctx
 	return c
 }
 
-type ConnErrorHandler func(ec *EventConn, err error)
-
-type DataHandler func(ec *EventConn, data []byte)
-
-type EventConnCloseHandler func(ec *EventConn)
-
 type EventConn struct {
 	conn                  net.Conn
-	onReadError           ConnErrorHandler
-	onWriterError         ConnErrorHandler
-	onClose               EventConnCloseHandler
+	onReadError           ErrorHandler
+	onWriterError         ErrorHandler
+	onClose               CloseHandler
 	onData                DataHandler
-	onConnInitializeError ConnErrorHandler
+	onConnInitializeError ErrorHandler
 	connFilters           []ConnFilter
 	readBufferSize        int
 	readBytes             *int64
@@ -297,7 +267,11 @@ type EventConn struct {
 	writeTimeout          time.Duration
 	closeOnce             sync.Once
 	codec                 []Codec
-	data                  *gmap.Map
+	ctx                   Context
+}
+
+func (s *EventConn) Ctx() Context {
+	return s.ctx
 }
 
 func (s *EventConn) AddConnFilter(f ConnFilter) *EventConn {
@@ -318,7 +292,7 @@ func (s *EventConn) SetReadBufferSize(readBufferSize int) *EventConn {
 	return s
 }
 
-func (s *EventConn) OnConnInitializeError(h ConnErrorHandler) *EventConn {
+func (s *EventConn) OnConnInitializeError(h ErrorHandler) *EventConn {
 	s.onConnInitializeError = h
 	return s
 }
@@ -337,7 +311,7 @@ func (s *EventConn) Write(b []byte) (n int, err error) {
 		s.conn.SetWriteDeadline(time.Time{})
 	}
 	if err != nil {
-		s.onWriterError(s, err)
+		s.onWriterError(s.ctx, err)
 		s.Close()
 	}
 	return
@@ -375,17 +349,17 @@ func (s *EventConn) SetWriteTimeout(writeTimeout time.Duration) *EventConn {
 	return s
 }
 
-func (s *EventConn) OnReadError(onReadError ConnErrorHandler) *EventConn {
+func (s *EventConn) OnReadError(onReadError ErrorHandler) *EventConn {
 	s.onReadError = onReadError
 	return s
 }
 
-func (s *EventConn) OnWriterError(onWriterError ConnErrorHandler) *EventConn {
+func (s *EventConn) OnWriterError(onWriterError ErrorHandler) *EventConn {
 	s.onWriterError = onWriterError
 	return s
 }
 
-func (s *EventConn) OnClose(onClose EventConnCloseHandler) *EventConn {
+func (s *EventConn) OnClose(onClose CloseHandler) *EventConn {
 	s.onClose = onClose
 	return s
 }
@@ -398,17 +372,8 @@ func (s *EventConn) OnData(onData DataHandler) *EventConn {
 func (s *EventConn) Close() {
 	s.closeOnce.Do(func() {
 		s.conn.Close()
-		s.onClose(s)
+		s.onClose(s.ctx)
 	})
-}
-
-func (s *EventConn) Data(key interface{}) interface{} {
-	v, _ := s.data.Load(key)
-	return v
-}
-
-func (s *EventConn) SetData(key, value interface{}) {
-	s.data.Store(key, value)
 }
 
 func (s *EventConn) AddCodec(codec Codec) *EventConn {
@@ -436,7 +401,7 @@ func (s *EventConn) Start() {
 			// init
 			err := conn.Initialize()
 			if err != nil {
-				s.onConnInitializeError(s, err)
+				s.onConnInitializeError(s.ctx, err)
 				return
 			}
 			s.conn = conn
@@ -461,26 +426,32 @@ func (s *EventConn) Start() {
 				atomic.AddInt64(s.readBytes, int64(n))
 			}
 			if err != nil {
-				s.onReadError(s, err)
+				s.onReadError(s.ctx, err)
 				return
 			}
-			s.onData(s, buf[:n])
+			s.onData(s.ctx, buf[:n])
 		}
 	}()
 }
 
 func NewEventConn(c net.Conn) *EventConn {
-	return &EventConn{
-		data:           gmap.New(),
+	return NewContextEventConn(NewContext(), c)
+}
+
+func NewContextEventConn(ctx Context, c net.Conn) *EventConn {
+	ec := &EventConn{
+		ctx:            ctx,
 		writeBytes:     new(int64),
 		readBytes:      new(int64),
 		readBufferSize: defaultEventConnReadBufferSize,
 		conn:           c,
-		onReadError:    func(*EventConn, error) {},
-		onWriterError:  func(*EventConn, error) {},
-		onClose:        func(*EventConn) {},
-		onData:         func(*EventConn, []byte) {},
+		onReadError:    func(Context, error) {},
+		onWriterError:  func(Context, error) {},
+		onClose:        func(Context) {},
+		onData:         func(Context, []byte) {},
 	}
+	ec.ctx.SetEventConn(ec)
+	return ec
 }
 
 type defaultBufferedConn struct {
@@ -537,8 +508,6 @@ func (b *defaultBufferedConn) PeekMax(n int) (d []byte, err error) {
 	return b.Peek(n)
 }
 
-type CloseHandler func(err error)
-
 type ConnBinder struct {
 	src          net.Conn
 	dst          net.Conn
@@ -547,6 +516,11 @@ type ConnBinder struct {
 	onClose      func()
 	readBufSize  int
 	trafficBytes *int64
+	ctx          Context
+}
+
+func (s *ConnBinder) Ctx() Context {
+	return s.ctx
 }
 
 func (s *ConnBinder) SetReadBufSize(readBufSize int) *ConnBinder {
@@ -594,59 +568,34 @@ func (s *ConnBinder) Start() {
 	go func() {
 		go func() {
 			defer g.Done()
-			s.onSrcClose(s.copy(s.src, s.dst))
+			s.copy(s.src, s.dst)
+			s.onSrcClose(s.ctx)
 		}()
 		go func() {
 			defer g.Done()
-			s.onDstClose(s.copy(s.dst, s.src))
+			s.copy(s.dst, s.src)
+			s.onDstClose(s.ctx)
 		}()
 		g.Wait()
 		s.onClose()
 	}()
 }
 
-func NewConnBinder(src net.Conn, dst net.Conn) *ConnBinder {
-	return &ConnBinder{
+func NewContextConnBinder(ctx Context, src net.Conn, dst net.Conn) *ConnBinder {
+	cb := &ConnBinder{
+		ctx:          ctx,
 		src:          src,
 		dst:          dst,
-		onSrcClose:   func(error) {},
-		onDstClose:   func(error) {},
+		onSrcClose:   func(Context) {},
+		onDstClose:   func(Context) {},
 		onClose:      func() {},
 		trafficBytes: new(int64),
 		readBufSize:  defaultConnBinderReadBufferSize,
 	}
+	cb.ctx.SetConnBinder(cb)
+	return cb
 }
 
-func Write(addr, data string) (err error) {
-	return WriteBytes(addr, []byte(data))
-}
-
-func WriteBytes(addr string, data []byte) (err error) {
-	c, err := net.Dial("tcp", addr)
-	if err != nil {
-		return
-	}
-	defer func() {
-		time.AfterFunc(time.Second, func() {
-			c.Close()
-		})
-	}()
-	_, err = c.Write(data)
-	return
-}
-
-func Read(c net.Conn, bufSize int) (d string, err error) {
-	data, err := ReadBytes(c, bufSize)
-	d = string(data)
-	return
-}
-
-func ReadBytes(c net.Conn, bufSize int) (d []byte, err error) {
-	buf := gbytes.GetPool(bufSize).Get().([]byte)
-	defer gbytes.GetPool(bufSize).Put(buf)
-	n, err := c.Read(buf)
-	if n > 0 {
-		d = append(d, buf[:n]...)
-	}
-	return
+func NewConnBinder(src net.Conn, dst net.Conn) *ConnBinder {
+	return NewContextConnBinder(NewContext(), src, dst)
 }

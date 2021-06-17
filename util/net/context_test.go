@@ -25,6 +25,7 @@ func TestContext(t *testing.T) {
 	ctx := conn.ctx
 	l.Close()
 	c.Close()
+	l0:=NewListener(l)
 	ctx.SetData("test", "abc")
 	assert.Exactly(t, c, ctx.Conn())
 	assert.Equal(t, time.Second, ctx.ReadTimeout())
@@ -35,4 +36,5 @@ func TestContext(t *testing.T) {
 	assert.Contains(t, ctx.RemoteAddr().String(), "127.0.0.1:")
 	assert.Exactly(t, "abc", ctx.Data("test"))
 	assert.IsType(t, (*net.TCPConn)(nil), ctx.RawConn())
+	assert.Equal(t, l0, l0.Ctx().Listener())
 }

@@ -104,10 +104,10 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	l, p, err := ListenRandom("")
 	assert.NoError(t, err)
 	el := NewEventListener(l)
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return NewHeartbeatCodec()
 	})
-	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+	el.OnAccept(func(ctx Context, c net.Conn) {
 		buf := make([]byte, 1024)
 		_, err = c.Read(buf)
 	})
@@ -144,10 +144,10 @@ func TestHeartbeatCodec_TempError(t *testing.T) {
 	l, p, err := ListenRandom("")
 	assert.NoError(t, err)
 	el := NewEventListener(l)
-	el.AddCodecFactory(func() Codec {
+	el.AddCodecFactory(func(ctx Context) Codec {
 		return NewHeartbeatCodec()
 	})
-	el.OnAccept(func(l *EventListener, ctx Context, c net.Conn) {
+	el.OnAccept(func(ctx Context, c net.Conn) {
 		buf := make([]byte, 1024)
 		_, err = c.Read(buf)
 	})

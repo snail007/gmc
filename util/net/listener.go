@@ -13,78 +13,33 @@ import (
 	"time"
 )
 
-var (
-	ErrFirstReadTimeout = fmt.Errorf("ErrFirstReadTimeout")
-	ErrConnInitialize   = fmt.Errorf("ErrConnInitialize")
-)
-
-type (
-	ListenerErrorHandler func(l *EventListener, err error)
-
-	OnCloseHandler func(l *EventListener)
-
-	OnConnCloseHandler func(ConnContext)
-
-	AcceptHandler func(l *EventListener, ctx Context, c net.Conn)
-
-	CodecFactory func() Codec
-
-	ContextFactory func(c net.Conn) Context
-
-	FirstReadTimeoutHandler func(c net.Conn, err error)
-
-	ListenerFilter func(ctx Context, c net.Conn, next NextListenerFilter) (net.Conn, error)
-)
-
-type NextListenerFilter interface {
-	Call(ctx Context, c net.Conn) (net.Conn, error)
-}
-
-type listenerFilters struct {
-	filters []ListenerFilter
-	idx     int
-}
-
-func (s *listenerFilters) Call(ctx Context, c net.Conn) (conn net.Conn, err error) {
-	s.idx++
-	if s.idx == len(s.filters) {
-		// last call, no next filter, just return conn.
-		return c, nil
-	}
-	return s.filters[s.idx](ctx, c, s)
-}
-
-func newListenerFilters(filters []ListenerFilter) *listenerFilters {
-	f := &listenerFilters{
-		idx:     -1,
-		filters: filters,
-	}
-	return f
-}
-
 type Listener struct {
 	net.Listener
 	*sync.Once
-	contextFactory                ContextFactory
 	codecFactory                  []CodecFactory
 	connFilters                   []ConnFilter
-	onConnClose                   OnConnCloseHandler
-	filters                       []ListenerFilter
+	onConnClose                   CloseHandler
+	filters                       []ConnFilter
 	firstReadTimeout              time.Duration
 	connCount                     *int64
 	autoCloseConnOnReadWriteError bool
+	ctx                           Context
+}
+
+func (s *Listener) Ctx() Context {
+	return s.ctx
 }
 
 func (s *Listener) SetAutoCloseConnOnReadWriteError(b bool) {
 	s.autoCloseConnOnReadWriteError = b
 }
 
-func (s *Listener) SetOnConnClose(onConnClose OnConnCloseHandler) *Listener {
+func (s *Listener) SetOnConnClose(onConnClose CloseHandler) *Listener {
 	s.onConnClose = onConnClose
 	return s
 }
 
-func (s *Listener) AddListenerFilter(f ListenerFilter) *Listener {
+func (s *Listener) AddListenerFilter(f ConnFilter) *Listener {
 	s.filters = append(s.filters, f)
 	return s
 }
@@ -115,11 +70,6 @@ func (s *Listener) onAcceptHook(c net.Conn) {
 
 func (s *Listener) ConnCount() int64 {
 	return atomic.LoadInt64(s.connCount)
-}
-
-func (s *Listener) SetConnContextFactory(contextFactory ContextFactory) *Listener {
-	s.contextFactory = contextFactory
-	return s
 }
 
 func (s *Listener) Accept() (c net.Conn, err error) {
@@ -155,10 +105,10 @@ retry:
 	rawConn := c
 
 	// root conn context
-	ctx := s.contextFactory(c)
+	ctx := s.ctx.Clone()
 
 	// init listener filters
-	fConn, err := newListenerFilters(s.filters).Call(ctx, c)
+	fConn, err := newConnFilters(s.filters).Call(ctx, c)
 
 	// checking hijack
 	if ctx.Hijacked() {
@@ -188,7 +138,7 @@ retry:
 	}
 
 	// init Conn
-	conn := NewContextConn(ctx.(*defaultContext), c)
+	conn := NewContextConn(ctx, c)
 	conn.rawConn = rawConn
 	// add filters
 	for _, f := range s.connFilters {
@@ -196,7 +146,7 @@ retry:
 	}
 	// add codec
 	for _, cf := range s.codecFactory {
-		conn.AddCodec(cf())
+		conn.AddCodec(cf(ctx))
 	}
 	// init
 	err = conn.Initialize()
@@ -216,27 +166,38 @@ retry:
 }
 
 func NewListener(l net.Listener) *Listener {
+	return NewContextListener(NewContext(), l)
+}
+
+func NewContextListener(ctx Context, l net.Listener) *Listener {
+	var lis *Listener
 	if v, ok := l.(*Listener); ok {
-		return v
+		lis = v
+	} else {
+		lis = &Listener{
+			Listener:    l,
+			Once:        &sync.Once{},
+			onConnClose: func(Context) {},
+			connCount:   new(int64),
+		}
 	}
-	return &Listener{
-		Listener: l,
-		contextFactory: func(_ net.Conn) Context {
-			return NewContext()
-		},
-		Once:        &sync.Once{},
-		onConnClose: func(ConnContext) {},
-		connCount:   new(int64),
-	}
+	ctx.SetListener(lis)
+	lis.ctx = ctx
+	return lis
 }
 
 type EventListener struct {
 	l                      *Listener
-	onClose                OnCloseHandler
-	onAcceptError          ListenerErrorHandler
+	onClose                CloseHandler
+	onAcceptError          ErrorHandler
 	onAccept               AcceptHandler
 	onFistReadTimeoutError FirstReadTimeoutHandler
 	closeOnce              *sync.Once
+	ctx                    Context
+}
+
+func (s *EventListener) Ctx() Context {
+	return s.ctx
 }
 
 func (s *EventListener) SetAutoCloseConnOnReadWriteError(b bool) *EventListener {
@@ -244,7 +205,7 @@ func (s *EventListener) SetAutoCloseConnOnReadWriteError(b bool) *EventListener 
 	return s
 }
 
-func (s *EventListener) SetOnConnClose(onConnClose OnConnCloseHandler) *EventListener {
+func (s *EventListener) SetOnConnClose(onConnClose CloseHandler) *EventListener {
 	s.l.SetOnConnClose(onConnClose)
 	return s
 }
@@ -254,13 +215,8 @@ func (s *EventListener) AddConnFilter(f ConnFilter) *EventListener {
 	return s
 }
 
-func (s *EventListener) AddListenerFilter(f ListenerFilter) *EventListener {
+func (s *EventListener) AddListenerFilter(f ConnFilter) *EventListener {
 	s.l.AddListenerFilter(f)
-	return s
-}
-
-func (s *EventListener) SetConnContextFactory(contextFactory ContextFactory) *EventListener {
-	s.l.SetConnContextFactory(contextFactory)
 	return s
 }
 
@@ -274,7 +230,7 @@ func (s *EventListener) AddCodecFactory(codecFactory CodecFactory) *EventListene
 	return s
 }
 
-func (s *EventListener) OnAcceptError(h ListenerErrorHandler) *EventListener {
+func (s *EventListener) OnAcceptError(h ErrorHandler) *EventListener {
 	s.onAcceptError = h
 	return s
 }
@@ -299,15 +255,15 @@ func (s *EventListener) Start() *EventListener {
 			// root conn context
 			switch errTyped {
 			case ErrFirstReadTimeout:
-				s.onFistReadTimeoutError(c, err)
+				s.onFistReadTimeoutError(s.ctx, c, err)
 				return
 			case nil:
 				// accept
-				s.onAccept(s, c.(*Conn).ctx, c)
+				s.onAccept(s.ctx, c)
 			case ErrConnInitialize:
 				fallthrough
 			default:
-				s.onAcceptError(s, err)
+				s.onAcceptError(s.ctx, err)
 				return
 			}
 		}
@@ -318,7 +274,7 @@ func (s *EventListener) Start() *EventListener {
 func (s *EventListener) Close() *EventListener {
 	s.closeOnce.Do(func() {
 		s.l.Close()
-		s.onClose(s)
+		s.onClose(s.ctx)
 	})
 	return s
 }
@@ -328,29 +284,22 @@ func (s *EventListener) ConnCount() int64 {
 }
 
 func NewEventListener(l net.Listener) *EventListener {
-	return &EventListener{
+	return NewContextEventListener(NewContext(), l)
+}
+
+func NewContextEventListener(ctx Context, l net.Listener) *EventListener {
+	el := &EventListener{
 		closeOnce: &sync.Once{},
-		l:         NewListener(l),
-		onAccept: func(l *EventListener, ctx Context, c net.Conn) {
+		onAccept: func(ctx Context, c net.Conn) {
 			c.Close()
 			fmt.Println("[WARN] you should using OnAccept() to set a accept handler to process the connection")
 		},
-		onAcceptError:          func(*EventListener, error) {},
-		onClose:                func(*EventListener) {},
-		onFistReadTimeoutError: func(net.Conn, error) {},
+		onAcceptError:          func(Context, error) {},
+		onClose:                func(Context) {},
+		onFistReadTimeoutError: func(Context, net.Conn, error) {},
 	}
-}
-
-func ListenRandom(ip ...string) (l net.Listener, port string, err error) {
-	ip0 := ""
-	if len(ip) == 1 {
-		ip0 = ip[0]
-	}
-	addr := net.JoinHostPort(ip0, "0")
-	l, err = net.Listen("tcp", addr)
-	if err != nil {
-		return
-	}
-	_, port, _ = net.SplitHostPort(l.Addr().String())
-	return
+	ctx.SetEventListener(el)
+	el.ctx = ctx
+	el.l = NewContextListener(el.ctx, l)
+	return el
 }

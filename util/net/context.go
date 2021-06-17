@@ -13,38 +13,65 @@ import (
 	gmap "github.com/snail007/gmc/util/map"
 )
 
-type Context interface {
-	Data(key interface{}) interface{}
-	SetData(key, value interface{})
-	Hijack(c ...Codec) (net.Conn, error)
-	Hijacked() bool
-}
-
-type ConnContext interface {
-	Context
-	ReadTimeout() time.Duration
-	WriteTimeout() time.Duration
-	RemoteAddr() net.Addr
-	LocalAddr() net.Addr
-	Conn() net.Conn
-	RawConn() net.Conn
-	ReadBytes() int64
-	WriteBytes() int64
-}
-
-type CodecContext interface {
-	ConnContext
-	SetConn(net.Conn) CodecContext
-}
-
 var (
 	errHijackedFail = fmt.Errorf("hijack error, unsupported argument")
 )
 
 type defaultContext struct {
-	conn     *Conn
-	data     *gmap.Map
-	hijacked bool
+	conn          *Conn
+	listener      *Listener
+	eventConn     *EventConn
+	eventListener *EventListener
+	connBinder    *ConnBinder
+	data          *gmap.Map
+	hijacked      bool
+}
+
+func (s *defaultContext) Listener() *Listener {
+	return s.listener
+}
+
+func (s *defaultContext) SetListener(listener *Listener) Context {
+	s.listener = listener
+	return s
+}
+
+func (s *defaultContext) Clone() Context {
+	return &defaultContext{
+		conn:          s.conn,
+		eventConn:     s.eventConn,
+		eventListener: s.eventListener,
+		connBinder:    s.connBinder,
+		data:          s.data,
+		hijacked:      s.hijacked,
+	}
+}
+
+func (s *defaultContext) ConnBinder() *ConnBinder {
+	return s.connBinder
+}
+
+func (s *defaultContext) SetConnBinder(connBinder *ConnBinder) Context {
+	s.connBinder = connBinder
+	return s
+}
+
+func (s *defaultContext) EventConn() *EventConn {
+	return s.eventConn
+}
+
+func (s *defaultContext) SetEventConn(eventConn *EventConn) Context {
+	s.eventConn = eventConn
+	return s
+}
+
+func (s *defaultContext) EventListener() *EventListener {
+	return s.eventListener
+}
+
+func (s *defaultContext) SetEventListener(eventListener *EventListener) Context {
+	s.eventListener = eventListener
+	return s
 }
 
 func (s *defaultContext) Hijacked() bool {
@@ -77,11 +104,12 @@ func (s *defaultContext) Data(key interface{}) interface{} {
 	return v
 }
 
-func (s *defaultContext) SetData(key, value interface{}) {
+func (s *defaultContext) SetData(key, value interface{}) Context {
 	s.data.Store(key, value)
+	return s
 }
 
-func (s *defaultContext) SetConn(c net.Conn) CodecContext {
+func (s *defaultContext) SetConn(c net.Conn) Context {
 	s.conn.Conn = c
 	return s
 }

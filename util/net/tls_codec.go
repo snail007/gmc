@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net"
+	"strings"
 )
 
 type tlsCodec struct {
@@ -23,10 +24,6 @@ type tlsCodec struct {
 func (s *tlsCodec) LoadSystemCas() {
 	s.loadSystemCas = true
 	return
-}
-
-func (s *tlsCodec) Config() *tls.Config {
-	return s.config
 }
 
 func (s *tlsCodec) initRootCas(cas *x509.CertPool) (err error) {
@@ -49,12 +46,8 @@ func (s *tlsCodec) initRootCas(cas *x509.CertPool) (err error) {
 	return
 }
 
-func (s *tlsCodec) AddCertKeyString(certString, keyString string) (err error) {
-	return s.AddCertKey([]byte(certString), []byte(keyString))
-}
-
-func (s *tlsCodec) AddCertKey(certBytes, keyBytes []byte) (err error) {
-	c, err := tls.X509KeyPair(certBytes, keyBytes)
+func (s *tlsCodec) AddCertificate(certPEMBytes, keyPEMBytes []byte) (err error) {
+	c, err := tls.X509KeyPair(certPEMBytes, keyPEMBytes)
 	if err != nil {
 		return
 	}
@@ -73,16 +66,21 @@ func (s *tlsCodec) addCertificate(c tls.Certificate) {
 
 type TLSClientCodec struct {
 	tlsCodec
-	skipVerify       bool
-	pinCert          *x509.Certificate
-	verifyServerName string
+	skipVerify           bool
+	pinCert              *x509.Certificate
+	serverName           string
+	skipVerifyCommonName bool
 }
 
-func (s *TLSClientCodec) SetVerifyServerName(verifyServerName string) {
-	s.verifyServerName = verifyServerName
+func (s *TLSClientCodec) SkipVerifyCommonName(skipVerifyCommonName bool) {
+	s.skipVerifyCommonName = skipVerifyCommonName
 }
 
-func (s *TLSClientCodec) PinVerifyCert(serverCertPEMBytes []byte) (err error) {
+func (s *TLSClientCodec) SetServerName(serverName string) {
+	s.serverName = serverName
+}
+
+func (s *TLSClientCodec) PinServerCert(serverCertPEMBytes []byte) (err error) {
 	block, _ := pem.Decode(serverCertPEMBytes)
 	if block == nil {
 		err = fmt.Errorf("failed to parse certificate PEM")
@@ -92,21 +90,16 @@ func (s *TLSClientCodec) PinVerifyCert(serverCertPEMBytes []byte) (err error) {
 	return
 }
 
-func NewTLSClientCodec(c *tls.Config) *TLSClientCodec {
-	if c.RootCAs == nil {
-		c.RootCAs = x509.NewCertPool()
-	}
-	c.InsecureSkipVerify = true
-	s := &TLSClientCodec{
-		tlsCodec: tlsCodec{
-			config: c,
-		},
-	}
-	return s
-}
-
 func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, err error) {
-	s.initRootCas(s.config.RootCAs)
+	if s.config.RootCAs == nil {
+		s.config.RootCAs = x509.NewCertPool()
+	}
+	err = s.initRootCas(s.config.RootCAs)
+	if err != nil {
+		return nil, err
+	}
+	s.config.InsecureSkipVerify = true
+	s.config.ServerName = s.serverName
 	if !s.skipVerify {
 		s.config.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			verifyOkay := false
@@ -120,10 +113,20 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 			} else {
 				for _, rawCert := range rawCerts {
 					cert, _ := x509.ParseCertificate(rawCert)
-					_, e := cert.Verify(x509.VerifyOptions{
-						DNSName: s.verifyServerName,
-						Roots:   s.config.RootCAs,
-					})
+					opts := x509.VerifyOptions{
+						// verify server's certificate chains must be signed by s.config.RootCAs.
+						Roots: s.config.RootCAs,
+					}
+					if !s.skipVerifyCommonName {
+						// verify server's certificate chains Common Name must be contains s.ServerName.
+						opts.DNSName = s.serverName
+						if cert.DNSNames == nil {
+							// cert.Verify will only check servername from cert.DNSNames, without cert.Subject.CommonName,
+							// so we append the serverName into cert.DNSNames when cert.DNSNames is nil, ensure Verify success.
+							cert.DNSNames = append(cert.DNSNames, s.serverName)
+						}
+					}
+					_, e := cert.Verify(opts)
 					if e == nil {
 						verifyOkay = true
 						break
@@ -135,15 +138,53 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 			}
 			return nil
 		}
-		if s.verifyServerName == "" || s.pinCert != nil {
-
+	}
+	s.config.GetClientCertificate = func(cri *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+		// only one certificate, just using it.
+		if len(s.config.Certificates) == 1 {
+			return &s.config.Certificates[0], nil
 		}
+
+		// find by request server name.
+		for _, chain := range s.config.Certificates {
+			cert, _ := x509.ParseCertificate(chain.Certificate[0])
+			// exactly equal
+			if cert.Subject.CommonName == s.serverName {
+				return &chain, nil
+			}
+			// exactly equal in DNSNames
+			for _, name := range cert.DNSNames {
+				if s.serverName == name {
+					return &chain, nil
+				}
+			}
+			// wildcard name equal in DNSNames
+			labels := strings.Split(s.serverName, ".")
+			labels[0] = "*"
+			wildcardName := strings.Join(labels, ".")
+			for _, name := range cert.DNSNames {
+				if wildcardName == name {
+					return &chain, nil
+				}
+			}
+		}
+
+		// find by server response supported root cas.
+		for _, chain := range s.config.Certificates {
+			if err := cri.SupportsCertificate(&chain); err != nil {
+				continue
+			}
+			return &chain, nil
+		}
+
+		// No acceptable certificate found. Don't send a certificate.
+		return new(tls.Certificate), nil
 	}
 	s.Conn = tls.Client(ctx.Conn(), s.config)
 	return next.Call(ctx.SetConn(s))
 }
 
-func (s *TLSClientCodec) AddVerifyCa(caPEMBytes []byte) {
+func (s *TLSClientCodec) AddServerCa(caPEMBytes []byte) {
 	s.addRootCaBytes(caPEMBytes)
 	return
 }
@@ -152,33 +193,51 @@ func (s *TLSClientCodec) SkipVerify(b bool) {
 	s.skipVerify = b
 }
 
-type TLSServerCodec struct {
-	tlsCodec
-}
-
-func NewTLSServerCodec(c *tls.Config) *TLSServerCodec {
-	if c.ClientCAs == nil {
-		c.ClientCAs = x509.NewCertPool()
-	}
-	s := &TLSServerCodec{
+func NewTLSClientCodec() *TLSClientCodec {
+	s := &TLSClientCodec{
 		tlsCodec: tlsCodec{
-			config: c,
+			config: &tls.Config{},
 		},
 	}
 	return s
 }
 
+type TLSServerCodec struct {
+	tlsCodec
+}
+
 func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, err error) {
-	s.initRootCas(s.config.ClientCAs)
+	if s.config.ClientCAs == nil {
+		s.config.ClientCAs = x509.NewCertPool()
+	}
+	err = s.initRootCas(s.config.ClientCAs)
+	if err != nil {
+		return nil, err
+	}
+	// To make sure choose the server certificate depends on the request server name.
+	s.config.BuildNameToCertificate()
 	s.Conn = tls.Server(ctx.Conn(), s.config)
 	return next.Call(ctx.SetConn(s))
 }
 
-func (s *TLSServerCodec) RequireClientAuth() {
-	s.config.ClientAuth = tls.RequireAndVerifyClientCert
+func (s *TLSServerCodec) RequireClientAuth(b bool) {
+	if b {
+		s.config.ClientAuth = tls.RequireAndVerifyClientCert
+	} else {
+		s.config.ClientAuth = tls.NoClientCert
+	}
 }
 
 func (s *TLSServerCodec) AddClientCa(caPEMBytes []byte) {
 	s.addRootCaBytes(caPEMBytes)
 	return
+}
+
+func NewTLSServerCodec() *TLSServerCodec {
+	s := &TLSServerCodec{
+		tlsCodec: tlsCodec{
+			config: &tls.Config{},
+		},
+	}
+	return s
 }

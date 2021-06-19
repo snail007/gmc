@@ -25,7 +25,7 @@ func TestContext(t *testing.T) {
 	ctx := conn.ctx
 	l.Close()
 	c.Close()
-	l0:=NewListener(l)
+	l0 := NewListener(l)
 	ctx.SetData("test", "abc")
 	assert.Exactly(t, c, ctx.Conn())
 	assert.Equal(t, time.Second, ctx.ReadTimeout())

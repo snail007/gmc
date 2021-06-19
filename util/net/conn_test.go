@@ -28,7 +28,7 @@ func TestMultipleCodec(t *testing.T) {
 		conn.AddCodec(NewHeartbeatCodec())
 		conn.AddCodec(NewAESCodec(password))
 		conn.Initialize()
-		assert.Equal(t, conn.ctx,conn.Ctx())
+		assert.Equal(t, conn.ctx, conn.Ctx())
 		go func() {
 			for {
 				n, err := conn.Write([]byte("hello from server"))
@@ -231,7 +231,7 @@ func TestEventConn(t *testing.T) {
 	assert.Contains(t, conn.LocalAddr().String(), "127.0.0.1:")
 	assert.Contains(t, conn.RemoteAddr().String(), "127.0.0.1:")
 	assert.True(t, closed)
-	assert.Equal(t, conn.ctx,conn.Ctx())
+	assert.Equal(t, conn.ctx, conn.Ctx())
 }
 
 func TestEventConn2(t *testing.T) {
@@ -349,7 +349,7 @@ func TestNewConnBinder(t *testing.T) {
 	}).Start()
 	NewEventListener(l1).OnAccept(func(ctx Context, c net.Conn) {
 		c2, _ := net.Dial("tcp", ":"+p2)
-		b:=NewConnBinder(c, c2).OnClose(func() {
+		b := NewConnBinder(c, c2).OnClose(func() {
 			closed = true
 		}).OnSrcClose(func(ctx Context) {
 			srcClosed = true
@@ -357,7 +357,7 @@ func TestNewConnBinder(t *testing.T) {
 			dstClosed = true
 		}).SetReadBufSize(100)
 		b.Start()
-		assert.Equal(t,b,b.Ctx().ConnBinder())
+		assert.Equal(t, b, b.Ctx().ConnBinder())
 	}).Start()
 	time.Sleep(time.Second)
 	err = Write(":"+p1, "hello")

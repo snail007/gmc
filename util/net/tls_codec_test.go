@@ -6,7 +6,6 @@
 package gnet
 
 import (
-	"crypto/tls"
 	"net"
 	"testing"
 	"time"
@@ -15,17 +14,24 @@ import (
 )
 
 func TestTLSCodec_1(t *testing.T) {
+	t.Parallel()
 	l, p, _ := ListenRandom("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
-		c0 := NewTLSServerCodec(&tls.Config{})
-		c0.AddCertKey(testCert,testKEY)
-		c0.RequireClientAuth()
+		c0 := NewTLSServerCodec()
+		// server certificates
+		c0.AddCertificate(testCert, testKEY)
+		c0.AddCertificate(demoCert, demoKEY)
+		// client ca
+		c0.RequireClientAuth(true)
+		c0.AddClientCa(demoCert)
 		c0.AddClientCa(testCert)
+		c0.AddClientCa(helloCert)
 		return c0
 	})
 	l0.OnAccept(func(ctx Context, c net.Conn) {
-		c.Write([]byte("hello"))
+		_, err := c.Write([]byte("hello"))
+		assert.NoError(t, err)
 	})
 	l0.OnAcceptError(func(ctx Context, err error) {
 		t.Log(err)
@@ -34,114 +40,479 @@ func TestTLSCodec_1(t *testing.T) {
 	time.Sleep(time.Second)
 	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn0 := NewConn(conn)
-	c1 := NewTLSClientCodec(&tls.Config{})
-	c1.AddCertKey(demoCert, demoKEY)
-	c1.SetVerifyServerName("test.com")
-	c1.SkipVerify(true)
+
+	c1 := NewTLSClientCodec()
+	c1.AddCertificate(helloCert, helloKEY)
+	c1.SetServerName("demo.com")
+	c1.AddServerCa(demoCert)
+	c1.SkipVerify(false)
 	conn0.AddCodec(c1)
 	assert.NoError(t, conn0.Initialize())
 	d, err := Read(conn0, 5)
+	time.Sleep(time.Second)
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", d)
 }
 
+func TestTLSCodec_2(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		// server certificates
+		c0.AddCertificate(testCert, testKEY)
+		// client ca
+		c0.RequireClientAuth(true)
+		c0.AddClientCa(demoCert)
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.NoError(t, err)
+	})
+	l0.OnAcceptError(func(ctx Context, err error) {
+		t.Log(err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.AddCertificate(demoCert, demoKEY)
+	c1.AddCertificate(testCert, testKEY)
+	c1.SetServerName("demo.com")
+	c1.AddServerCa(helloCert)
+	c1.AddServerCa(testCert)
+	c1.SkipVerify(false)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	d, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", d)
+}
+
+func TestTLSCodec_3(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		// server certificates
+		c0.AddCertificate(testCert, testKEY)
+		c0.AddCertificate(demoCert, demoKEY)
+		// client ca
+		c0.RequireClientAuth(true)
+		c0.AddClientCa(demoCert)
+		c0.AddClientCa(testCert)
+		c0.AddClientCa(helloCert)
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.NoError(t, err)
+	})
+	l0.OnAcceptError(func(ctx Context, err error) {
+		t.Log(err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.AddCertificate(helloCert, helloKEY)
+	c1.SetServerName("test.com")
+	c1.AddServerCa(testCert)
+	c1.SkipVerify(false)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	d, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", d)
+}
+
+func TestTLSCodec_4(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		c0.RequireClientAuth(true)
+		// server certificates
+		c0.AddCertificate(testCert, testKEY)
+		c0.AddCertificate(demoCert, demoKEY)
+		// client ca
+		c0.AddClientCa(demoCert)
+		c0.LoadSystemCas()
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.Error(t, err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+	c1 := NewTLSClientCodec()
+	c1.AddCertificate(helloCert, helloKEY)
+	c1.AddCertificate(testCert, testKEY)
+	c1.SetServerName("demo.com")
+	c1.AddServerCa(demoCert)
+	c1.AddServerCa(testCert)
+	c1.SkipVerify(false)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	_, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.Error(t, err)
+}
+
+func TestTLSCodec_5(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		// server certificates
+		c0.AddCertificate(testCert, testKEY)
+		c0.AddCertificate(demoCert, demoKEY)
+		// client ca
+		c0.RequireClientAuth(true)
+		c0.AddClientCa(demoCert)
+		c0.AddClientCa(testCert)
+		c0.AddClientCa(helloCert)
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.NoError(t, err)
+	})
+	l0.OnAcceptError(func(ctx Context, err error) {
+		t.Log(err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.PinServerCert(testCert)
+	c1.AddCertificate(helloCert, helloKEY)
+	c1.SetServerName("test.com")
+	c1.AddServerCa(testCert)
+	c1.SkipVerify(false)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	d, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", d)
+}
+
+func TestTLSCodec_6(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		// server certificates
+		c0.AddCertificate(testCert, testKEY)
+		c0.AddCertificate(demoCert, demoKEY)
+		// client ca
+		c0.RequireClientAuth(true)
+		c0.AddClientCa(demoCert)
+		c0.AddClientCa(testCert)
+		c0.AddClientCa(helloCert)
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.NoError(t, err)
+	})
+	l0.OnAcceptError(func(ctx Context, err error) {
+		t.Log(err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.AddCertificate(helloCert, helloKEY)
+	c1.SetServerName("test.com")
+	c1.SkipVerify(true)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	d, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", d)
+}
+
+func TestTLSCodec_7(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		c0.RequireClientAuth(false)
+		// server certificates
+		c0.AddCertificate(demoCert, demoKEY)
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.NoError(t, err)
+	})
+	l0.OnAcceptError(func(ctx Context, err error) {
+		t.Log(err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.SkipVerify(true)
+	c1.SkipVerifyCommonName(true)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	d, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", d)
+}
+
+func TestTLSCodec_8(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		c0.RequireClientAuth(false)
+		// server certificates
+		c0.AddCertificate(demoCert, demoKEY)
+		return c0
+	})
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, err := c.Write([]byte("hello"))
+		assert.Error(t, err)
+	})
+	l0.OnAcceptError(func(ctx Context, err error) {
+		t.Log(err)
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.SkipVerify(false)
+	c1.AddServerCa(testCert)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	_, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.Error(t, err)
+
+	c2 := NewTLSClientCodec()
+	c2.SkipVerify(false)
+	c2.AddServerCa([]byte("aaa"))
+	conn0.AddCodec(c2)
+	assert.Error(t, conn0.Initialize())
+}
+
+func TestTLSCodec_9(t *testing.T) {
+	t.Parallel()
+	l, p, _ := ListenRandom("")
+	l0 := NewEventListener(l)
+	l0.AddCodecFactory(func(ctx Context) Codec {
+		c0 := NewTLSServerCodec()
+		c0.AddCertificate(testCert, testKEY)
+		c0.AddClientCa([]byte("aaa"))
+		return c0
+	})
+	var hasErr error
+	l0.OnAcceptError(func(ctx Context, err error) {
+		hasErr = err
+	})
+	l0.Start()
+	time.Sleep(time.Second)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn0 := NewConn(conn)
+
+	c1 := NewTLSClientCodec()
+	c1.AddCertificate(helloCert, helloKEY)
+	c1.SetServerName("demo.com")
+	c1.AddServerCa(demoCert)
+	c1.SkipVerify(true)
+	conn0.AddCodec(c1)
+	assert.NoError(t, conn0.Initialize())
+	_, err := Read(conn0, 5)
+	time.Sleep(time.Second)
+	assert.Error(t, err)
+	assert.Error(t, hasErr)
+}
+
 var testKEY = []byte(`-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAtep4TfLTE04hXm8qgmfGbedDvxgo7bwpWS7seSC9H/IGg4J8
-njYna/OZ+Ib0dArtW97o9V7jYgmja60ZxKxFvTvvWQDJEMwa/4JAHV05LiSeR0wu
-q4gW8VeFaCNwtibNY78oNfg85mIVg3BD/NA1cqloIYh4G3bffLvXbkkNQYcins1Q
-W3rswapmu6Y3VQOh/K5NsUudLWAEwStyVNF37n4zKFuMDz+gChOXp5FbcIcxh5vx
-WomzQ6c30mQe9g2iyQMvfKbMmrVo247zs0dPuTw20+1nfnjyRjDY96xr4xcSd6eg
-lNaE5p5zVLyXfviLr5P57h8XnLPspaXsrbPkIwIDAQABAoIBAQCFF8Jk5R9gpGzt
-dk+XkO0wQ17hVH+9T0jBIv+Hr1gvIxd45+Lcraox5MvldHcs30HBUVkHDCE3/O0/
-Pin4JkHvrQX0DAsO6wVlopnd4fKPu+LBLw+GF88RS4MjKaqw2bqzG4wD0FZeB6zN
-uTlEoeA4v5Cb2Ahnr5Ta4WNAINo98bCYFrOgHLQWVsNoMRy+qWZmoK3vR8L/Mjqy
-/5ZUDcJuJhcSQA+BlXTkGTiRjy4QuIMRK7HuZ59KGBRIyYAJVwP3dxKw9nNNcRui
-8JEaMNuGoy3TLyeQgiUom9JuQwyOtzCuno2jgS8jKeQhuBNYVFSagDYJvC0ypTtz
-hrNm4WKBAoGBANKPM/Y3VgbTKhT71dQ5bLdtq5jgA5jrsl7UkzVl2EYIIPgSRNoe
-LHRbtmW4QRBu8gFjUcASkXqiqYQ+CLFxD6BNeyCQG8RZo3Grcyl04IhqhbuXEu+R
-EEn1AI1G820nt2+rXp+2uG/fGsZmPQ+E2Pgvr5JClhP96tskyUppWghTAoGBAN0s
-zA3MUxdVkt5ol2cwJPPTww+gHBL/gmmbYprW/VieoAGHXjVhyghpzGp+RnMdOcMb
-paVMs9QorAsCHq+EZjjoLU2a5CbAdZZ21xCOTpKPR8RZgjAAJpJZFdcSp880UQ18
-OU4U5zQJfrl9xxHUtWMG0WqK9GvpAe3w1/vey/rxAoGAWIk4ey5XcPU3u60NA3jF
-+vcVcWm4eYOZ9AAEii5x2zitzEG6S9DmNmMd9fWc/jD4d5bwmAf2vg9Joj6HXz1A
-KdKKlG2kD1L1w+UovmTTyOippPBoWO2xYLexbLZJwzsxCbaQSi4FrZytYIE66Zyd
-svYyKBjxjCR3rX/xV+WmotsCgYAV/l9oO9pDZsINFc+AdlwmVvd9tUk1Zm0cfVQn
-25sj1dpJbKGko03I2mR2booo5k4ZJcWqE1+KiGTbT2GnyH21yPjAT9fCNr86sCSg
-w9XyYwca8l+s0EcFpJA0a+l+BFDPC3xTVGbNWOheH7DNCB7lcwceFiVKGciUVa/U
-nwofsQKBgQCvrddwyUO4sw2yzV3Ny/Sm8EcREE406yBOdPZlctxGh7uI+d2ENoFK
-n5FDiTMUA9VViMN2EYcSc4ucO0w/cEA3Oh71BUcu66ieSfPJ5WPQ6xFRcIxlZp7e
-BL5v0wZyxrSVsGlXkaH8r9WW/7lMUVadLrXh01zsucEilwNW9/TmhA==
+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
 -----END RSA PRIVATE KEY-----
 `)
 
 // dns name: test.com
 var testCert = []byte(`-----BEGIN CERTIFICATE-----
-MIIDSzCCAjOgAwIBAgIBATANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJNTzER
+MIIDaDCCAlCgAwIBAgIBATANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJNVzER
 MA8GA1UEChMIdGVzdC5jb20xETAPBgNVBAsTCHRlc3QuY29tMREwDwYDVQQDEwh0
-ZXN0LmNvbTAgFw0yMTA2MTgwMTI5MjJaGA8xODUxMDkxMDAzMjAxNVowRjELMAkG
-A1UEBhMCTU8xETAPBgNVBAoTCHRlc3QuY29tMREwDwYDVQQLEwh0ZXN0LmNvbTER
-MA8GA1UEAxMIdGVzdC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
-AQC16nhN8tMTTiFebyqCZ8Zt50O/GCjtvClZLux5IL0f8gaDgnyeNidr85n4hvR0
-Cu1b3uj1XuNiCaNrrRnErEW9O+9ZAMkQzBr/gkAdXTkuJJ5HTC6riBbxV4VoI3C2
-Js1jvyg1+DzmYhWDcEP80DVyqWghiHgbdt98u9duSQ1BhyKezVBbeuzBqma7pjdV
-A6H8rk2xS50tYATBK3JU0XfufjMoW4wPP6AKE5enkVtwhzGHm/FaibNDpzfSZB72
-DaLJAy98psyatWjbjvOzR0+5PDbT7Wd+ePJGMNj3rGvjFxJ3p6CU1oTmnnNUvJd+
-+Iuvk/nuHxecs+ylpeyts+QjAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAdBgNV
-HSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zANBgkq
-hkiG9w0BAQsFAAOCAQEApC9nSTDw2ptLJN446ET6VSj/wHzquRXDg5b5sDk9+bGp
-Srgx1Y5mAloCbeBpvj3ZyNyoaPccMXYWT1iNSsxogPGfnUPuI1X/rx+iNcs17+H5
-GmM/JUi6gKp0mcfiK9OTCL9mm5pYnUtjlGVZkBW34dOAdNzxIZpYSqJLoVEozLij
-iZaXnxtmU7bUMVqybN9126yQ8C56ZO/SIUOhMPerutTMlrIP8UOQ5CYMR8UyuDZh
-JVBRWqSYvX+swsTSN4Yqy1UnaWvFVCtAlcThZnqxjI/XRUww3NUMCc6EgdLoSsI0
-UoLzcN/OnQrCjReRS+yo+UmHZ0HT0IPDki0Eo3XPug==
------END CERTIFICATE-----`)
+ZXN0LmNvbTAeFw0yMTA2MTgxMjA3NTdaFw0zMTA2MTYxMzA3NTdaMEYxCzAJBgNV
+BAYTAk1XMREwDwYDVQQKEwh0ZXN0LmNvbTERMA8GA1UECxMIdGVzdC5jb20xETAP
+BgNVBAMTCHRlc3QuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+yfZmbS0d60a4RpNFtg9G6gGYvjp7IOLqbnNi8N2dAFuZGShPgn+X/+8PYaOnai1G
+1khD7LBF9DqjS2cqJYEQSouK8LVu1mztXMP4X7V2VMIRqVp9uduVEpARFbap64D7
+Y2Wv9nj8dX1mcSzGzW6fPJT1STThE3ByqCpSedOxo3CCE/hdbI2x+GNS3UkPSsib
+MrvanZCEKiv8a1aJE03PJzvnblmM8pVS3wvr76w5XvQzGir1idhXU4OvG4ccxZpS
+/pY3YSgmqwghjeYMdUd0b0jaKpqjHE+PoQ+nwhJ20K+7pVCQOAMjQxypelv+aTVD
+0At3oeeEOMY4qXianM+6BQIDAQABo2EwXzAOBgNVHQ8BAf8EBAMCAqQwHQYDVR0l
+BBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0O
+BBYEFHw3ZFsv4ZUrcc/JvUIvGwA4sn1QMA0GCSqGSIb3DQEBCwUAA4IBAQB08jtx
+zDfr+lzyv9mXDLptcn1XS2F25aGRAQ/XV8nmk2gaGKXEr3pAuoCAoUbQphmLcCvZ
+mYIHbXQ/z6KIWonSc/a1ZGIwJfSpj3xt9lyJ72tWBodDkhIhB8l9hG6eHSCXYin9
+fx1mvHJo7+jGHOc48//FcZ9vaiwi2e59gBaQRKUpEeUd648AbMuLXFYrshyr32bO
+SEDEtk9wRajEds0uakXFxf5ymrABZpvde2VbgOcWqcd7tc76XPnqrxMrRhIgZlPa
+vOPqBcUHaGFaWP3WWrQ/i0rq5uh428LD/mYE5El8M8GieVM+3mW8KpLkjkFT5Sc0
+r1WcgSLKq+SV/Gip
+-----END CERTIFICATE-----
+`)
 
 var demoKEY = []byte(`-----BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAw+DwQPZpA+yC9+elVgNu4f2F3fPceL6YmAbGe7qq4cHTFkfK
-PCdBxTASeoGAEbKWKTwJSxR47zhr+6m96jnvLAOIMSisxlh2jBfeItQGCJDJw0lQ
-RwLsthdK71PAmjIIpNAQnjV3dFLnhTGXEJQIOgLkva8vGwu3OzbV0GtdtpVMJuhI
-OilnAPAzvGFBvl5rFW4Pscc+xgYfaORyDBQL2LwpTWHmjJ3QDJbJlteDjyPxp99o
-bgdWUuRbkn5g+MjvAyYr8JghIgUUlrJztttEUgJ8lEMKOod1ZIW0BxIsbaSCNy4P
-pJHLPhoGJQs5p08A4gk2RxhnvfFJdU2ScVmKdQIDAQABAoIBAQCp/IlDNxRHjXbT
-ALpg/LW7dTI5Pan1NyJhvG9/bK1jIbu4ODDvJvpSz7cZjUzBDwR1YF6IQ4n3wDUl
-v1bK79/5iE8mqi/WKWsnhIcIHovl3xDZYsRB++3E0E39h+c7aXRK4y2ovqmdz1yQ
-IEsC3hSNk3lCi8cLZ41p29qN9r7q9PylKLATLfqgsEcm40kulxJROOClf+TLtNy8
-xfCqJo2VXVt4uQlrMnaz7evKe8oOAz4nQlx+dsuOAcoe0bv5q32akolDvk91UYQc
-gwrFQCQpTg8WivoMQKZjxENlTWgiY3flLa1d6U6omRT5i5X/0JbgnKiD0hvTndcB
-MIYLxpBBAoGBAOhTdyYrv6r3OkPBgcVzBC4efhkd9B2z08dvXgerfGFJFjvLs0nc
-LVOeCggZArmvBrUcgM5IcHablf0Qf/sFp7kamZt2q0SP3hpVQK2nfuiL+c1LwMGb
-t+xmc7drAzJkb9+FIrWXuTcG7KEaXDL5FyfMnSIgA5dle0YbL7UN4Cs9AoGBANfW
-sd0JLGSxrnvzzd4bAjoeWCOYtef9Ky9Nv4CDgdGYgJK+lKqo6fkqraI5emumD6kC
-9FuBNaOs+762lg6u/kjilHN/FeORQbL5kH4xYGc30p1iQ626smRAgTSkaLlGIFfL
-ADRSum+/VtEDXwrOarw1LPL6ERRXcfosijPdJa+ZAoGANQopH4vJXEzI/oMFD4Ds
-qWLIww81ljph1Rw1yWZ7JPK8orYknm4n4vknrSWYm6+7xklVlsKu+kUW/wlvTm3C
-Ft5dx0JWY3a87CIefAbLUGf0hcwPm6PjX5McQ/moZy7K46rPe8nBvTBVgYo1FmYL
-xUhPb2UDrOK8PAsk3x7l2LkCgYEAkaFXsxbscCh+3T18Kx84GnS87Y+tNRFZ4Pnp
-e1G/9uaZ4elbL+b2r1r/etSjaBzMtjG7JD6DLaOa3GwfxVqHUjAnD+KwpzIsDRFc
-T/kK3boJjo1tsrukgAYR564Cxves/O+IfMVQ6/NDJZXLu+PYmpKaeHsHqRzzV2RT
-/3h4ZAkCgYEAq6y1102BGXKLF/HXasH8QGPBS5VMiIEx1YdhRwfpxXNZtuUdZlUV
-2gCABQTq7IRBViTgkXTqM66UZFRTsKAlvz9MPuB6MH/7a7VWnYwbrDfMjnl1DM28
-9iiBFM1VwxMhWcQyb5RGDfJingJJWeX7ekXYRic0jgVoTuydRGEgovQ=
------END RSA PRIVATE KEY-----`)
+MIIEowIBAAKCAQEAn3kcOQSXlh5rA/lUBlIcUxNxGgRK1RJDFhsU9yGFL7MYUBe3
+b7q10SKJRaDzo381Sz/TD64b/RVN2rDjgy+pA7Rol00xuryXjFFWMvZ5VfXQp5C4
+u76R4pLKMRRNBw5jePXQWZWcPsEmObnc83+ta1iYXpVfkYj2Cq9pe/PyOmNpMCB3
+T+YK8kkw9PN433IXu+MaOKj993QmBVdqCeKXbkoUrURLMxXi5G7PJiMB2ixVTsrA
+btFQgR+XvK4x1S7xkm/y568UMRRRyLRosS2V8dhfO8flkNeyPKza1AuredLZnelU
+hs623ZA4nN6UI+Z1XcCjRYnBfg3bPkXrS3mnUQIDAQABAoIBAFXeCGxLJLQYPNcu
+8SdWHxo8ZbH0jbac1rKYcnl++w/sBzNZEdR/XFb3maJ8P7PRUwjpnOPchAWJ6xnO
+FTMV/pOYGJkfX5+E3LUZNqjKPhsi+O7A5jdxLWwqTeSPYcpi3PzMnxsdi7velI6Q
+nYAfR2l9ks2a8JKUhKbMPKgZelwlQVm4UwgJZZb+bn6T4Mx5leh/mdCqsVvNKB6m
+ahIRB1giOrMhb220N4y7NptbvrrtZPB0qqxes6qnr1Y3eYQnSryMvMa5sB+yi2/b
+CkS9sqNqf7Yts9OB6AG615tggTJtyj20AIOL0d/aiFjl+VbIVgxxRp5h/rVreUah
+oz863gECgYEAz7YhL45mjjrpHQA1mliJvX9hYBYDOqhf0xrLv8TTrmuexP0P7c2E
+8RNuwOksG+7se+3JIGcMMsU5RtkyI5VHfA9eDSFCHCzxguV9wY0A5NGUZoasthtC
+3mbw8vey612oEqHCk0XaakZCV9tGb/JiSEsj7DOPHmaOwy0nQpdW1dkCgYEAxIwX
+reXa2qzIj/G04Mmwy0ba+IXbjFvqkSl3z7MwgNN5UjP52GH/32lxUa/rCyFPSbIS
+bt2gFqTG2HpFyxMm5ra59lk2MMQaI1BGih/hToN4lo/7QCpEIYUK03HZNec+tUIo
+C22Nl8esxDw88w9SDimZgDpeP8uRjySZVcNMGjkCgYBHIVzN91sBfAUWjFrO52EM
+BtIm4ILslHp0Ranemx3OjkZJuUu6KPZMxFXaND+JtVFAw1ZsBT31KPsLWxfDfbyE
+LJMNtgT4tx9hrwtYu9vBgE/sqFP+7OkCVohO/CpGVcVX1BNY8cPxPuw7P/koHv4v
+OaQsoB9zzrU2+4CFWmQ/SQKBgGL5UOtG9kBsBctGohkYN6kFkzrW3Un+904GHck/
+qMsWst9MQSJPpzPvuxqxhaDjMzQfMd0WSYldjKxyVjb++/XuShLdtcY02hyyTfM8
+Po708YKQGqujHQ/sGRmFGSZlvlQ0bkni7wxhhoSC+QZEzsNG+39w5QknD7OPcI+Z
+evcxAoGBAJwfsbSFFLTJjYIi+55wcuD3qcmGSjqhncbi8oqfzJtbFSDnjPcKJIal
+OxoU/5keftvaeUpGGiOaDowQLlNdzS+Ua0P8Hd5GcNNKMktbC6q5BN1lFLUTphWJ
+jxzcmpeSQ8MB0SjU+yQ3ppDu5BW97wE0BN9joZTmwfR7hbcbg+yq
+-----END RSA PRIVATE KEY-----
+`)
 
 // dns name: demo.com
 var demoCert = []byte(`-----BEGIN CERTIFICATE-----
-MIIDSzCCAjOgAwIBAgIBATANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJMUjER
+MIIDaDCCAlCgAwIBAgIBATANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJPTTER
 MA8GA1UEChMIZGVtby5jb20xETAPBgNVBAsTCGRlbW8uY29tMREwDwYDVQQDEwhk
-ZW1vLmNvbTAgFw0yMTA2MTgwMTMxNDBaGA8xODUxMDkxMDAzMjIzMlowRjELMAkG
-A1UEBhMCTFIxETAPBgNVBAoTCGRlbW8uY29tMREwDwYDVQQLEwhkZW1vLmNvbTER
-MA8GA1UEAxMIZGVtby5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
-AQDD4PBA9mkD7IL356VWA27h/YXd89x4vpiYBsZ7uqrhwdMWR8o8J0HFMBJ6gYAR
-spYpPAlLFHjvOGv7qb3qOe8sA4gxKKzGWHaMF94i1AYIkMnDSVBHAuy2F0rvU8Ca
-Mgik0BCeNXd0UueFMZcQlAg6AuS9ry8bC7c7NtXQa122lUwm6Eg6KWcA8DO8YUG+
-XmsVbg+xxz7GBh9o5HIMFAvYvClNYeaMndAMlsmW14OPI/Gn32huB1ZS5FuSfmD4
-yO8DJivwmCEiBRSWsnO220RSAnyUQwo6h3VkhbQHEixtpII3Lg+kkcs+GgYlCzmn
-TwDiCTZHGGe98Ul1TZJxWYp1AgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAdBgNV
-HSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zANBgkq
-hkiG9w0BAQsFAAOCAQEADF2SdQjEKw1nfR2HRss/yCF6K7rBlmEv6gAhK3QAdiX+
-tTCPsz67QLtAriWX8QbThS+60yI9rM5EFGsp+vDTt2q6kHgQteaMDhEhNYY6ic7g
-Td2IoqGJlZ+Z/kdPjND6QXlN2IYBn6wXGAH2AcGtDSlQyxCEa07iUnvNCG45H/ta
-dtMO82dmF+kYI87Y+zgjC6EQf2sWv2Jr/vZbeLkDwZbpFooMZEdXy2MxG2XNyNjb
-6f+mGpjzS8zLBWTIgd8UoIo3t4VUkJsDkBnrP3fpyLBtEfcUoXATvgrOZX4Y6WOL
-Rjs037Mzictr1H6w8EYHBm0ECWErH+Sn2YTxzKUZ/g==
------END CERTIFICATE-----`)
+ZW1vLmNvbTAeFw0yMTA2MTgxMjIzMTZaFw0zMTA2MTYxMzIzMTZaMEYxCzAJBgNV
+BAYTAk9NMREwDwYDVQQKEwhkZW1vLmNvbTERMA8GA1UECxMIZGVtby5jb20xETAP
+BgNVBAMTCGRlbW8uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+n3kcOQSXlh5rA/lUBlIcUxNxGgRK1RJDFhsU9yGFL7MYUBe3b7q10SKJRaDzo381
+Sz/TD64b/RVN2rDjgy+pA7Rol00xuryXjFFWMvZ5VfXQp5C4u76R4pLKMRRNBw5j
+ePXQWZWcPsEmObnc83+ta1iYXpVfkYj2Cq9pe/PyOmNpMCB3T+YK8kkw9PN433IX
+u+MaOKj993QmBVdqCeKXbkoUrURLMxXi5G7PJiMB2ixVTsrAbtFQgR+XvK4x1S7x
+km/y568UMRRRyLRosS2V8dhfO8flkNeyPKza1AuredLZnelUhs623ZA4nN6UI+Z1
+XcCjRYnBfg3bPkXrS3mnUQIDAQABo2EwXzAOBgNVHQ8BAf8EBAMCAqQwHQYDVR0l
+BBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0O
+BBYEFCy2GHsINcCVqu3urBKw0QOeJDQ0MA0GCSqGSIb3DQEBCwUAA4IBAQBp0ybq
+1b4bPl1tgcn4vMCdyuhxp9Ek15zxMSejelpoU3Z3VBlU6selQoBX2x+TT5Pkx+h1
+/Q6OXehkYuXbcNkqUlKMd0f7CWhYtfW4cd3ptDrp9D7wpSPy4zdRM7LO2wOWVZ49
+GcS9Tu1qRAKQgjOu4omFpR9q5lG3y50v41TrozwTZGWk4nla8WuugmUzy9J9Amks
+3ANUknBVyzK6lqcsp+WxOxVsu8LBzmOJDgMAIM+/4/LFNm2aIbkpkGS5b24YfsLL
+Lgh7PneR3vG/ynWrXJpW/Khw8SWYY9OUVQ+ov230H0rtPZ0BYx0JRy9dT4A/LF5G
+cb97v8dmkm2Po4dl
+-----END CERTIFICATE-----
+`)
+
+var helloCert = []byte(`-----BEGIN CERTIFICATE-----
+MIIDbjCCAlagAwIBAgIBATANBgkqhkiG9w0BAQsFADBJMQswCQYDVQQGEwJHRDES
+MBAGA1UEChMJaGVsbG8uY29tMRIwEAYDVQQLEwloZWxsby5jb20xEjAQBgNVBAMT
+CWhlbGxvLmNvbTAeFw0yMTA2MTkwMDE1MDFaFw0zMTA2MTcwMTE1MDFaMEkxCzAJ
+BgNVBAYTAkdEMRIwEAYDVQQKEwloZWxsby5jb20xEjAQBgNVBAsTCWhlbGxvLmNv
+bTESMBAGA1UEAxMJaGVsbG8uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAqsEyNZzzb8Zupqcs2LCrZBnmOaKl1MdoVyxhnitKHR+y1IT3R1Fv3P/c
+Tk6DYABnUeaiDC7GpmQRNl7XeNIwZZ9frZOEJQklJTCYGlIVtRNoqP3MS+ttalMD
+nHjSACa/9VNFrNvzZY0OtoaYLcTnzAdiLCG7R3O4XTR77vzVYqKTT3oScjCyq4aP
+cCgSc7MLG2CmWYvbzQERMzi8RgyTx/Ol+JziNJXdOtr0scW8xZ2jw4gWoVVWxAcT
+ATTVqRz8hSqpceiv7ZeHjAeqn4uVAFSaPpiWaDaKD/V30/ty5iggZxmuXh/sF3wW
+T4Vw+aHBkcI9WDeGapC0YANuQoGN1wIDAQABo2EwXzAOBgNVHQ8BAf8EBAMCAqQw
+HQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA8GA1UdEwEB/wQFMAMBAf8w
+HQYDVR0OBBYEFBi1j87c0nVtdsPGx9VqN0eSHSqaMA0GCSqGSIb3DQEBCwUAA4IB
+AQBJRHZQTlo3sUTY8R1d+zdANVPG/EKiQ/Qzg07eFf2/LiwVDuUzGXgw6q4SDUEI
+VrSjD819E0Gp0/56okooD2qlv7NkQHOpGAhF89X/gdRUdtz4/CJwQiJ96Jlgc7nK
+vPYjLgBeuizEEqOVZyTOp6mSEL8jTyC/Td0+yvJ5odMaMpA0Hq2i1HYYRcXBW+kq
+1IHU0XVJTuVLsMkavU4HyhtHvokcG2l9bzZaGOfbKfisajUxXp7naN/+0+cFROtb
+uMakvtCL1Jp9oy7Pmj+4yi2gNne8dHd2z4iX6pz6Np0I0dqctpJRSoXa9zKVUOVF
+GUqLq7P1fOHyQsDzhWrD+43X
+-----END CERTIFICATE-----
+`)
+
+var helloKEY = []byte(`-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAqsEyNZzzb8Zupqcs2LCrZBnmOaKl1MdoVyxhnitKHR+y1IT3
+R1Fv3P/cTk6DYABnUeaiDC7GpmQRNl7XeNIwZZ9frZOEJQklJTCYGlIVtRNoqP3M
+S+ttalMDnHjSACa/9VNFrNvzZY0OtoaYLcTnzAdiLCG7R3O4XTR77vzVYqKTT3oS
+cjCyq4aPcCgSc7MLG2CmWYvbzQERMzi8RgyTx/Ol+JziNJXdOtr0scW8xZ2jw4gW
+oVVWxAcTATTVqRz8hSqpceiv7ZeHjAeqn4uVAFSaPpiWaDaKD/V30/ty5iggZxmu
+Xh/sF3wWT4Vw+aHBkcI9WDeGapC0YANuQoGN1wIDAQABAoIBAQCQNSFmTer51yfT
+7xPc3TeiDo1013wdu1rPZFf88Kpi9kZdXP5JaOmER0GTkJM7HJwlexYYG9kA5Tn0
+JRzsmPbunC59tTvA23xXcDbE49YZWw7kyZMj+uwpA3rlRtRz9EXhtjX9yrRAa2Sl
+mf4jiUwJ76JliwdTTNPDQ3P3XegIp8r5LFTk//6g0MQ6qjn6rssAJ6FN6XgMaHMW
+QAreMAfEPYbAm3fZijs+Rb6+y/0uPOfwxNfut7CdQLTu491OKs93ljxzKVXOe/Q6
+MBF6uECzvi2R4IGzlP8mZia4aq+nczbavudqezcyYLwS6lpRz0mCY4a3RHkbH5+L
+LX1Hv+vBAoGBAMXY4Tp0vgEeCiqnSaEQX4M5u+r5Q1ZESUYU3yBjMwBbVh556Ug6
+EKTfoR0V2VIu2I4cse8lIFce+SUscldkkcsuypC4MXmplcQ2exXA5BUn68VWs8tg
+iyF4qCNc+40IRShv4/qUzp3n04QsGR3rIJ8p8AvutPlnidslAyx8KJSpAoGBANzx
+uae25i3lHCoextncD5+3Ogw4B9Bq+/2rbNOQbrkN5vJGBbnQeemOyLQCqoP2UYj2
+IPN2SdV+rU5acfT64+XlshfnqgjiG/wtn1MfU4HJuYvFSXpm06xAnkkhWfYG3y8I
+0JCu8PsXG5l3aDFnAaC5M+RvP8KTDfpHbdGF1B5/AoGAERxkvk2CcU5LysyVDZ0A
+5bSEkBnmvPtC6xC7C24I5yr/E7uvdVOwRNIieQV+uiDbEc9hhDFNzrsbCSAC85P7
+F/uAAWwsuzzzevjLRGJeV4YQWgzZl+lNnyN0Rzqvds8UTB8BNJbSF84I+RFnSrMf
+KyTRYfbPKBLQVWeqEpraV6ECgYEAl65bhohJ/bgMXd5DJc2t7Dgd4cWVl7/av4uw
+ao39dY3Vvv3TcH1vNKiRoQMzjOTNlPlkJcBPcAJHeEMfeM/FJU9LtJ2WXgLcs4Oe
+nbIj4jZa61nF2AI/z0GNaSc8W2rcTa3/gVSYm8iBahpPrZrJw01iErFNVIcgUXI4
+Ml9uAIECgYEAqt8i55jfMkQObmZh1r4sw7x/DRVEOzSJS26DjGvK/CXcIhso3OXs
++tTPCwmrHfnXWOmlIzY1qAzv5nUqdGYY92qGsmbwgbWHHgGDfn3zrZ706xNecZRD
+YUsY7gAW9zuM2dW8g6j4pc3PGeA7bxzZdcXOVoY41dot8UTYIs+mqBo=
+-----END RSA PRIVATE KEY-----
+`)

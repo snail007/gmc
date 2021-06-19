@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-// +build go1.13
+// +build go1.13 go1.12
 
 package gnet
 

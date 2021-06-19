@@ -86,6 +86,7 @@ func TestTLSCodec_2(t *testing.T) {
 	c1.AddServerCa(helloCert)
 	c1.AddServerCa(testCert)
 	c1.SkipVerify(false)
+	c1.SkipVerifyCommonName(true)
 	conn0.AddCodec(c1)
 	assert.NoError(t, conn0.Initialize())
 	d, err := Read(conn0, 5)

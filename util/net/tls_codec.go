@@ -170,11 +170,8 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 		}
 
 		// find by server response supported root cas.
-		for _, chain := range s.config.Certificates {
-			if err := cri.SupportsCertificate(&chain); err != nil {
-				continue
-			}
-			return &chain, nil
+		if c := s.getSuggestedCa(cri); c != nil {
+			return c, nil
 		}
 
 		// No acceptable certificate found. Don't send a certificate.

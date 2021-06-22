@@ -6,7 +6,6 @@
 package gnet
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net"
@@ -250,17 +249,5 @@ func SetHTTPClientTLSCodec(httpClient *http.Client, cc *TLSClientCodec) {
 	if httpClient.Transport == nil {
 		httpClient.Transport = http.DefaultTransport
 	}
-	tr := httpClient.Transport.(*http.Transport)
-	tr.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		timeout := httpClient.Timeout
-		if timeout == 0 {
-			timeout = time.Second * 30
-		}
-		c, err := Dial(addr, httpClient.Timeout)
-		if err != nil {
-			return nil, err
-		}
-		c.AddCodec(cc)
-		return c, nil
-	}
+	bindHTTPTransport(httpClient.Transport.(*http.Transport), cc, httpClient.Timeout)
 }

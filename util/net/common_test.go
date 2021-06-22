@@ -59,7 +59,9 @@ func TestListenError(t *testing.T) {
 }
 
 func TestDial(t *testing.T) {
-	c, _ := Dial(":", time.Second)
+	l,port,_:=RandomListen()
+	NewEventListener(l).Start()
+	c, _ := Dial("127.0.0.1:"+port, time.Second)
 	assert.NotNil(t, c)
 }
 

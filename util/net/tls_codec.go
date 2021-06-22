@@ -184,7 +184,12 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 		// No acceptable certificate found. Don't send a certificate.
 		return new(tls.Certificate), nil
 	}
-	s.Conn = tls.Client(ctx.Conn(), s.config)
+	tlsConn := tls.Client(ctx.Conn(), s.config)
+	err = tlsConn.Handshake()
+	if err != nil {
+		return
+	}
+	s.Conn = tlsConn
 	return next.Call(ctx.SetConn(s))
 }
 
@@ -222,7 +227,12 @@ func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 	}
 	// To make sure choose the server certificate depends on the request server name.
 	s.config.BuildNameToCertificate()
-	s.Conn = tls.Server(ctx.Conn(), s.config)
+	tlsConn := tls.Server(ctx.Conn(), s.config)
+	err = tlsConn.Handshake()
+	if err != nil {
+		return
+	}
+	s.Conn = tlsConn
 	return next.Call(ctx.SetConn(s))
 }
 

@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	errHijackedFail = fmt.Errorf("hijack error, unsupported argument")
+	errHijackedFail    = fmt.Errorf("hijack error, unsupported argument")
+	errHijackedAlready = fmt.Errorf("hijack error, conn hijacked already")
 )
 
 type defaultContext struct {
@@ -42,7 +43,7 @@ func (s *defaultContext) Clone() Context {
 		eventConn:     s.eventConn,
 		eventListener: s.eventListener,
 		connBinder:    s.connBinder,
-		data:          s.data,
+		data:          gmap.New(),
 		hijacked:      s.hijacked,
 	}
 }
@@ -84,7 +85,7 @@ func (s *defaultContext) ReadBytes() int64 {
 
 func (s *defaultContext) Hijack(c ...Codec) (net.Conn, error) {
 	if s.hijacked {
-		return nil, nil
+		return nil, errHijackedAlready
 	}
 	if len(c) == 1 {
 		s.conn.Conn = c[0]

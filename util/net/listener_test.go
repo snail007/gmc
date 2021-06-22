@@ -393,9 +393,10 @@ func TestNewEventListener(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	var conn net.Conn
 	ctx := NewContext()
-	ctx.SetData("cfg", "abc")
+	ctx.SetData("cfg1", "abc")
 	el := NewContextEventListener(ctx, l)
 	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+		ctx.SetData("cfg2", "abc")
 		c = NewBufferedConn(c)
 		ctx.SetData("bufConn", c)
 		return next.Call(ctx, c)
@@ -406,7 +407,8 @@ func TestNewEventListener(t *testing.T) {
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.Write([]byte("hello"))
 		conn = ctx.Data("bufConn").(net.Conn)
-		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg"))
+		assert.Nil(t, c.(*Conn).ctx.Data("cfg1"))
+		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg2"))
 	}).Start()
 	time.Sleep(time.Second)
 	c, err := net.Dial("tcp", "127.0.0.1:"+p)

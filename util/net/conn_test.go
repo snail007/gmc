@@ -417,7 +417,7 @@ func TestConn_CodecHijacked(t *testing.T) {
 		c.(*Conn).doInitialize()
 		a, b := ctx.Hijack()
 		assert.Nil(t, a)
-		assert.Nil(t, b)
+		assert.Equal(t, errHijackedAlready, b)
 		assert.False(t, ctx.IsTLS())
 		conn = c.(*Conn).Conn
 		accepted = true

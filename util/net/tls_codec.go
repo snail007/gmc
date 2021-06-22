@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 )
 
 var (
@@ -20,9 +21,14 @@ var (
 
 type tlsCodec struct {
 	net.Conn
-	config        *tls.Config
-	loadSystemCas bool
-	rootCas       [][]byte
+	config           *tls.Config
+	loadSystemCas    bool
+	rootCas          [][]byte
+	handshakeTimeout time.Duration
+}
+
+func (s *tlsCodec) SetHandshakeTimeout(handshakeTimeout time.Duration) {
+	s.handshakeTimeout = handshakeTimeout
 }
 
 func (s *tlsCodec) LoadSystemCas() {
@@ -184,8 +190,10 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 		// No acceptable certificate found. Don't send a certificate.
 		return new(tls.Certificate), nil
 	}
+	ctx.Conn().SetDeadline(time.Now().Add(s.handshakeTimeout))
 	tlsConn := tls.Client(ctx.Conn(), s.config)
 	err = tlsConn.Handshake()
+	ctx.Conn().SetDeadline(time.Time{})
 	if err != nil {
 		return
 	}
@@ -206,7 +214,8 @@ func (s *TLSClientCodec) SkipVerify(b bool) *TLSClientCodec {
 func NewTLSClientCodec() *TLSClientCodec {
 	s := &TLSClientCodec{
 		tlsCodec: tlsCodec{
-			config: &tls.Config{},
+			config:           &tls.Config{},
+			handshakeTimeout: time.Second * 3,
 		},
 	}
 	return s
@@ -227,8 +236,10 @@ func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 	}
 	// To make sure choose the server certificate depends on the request server name.
 	s.config.BuildNameToCertificate()
+	ctx.Conn().SetDeadline(time.Now().Add(s.handshakeTimeout))
 	tlsConn := tls.Server(ctx.Conn(), s.config)
 	err = tlsConn.Handshake()
+	ctx.Conn().SetDeadline(time.Time{})
 	if err != nil {
 		return
 	}
@@ -253,7 +264,8 @@ func (s *TLSServerCodec) AddClientCa(caPEMBytes []byte) *TLSServerCodec {
 func NewTLSServerCodec() *TLSServerCodec {
 	s := &TLSServerCodec{
 		tlsCodec: tlsCodec{
-			config: &tls.Config{},
+			config:           &tls.Config{},
+			handshakeTimeout: time.Second * 3,
 		},
 	}
 	return s

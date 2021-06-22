@@ -261,7 +261,7 @@ func (s *EventListener) Start() *EventListener {
 			case nil:
 				go func() {
 					// accept
-					s.onAccept(s.ctx, c)
+					s.onAccept(c.(*Conn).ctx, c)
 					if s.autoCloseConn {
 						c.Close()
 					}

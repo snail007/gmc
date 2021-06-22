@@ -412,9 +412,15 @@ func TestConn_CodecHijacked(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
+	accepted := false
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
+		a, b := ctx.Hijack()
+		assert.Nil(t, a)
+		assert.Nil(t, b)
+		assert.False(t, ctx.IsTLS())
 		conn = c.(*Conn).Conn
+		accepted = true
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
@@ -422,6 +428,7 @@ func TestConn_CodecHijacked(t *testing.T) {
 	time.Sleep(time.Second)
 	assert.True(t, *hijacked)
 	assert.False(t, *called)
+	assert.True(t, accepted)
 	assert.IsType(t, &initHijackedCodec{}, conn)
 }
 
@@ -468,14 +475,13 @@ func TestConn_CodecHijackedFail1(t *testing.T) {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitHijackedFailCodec(hijacked, func(ctx Context) {
-			ctx.Hijack()
-		})
+		return newInitHijackedFailCodec(hijacked, nil)
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
+		//if codec init error, Conn will close the conn, so here read EOF
 		_, hasError = Read(c, 1)
 	})
 	el.Start()
@@ -484,7 +490,7 @@ func TestConn_CodecHijackedFail1(t *testing.T) {
 	time.Sleep(time.Second)
 	assert.True(t, *hijacked)
 	assert.False(t, *called)
-	assert.NoError(t, hasError)
+	assert.Error(t, hasError)
 }
 
 func TestConn_CodecHijackedFail2(t *testing.T) {

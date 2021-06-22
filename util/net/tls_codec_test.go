@@ -372,7 +372,9 @@ func TestTLSCodec_10(t *testing.T) {
 		}
 		codec1 := NewTLSClientCodec()
 		codec1.LoadSystemCas()
-		c, _ := Dial(":", time.Second)
+		l, _ := net.Listen("tcp", ":0")
+		_, p, _ := net.SplitHostPort(l.Addr().String())
+		c, _ := Dial("127.0.0.1:"+p, time.Second)
 		c.AddCodec(codec1)
 		_, err := WriteTo(c, "")
 		t.Log(err)

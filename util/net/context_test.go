@@ -39,8 +39,12 @@ func TestContext(t *testing.T) {
 }
 
 func Test_defaultContext_IsTLS(t *testing.T) {
-	c, _ := Dial(":0", time.Second)
-	c.AddCodec(NewTLSClientCodec())
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	c, _ := Dial("127.0.0.1:"+p, time.Second)
+	cc := NewTLSClientCodec()
+	cc.SetHandshakeTimeout(time.Millisecond * 300)
+	c.AddCodec(cc)
 	c.doInitialize()
 	assert.True(t, c.Ctx().IsTLS())
 }
@@ -55,7 +59,9 @@ func (e errTLSCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
 }
 
 func Test_defaultContext_IsTLS1(t *testing.T) {
-	c, _ := Dial(":0", time.Second)
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	c, _ := Dial("127.0.0.1:"+p, time.Second)
 	c.AddCodec(&errTLSCodec{})
 	c.Write([]byte(""))
 	assert.False(t, c.Ctx().IsTLS())

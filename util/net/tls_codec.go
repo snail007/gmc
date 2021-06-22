@@ -14,6 +14,10 @@ import (
 	"strings"
 )
 
+var (
+	x509SystemCertPool = x509.SystemCertPool
+)
+
 type tlsCodec struct {
 	net.Conn
 	config        *tls.Config
@@ -29,7 +33,7 @@ func (s *tlsCodec) LoadSystemCas() {
 func (s *tlsCodec) initRootCas(cas *x509.CertPool) (err error) {
 	var c *x509.CertPool
 	if s.loadSystemCas {
-		c, err = x509.SystemCertPool()
+		c, err = x509SystemCertPool()
 		if err != nil {
 			return
 		}
@@ -72,12 +76,14 @@ type TLSClientCodec struct {
 	skipVerifyCommonName bool
 }
 
-func (s *TLSClientCodec) SkipVerifyCommonName(skipVerifyCommonName bool) {
+func (s *TLSClientCodec) SkipVerifyCommonName(skipVerifyCommonName bool) *TLSClientCodec {
 	s.skipVerifyCommonName = skipVerifyCommonName
+	return s
 }
 
-func (s *TLSClientCodec) SetServerName(serverName string) {
+func (s *TLSClientCodec) SetServerName(serverName string) *TLSClientCodec {
 	s.serverName = serverName
+	return s
 }
 
 func (s *TLSClientCodec) PinServerCert(serverCertPEMBytes []byte) (err error) {
@@ -91,6 +97,7 @@ func (s *TLSClientCodec) PinServerCert(serverCertPEMBytes []byte) (err error) {
 }
 
 func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, err error) {
+	ctx.SetData(isTLSKey, true)
 	if s.config.RootCAs == nil {
 		s.config.RootCAs = x509.NewCertPool()
 	}
@@ -181,13 +188,14 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 	return next.Call(ctx.SetConn(s))
 }
 
-func (s *TLSClientCodec) AddServerCa(caPEMBytes []byte) {
+func (s *TLSClientCodec) AddServerCa(caPEMBytes []byte) *TLSClientCodec {
 	s.addRootCaBytes(caPEMBytes)
-	return
+	return s
 }
 
-func (s *TLSClientCodec) SkipVerify(b bool) {
+func (s *TLSClientCodec) SkipVerify(b bool) *TLSClientCodec {
 	s.skipVerify = b
+	return s
 }
 
 func NewTLSClientCodec() *TLSClientCodec {
@@ -204,6 +212,7 @@ type TLSServerCodec struct {
 }
 
 func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, err error) {
+	ctx.SetData(isTLSKey, true)
 	if s.config.ClientCAs == nil {
 		s.config.ClientCAs = x509.NewCertPool()
 	}
@@ -217,17 +226,18 @@ func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 	return next.Call(ctx.SetConn(s))
 }
 
-func (s *TLSServerCodec) RequireClientAuth(b bool) {
+func (s *TLSServerCodec) RequireClientAuth(b bool) *TLSServerCodec {
 	if b {
 		s.config.ClientAuth = tls.RequireAndVerifyClientCert
 	} else {
 		s.config.ClientAuth = tls.NoClientCert
 	}
+	return s
 }
 
-func (s *TLSServerCodec) AddClientCa(caPEMBytes []byte) {
+func (s *TLSServerCodec) AddClientCa(caPEMBytes []byte) *TLSServerCodec {
 	s.addRootCaBytes(caPEMBytes)
-	return
+	return s
 }
 
 func NewTLSServerCodec() *TLSServerCodec {

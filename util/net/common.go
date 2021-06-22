@@ -6,8 +6,11 @@
 package gnet
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"time"
 
 	gbytes "github.com/snail007/gmc/util/bytes"
@@ -18,11 +21,13 @@ const (
 	defaultEventConnReadBufferSize  = 8192
 	defaultConnBinderReadBufferSize = 8192
 	defaultConnKeepAlivePeriod      = time.Second * 15
+	isTLSKey                        = "Gnet-TLSCodecIsTLSKey"
 )
 
 var (
 	ErrFirstReadTimeout = fmt.Errorf("ErrFirstReadTimeout")
-	ErrConnInitialize   = fmt.Errorf("ErrConnInitialize")
+	netListen           = net.Listen
+	netDialTimeout      = net.DialTimeout
 )
 
 type (
@@ -49,6 +54,7 @@ type (
 		WriteTimeout() time.Duration
 		RemoteAddr() net.Addr
 		LocalAddr() net.Addr
+		IsTLS() bool
 	}
 	Codec interface {
 		net.Conn
@@ -68,6 +74,16 @@ type (
 	CodecFactory            func(ctx Context) Codec
 	FirstReadTimeoutHandler func(ctx Context, c net.Conn, err error)
 )
+
+// make sure all codec implements Codec
+var _ Codec = &AESCodec{}
+var _ Codec = &HeartbeatCodec{}
+var _ Codec = &TLSServerCodec{}
+var _ Codec = &TLSClientCodec{}
+
+func WriteTo(writer io.Writer, data string) (n int, err error) {
+	return writer.Write([]byte(data))
+}
 
 func Write(addr, data string) (err error) {
 	return WriteBytes(addr, []byte(data))
@@ -103,16 +119,148 @@ func ReadBytes(c net.Conn, bufSize int) (d []byte, err error) {
 	return
 }
 
-func ListenRandom(ip ...string) (l net.Listener, port string, err error) {
+func RandomListen(ip ...string) (l net.Listener, port string, err error) {
 	ip0 := ""
 	if len(ip) == 1 {
 		ip0 = ip[0]
 	}
 	addr := net.JoinHostPort(ip0, "0")
-	l, err = net.Listen("tcp", addr)
+	l, err = netListen("tcp", addr)
 	if err != nil {
 		return
 	}
 	_, port, _ = net.SplitHostPort(l.Addr().String())
 	return
+}
+func RandomPort() (port string, err error) {
+	maxTry := 3
+	var l net.Listener
+	defer func() {
+		if l != nil {
+			l.Close()
+		}
+	}()
+	for i := 0; i < maxTry; i++ {
+		l, port, err = RandomListen()
+		if err == nil {
+			port = NewAddr(l.Addr()).Port()
+			return
+		}
+		time.Sleep(time.Millisecond * 10)
+	}
+	return
+}
+
+func Listen(addr string) (l *Listener, err error) {
+	lis, err := netListen("tcp", addr)
+	if err != nil {
+		return
+	}
+	l = NewListener(lis)
+	return
+}
+
+func ListenEvent(addr string) (l *EventListener, err error) {
+	l0, err := Listen(addr)
+	if err != nil {
+		return
+	}
+	l = NewEventListener(l0)
+	return
+}
+
+func Dial(addr string, timeout time.Duration) (c *Conn, err error) {
+	c0, err := netDialTimeout("tcp", addr, timeout)
+	if err != nil {
+		return
+	}
+	c = NewConn(c0)
+	return
+}
+
+type Addr struct {
+	network string
+	addr    string
+	port    string
+	host    string
+	err     error
+}
+
+func (s *Addr) Err() error {
+	return s.err
+}
+
+func (s *Addr) Network() string {
+	return s.network
+}
+
+func (s *Addr) String() string {
+	return s.addr
+}
+
+func (s *Addr) Port() string {
+	if s.port == "" {
+		return "0"
+	}
+	return s.port
+}
+
+// PortAddr returns address string with 'withIP:Addr.Port()',
+// 'withIP' can be a valid ip or domain or empty.
+func (s *Addr) PortAddr(withIP ...string) string {
+	ip0 := ""
+	if len(withIP) == 1 {
+		ip0 = withIP[0]
+	}
+	return net.JoinHostPort(ip0, s.Port())
+}
+
+// PortLocalAddr returns address string with '127.0.0.1:Addr.Port()',
+func (s *Addr) PortLocalAddr() string {
+	return s.PortAddr("127.0.0.1")
+}
+
+func (s *Addr) Host() string {
+	return s.host
+}
+
+func NewAddr(addr net.Addr) *Addr {
+	h, p, err := net.SplitHostPort(addr.String())
+	return &Addr{
+		addr:    addr.String(),
+		network: addr.Network(),
+		host:    h,
+		port:    p,
+		err:     err,
+	}
+}
+
+func NewTCPAddr(address string) *Addr {
+	h, p, err := net.SplitHostPort(address)
+	return &Addr{
+		addr:    address,
+		network: "tcp",
+		host:    h,
+		port:    p,
+		err:     err,
+	}
+}
+
+func SetHTTPClientTLSCodec(httpClient *http.Client, cc *TLSClientCodec) {
+	if httpClient.Transport == nil {
+		httpClient.Transport = http.DefaultTransport
+	}
+	tr := httpClient.Transport.(*http.Transport)
+	tr.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		timeout := httpClient.Timeout
+		if timeout == 0 {
+			timeout = time.Second * 30
+		}
+		c, err := Dial(addr, httpClient.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		c.AddCodec(cc)
+		return c, nil
+	}
 }

@@ -6,16 +6,20 @@
 package gnet
 
 import (
+	"crypto/x509"
+	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
+	gtest "github.com/snail007/gmc/util/testing"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTLSCodec_1(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -47,7 +51,6 @@ func TestTLSCodec_1(t *testing.T) {
 	c1.AddServerCa(demoCert)
 	c1.SkipVerify(false)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
 	d, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.NoError(t, err)
@@ -56,7 +59,7 @@ func TestTLSCodec_1(t *testing.T) {
 
 func TestTLSCodec_2(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -88,7 +91,6 @@ func TestTLSCodec_2(t *testing.T) {
 	c1.SkipVerify(false)
 	c1.SkipVerifyCommonName(true)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
 	d, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.NoError(t, err)
@@ -97,7 +99,7 @@ func TestTLSCodec_2(t *testing.T) {
 
 func TestTLSCodec_3(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -129,7 +131,7 @@ func TestTLSCodec_3(t *testing.T) {
 	c1.AddServerCa(testCert)
 	c1.SkipVerify(false)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+
 	d, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.NoError(t, err)
@@ -138,7 +140,7 @@ func TestTLSCodec_3(t *testing.T) {
 
 func TestTLSCodec_4(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -167,7 +169,7 @@ func TestTLSCodec_4(t *testing.T) {
 	c1.AddServerCa(testCert)
 	c1.SkipVerify(false)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+
 	_, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.Error(t, err)
@@ -175,7 +177,7 @@ func TestTLSCodec_4(t *testing.T) {
 
 func TestTLSCodec_5(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -202,13 +204,14 @@ func TestTLSCodec_5(t *testing.T) {
 	conn0 := NewConn(conn)
 
 	c1 := NewTLSClientCodec()
+	assert.Error(t, c1.PinServerCert([]byte("aaa")))
 	c1.PinServerCert(testCert)
 	c1.AddCertificate(helloCert, helloKEY)
 	c1.SetServerName("test.com")
 	c1.AddServerCa(testCert)
 	c1.SkipVerify(false)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+
 	d, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.NoError(t, err)
@@ -217,7 +220,7 @@ func TestTLSCodec_5(t *testing.T) {
 
 func TestTLSCodec_6(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -248,7 +251,7 @@ func TestTLSCodec_6(t *testing.T) {
 	c1.SetServerName("test.com")
 	c1.SkipVerify(true)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+
 	d, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.NoError(t, err)
@@ -257,7 +260,7 @@ func TestTLSCodec_6(t *testing.T) {
 
 func TestTLSCodec_7(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -282,7 +285,7 @@ func TestTLSCodec_7(t *testing.T) {
 	c1.SkipVerify(true)
 	c1.SkipVerifyCommonName(true)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+
 	d, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.NoError(t, err)
@@ -291,7 +294,7 @@ func TestTLSCodec_7(t *testing.T) {
 
 func TestTLSCodec_8(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -316,7 +319,7 @@ func TestTLSCodec_8(t *testing.T) {
 	c1.SkipVerify(false)
 	c1.AddServerCa(testCert)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+
 	_, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.Error(t, err)
@@ -325,12 +328,12 @@ func TestTLSCodec_8(t *testing.T) {
 	c2.SkipVerify(false)
 	c2.AddServerCa([]byte("aaa"))
 	conn0.AddCodec(c2)
-	assert.Error(t, conn0.Initialize())
+	assert.Error(t, conn0.initialize())
 }
 
 func TestTLSCodec_9(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := NewEventListener(l)
 	l0.AddCodecFactory(func(ctx Context) Codec {
 		c0 := NewTLSServerCodec()
@@ -339,8 +342,9 @@ func TestTLSCodec_9(t *testing.T) {
 		return c0
 	})
 	var hasErr error
-	l0.OnAcceptError(func(ctx Context, err error) {
-		hasErr = err
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		_, hasErr = Read(c, 5)
+		c.Close()
 	})
 	l0.Start()
 	time.Sleep(time.Second)
@@ -353,11 +357,30 @@ func TestTLSCodec_9(t *testing.T) {
 	c1.AddServerCa(demoCert)
 	c1.SkipVerify(true)
 	conn0.AddCodec(c1)
-	assert.NoError(t, conn0.Initialize())
+	assert.Error(t, c1.AddCertificate([]byte("aaa"), []byte("aaa")))
+
 	_, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.Error(t, err)
 	assert.Error(t, hasErr)
+}
+
+func TestTLSCodec_10(t *testing.T) {
+	if gtest.RunProcess(t, func() {
+		x509SystemCertPool = func() (*x509.CertPool, error) {
+			return nil, fmt.Errorf("x509SystemCertPool_Error")
+		}
+		codec1 := NewTLSClientCodec()
+		codec1.LoadSystemCas()
+		c, _ := Dial(":", time.Second)
+		c.AddCodec(codec1)
+		_, err := WriteTo(c, "")
+		t.Log(err)
+	}) {
+		return
+	}
+	out, _, _ := gtest.NewProcess(t).Wait()
+	assert.True(t, strings.Contains(out, "x509SystemCertPool_Error"))
 }
 
 var testKEY = []byte(`-----BEGIN RSA PRIVATE KEY-----

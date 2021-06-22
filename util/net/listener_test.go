@@ -77,7 +77,7 @@ func TestNewEventListener_FilterError(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
-	hasErr := false
+	var hasErr error
 	el.AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		return next.Call(ctx, c)
 	})
@@ -92,14 +92,13 @@ func TestNewEventListener_FilterError(t *testing.T) {
 	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		return nil, fmt.Errorf("error")
 	})
-	el.OnAcceptError(func(ctx Context, err error) {
-		hasErr = true
-		assert.Equal(t, "error", err.Error())
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		_, hasErr = Read(c, 5)
 	}).Start()
 	_, err := net.Dial("tcp", "127.0.0.1:"+p)
 	assert.NoError(t, err)
 	time.Sleep(time.Second)
-	assert.True(t, hasErr)
+	assert.Equal(t, "error", hasErr.Error())
 }
 
 func TestNewEventListener_ListenerFilterError(t *testing.T) {
@@ -135,7 +134,7 @@ func TestNewEventListener_MissingAccept(t *testing.T) {
 
 func TestListener_Accept(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l1 := NewListener(NewListener(l))
 	addr := ""
 	cnt0 := int64(0)
@@ -165,7 +164,7 @@ func TestListener_Accept(t *testing.T) {
 		_, hasErr = c.Write([]byte("_"))
 	}()
 	time.Sleep(time.Second)
-	c, _ := net.Dial("tcp", ":"+p)
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	str, _ := Read(c, 5)
 	assert.Equal(t, "hello", str)
 	c.Close()
@@ -202,7 +201,7 @@ func (s *errListener) Accept() (conn net.Conn, err error) {
 
 func TestListener_AcceptError(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	l0 := newErrListener(l)
 	l0.t = t
 	l1 := NewEventListener(NewListener(l0))
@@ -213,9 +212,9 @@ func TestListener_AcceptError(t *testing.T) {
 	})
 	l1.Start()
 	time.Sleep(time.Second * 1)
-	net.Dial("tcp", ":"+p)
+	net.Dial("tcp", "127.0.0.1:"+p)
 	for i := 0; i <= 13; i++ {
-		net.Dial("tcp", ":"+p)
+		net.Dial("tcp", "127.0.0.1:"+p)
 		time.Sleep(time.Millisecond * 300)
 	}
 	assert.Equal(t, 2, acceptCnt)
@@ -237,7 +236,7 @@ func TestNewEventListener_OnAcceptError(t *testing.T) {
 
 func TestNewEventListener_OnConnClose(t *testing.T) {
 	t.Parallel()
-	l, p, _ := ListenRandom("")
+	l, p, _ := RandomListen("")
 	el := NewEventListener(l)
 	cnt := int64(0)
 	cnt1 := int64(0)
@@ -249,7 +248,7 @@ func TestNewEventListener_OnConnClose(t *testing.T) {
 		cnt1 = el.ConnCount()
 	})
 	el.Start()
-	net.Dial("tcp", ":"+p)
+	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Millisecond * 300)
 	assert.Equal(t, int64(1), cnt)
 	assert.Equal(t, int64(0), cnt1)
@@ -370,7 +369,7 @@ func TestNewEventListener_OnCodecError(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	hasErr := false
+	var hasErr error
 	el := NewEventListener(l)
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
@@ -378,14 +377,14 @@ func TestNewEventListener_OnCodecError(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitErrorCodec(new(bool))
 	})
-	el.OnAcceptError(func(ctx Context, err error) {
-		hasErr = true
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		_, hasErr = Read(c, 5)
 	}).Start()
 	time.Sleep(time.Second)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	c.Write([]byte("hello"))
 	time.Sleep(time.Second)
-	assert.True(t, hasErr)
+	assert.Error(t, hasErr)
 }
 
 func TestNewEventListener(t *testing.T) {
@@ -405,12 +404,13 @@ func TestNewEventListener(t *testing.T) {
 		return NewAESCodec("abc")
 	}).SetFirstReadTimeout(time.Second)
 	el.OnAccept(func(ctx Context, c net.Conn) {
-		conn = ctx.Data("bufConn").(net.Conn)
 		c.Write([]byte("hello"))
+		conn = ctx.Data("bufConn").(net.Conn)
 		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg"))
 	}).Start()
 	time.Sleep(time.Second)
-	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	c, err := net.Dial("tcp", "127.0.0.1:"+p)
+	assert.NoError(t, err)
 	hasData := false
 	ec := NewEventConn(c)
 	ec.AddCodec(NewAESCodec("abc"))
@@ -422,4 +422,23 @@ func TestNewEventListener(t *testing.T) {
 	time.Sleep(time.Second)
 	assert.True(t, hasData)
 	assert.Implements(t, (*BufferedConn)(nil), conn)
+}
+
+func TestEventListener_AutoCloseConn(t *testing.T) {
+	l, _ := ListenEvent(":")
+	l.SetAutoCloseConn(true)
+	var hasErr error
+	l.OnAccept(func(ctx Context, c net.Conn) {
+		WriteTo(c, "hello")
+		time.AfterFunc(time.Millisecond*300, func() {
+			_, hasErr = WriteTo(c, "1")
+		})
+	}).Start()
+	c, _ := Dial(l.Addr().PortLocalAddr(), time.Second)
+	d, _ := Read(c, 5)
+	_, err := Read(c, 1)
+	assert.Equal(t, "hello", d)
+	assert.Error(t, err)
+	time.Sleep(time.Second)
+	assert.Error(t, hasErr)
 }

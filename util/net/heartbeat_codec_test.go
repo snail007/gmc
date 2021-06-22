@@ -26,12 +26,11 @@ func TestHeartbeatCodec(t *testing.T) {
 		codec := NewHeartbeatCodec()
 		conn := NewConn(c).AddCodec(codec)
 		conn.SetTimeout(time.Second * 10)
-		conn.Initialize()
-		assert.Equal(t, time.Second*5, codec.Interval())
-		assert.Equal(t, time.Second*5, codec.Timeout())
 		go func() {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
+				assert.Equal(t, time.Second*5, codec.Interval())
+				assert.Equal(t, time.Second*5, codec.Timeout())
 				if err != nil {
 					atomic.AddInt32(errCnt, 1)
 					fmt.Println("server write error", err)
@@ -68,7 +67,6 @@ func TestHeartbeatCodec(t *testing.T) {
 	conn.SetTimeout(time.Second * 10)
 	assert.Equal(t, time.Second*10, conn.ReadTimeout())
 	assert.Equal(t, time.Second*10, conn.WriteTimeout())
-	conn.Initialize()
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -101,7 +99,7 @@ func TestHeartbeatCodec(t *testing.T) {
 
 func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	t.Parallel()
-	l, p, err := ListenRandom("")
+	l, p, err := RandomListen("")
 	assert.NoError(t, err)
 	el := NewEventListener(l)
 	el.AddCodecFactory(func(ctx Context) Codec {
@@ -113,7 +111,7 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	})
 	el.Start()
 	time.Sleep(time.Second)
-	c, _ := net.Dial("tcp", ":"+p)
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	c.Write([]byte("hello"))
 	time.Sleep(time.Millisecond * 200)
 	assert.Contains(t, err.Error(), "unrecognized msg type:")
@@ -141,7 +139,7 @@ func (s *tempErrorConn) Write(b []byte) (n int, err error) {
 
 func TestHeartbeatCodec_TempError(t *testing.T) {
 	t.Parallel()
-	l, p, err := ListenRandom("")
+	l, p, err := RandomListen("")
 	assert.NoError(t, err)
 	el := NewEventListener(l)
 	el.AddCodecFactory(func(ctx Context) Codec {
@@ -153,10 +151,10 @@ func TestHeartbeatCodec_TempError(t *testing.T) {
 	})
 	el.Start()
 	time.Sleep(time.Second)
-	c, _ := net.Dial("tcp", ":"+p)
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	c = newTempErrorConn(c)
 	c1 := NewConn(c)
-	err = c1.AddCodec(NewHeartbeatCodec()).Initialize()
+	err = c1.AddCodec(NewHeartbeatCodec()).doInitialize()
 	assert.NoError(t, err)
 	time.Sleep(time.Second * 5)
 }

@@ -15,7 +15,6 @@ import (
 
 type Listener struct {
 	net.Listener
-	*sync.Once
 	codecFactory                  []CodecFactory
 	connFilters                   []ConnFilter
 	onConnClose                   CloseHandler
@@ -107,15 +106,12 @@ retry:
 	// root conn context
 	ctx := s.ctx.Clone()
 
-	// init listener filters
+	// init listener filters and checking hijack
 	fConn, err := newConnFilters(s.filters).Call(ctx, c)
-
-	// checking hijack
 	if ctx.Hijacked() {
 		// hijacked by filter, just call next accept.
 		goto retry
 	}
-
 	if err != nil {
 		return nil, err, err
 	}
@@ -148,12 +144,7 @@ retry:
 	for _, cf := range s.codecFactory {
 		conn.AddCodec(cf(ctx))
 	}
-	// init
-	err = conn.Initialize()
-	if err != nil {
-		conn.Close()
-		return nil, ErrConnInitialize, err
-	}
+
 	// Conn closing hook
 	conn.onClose = s.onConnCloseHook
 
@@ -176,7 +167,6 @@ func NewContextListener(ctx Context, l net.Listener) *Listener {
 	} else {
 		lis = &Listener{
 			Listener:    l,
-			Once:        &sync.Once{},
 			onConnClose: func(Context) {},
 			connCount:   new(int64),
 		}
@@ -193,7 +183,18 @@ type EventListener struct {
 	onAccept               AcceptHandler
 	onFistReadTimeoutError FirstReadTimeoutHandler
 	closeOnce              *sync.Once
+	addr                   *Addr
 	ctx                    Context
+	autoCloseConn          bool
+}
+
+// SetAutoCloseConn if true, EventListener will close Conn after accept handler return.
+func (s *EventListener) SetAutoCloseConn(autoCloseConn bool) {
+	s.autoCloseConn = autoCloseConn
+}
+
+func (s *EventListener) Addr() *Addr {
+	return s.addr
 }
 
 func (s *EventListener) Ctx() Context {
@@ -258,10 +259,13 @@ func (s *EventListener) Start() *EventListener {
 				s.onFistReadTimeoutError(s.ctx, c, err)
 				return
 			case nil:
-				// accept
-				s.onAccept(s.ctx, c)
-			case ErrConnInitialize:
-				fallthrough
+				go func() {
+					// accept
+					s.onAccept(s.ctx, c)
+					if s.autoCloseConn {
+						c.Close()
+					}
+				}()
 			default:
 				s.onAcceptError(s.ctx, err)
 				return
@@ -301,5 +305,6 @@ func NewContextEventListener(ctx Context, l net.Listener) *EventListener {
 	ctx.SetEventListener(el)
 	el.ctx = ctx
 	el.l = NewContextListener(el.ctx, l)
+	el.addr = NewAddr(l.Addr())
 	return el
 }

@@ -138,6 +138,17 @@ func (s *defaultContext) LocalAddr() net.Addr {
 	return s.conn.LocalAddr()
 }
 
+func (s *defaultContext) IsTLS() bool {
+	v := s.Data(isTLSKey)
+	if v == nil {
+		return false
+	}
+	if vv, ok := v.(bool); ok {
+		return vv
+	}
+	return false
+}
+
 func NewContext() Context {
 	return &defaultContext{
 		data: gmap.New(),

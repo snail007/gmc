@@ -6,12 +6,15 @@
 package gnet
 
 import (
+	"crypto/cipher"
 	"fmt"
 	"net"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	gtest "github.com/snail007/gmc/util/testing"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +28,7 @@ func TestAESCodec(t *testing.T) {
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c).AddCodec(NewAESCodec(password))
-		conn.Initialize()
+
 		go func() {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
@@ -56,7 +59,7 @@ func TestAESCodec(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewConn(c).AddCodec(NewAESCodec(password))
-	conn.Initialize()
+
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -99,7 +102,7 @@ func TestAESCodec128(t *testing.T) {
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-		conn.Initialize()
+
 		go func() {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
@@ -130,7 +133,7 @@ func TestAESCodec128(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-	conn.Initialize()
+
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -173,7 +176,7 @@ func TestAESCodec192(t *testing.T) {
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-		conn.Initialize()
+
 		go func() {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
@@ -204,7 +207,7 @@ func TestAESCodec192(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-	conn.Initialize()
+
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -247,7 +250,7 @@ func TestAESCodec256(t *testing.T) {
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-		conn.Initialize()
+
 		go func() {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
@@ -278,7 +281,7 @@ func TestAESCodec256(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-	conn.Initialize()
+
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -306,4 +309,21 @@ func TestAESCodec256(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 3)
 	assert.True(t, *outputCnt > 50)
+}
+
+func TestNewAESCodec_Error(t *testing.T) {
+	//gtest.DebugRunProcess(t)
+	if gtest.RunProcess(t, func() {
+		aesNewCipher = func(key []byte) (cipher.Block, error) {
+			return nil, fmt.Errorf("new_aes_error")
+		}
+		c, _ := net.Dial("tcp", ":")
+		c0 := NewConn(c)
+		c0.AddCodec(NewAESCodec(""))
+		t.Log(c0.doInitialize().Error())
+	}) {
+		return
+	}
+	out, _, _ := gtest.NewProcess(t).Wait()
+	assert.True(t, strings.Contains(out, "new_aes_error"))
 }

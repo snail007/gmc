@@ -9,6 +9,6 @@ package gnet
 
 import "crypto/tls"
 
-func (s *TLSClientCodec) getSuggestedCa(cri *tls.CertificateRequestInfo) *tls.Certificate {
+func (s *TLSClientCodec) getSuggestedCa(*tls.CertificateRequestInfo) *tls.Certificate {
 	return nil
 }

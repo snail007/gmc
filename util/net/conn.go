@@ -97,6 +97,7 @@ type Conn struct {
 	onClose                   func(*Conn)
 	closeOnce                 *sync.Once
 	autoCloseOnReadWriteError bool
+	initOnce                  *sync.Once
 }
 
 func (s *Conn) Ctx() Context {
@@ -157,8 +158,13 @@ func (s *Conn) Close() (err error) {
 	})
 	return
 }
-
-func (s *Conn) Initialize() (err error) {
+func (s *Conn) doInitialize() (err error) {
+	s.initOnce.Do(func() {
+		err = s.initialize()
+	})
+	return
+}
+func (s *Conn) initialize() (err error) {
 	// sets tcp keepalive
 	if v, ok := s.rawConn.(*net.TCPConn); ok {
 		v.SetKeepAlive(true)
@@ -191,6 +197,9 @@ func (s *Conn) Initialize() (err error) {
 	return nil
 }
 func (s *Conn) Read(b []byte) (n int, err error) {
+	if e := s.doInitialize(); e != nil {
+		return 0, e
+	}
 	defer func() {
 		if n > 0 {
 			atomic.AddInt64(s.readBytes, int64(n))
@@ -208,6 +217,9 @@ func (s *Conn) Read(b []byte) (n int, err error) {
 }
 
 func (s *Conn) Write(b []byte) (n int, err error) {
+	if e := s.doInitialize(); e != nil {
+		return 0, e
+	}
 	defer func() {
 		if n > 0 {
 			atomic.AddInt64(s.writeBytes, int64(n))
@@ -239,12 +251,14 @@ func NewContextConn(ctx Context, conn net.Conn) *Conn {
 		c = v
 	} else {
 		c = &Conn{
-			Conn:       conn,
-			writeBytes: new(int64),
-			readBytes:  new(int64),
-			rawConn:    conn,
-			onClose:    func(conn *Conn) {},
-			closeOnce:  &sync.Once{},
+			Conn:                      conn,
+			writeBytes:                new(int64),
+			readBytes:                 new(int64),
+			rawConn:                   conn,
+			onClose:                   func(conn *Conn) {},
+			closeOnce:                 &sync.Once{},
+			initOnce:                  &sync.Once{},
+			autoCloseOnReadWriteError: true,
 		}
 	}
 	ctx.(*defaultContext).conn = c
@@ -253,21 +267,20 @@ func NewContextConn(ctx Context, conn net.Conn) *Conn {
 }
 
 type EventConn struct {
-	conn                  net.Conn
-	onReadError           ErrorHandler
-	onWriterError         ErrorHandler
-	onClose               CloseHandler
-	onData                DataHandler
-	onConnInitializeError ErrorHandler
-	connFilters           []ConnFilter
-	readBufferSize        int
-	readBytes             *int64
-	writeBytes            *int64
-	readTimeout           time.Duration
-	writeTimeout          time.Duration
-	closeOnce             sync.Once
-	codec                 []Codec
-	ctx                   Context
+	conn           net.Conn
+	onReadError    ErrorHandler
+	onWriterError  ErrorHandler
+	onClose        CloseHandler
+	onData         DataHandler
+	connFilters    []ConnFilter
+	readBufferSize int
+	readBytes      *int64
+	writeBytes     *int64
+	readTimeout    time.Duration
+	writeTimeout   time.Duration
+	closeOnce      sync.Once
+	codec          []Codec
+	ctx            Context
 }
 
 func (s *EventConn) Ctx() Context {
@@ -289,11 +302,6 @@ func (s *EventConn) WriteBytes() int64 {
 
 func (s *EventConn) SetReadBufferSize(readBufferSize int) *EventConn {
 	s.readBufferSize = readBufferSize
-	return s
-}
-
-func (s *EventConn) OnConnInitializeError(h ErrorHandler) *EventConn {
-	s.onConnInitializeError = h
 	return s
 }
 
@@ -397,12 +405,6 @@ func (s *EventConn) Start() {
 			// add codec
 			for _, c := range s.codec {
 				conn.AddCodec(c)
-			}
-			// init
-			err := conn.Initialize()
-			if err != nil {
-				s.onConnInitializeError(s.ctx, err)
-				return
 			}
 			s.conn = conn
 		} else {

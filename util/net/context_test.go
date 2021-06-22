@@ -20,7 +20,6 @@ func TestContext(t *testing.T) {
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewConn(c)
 	conn.SetTimeout(time.Second)
-	conn.Initialize()
 	conn.Write([]byte("hello"))
 	ctx := conn.ctx
 	l.Close()
@@ -37,4 +36,27 @@ func TestContext(t *testing.T) {
 	assert.Exactly(t, "abc", ctx.Data("test"))
 	assert.IsType(t, (*net.TCPConn)(nil), ctx.RawConn())
 	assert.Equal(t, l0, l0.Ctx().Listener())
+}
+
+func Test_defaultContext_IsTLS(t *testing.T) {
+	c, _ := Dial(":0", time.Second)
+	c.AddCodec(NewTLSClientCodec())
+	c.doInitialize()
+	assert.True(t, c.Ctx().IsTLS())
+}
+
+type errTLSCodec struct {
+	Codec
+}
+
+func (e errTLSCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
+	ctx.SetData(isTLSKey, "1")
+	return next.Call(ctx)
+}
+
+func Test_defaultContext_IsTLS1(t *testing.T) {
+	c, _ := Dial(":0", time.Second)
+	c.AddCodec(&errTLSCodec{})
+	c.Write([]byte(""))
+	assert.False(t, c.Ctx().IsTLS())
 }

@@ -16,14 +16,20 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-const aesDefaultIterations = 4096
-const aesDefaultKeySize = 32 //256bits
-var aesDefaultHashFunc = sha256.New
-var aesDefaultSalt = []byte(`
+const (
+	aesDefaultIterations = 4096
+	aesDefaultKeySize    = 32 //256bits
+)
+
+var (
+	aesDefaultHashFunc = sha256.New
+	aesDefaultSalt     = []byte(`
 V6Nt!d|@bo+N$L9+<d$|(;QUHj.BQ?RXzYSO]ifkXp/G!kFmWyXyEg6e26T}
 VA-wxBptOTM^2,id,6acYKY_ecP5%)wnAo<:>SO+(x"R";\'4&fTAVu92GhW
 Snsgymt!3gbP2pe=J//}1a?lp9ej=&TB!C_V(cT2?z8wyoL_-1hwk=]3fd[]
 `)
+	aesNewCipher = aes.NewCipher
+)
 
 type AESOptions struct {
 	// Password required.
@@ -53,7 +59,7 @@ func (s *AESCodec) Write(p []byte) (n int, err error) {
 }
 
 func (s *AESCodec) Initialize(ctx Context, next NextCodec) (conn net.Conn, err error) {
-	block, err := aes.NewCipher(s.key)
+	block, err := aesNewCipher(s.key)
 	if err != nil {
 		return
 	}

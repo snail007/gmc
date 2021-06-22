@@ -27,7 +27,6 @@ func TestMultipleCodec(t *testing.T) {
 		conn := NewConn(c)
 		conn.AddCodec(NewHeartbeatCodec())
 		conn.AddCodec(NewAESCodec(password))
-		conn.Initialize()
 		assert.Equal(t, conn.ctx, conn.Ctx())
 		go func() {
 			for {
@@ -61,7 +60,6 @@ func TestMultipleCodec(t *testing.T) {
 	conn := NewConn(c)
 	conn.AddCodec(NewHeartbeatCodec())
 	conn.AddCodec(NewAESCodec(password))
-	conn.Initialize()
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -105,7 +103,6 @@ func TestMultipleCodec2(t *testing.T) {
 		conn := NewConn(c)
 		conn.AddCodec(NewAESCodec(password))
 		conn.AddCodec(NewHeartbeatCodec())
-		conn.Initialize()
 		go func() {
 			for {
 				_, err := conn.Write([]byte("hello from server"))
@@ -138,7 +135,6 @@ func TestMultipleCodec2(t *testing.T) {
 	conn := NewConn(c)
 	conn.AddCodec(NewAESCodec(password))
 	conn.AddCodec(NewHeartbeatCodec())
-	conn.Initialize()
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -187,6 +183,7 @@ func TestMultipleCodec3(t *testing.T) {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.(*Conn).doInitialize()
 		conn = c.(*Conn).Conn
 	})
 	el.Start()
@@ -301,20 +298,21 @@ func TestEventConn3(t *testing.T) {
 	conn := NewEventConn(c)
 	conn.AddCodec(newInitPassThroughCodec(new(bool)))
 	conn.AddCodec(newInitErrorCodec(new(bool)))
-	conn.OnConnInitializeError(func(ctx Context, err error) {
+	conn.OnReadError(func(ctx Context, err error) {
 		ctx.SetData("test", "abc")
-	}).Start()
+	})
+	conn.Start()
 	time.Sleep(time.Second * 1)
 	assert.Equal(t, "abc", conn.Ctx().Data("test"))
 }
 
 func TestBufferedConn_PeekMax(t *testing.T) {
 	t.Parallel()
-	l, p, err := ListenRandom("")
+	l, p, err := RandomListen("")
 	assert.NoError(t, err)
 	var d []byte
 	var n int
-	NewEventListener(l).AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el := NewEventListener(l).AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		bc := NewBufferedConn(NewBufferedConn(c))
 		d, err = bc.PeekMax(1024)
 		c = bc
@@ -322,23 +320,24 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 		s, _ := Read(bc, 10)
 		assert.Equal(t, "hello", s)
 		return next.Call(ctx, c)
-	}).Start()
+	})
+	el.Start()
 	time.Sleep(time.Second)
-	Write(":0", "error")
-	err = Write(":"+p, "hello")
+	err = Write("127.0.0.1:"+p, "hello")
+	time.Sleep(time.Second)
 	assert.NoError(t, err)
 	time.Sleep(time.Millisecond * 200)
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", string(d))
 	assert.Equal(t, n, 5)
-	time.Sleep(time.Second)
+	Write(":0", "error")
 }
 
 func TestNewConnBinder(t *testing.T) {
 	t.Parallel()
-	l1, p1, err := ListenRandom("")
+	l1, p1, err := RandomListen("")
 	assert.NoError(t, err)
-	l2, p2, err := ListenRandom("")
+	l2, p2, err := RandomListen("")
 	assert.NoError(t, err)
 	closed := false
 	srcClosed := false
@@ -348,7 +347,7 @@ func TestNewConnBinder(t *testing.T) {
 		str, _ = Read(c, 3)
 	}).Start()
 	NewEventListener(l1).OnAccept(func(ctx Context, c net.Conn) {
-		c2, _ := net.Dial("tcp", ":"+p2)
+		c2, _ := net.Dial("tcp", "127.0.0.1:"+p2)
 		b := NewConnBinder(c, c2).OnClose(func() {
 			closed = true
 		}).OnSrcClose(func(ctx Context) {
@@ -360,7 +359,7 @@ func TestNewConnBinder(t *testing.T) {
 		assert.Equal(t, b, b.Ctx().ConnBinder())
 	}).Start()
 	time.Sleep(time.Second)
-	err = Write(":"+p1, "hello")
+	err = Write("127.0.0.1:"+p1, "hello")
 	assert.NoError(t, err)
 	time.Sleep(time.Second * 2)
 	assert.Equal(t, "hel", str)
@@ -383,6 +382,10 @@ func TestConn_FilterHijacked(t *testing.T) {
 	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
 		called = true
 		return next.Call(ctx, c)
+	})
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		// trigger lazy initialization
+		c.Write([]byte(""))
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
@@ -410,6 +413,7 @@ func TestConn_CodecHijacked(t *testing.T) {
 		return newInitPassThroughCodec(called)
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.(*Conn).doInitialize()
 		conn = c.(*Conn).Conn
 	})
 	el.Start()
@@ -439,8 +443,8 @@ func TestConn_CodecHijackedFail(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAcceptError(func(ctx Context, err error) {
-		hasError = err
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		_, hasError = Read(c, 1)
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
@@ -471,8 +475,8 @@ func TestConn_CodecHijackedFail1(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAcceptError(func(ctx Context, err error) {
-		hasError = err
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		_, hasError = Read(c, 1)
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
@@ -503,8 +507,8 @@ func TestConn_CodecHijackedFail2(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	el.OnAcceptError(func(ctx Context, err error) {
-		hasError = err
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		_, hasError = Read(c, 1)
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
@@ -528,10 +532,22 @@ func TestConn_CodecError(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitErrorCodec(hasErr)
 	})
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.(*Conn).doInitialize()
+	})
 	el.Start()
 	time.Sleep(time.Second)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
 	assert.True(t, *hasErr)
 	assert.False(t, called)
+}
+
+func TestConn_CodecError1(t *testing.T) {
+	t.Parallel()
+	c, _ := net.Dial("tcp", ":")
+	c0 := NewConn(c)
+	c0.AddCodec(newInitErrorCodec(new(bool)))
+	_, err := c0.Write([]byte(""))
+	assert.Error(t, err)
 }

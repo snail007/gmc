@@ -6,8 +6,8 @@
 package glog
 
 import (
+	"context"
 	"fmt"
-	"github.com/snail007/gmc/core"
 	"io"
 	"log"
 	"os"
@@ -15,6 +15,9 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/snail007/gmc/core"
+	"golang.org/x/time/rate"
 )
 
 var (
@@ -150,8 +153,28 @@ type Logger struct {
 	exitCode   int
 	exitFunc   func(int)
 	flag       gcore.LogFlag
+	lim        *rate.Limiter
 	// for testing purpose
 	skipCheckGMC bool
+}
+
+func (s *Logger) clone() *Logger {
+	return &Logger{
+		l:            s.l,
+		parent:       s.parent,
+		ns:           s.ns,
+		level:        s.level,
+		async:        s.async,
+		asyncOnce:    s.asyncOnce,
+		bufChn:       s.bufChn,
+		asyncWG:      s.asyncWG,
+		callerSkip:   s.callerSkip,
+		exitCode:     s.exitCode,
+		exitFunc:     s.exitFunc,
+		flag:         s.flag,
+		lim:          s.lim,
+		skipCheckGMC: s.skipCheckGMC,
+	}
 }
 
 func (s *Logger) exit() {
@@ -245,12 +268,18 @@ func (s *Logger) SetLevel(i gcore.LogLevel) {
 }
 
 func (s *Logger) With(namespace string) gcore.Logger {
-	return &Logger{
-		l:      s.l,
-		parent: s,
-		ns:     namespace,
-		level:  s.level,
-	}
+	l := s.clone()
+	l.ns = namespace
+	l.parent = s
+	return l
+}
+
+func (s *Logger) WithRate(lim *rate.Limiter) gcore.Logger {
+	// clear limiter bucket
+	lim.WaitN(context.Background(), lim.Burst())
+	l := s.clone()
+	l.lim = lim
+	return l
 }
 
 func (s *Logger) Namespace() string {
@@ -397,6 +426,9 @@ func (s *Logger) Write(str string) {
 }
 
 func (s *Logger) output(str string) {
+	if s.lim != nil && !s.lim.Allow() {
+		return
+	}
 	s.l.Print(str)
 }
 

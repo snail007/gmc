@@ -7,13 +7,17 @@ package glog_test
 
 import (
 	"bytes"
-	"github.com/snail007/gmc/core"
-	_ "github.com/snail007/gmc/using/basic"
-	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/snail007/gmc/core"
+	glog "github.com/snail007/gmc/module/log"
+	_ "github.com/snail007/gmc/using/basic"
+	assert2 "github.com/stretchr/testify/assert"
+	"golang.org/x/time/rate"
 )
 
 func TestNewLogger(t *testing.T) {
@@ -197,4 +201,17 @@ func TestLogger_Errorf(t *testing.T) {
 	} else {
 		assert.Fail("expecting unsuccessful exit")
 	}
+}
+
+func TestLogger_WithRate(t *testing.T) {
+	t.Parallel()
+	l := glog.New()
+	l0 := l.WithRate(rate.NewLimiter(rate.Every(time.Second), 1024))
+	out := &bytes.Buffer{}
+	l0.SetOutput(out)
+	for i := 0; i < 35; i++ {
+		l0.Write("hello")
+		time.Sleep(time.Millisecond * 100)
+	}
+	assert2.True(t, strings.Count(out.String(), "\n") >= 3)
 }

@@ -5,7 +5,11 @@
 
 package gcore
 
-import "io"
+import (
+	"io"
+
+	"golang.org/x/time/rate"
+)
 
 const (
 	LogLevelTrace LogLevel = iota + 1
@@ -66,4 +70,6 @@ type Logger interface {
 	SetExitCode(exitCode int)
 	ExitFunc() func(int)
 	SetExitFunc(exitFunc func(int))
+
+	WithRate(lim *rate.Limiter) Logger
 }

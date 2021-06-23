@@ -66,7 +66,7 @@ func TestRateCodec3(t *testing.T) {
 	_, err := io.Copy(ioutil.Discard, c)
 	assert.NoError(t, err)
 	used := time.Now().Sub(start).Seconds()
-	assert.True(t, used < 0.1)
+	assert.True(t, used < 0.3)
 }
 
 func TestRateCodec4(t *testing.T) {

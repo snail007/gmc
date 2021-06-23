@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/snail007/gmc/core"
 	"golang.org/x/time/rate"
@@ -84,8 +85,18 @@ func With(name string) gcore.Logger {
 	return logger.With(name)
 }
 
-func WithRate(lim *rate.Limiter) gcore.Logger {
-	return logger.WithRate(lim)
+func WithRate(duration time.Duration) gcore.Logger {
+	return logger.WithRate(duration)
+}
+
+func AddWriter(writer io.Writer) gcore.Logger {
+	logger.AddWriter(writer)
+	return logger
+}
+
+func SetRateCallback(cb func(msg string)) gcore.Logger {
+	logger.SetRateCallback(cb)
+	return logger
 }
 
 func Namespace() string {
@@ -145,19 +156,20 @@ type bufChnItem struct {
 	msg   string
 }
 type Logger struct {
-	l          *log.Logger
-	parent     *Logger
-	ns         string
-	level      gcore.LogLevel
-	async      bool
-	asyncOnce  *sync.Once
-	bufChn     chan bufChnItem
-	asyncWG    *sync.WaitGroup
-	callerSkip int
-	exitCode   int
-	exitFunc   func(int)
-	flag       gcore.LogFlag
-	lim        *rate.Limiter
+	l           *log.Logger
+	parent      *Logger
+	ns          string
+	level       gcore.LogLevel
+	async       bool
+	asyncOnce   *sync.Once
+	bufChn      chan bufChnItem
+	asyncWG     *sync.WaitGroup
+	callerSkip  int
+	exitCode    int
+	exitFunc    func(int)
+	flag        gcore.LogFlag
+	lim         *rate.Limiter
+	limCallback func(msg string)
 	// for testing purpose
 	skipCheckGMC bool
 }
@@ -189,6 +201,16 @@ func (s *Logger) exit() {
 
 func (s *Logger) ExitFunc() func(int) {
 	return s.exitFunc
+}
+
+func (s *Logger) SetRateCallback(cb func(msg string)) gcore.Logger {
+	s.limCallback = cb
+	return s
+}
+
+func (s *Logger) AddWriter(w io.Writer) gcore.Logger {
+	s.l.SetOutput(io.MultiWriter(s.l.Writer(), w))
+	return s
 }
 
 func (s *Logger) SetExitFunc(exitFunc func(int)) {
@@ -278,11 +300,12 @@ func (s *Logger) With(namespace string) gcore.Logger {
 	return l
 }
 
-func (s *Logger) WithRate(lim *rate.Limiter) gcore.Logger {
+func (s *Logger) WithRate(duration time.Duration) gcore.Logger {
 	// clear limiter bucket
-	lim.WaitN(context.Background(), lim.Burst())
+	r := rate.NewLimiter(rate.Every(duration), 1024)
+	r.WaitN(context.Background(), r.Burst())
 	l := s.clone()
-	l.lim = lim
+	l.lim = r
 	return l
 }
 
@@ -432,6 +455,9 @@ func (s *Logger) Write(str string) {
 func (s *Logger) output(str string) {
 	if s.lim != nil && !s.lim.Allow() {
 		return
+	}
+	if s.lim != nil && s.limCallback != nil {
+		go s.limCallback(str)
 	}
 	s.l.Print(str)
 }

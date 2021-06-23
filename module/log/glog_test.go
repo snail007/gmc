@@ -8,8 +8,8 @@ package glog_test
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,7 +18,6 @@ import (
 	_ "github.com/snail007/gmc/using/basic"
 	gtest "github.com/snail007/gmc/util/testing"
 	assert2 "github.com/stretchr/testify/assert"
-	"golang.org/x/time/rate"
 )
 
 func TestGlog(t *testing.T) {
@@ -286,12 +285,16 @@ func TestGlog_Long(t *testing.T) {
 
 func TestGlog_WithRate(t *testing.T) {
 	t.Parallel()
-	l0 := glog.WithRate(rate.NewLimiter(rate.Every(time.Second), 1024))
-	out := &bytes.Buffer{}
-	l0.SetOutput(out)
+	glog.SetRateCallback(func(msg string) {})
+	l0 := glog.WithRate(time.Second)
+	glog.AddWriter(ioutil.Discard)
+	cnt := 0
+	l0.SetRateCallback(func(msg string) {
+		cnt++
+	})
 	for i := 0; i < 35; i++ {
 		l0.Write("hello")
 		time.Sleep(time.Millisecond * 100)
 	}
-	assert2.True(t, strings.Count(out.String(), "\n") >= 3)
+	assert2.True(t, cnt >= 3)
 }

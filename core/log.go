@@ -7,8 +7,7 @@ package gcore
 
 import (
 	"io"
-
-	"golang.org/x/time/rate"
+	"time"
 )
 
 const (
@@ -55,6 +54,7 @@ type Logger interface {
 	Namespace() string
 
 	Writer() io.Writer
+	AddWriter(writer io.Writer) Logger
 	SetOutput(w io.Writer)
 	SetFlag(f LogFlag)
 
@@ -71,5 +71,6 @@ type Logger interface {
 	ExitFunc() func(int)
 	SetExitFunc(exitFunc func(int))
 
-	WithRate(lim *rate.Limiter) Logger
+	WithRate(duration time.Duration) Logger
+	SetRateCallback(cb func(msg string)) Logger
 }

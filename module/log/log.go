@@ -84,6 +84,10 @@ func With(name string) gcore.Logger {
 	return logger.With(name)
 }
 
+func WithRate(lim *rate.Limiter) gcore.Logger {
+	return logger.WithRate(lim)
+}
+
 func Namespace() string {
 	return logger.Namespace()
 }

@@ -7,14 +7,18 @@ package glog_test
 
 import (
 	"bytes"
+	"io"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/snail007/gmc/core"
 	glog "github.com/snail007/gmc/module/log"
 	_ "github.com/snail007/gmc/using/basic"
 	gtest "github.com/snail007/gmc/util/testing"
 	assert2 "github.com/stretchr/testify/assert"
-	"io"
-	"os"
-	"testing"
+	"golang.org/x/time/rate"
 )
 
 func TestGlog(t *testing.T) {
@@ -278,4 +282,16 @@ func TestGlog_Long(t *testing.T) {
 	log.Info("abc")
 	assert.Contains(buf.String(), "abc")
 	assert.Contains(buf.String(), ".go")
+}
+
+func TestGlog_WithRate(t *testing.T) {
+	t.Parallel()
+	l0 := glog.WithRate(rate.NewLimiter(rate.Every(time.Second), 1024))
+	out := &bytes.Buffer{}
+	l0.SetOutput(out)
+	for i := 0; i < 35; i++ {
+		l0.Write("hello")
+		time.Sleep(time.Millisecond * 100)
+	}
+	assert2.True(t, strings.Count(out.String(), "\n") >= 3)
 }

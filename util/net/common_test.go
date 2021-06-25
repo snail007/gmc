@@ -7,9 +7,7 @@ package gnet
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -135,45 +133,4 @@ func TestListenEventError(t *testing.T) {
 	}
 	out, _, _ := gtest.NewProcess(t).Wait()
 	assert.True(t, strings.Contains(out, "listen_error"))
-}
-
-func Test_SetHttpClientTLSCodec(t *testing.T) {
-	l, _ := Listen(":")
-	l.AddCodecFactory(func(ctx Context) Codec {
-		cc := NewTLSServerCodec()
-		cc.AddCertificate(testCert, testKEY)
-		return cc
-	})
-	var isTLS interface{}
-	go func() {
-		http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			h, _ := w.(http.Hijacker)
-			c, _, _ := h.Hijack()
-			isTLS = c.(*Conn).Ctx().IsTLS()
-			c.Write([]byte("HTTP/1.0 200 OK \r\n\r\nhello"))
-			c.Close()
-		}))
-	}()
-	client := &http.Client{}
-	SetHTTPClientTLSCodec(client, NewTLSClientCodec().AddServerCa(testCert))
-	resp, _ := client.Get("https://" + NewAddr(l.Addr()).PortLocalAddr())
-	b, _ := ioutil.ReadAll(resp.Body)
-	assert.Equal(t, "hello", string(b))
-	assert.Equal(t, true, isTLS)
-}
-
-func Test_SetHttpClientTLSCodecError(t *testing.T) {
-	if gtest.RunProcess(t, func() {
-		netDialTimeout = func(network, address string, timeout time.Duration) (net.Conn, error) {
-			return nil, fmt.Errorf("dial_error")
-		}
-		client := &http.Client{}
-		SetHTTPClientTLSCodec(client, NewTLSClientCodec().AddServerCa(testCert))
-		_, err := client.Get("https://127.0.0.1:0")
-		t.Log(err.Error())
-	}) {
-		return
-	}
-	out, _, _ := gtest.NewProcess(t).Wait()
-	assert.True(t, strings.Contains(out, "dial_error"))
 }

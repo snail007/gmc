@@ -6,11 +6,13 @@
 package gnet
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -208,6 +210,53 @@ func (s *TLSClientCodec) AddServerCa(caPEMBytes []byte) *TLSClientCodec {
 
 func (s *TLSClientCodec) SkipVerify(b bool) *TLSClientCodec {
 	s.skipVerify = b
+	return s
+}
+
+func (s *TLSClientCodec) AddToHTTPClient(httpClient *http.Client) *TLSClientCodec {
+	if httpClient.Transport == nil {
+		httpClient.Transport = http.DefaultTransport
+		httpClient.Transport.(*http.Transport).DialContext = nil
+	}
+	tr := httpClient.Transport.(*http.Transport)
+
+	oldTCPDial := tr.DialContext
+	if oldTCPDial == nil && tr.Dial != nil {
+		// convert tr.Dial to tr.DialContext
+		old := tr.Dial
+		oldTCPDial = func(_ context.Context, network, addr string) (net.Conn, error) {
+			return old(network, addr)
+		}
+	}
+
+	newTLSDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		timeout := httpClient.Timeout
+		if timeout == 0 {
+			timeout = time.Second * 30
+		}
+		var c *Conn
+		var err error
+		if oldTCPDial != nil {
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+			c0, e := oldTCPDial(ctx, network, addr)
+			if e != nil {
+				return nil, e
+			}
+			c = NewConn(c0)
+		} else {
+			c, err = Dial(addr, timeout)
+			if err != nil {
+				return nil, err
+			}
+		}
+		c.AddCodec(s)
+		return c, nil
+	}
+	s.setHTTPClientDialTLS(tr, newTLSDial)
 	return s
 }
 

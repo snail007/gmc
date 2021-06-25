@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"time"
 
 	gbytes "github.com/snail007/gmc/util/bytes"
@@ -243,11 +242,4 @@ func NewTCPAddr(address string) *Addr {
 		port:    p,
 		err:     err,
 	}
-}
-
-func SetHTTPClientTLSCodec(httpClient *http.Client, cc *TLSClientCodec) {
-	if httpClient.Transport == nil {
-		httpClient.Transport = http.DefaultTransport
-	}
-	bindHTTPTransport(httpClient.Transport.(*http.Transport), cc, httpClient.Timeout)
 }

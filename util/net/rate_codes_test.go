@@ -28,6 +28,7 @@ func TestRateCodec1(t *testing.T) {
 	l0.OnAccept(func(ctx Context, c net.Conn) {
 		c.Write([]byte{0, 0, 0})
 	}).Start()
+	time.Sleep(time.Millisecond*300)
 	c, _ := Dial("127.0.0.1:"+p, time.Second)
 	start := time.Now()
 	io.Copy(ioutil.Discard, c)
@@ -42,6 +43,7 @@ func TestRateCodec2(t *testing.T) {
 	l0.OnAccept(func(ctx Context, c net.Conn) {
 		c.Write(make([]byte, 3))
 	}).Start()
+	time.Sleep(time.Millisecond*300)
 	c, _ := Dial("127.0.0.1:"+p, time.Second)
 	c.AddCodec(NewRateCodec(1))
 	start := time.Now()
@@ -60,10 +62,12 @@ func TestRateCodec3(t *testing.T) {
 			c.Write(data)
 		}
 	}).Start()
-	c, _ := Dial("127.0.0.1:"+p, time.Second)
+	time.Sleep(time.Millisecond*300)
+	c, err := Dial("127.0.0.1:"+p, time.Second)
+	assert.NoError(t, err)
 	c.AddCodec(NewRateCodec(1024 * 1024 * 1024))
 	start := time.Now()
-	_, err := io.Copy(ioutil.Discard, c)
+	_, err = io.Copy(ioutil.Discard, c)
 	assert.NoError(t, err)
 	used := time.Now().Sub(start).Seconds()
 	assert.True(t, used < 0.3)

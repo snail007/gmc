@@ -2,10 +2,18 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
+// This go file used go >= go1.14.
 
-// +build !go1.12,!go1.13
+// +build go1.14
 
 package gnet
+
+import (
+	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
+)
 
 func (s *TLSClientCodec) getSuggestedCa(cri *tls.CertificateRequestInfo) *tls.Certificate {
 	for _, chain := range s.config.Certificates {
@@ -15,4 +23,11 @@ func (s *TLSClientCodec) getSuggestedCa(cri *tls.CertificateRequestInfo) *tls.Ce
 		return &chain
 	}
 	return nil
+}
+
+func (s *TLSClientCodec) setHTTPClientDialTLS(tr *http.Transport, newTLSDial func(ctx context.Context, network, addr string) (net.Conn, error)) *TLSClientCodec {
+	tr.DialTLS = func(network, addr string) (net.Conn, error) {
+		return newTLSDial(nil, network, addr)
+	}
+	return s
 }

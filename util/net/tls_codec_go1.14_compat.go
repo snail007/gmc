@@ -20,6 +20,9 @@ func (s *TLSClientCodec) getSuggestedCa(*tls.CertificateRequestInfo) *tls.Certif
 }
 
 func (s *TLSClientCodec) setHTTPClientDialTLS(tr *http.Transport, newTLSDial func(ctx context.Context, network, addr string) (net.Conn, error)) *TLSClientCodec {
-	tr.DialTLSContext = newTLSDial
+	tr.DialTLS = func(network, addr string) (net.Conn, error) {
+		return newTLSDial(nil, network, addr)
+	}
 	return s
 }
+

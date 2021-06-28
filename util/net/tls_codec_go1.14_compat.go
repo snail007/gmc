@@ -25,4 +25,3 @@ func (s *TLSClientCodec) setHTTPClientDialTLS(tr *http.Transport, newTLSDial fun
 	}
 	return s
 }
-

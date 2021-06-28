@@ -429,12 +429,12 @@ func Test_SetHttpClientTLSCodec1(t *testing.T) {
 			c.Close()
 		}))
 	}()
-	called:=false
+	called := false
 	client := &http.Client{
 		Transport: &http.Transport{
-			Dial: func(network,addr string)(net.Conn,error) {
-				called=true
-				return net.Dial(network,addr)
+			Dial: func(network, addr string) (net.Conn, error) {
+				called = true
+				return net.Dial(network, addr)
 			},
 		},
 	}
@@ -480,7 +480,7 @@ func Test_SetHttpClientTLSCodecError(t *testing.T) {
 
 func Test_SetHttpClientTLSCodecError1(t *testing.T) {
 	if gtest.RunProcess(t, func() {
-		netDialTimeout= func(network, address string, timeout time.Duration) (net.Conn, error) {
+		netDialTimeout = func(network, address string, timeout time.Duration) (net.Conn, error) {
 			return nil, fmt.Errorf("dial_error")
 		}
 		l, p, _ := RandomListen()

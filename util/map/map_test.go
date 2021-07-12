@@ -14,6 +14,7 @@ import (
 )
 
 func TestRange(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -29,6 +30,7 @@ func TestRange(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -42,6 +44,7 @@ func TestLoad(t *testing.T) {
 	assert.Equal("111", v)
 }
 func TestRange_1(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -55,6 +58,7 @@ func TestRange_1(t *testing.T) {
 	assert.Equal([]interface{}{"a", "b", "c"}, a)
 }
 func TestRange_2(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -74,6 +78,7 @@ func TestRange_2(t *testing.T) {
 	assert.Equal([]interface{}{"a", "c", "d"}, m.Keys())
 }
 func TestMap_RangeFast(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -90,6 +95,7 @@ func TestMap_RangeFast(t *testing.T) {
 	assert.Equal([]interface{}{"a", "b"}, a)
 }
 func TestKeys(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -101,6 +107,7 @@ func TestKeys(t *testing.T) {
 	}
 }
 func TestKeys_1(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -118,6 +125,7 @@ func TestKeys_1(t *testing.T) {
 
 }
 func TestKeys_2(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -131,6 +139,7 @@ func TestKeys_2(t *testing.T) {
 }
 
 func TestShift(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -159,6 +168,7 @@ func TestShift(t *testing.T) {
 }
 
 func TestPop(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	m.Store("a", "111")
@@ -188,6 +198,7 @@ func TestPop(t *testing.T) {
 }
 
 func TestMap_Clone(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	for i := 0; i < 100; i++ {
@@ -206,6 +217,7 @@ func TestMap_Clone(t *testing.T) {
 }
 
 func TestMap_ToMap(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	for i := 0; i < 100; i++ {
@@ -224,6 +236,7 @@ func TestMap_ToMap(t *testing.T) {
 }
 
 func TestMap_ToStringMap(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	for i := 0; i < 100; i++ {
@@ -242,6 +255,7 @@ func TestMap_ToStringMap(t *testing.T) {
 }
 
 func TestMap_Merge(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	for i := 0; i < 100; i++ {
@@ -254,6 +268,7 @@ func TestMap_Merge(t *testing.T) {
 }
 
 func TestMap_MergeMap(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := map[interface{}]interface{}{}
 	for i := 0; i < 100; i++ {
@@ -266,6 +281,7 @@ func TestMap_MergeMap(t *testing.T) {
 }
 
 func TestMap_MergeStrMap(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := map[string]interface{}{}
 	for i := 0; i < 100; i++ {
@@ -278,6 +294,7 @@ func TestMap_MergeStrMap(t *testing.T) {
 }
 
 func TestMap_MergeStrStrMap(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := map[string]string{}
 	for i := 0; i < 100; i++ {
@@ -290,6 +307,7 @@ func TestMap_MergeStrStrMap(t *testing.T) {
 }
 
 func TestMap_MergeSyncMap(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := &sync.Map{}
 	for i := 0; i < 100; i++ {
@@ -301,6 +319,7 @@ func TestMap_MergeSyncMap(t *testing.T) {
 }
 
 func TestMap_Clear(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	for i := 0; i < 100; i++ {
@@ -312,6 +331,7 @@ func TestMap_Clear(t *testing.T) {
 }
 
 func TestMap_IsEmpty(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	m := New()
 	for i := 0; i < 100; i++ {
@@ -324,6 +344,7 @@ func TestMap_IsEmpty(t *testing.T) {
 }
 
 func TestMap_IndexOf(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	data := []struct {
 		m   *Map
@@ -350,6 +371,7 @@ func TestMap_IndexOf(t *testing.T) {
 }
 
 func TestMap_String(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	l := New()
 	for i := 0; i < 1; i++ {
@@ -359,6 +381,7 @@ func TestMap_String(t *testing.T) {
 }
 
 func TestMap_StoreFront(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	l := New()
 	for i := 0; i < 3; i++ {
@@ -368,6 +391,7 @@ func TestMap_StoreFront(t *testing.T) {
 }
 
 func TestMap_StoreFront2(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	l := New()
 	for i := 0; i < 3; i++ {
@@ -380,6 +404,7 @@ func TestMap_StoreFront2(t *testing.T) {
 }
 
 func TestMap_LoadOrStoreFront(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	l := New()
 	for i := 0; i < 3; i++ {
@@ -392,6 +417,7 @@ func TestMap_LoadOrStoreFront(t *testing.T) {
 }
 
 func TestMap_LoadOrStoreFunc(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	l := New()
 	for i := 0; i < 3; i++ {
@@ -413,6 +439,7 @@ func TestMap_LoadOrStoreFunc(t *testing.T) {
 }
 
 func TestMap_LoadAndStoreFunc(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	l := New()
 	for i := 0; i < 3; i++ {
@@ -427,6 +454,68 @@ func TestMap_LoadAndStoreFunc(t *testing.T) {
 			k++
 			assert.Equal(i+3, oldValue)
 			return i
+		})
+	}
+	assert.Equal(3, k)
+	assert.Equal("[0 1 2]", fmt.Sprintf("%v", l.StringKeys()))
+}
+
+func TestMap_LoadOrStoreFuncErr(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	l := New()
+	for i := 0; i < 3; i++ {
+		j := i
+		_, _, e := l.LoadOrStoreFuncErr(i, func() (x interface{}, err error) {
+			if j == 1 {
+				err = fmt.Errorf("error")
+				return
+			}
+			return j, nil
+		})
+		if j == 1 {
+			assert.Error(e)
+		}
+	}
+	assert.Equal("[0 2]", fmt.Sprintf("%v", l.StringKeys()))
+	k := 0
+	for i := 0; i < 3; i++ {
+		j := i
+		l.LoadOrStoreFuncErr(i, func() (x interface{}, err error) {
+			k++
+			return j, nil
+		})
+	}
+	assert.Equal(1, k)
+	assert.Equal("[0 2 1]", fmt.Sprintf("%v", l.StringKeys()))
+}
+
+func TestMap_LoadAndStoreFuncErr(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	l := New()
+	for i := 0; i < 3; i++ {
+		_, _, e := l.LoadAndStoreFuncErr(i, func(_ interface{}, loaded bool) (newValue interface{}, err error) {
+			assert.False(loaded)
+			if i == 1 {
+				err = fmt.Errorf("error")
+				return
+			}
+			return i + 3, nil
+		})
+		if i == 1 {
+			assert.Error(e)
+		}
+	}
+	assert.Equal("[0 2]", fmt.Sprintf("%v", l.StringKeys()))
+	k := 0
+	for i := 0; i < 3; i++ {
+		l.LoadAndStoreFuncErr(i, func(oldValue interface{}, loaded bool) (newValue interface{}, err error) {
+			k++
+			if i != 1 {
+				assert.Equal(i+3, oldValue)
+			}
+			return i, nil
 		})
 	}
 	assert.Equal(3, k)

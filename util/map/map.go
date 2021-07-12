@@ -7,8 +7,9 @@ package gmap
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/util/linklist"
 	"sync"
+
+	"github.com/snail007/gmc/util/linklist"
 )
 
 type (
@@ -217,6 +218,26 @@ func (s *Map) loadAndStoreFunc(key interface{}, f func(oldValue interface{}, loa
 	return
 }
 
+// LoadAndStoreFuncErr call the given func and stores it returns value,
+// if func returns an error, the error be returned.
+// The loaded result is true if the keys was exists, false if not exists.
+// If loaded, the given func firstly parameter is the loaded value, otherwise is nil.
+func (s *Map) LoadAndStoreFuncErr(key interface{}, f func(oldValue interface{}, loaded bool) (newValue interface{}, err error)) (newValue interface{}, loaded bool, err error) {
+	s.Lock()
+	defer s.Unlock()
+	return s.loadAndStoreFuncErr(key, f)
+}
+
+func (s *Map) loadAndStoreFuncErr(key interface{}, f func(oldValue interface{}, loaded bool) (newValue interface{}, err error)) (newValue interface{}, loaded bool, err error) {
+	oldValue, loaded := s.data[key]
+	newValue, err = f(oldValue, loaded)
+	if err != nil {
+		return
+	}
+	s.store(key, newValue)
+	return
+}
+
 // LoadOrStoreFunc returns the existing value for the key if present.
 // Otherwise, it call the given func and stores it returns value.
 // The loaded result is true if the value was loaded, false if stored.
@@ -230,6 +251,28 @@ func (s *Map) loadOrStoreFunc(key interface{}, f func() interface{}) (actual int
 	actual, loaded = s.data[key]
 	if !loaded {
 		actual = f()
+		s.store(key, actual)
+	}
+	return
+}
+
+// LoadOrStoreFuncErr returns the existing value for the key if present.
+// Otherwise, it call the given func and stores it returns value, if the func
+// returns an error, nothing will be stored, the function's error be returned.
+// The loaded result is true if the value was loaded, false if stored.
+func (s *Map) LoadOrStoreFuncErr(key interface{}, f func() (x interface{}, err error)) (actual interface{}, loaded bool, err error) {
+	s.Lock()
+	defer s.Unlock()
+	return s.loadOrStoreFuncErr(key, f)
+}
+
+func (s *Map) loadOrStoreFuncErr(key interface{}, f func() (x interface{}, err error)) (actual interface{}, loaded bool, err error) {
+	actual, loaded = s.data[key]
+	if !loaded {
+		actual, err = f()
+		if err != nil {
+			return
+		}
 		s.store(key, actual)
 	}
 	return

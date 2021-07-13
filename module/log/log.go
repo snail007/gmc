@@ -489,6 +489,6 @@ func (s *Logger) caller(msg string, skip int) string {
 		}
 		line = line0
 	}
-	msg = fmt.Sprintf("%s:%d: ", file, line) + msg
+	msg = fmt.Sprintf("%s:%d ", file, line) + msg
 	return msg
 }

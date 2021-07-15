@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	gproxy "github.com/snail007/gmc/util/proxy"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -20,6 +19,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	gproxy "github.com/snail007/gmc/util/proxy"
 )
 
 var (
@@ -181,6 +182,7 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 			req.Header.Set(k, v)
 		}
 	}
+	req.Close=true
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, 0, nil, err
@@ -216,6 +218,7 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	if err != nil {
 		return
 	}
+	req.Close=true
 	client, err := s.newClient(timeout)
 	if err != nil {
 		return
@@ -288,6 +291,7 @@ func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader
 	if err != nil {
 		return
 	}
+	req.Close=true
 	req.Header.Add("Content-Type", m.FormDataContentType())
 	url0, _ := url.Parse(u)
 	req.Host = url0.Host
@@ -349,6 +353,7 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header ma
 	if err != nil {
 		return
 	}
+	req.Close=true
 	if header != nil {
 		for k, v := range header {
 			req.Header.Set(k, v)

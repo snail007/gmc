@@ -9,9 +9,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
-	gmap "github.com/snail007/gmc/util/map"
-	"github.com/snail007/gmc/util/paginator"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -22,6 +19,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	gcore "github.com/snail007/gmc/core"
+	gmap "github.com/snail007/gmc/util/map"
+	"github.com/snail007/gmc/util/paginator"
 
 	ghttputil "github.com/snail007/gmc/internal/util/http"
 )
@@ -759,6 +760,13 @@ func NewCtx() *Ctx {
 		param:    gcore.Params{},
 		metadata: gmap.New(),
 	}
+}
+
+func NewCtxWithHTTP(w http.ResponseWriter, r *http.Request) *Ctx {
+	c := NewCtx()
+	c.SetResponse(w)
+	c.SetRequest(r)
+	return c
 }
 
 func NewCtxFromConfig(c gcore.Config) *Ctx {

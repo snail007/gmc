@@ -3,9 +3,6 @@ package gctx
 import (
 	"bytes"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/internal/util/http"
-	assert2 "github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -13,6 +10,10 @@ import (
 	"os"
 	"sync"
 	"testing"
+
+	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
+	assert2 "github.com/stretchr/testify/assert"
 )
 
 func TestCtx_GET(t *testing.T) {
@@ -478,8 +479,6 @@ func mockCtx(method, path string, body string) *Ctx {
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 	w := httptest.NewRecorder()
-	c := NewCtx()
-	c.SetRequest(r)
-	c.SetResponse(w)
+	c := NewCtxWithHTTP(w, r)
 	return c
 }

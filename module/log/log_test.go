@@ -218,3 +218,25 @@ func TestLogger_WithRate(t *testing.T) {
 	}
 	assert2.True(t, cnt >= 3)
 }
+
+func TestLogger_Write1(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := gcore.ProviderLogger()(nil, "")
+	l.SetOutput(&out)
+	l.Write("abc")
+	assert.Equal(strings.Contains(out.String(), "log/log_test.go:"),
+		strings.HasSuffix(out.String(), "abc\n"))
+}
+
+func TestLogger_Write2(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := gcore.ProviderLogger()(nil, "")
+	l.SetOutput(&out)
+	l.WriteRaw("abc")
+	assert.Equal(!strings.Contains(out.String(), "log/log_test.go:"),
+		strings.HasSuffix(out.String(), "abc\n"))
+}

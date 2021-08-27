@@ -7,11 +7,12 @@ package accesslog
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util/cast"
-	"strings"
-	"time"
 )
 
 type accesslog struct {
@@ -58,5 +59,5 @@ func log(ctx gcore.Ctx, logger *accesslog) {
 		str = strings.Replace(str, key, v[1], 1)
 		str = strings.Replace(str, v[0], v[1], 1)
 	}
-	logger.logger.Write(str + "\n")
+	logger.logger.WriteRaw(str + "\n")
 }

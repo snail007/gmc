@@ -65,6 +65,7 @@ type Logger interface {
 	CallerSkip() int
 	SetCallerSkip(callerSkip int)
 	Write(string)
+	WriteRaw(string)
 
 	ExitCode() int
 	SetExitCode(exitCode int)

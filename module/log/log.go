@@ -329,7 +329,7 @@ func (s *Logger) Panicf(format string, v ...interface{}) {
 		return
 	}
 	str := s.caller(fmt.Sprintf(s.namespace()+"PANIC "+format, v...), s.skip())
-	s.Write(str)
+	s.write(str)
 	s.WaitAsyncDone()
 	panic(str)
 }
@@ -340,7 +340,7 @@ func (s *Logger) Panic(v ...interface{}) {
 	}
 	v0 := []interface{}{s.namespace() + "PANIC "}
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
-	s.Write(str)
+	s.write(str)
 	s.WaitAsyncDone()
 	panic(str)
 }
@@ -349,7 +349,7 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveError {
 		return
 	}
-	s.Write(s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip()))
+	s.write(s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip()))
 	s.WaitAsyncDone()
 	s.exit()
 }
@@ -359,7 +359,7 @@ func (s *Logger) Error(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "ERROR "}
-	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 	s.WaitAsyncDone()
 	s.exit()
 }
@@ -368,7 +368,7 @@ func (s *Logger) Warnf(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveWarn {
 		return
 	}
-	s.Write(s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip()))
+	s.write(s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip()))
 }
 
 func (s *Logger) Warn(v ...interface{}) {
@@ -376,14 +376,14 @@ func (s *Logger) Warn(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "WARN "}
-	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
 func (s *Logger) Infof(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveInfo {
 		return
 	}
-	s.Write(s.caller(fmt.Sprintf(s.namespace()+"INFO "+format, v...), s.skip()))
+	s.write(s.caller(fmt.Sprintf(s.namespace()+"INFO "+format, v...), s.skip()))
 
 }
 
@@ -392,14 +392,14 @@ func (s *Logger) Info(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "INFO "}
-	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
 func (s *Logger) Debugf(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveDebug {
 		return
 	}
-	s.Write(s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip()))
+	s.write(s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip()))
 }
 
 func (s *Logger) Debug(v ...interface{}) {
@@ -407,14 +407,14 @@ func (s *Logger) Debug(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "DEBUG "}
-	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
 func (s *Logger) Tracef(format string, v ...interface{}) {
 	if s.level > gcore.LogLevelTrace {
 		return
 	}
-	s.Write(s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip()))
+	s.write(s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip()))
 }
 
 func (s *Logger) Trace(v ...interface{}) {
@@ -422,7 +422,7 @@ func (s *Logger) Trace(v ...interface{}) {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "TRACE "}
-	s.Write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
 }
 
 func (s *Logger) Writer() io.Writer {
@@ -437,7 +437,7 @@ func (s *Logger) SetFlag(f gcore.LogFlag) {
 	s.flag = f
 }
 
-func (s *Logger) Write(str string) {
+func (s *Logger) write(str string) {
 	if s.async {
 		select {
 		case s.bufChn <- bufChnItem{
@@ -450,6 +450,14 @@ func (s *Logger) Write(str string) {
 		return
 	}
 	s.output(str)
+}
+
+func (s *Logger) Write(msg string) {
+	s.write(s.caller(msg, s.skip()))
+}
+
+func (s *Logger) WriteRaw(msg string) {
+	s.write(msg)
 }
 
 func (s *Logger) output(str string) {

@@ -3,17 +3,16 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package gdefer
+package gerror
 
 import (
 	gcore "github.com/snail007/gmc/core"
-	gerror "github.com/snail007/gmc/module/error"
-)
+ )
 
 func Recover(f func(err gcore.Error)) {
 	e := recover()
 	if e != nil {
-		f(gerror.New().Wrap(e))
+		f( New().Wrap(e))
 	}
 }
 

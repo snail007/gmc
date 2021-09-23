@@ -8,9 +8,10 @@ package gerror
 import (
 	"bytes"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
 	"reflect"
 	"runtime"
+
+	gcore "github.com/snail007/gmc/core"
 )
 
 // MaxStackDepth the maximum number of stack frames on any error.
@@ -200,7 +201,7 @@ func (err *Error) TypeName() string {
 	}
 	return reflect.TypeOf(err.Err).String()
 }
-
+// Recover usage Recover(func(e interface{})) or Recover(func(e interface{}),bool printStack)
 func (this *Error) Recover(f ...interface{}) {
 	if e := recover(); e != nil {
 		var f0 interface{}
@@ -216,9 +217,9 @@ func (this *Error) Recover(f ...interface{}) {
 		case func(e interface{}):
 			v(e)
 		case string:
-			s := ""
+			s := v
 			if printStack {
-				s = fmt.Sprintf(",stack: %s", this.StackError(e))
+				s += fmt.Sprintf(",stack: %s", this.StackError(e))
 			}
 			fmt.Printf("\nrecover error, %v%s\n", f, s)
 		default:

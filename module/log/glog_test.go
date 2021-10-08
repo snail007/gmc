@@ -298,3 +298,17 @@ func TestGlog_WithRate(t *testing.T) {
 	}
 	assert2.True(t, cnt >= 3)
 }
+
+func TestGLog_With(t *testing.T) {
+	if gtest.RunProcess(t, func() {
+		l := glog.With("api")
+		l.Info("abc")
+	}) {
+		return
+	}
+	assert := assert2.New(t)
+	out, _, err := gtest.NewProcess(t).Wait()
+	assert.Nil(err)
+	t.Log(out)
+	assert.Contains(out, "glog_test.go")
+}

@@ -297,6 +297,7 @@ func (s *Logger) With(namespace string) gcore.Logger {
 	l := s.clone()
 	l.ns = namespace
 	l.parent = s
+	l.callerSkip -= 1
 	return l
 }
 

@@ -75,6 +75,17 @@ func TestLogger_With_2(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "[api/user/list] INFO a\n"))
 }
 
+func TestLogger_With_3(t *testing.T) {
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := glog.With("api")
+	l.SetOutput(&out)
+	l.Info("a", "b")
+	t.Log(out.String())
+	assert.True(strings.Contains(out.String(), "log_test.go"))
+	assert.Equal(l.Namespace(), "api")
+}
+
 func TestLogger_Infof(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer

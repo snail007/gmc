@@ -7,12 +7,12 @@ package gerror
 
 import (
 	gcore "github.com/snail007/gmc/core"
- )
+)
 
 func Recover(f func(err gcore.Error)) {
 	e := recover()
 	if e != nil {
-		f( New().Wrap(e))
+		f(New().Wrap(e))
 	}
 }
 

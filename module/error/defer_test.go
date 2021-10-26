@@ -46,3 +46,42 @@ func TestRecoverNopFunc(t *testing.T) {
 	f1()
 	assert.Equal(t, "okay", str)
 }
+
+func TestStack(t *testing.T) {
+	str := ""
+	f1 := func() {
+		defer Recover(func(err gcore.Error) {
+			str = Stack(err)
+		})
+		panic("okay")
+		str = "okay"
+	}
+	f1()
+	assert.Contains(t, str, "*errors.errorString")
+}
+
+func TestNew(t *testing.T) {
+	str := ""
+	f1 := func() {
+		defer Recover(func(err gcore.Error) {
+			str = New(err).ErrorStack()
+		})
+		panic("okay")
+		str = "okay"
+	}
+	f1()
+	assert.Contains(t, str, "*errors.errorString")
+}
+
+func TestWrap(t *testing.T) {
+	str := ""
+	f1 := func() {
+		defer Recover(func(err gcore.Error) {
+			str = Wrap(err).ErrorStack()
+		})
+		panic("okay")
+		str = "okay"
+	}
+	f1()
+	assert.Contains(t, str, "*errors.errorString")
+}

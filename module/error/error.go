@@ -26,8 +26,19 @@ type Error struct {
 	prefix string
 }
 
-func New() gcore.Error {
+func New(e ...interface{}) gcore.Error {
+	if len(e) > 0 {
+		return (&Error{}).New(e)
+	}
 	return &Error{}
+}
+
+func Stack(e interface{}) string {
+	return New().Wrap(e).ErrorStack()
+}
+
+func Wrap(e interface{}) gcore.Error {
+	return New().Wrap(e)
 }
 
 // New makes an Error from the given value. If that value is already an
@@ -201,6 +212,7 @@ func (err *Error) TypeName() string {
 	}
 	return reflect.TypeOf(err.Err).String()
 }
+
 // Recover usage Recover(func(e interface{})) or Recover(func(e interface{}),bool printStack)
 func (this *Error) Recover(f ...interface{}) {
 	if e := recover(); e != nil {

@@ -82,7 +82,9 @@ func SetLevel(level gcore.LogLevel) {
 }
 
 func With(name string) gcore.Logger {
-	return logger.With(name)
+	l := logger.With(name)
+	l.SetCallerSkip(l.CallerSkip() - 1)
+	return l
 }
 
 func WithRate(duration time.Duration) gcore.Logger {
@@ -297,7 +299,6 @@ func (s *Logger) With(namespace string) gcore.Logger {
 	l := s.clone()
 	l.ns = namespace
 	l.parent = s
-	l.callerSkip -= 1
 	return l
 }
 

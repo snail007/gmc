@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -310,5 +311,6 @@ func TestGLog_With(t *testing.T) {
 	out, _, err := gtest.NewProcess(t).Wait()
 	assert.Nil(err)
 	t.Log(out)
+	assert.True(strings.Contains(out, "[api] INFO abc\n"))
 	assert.Contains(out, "glog_test.go")
 }

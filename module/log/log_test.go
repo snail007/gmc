@@ -55,12 +55,13 @@ func TestLogger_SetLevel(t *testing.T) {
 func TestLogger_With_1(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
-	l := gcore.ProviderLogger()(nil, "")
+	l := glog.New()
 	l.SetOutput(&out)
 	l0 := l.With("api")
 	l0.Info("a", "b")
 	t.Log(out.String())
-	assert.True(strings.HasSuffix(out.String(), "[api] INFO ab\n"))
+	assert.True(strings.Contains(out.String(), "[api] INFO ab\n"))
+	assert.True(strings.Contains(out.String(), "log_test.go"))
 	assert.Equal(l0.Namespace(), "api")
 }
 
@@ -73,6 +74,7 @@ func TestLogger_With_2(t *testing.T) {
 	l0.Info("a")
 	t.Log(out.String())
 	assert.True(strings.HasSuffix(out.String(), "[api/user/list] INFO a\n"))
+	assert.True(strings.Contains(out.String(), "log_test.go"))
 }
 
 func TestLogger_Infof(t *testing.T) {

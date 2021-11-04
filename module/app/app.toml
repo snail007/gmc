@@ -32,7 +32,9 @@ urlpath="/static/"
 # shutdown.
 #############################################################
 [log]
-# 0,1,2,3,4,5 => TRACE, DEBUG, INFO, WARN, ERROR, PANIC
+# level sets logging output level, it's a level number 1-7.
+# 1,2,3,4,5,6,7 => TRACE, DEBUG, INFO, WARN, ERROR, PANIC, NONE
+# 7 indicates no logging output.
 level=0
 # 0,1 => console, file
 output=[0,1]

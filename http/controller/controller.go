@@ -7,12 +7,13 @@ package gcontroller
 
 import (
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/internal/util/http"
-	gcast "github.com/snail007/gmc/util/cast"
 	"net"
 	"net/http"
 	"net/textproto"
+
+	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
+	gcast "github.com/snail007/gmc/util/cast"
 )
 
 // Controller gmc web and api controller implements gcore.Controller.
@@ -31,6 +32,50 @@ type Controller struct {
 	View         gcore.View
 	Lang         string
 	Logger       gcore.Logger
+}
+
+func (this *Controller) GetParam() gcore.Params {
+	return this.Param
+}
+
+func (this *Controller) GetSession() gcore.Session {
+	return this.Session
+}
+
+func (this *Controller) GetTemplate() gcore.Template {
+	return this.Tpl
+}
+
+func (this *Controller) GetI18n() gcore.I18n {
+	return this.I18n
+}
+
+func (this *Controller) GetSessionStore() gcore.SessionStorage {
+	return this.SessionStore
+}
+
+func (this *Controller) GetRouter() gcore.HTTPRouter {
+	return this.Router
+}
+
+func (this *Controller) GetCookie() gcore.Cookies {
+	return this.Cookie
+}
+
+func (this *Controller) GetView() gcore.View {
+	return this.View
+}
+
+func (this *Controller) GetLang() string {
+	return this.Lang
+}
+
+func (this *Controller) GetLogger() gcore.Logger {
+	return this.Logger
+}
+
+func (this *Controller) GetConfig() gcore.Config {
+	return this.Config
 }
 
 //MethodCallPre called before controller method and Before() if have.

@@ -201,7 +201,6 @@ type HTTPServer interface {
 }
 
 type Controller interface {
-	GetCtx() Ctx
 	MethodCallPre(ctx Ctx)
 	MethodCallPost()
 	Tr(key string, defaultText ...string) string
@@ -212,6 +211,18 @@ type Controller interface {
 	SessionDestroy() (err error)
 	Write(data ...interface{}) (n int, err error)
 	WriteE(data ...interface{}) (n int, err error)
+	GetCtx() Ctx
+	GetParam() Params
+	GetSession() Session
+	GetTemplate() Template
+	GetI18n() I18n
+	GetSessionStore() SessionStorage
+	GetRouter() HTTPRouter
+	GetCookie() Cookies
+	GetView() View
+	GetLang() string
+	GetLogger() Logger
+	GetConfig() Config
 }
 
 // ParamsFromContext pulls the URL parameters from a request context,

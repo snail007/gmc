@@ -518,11 +518,40 @@ func Test_Controller_Args(t *testing.T) {
 	assert.Equal("hello/user/:args", str)
 }
 
+func Test_ControllerGetxxx(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	u := new(User)
+	u.t = t
+	s.router.Controller("/user/", u)
+	h, _, _ := s.router.Lookup("GET", "/user/url")
+	assert.NotNil(h)
+	w, r := mockRequest("/user/getxxx")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Empty(str)
+}
+
 type User struct {
 	gcontroller.Controller
 	t *testing.T
 }
 
+func (this *User) GetXXX() {
+	c := this.Ctx.Controller()
+	this.SessionStart()
+	assert.NotNil(this.t, c.GetParam())
+	assert.NotNil(this.t, c.GetTemplate())
+	assert.NotNil(this.t, c.GetConfig())
+	assert.NotNil(this.t, c.GetCookie())
+	assert.NotNil(this.t, c.GetLang())
+	assert.NotNil(this.t, c.GetRouter())
+	assert.NotNil(this.t, c.GetSession())
+	assert.NotNil(this.t, c.GetSessionStore())
+	assert.NotNil(this.t, c.GetView())
+	assert.Nil(this.t, c.GetI18n())
+	assert.NotNil(this.t, c.GetConfig())
+}
 func (this *User) URL() {
 	assert.Implements(this.t, (*gcore.Controller)(nil), this.Ctx.Controller())
 	a := "a"

@@ -58,7 +58,7 @@ async=true
 [i18n]
 enable=false
 dir="i18n"
-default="zh-cn"
+default="zh-CN"
 
 #############################################################
 # http server template / views configuration

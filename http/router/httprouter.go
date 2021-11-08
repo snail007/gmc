@@ -8,13 +8,14 @@ package grouter
 import (
 	"bytes"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
 	"io"
 	"net/http"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
+
+	gcore "github.com/snail007/gmc/core"
 )
 
 var (
@@ -214,7 +215,7 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			vp := reflect.New(val.Type())
 			vp.Elem().Set(val)
 			objv := vp.Interface()
-
+			reqCtx.SetController(objv.(gcore.Controller))
 			defer invoke(objv, "MethodCallPost")
 			invoke(objv, "MethodCallPre", reqCtx)
 			if beforeIsFound {

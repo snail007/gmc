@@ -94,6 +94,8 @@ type Ctx interface {
 	ControllerMethod() string
 	SetControllerMethod(controllerMethod string)
 	IsTLSRequest() bool
+	Controller() Controller
+	SetController(controller Controller)
 }
 
 const ctxKeyInResponseWriter = "CtxKeyInResponseWriter"

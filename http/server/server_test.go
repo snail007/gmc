@@ -10,6 +10,7 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	gsession "github.com/snail007/gmc/http/session"
@@ -495,7 +496,9 @@ func result(w *httptest.ResponseRecorder) (str string, resp *http.Response) {
 func Test_Controller(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
-	s.router.Controller("/user/", new(User))
+	u := new(User)
+	u.t = t
+	s.router.Controller("/user/", u)
 	h, _, _ := s.router.Lookup("GET", "/user/url")
 	assert.NotNil(h)
 	w, r := mockRequest("/user/url")
@@ -517,9 +520,11 @@ func Test_Controller_Args(t *testing.T) {
 
 type User struct {
 	gcontroller.Controller
+	t *testing.T
 }
 
 func (this *User) URL() {
+	assert.Implements(this.t, (*gcore.Controller)(nil), this.Ctx.Controller())
 	a := "a"
 	if this.Param != nil {
 		a = ""

@@ -44,6 +44,15 @@ type Ctx struct {
 	conn             net.Conn
 	metadata         *gmap.Map
 	controllerMethod string
+	controller      gcore.Controller
+}
+
+func (this *Ctx) Controller() gcore.Controller {
+	return this.controller
+}
+
+func (this *Ctx) SetController(controller gcore.Controller) {
+	this.controller = controller
 }
 
 func (this *Ctx) IsTLSRequest() bool {

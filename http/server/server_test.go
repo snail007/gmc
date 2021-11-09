@@ -550,7 +550,7 @@ func (this *User) GetXXX() {
 	assert.NotNil(this.t, c.GetSessionStore())
 	assert.NotNil(this.t, c.GetView())
 	assert.Nil(this.t, c.GetI18n())
-	assert.NotNil(this.t, c.GetConfig())
+	assert.NotNil(this.t, c.GetLogger())
 }
 func (this *User) URL() {
 	assert.Implements(this.t, (*gcore.Controller)(nil), this.Ctx.Controller())

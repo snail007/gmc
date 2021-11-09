@@ -98,7 +98,10 @@ func(this *Demo) Hello() {
 1. Suffixes are two or one underscore `__` , `_` controller method, in the routing binding controller will be ignored.
 
 1. The controller method names cannot contain the following names. They are GMC methods to complete the framework function, 
-and these names cannot be used in the controllers of students.`MethodCallPre()`,`MethodCallPost()`,`Stop()`,`Die()`,`Tr()`,`SessionStart()`,`SessionDestroy()`,`Write()`,`StopE()`,`GetCtx()`.
+and these names cannot be used in the controllers.`MethodCallPre()`，`MethodCallPost()`，`Stop()`，`Die()`，`Tr()`，`SessionStart()`，
+   `SessionDestroy()`，`Write()`，`StopE()`，`GetCtx()`，`GetParam()`，`GetTemplate()`，
+   `GetConfig()`，`GetCookie()`，`GetLang()`，`GetRouter()`，`GetSession()`，`GetSessionStore()`，
+   `GetView()`，`GetI18n()`，`GetLogger()`.
 
 1. The method with the name`Before()`is the constructor of the controller, need not be undefined, and is called before 
 the execution of the accessed controller method, You can call`this.stop()`to prevent calls to the controller method being accessed, 

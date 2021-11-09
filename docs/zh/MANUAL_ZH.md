@@ -75,15 +75,17 @@ func (this *Demo) Hello() {
 ## 控制器规则
 
 1. 控制器名称无限制。
-1. 后缀是两个连续`__`或一个`_`英文半角下划线的控制器方法，在路由里面绑定控制器的时候会被忽略。
-1. 控制器方法名称不能包含以下名称，它们是GMC完成框架功能的方法，同学们的控制器里面不能使用这些名称。
+2. 后缀是两个连续`__`或一个`_`英文半角下划线的控制器方法，在路由里面绑定控制器的时候会被忽略。
+3. 控制器方法名称不能包含以下名称，它们是GMC完成框架功能的方法，同学们的控制器里面不能使用这些名称。
    `MethodCallPre()`，`MethodCallPost()`，`Stop()`，`Die()`，`Tr()`，`SessionStart()`，
-   `SessionDestroy()`，`Write()`，`StopE()`，`GetCtx()`。
-1. 方法名称是`Before()`的方法，是控制器的构造方法，不需要可以不定义，在被访问控制器方法执行之前被调用，
+   `SessionDestroy()`，`Write()`，`StopE()`，`GetCtx()`，`GetParam()`，`GetTemplate()`，
+   `GetConfig()`，`GetCookie()`，`GetLang()`，`GetRouter()`，`GetSession()`，`GetSessionStore()`，
+   `GetView()`，`GetI18n()`，`GetLogger()`。
+4. 方法名称是`Before()`的方法，是控制器的构造方法，不需要可以不定义，在被访问控制器方法执行之前被调用，
     可以调用`this.Stop()`阻止被访问`控制器方法`的调用，但不能阻止`After()`控制器析构方法的调用。
     可以通过`this.Die()`阻止被访问`控制器方法`和`After()`调用。
-1. 方法名称是`After()`的方法，是控制器的析构方法，不需要可以不定义，在被访问控制器方法执行之后被调用。
-1. 控制器成员不能包含以下名称，它们是GMC完成框架功能用的，同学们的控制器里面的成员名称不能使用这些名称。
+5. 方法名称是`After()`的方法，是控制器的析构方法，不需要可以不定义，在被访问控制器方法执行之后被调用。
+6. 控制器成员不能包含以下名称，它们是GMC完成框架功能用的，同学们的控制器里面的成员名称不能使用这些名称。
    `Response`，`Request`，`Param`，`Session`，`Tpl`，`SessionStore`，`Router`，`Config`，
    `Cookie`，`Ctx`，`View`，`Lang`，`Logger`，这些成员是十分有用的，我们经常会使用到它们，下面会对它们一一介绍。
 

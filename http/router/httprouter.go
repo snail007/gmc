@@ -227,14 +227,19 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 			vp.Elem().Set(val)
 			objv := vp.Interface()
 			reqCtx.SetController(objv.(gcore.Controller))
+			// MethodCallPost 和 MethodCallPre 完成框架既定功能，不能触发__STOP__，所以这里用invoke而不是用s.call屏蔽__STOP__。
 			defer invoke(objv, "MethodCallPost")
 			invoke(objv, "MethodCallPre", reqCtx)
+			// __STOP__ 事件，应该在此handler内部消化，不应该交给上级server的call处理。
+			var isStop = false
 			if beforeIsFound {
-				invoke(objv, "Before")
+				isStop = s.call(func() { invoke(objv, "Before") })
 			}
-			s.call(func() { invoke(objv, objMethod0) })
+			if !isStop {
+				s.call(func() { invoke(objv, objMethod0) })
+			}
 			if afterIsFound {
-				invoke(objv, "After")
+				s.call(func() { invoke(objv, "After") })
 			}
 		})
 	}
@@ -243,10 +248,11 @@ func (s *HTTPRouter) controller(urlPath string, obj interface{}, method string, 
 	}
 }
 
-func (s *HTTPRouter) call(fn func()) {
+func (s *HTTPRouter) call(fn func()) (isStop bool) {
 	func() {
 		defer gcore.ProviderError()().Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
+				isStop=true
 				return
 			}
 			panic(gcore.ProviderError()().Wrap(e))

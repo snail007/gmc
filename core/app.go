@@ -21,4 +21,5 @@ type App interface {
 	Logger() Logger
 	Stop()
 	Ctx() Ctx
+	SetCtx(Ctx)
 }

@@ -11,13 +11,14 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"fmt"
-	"github.com/snail007/gmc/core"
-	makeutil "github.com/snail007/gmc/internal/util/make"
-	gmap "github.com/snail007/gmc/util/map"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/snail007/gmc/core"
+	makeutil "github.com/snail007/gmc/internal/util/make"
+	gmap "github.com/snail007/gmc/util/map"
 
 	gosqlcipher "github.com/snail007/go-sqlcipher"
 )
@@ -160,6 +161,9 @@ func (db *SQLite3DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{})
 	return db.execSQLTx(sqlStr, 0, tx, values...)
 }
 func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs gcore.ResultSet, err error) {
+	if db.Config.TablePrefix != "" {
+		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	}
 	start := time.Now().UnixNano()
 	var stmt *sql.Stmt
 	var result sql.Result
@@ -197,6 +201,9 @@ func (db *SQLite3DB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.Res
 	return db.execSQL(sqlStr, 0, values...)
 }
 func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}) (rs gcore.ResultSet, err error) {
+	if db.Config.TablePrefix != "" {
+		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	}
 	start := time.Now().UnixNano()
 	var stmt *sql.Stmt
 	var result sql.Result
@@ -224,6 +231,9 @@ func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...inte
 	return
 }
 func (db *SQLite3DB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
+	if db.Config.TablePrefix != "" {
+		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	}
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
@@ -646,6 +656,9 @@ func (ar *SQLite3ActiveRecord) SQL() string {
 		ar.currentSQL = ar.getReplaceBatchSQL()
 	case "delete":
 		ar.currentSQL = ar.getDeleteSQL()
+	}
+	if ar.tablePrefix != "" {
+		ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
 	}
 	return ar.currentSQL
 }

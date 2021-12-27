@@ -10,13 +10,14 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"fmt"
-	"github.com/snail007/gmc/core"
-	makeutil "github.com/snail007/gmc/internal/util/make"
-	gmap "github.com/snail007/gmc/util/map"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/snail007/gmc/core"
+	makeutil "github.com/snail007/gmc/internal/util/make"
+	gmap "github.com/snail007/gmc/util/map"
 	// require mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -144,7 +145,9 @@ func (db *MySQLDB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs gcore.ResultSe
 }
 func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
-	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	if db.Config.TablePrefix != "" {
+		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	}
 	var stmt *sql.Stmt
 	var result sql.Result
 
@@ -170,7 +173,9 @@ func (db *MySQLDB) Exec(ar gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 }
 func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
-	sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	if db.Config.TablePrefix != "" {
+		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	}
 	var stmt *sql.Stmt
 	var result sql.Result
 
@@ -195,6 +200,9 @@ func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.Resul
 	return
 }
 func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
+	if db.Config.TablePrefix != "" {
+		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
+	}
 	start := time.Now().UnixNano()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
@@ -620,7 +628,9 @@ func (ar *MySQLActiveRecord) SQL() string {
 	case "delete":
 		ar.currentSQL = ar.getDeleteSQL()
 	}
-	ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
+	if ar.tablePrefix != "" {
+		ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
+	}
 	return ar.currentSQL
 }
 func (ar *MySQLActiveRecord) getUpdateSQL() string {

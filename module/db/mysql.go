@@ -596,6 +596,9 @@ func (ar *MySQLActiveRecord) Wrap(v string) string {
 	return ar.protectIdentifier(ar.checkPrefix(columns[0]))
 }
 func (ar *MySQLActiveRecord) Raw(sql string, values ...interface{}) gcore.ActiveRecord {
+	if ar.tablePrefix != "" {
+		sql = strings.Replace(sql, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
+	}
 	ar.currentSQL = sql
 	if len(values) > 0 {
 		ar.values = append(ar.values, values...)

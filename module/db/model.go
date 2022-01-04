@@ -7,9 +7,10 @@ package gdb
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util/cast"
-	"sync"
 )
 
 type Model struct {
@@ -98,7 +99,7 @@ func (s *Model) GetByWithFields(fields string, where map[string]interface{}) (re
 	return
 }
 
-func (s *Model) MGetByIDs(ids []string, orderBy ...interface{}) (ret map[string]string, error error) {
+func (s *Model) MGetByIDs(ids []string, orderBy ...interface{}) (ret []map[string]string, error error) {
 	return s.MGetByIDsWithFields("*", ids, orderBy...)
 }
 
@@ -106,12 +107,12 @@ func (s *Model) MGetByIDsRs(ids []string, orderBy ...interface{}) (rs gcore.Resu
 	return s.MGetByIDsWithFieldsRs("*", ids, orderBy...)
 }
 
-func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...interface{}) (ret map[string]string, err error) {
+func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...interface{}) (ret []map[string]string, err error) {
 	rs, err := s.MGetByIDsWithFieldsRs(fields, ids, orderBy...)
 	if err != nil {
 		return nil, err
 	}
-	ret = rs.Row()
+	ret = rs.Rows()
 	return
 }
 

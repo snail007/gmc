@@ -144,7 +144,7 @@ func (db *SQLite3DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{})
 	return db.execSQLTx(sqlStr, 0, tx, values...)
 }
 func (db *SQLite3DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs gcore.ResultSet, err error) {
-	if db.Config.TablePrefix != "" {
+	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
 	start := time.Now().UnixNano()
@@ -184,7 +184,7 @@ func (db *SQLite3DB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.Res
 	return db.execSQL(sqlStr, 0, values...)
 }
 func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...interface{}) (rs gcore.ResultSet, err error) {
-	if db.Config.TablePrefix != "" {
+	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
 	start := time.Now().UnixNano()
@@ -214,7 +214,7 @@ func (db *SQLite3DB) execSQL(sqlStr string, arInsertBatchCnt int, values ...inte
 	return
 }
 func (db *SQLite3DB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
-	if db.Config.TablePrefix != "" {
+	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
 	start := time.Now().UnixNano()
@@ -606,7 +606,7 @@ func (ar *SQLite3ActiveRecord) Wrap(v string) string {
 	return ar.protectIdentifier(ar.checkPrefix(columns[0]))
 }
 func (ar *SQLite3ActiveRecord) Raw(sql string, values ...interface{}) gcore.ActiveRecord {
-	if ar.tablePrefix != "" {
+	if ar.tablePrefix != "" && ar.tablePrefixSQLIdentifier != "" {
 		sql = strings.Replace(sql, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
 	}
 	ar.currentSQL = sql
@@ -640,7 +640,7 @@ func (ar *SQLite3ActiveRecord) SQL() string {
 	case "delete":
 		ar.currentSQL = ar.getDeleteSQL()
 	}
-	if ar.tablePrefix != "" {
+	if ar.tablePrefix != "" && ar.tablePrefixSQLIdentifier != "" {
 		ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
 	}
 	return ar.currentSQL

@@ -145,7 +145,7 @@ func (db *MySQLDB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs gcore.ResultSe
 }
 func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
-	if db.Config.TablePrefix != "" {
+	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
 	var stmt *sql.Stmt
@@ -173,7 +173,7 @@ func (db *MySQLDB) Exec(ar gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 }
 func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
 	start := time.Now().UnixNano()
-	if db.Config.TablePrefix != "" {
+	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
 	var stmt *sql.Stmt
@@ -200,7 +200,7 @@ func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.Resul
 	return
 }
 func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
-	if db.Config.TablePrefix != "" {
+	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
 	start := time.Now().UnixNano()
@@ -596,7 +596,7 @@ func (ar *MySQLActiveRecord) Wrap(v string) string {
 	return ar.protectIdentifier(ar.checkPrefix(columns[0]))
 }
 func (ar *MySQLActiveRecord) Raw(sql string, values ...interface{}) gcore.ActiveRecord {
-	if ar.tablePrefix != "" {
+	if ar.tablePrefix != "" && ar.tablePrefixSQLIdentifier != "" {
 		sql = strings.Replace(sql, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
 	}
 	ar.currentSQL = sql
@@ -631,7 +631,7 @@ func (ar *MySQLActiveRecord) SQL() string {
 	case "delete":
 		ar.currentSQL = ar.getDeleteSQL()
 	}
-	if ar.tablePrefix != "" {
+	if ar.tablePrefix != "" && ar.tablePrefixSQLIdentifier != "" {
 		ar.currentSQL = strings.Replace(ar.currentSQL, ar.tablePrefixSQLIdentifier, ar.tablePrefix, -1)
 	}
 	return ar.currentSQL

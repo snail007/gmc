@@ -16,11 +16,10 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/snail007/gmc/core"
 	makeutil "github.com/snail007/gmc/internal/util/make"
 	gmap "github.com/snail007/gmc/util/map"
-
-	gosqlcipher "github.com/snail007/go-sqlcipher"
 )
 
 type SQLite3DBGroup struct {
@@ -105,19 +104,10 @@ func (db *SQLite3DB) init(config SQLite3DBConfig) (err error) {
 }
 
 func (db *SQLite3DB) getDSN() string {
-	//_pragma_key=x'%s'&_pragma_cipher_page_size=4096
-	if db.Config.Password == "" {
-		return fmt.Sprintf("file:%s?cache=%s&mode=%s",
-			url.QueryEscape(db.Config.Database),
-			url.QueryEscape(db.Config.CacheMode),
-			url.QueryEscape(db.Config.OpenMode),
-		)
-	}
-	return fmt.Sprintf("file:%s?cache=%s&mode=%s&_pragma_key=x'%s'&_pragma_cipher_page_size=4096",
+	return fmt.Sprintf("file:%s?cache=%s&mode=%s",
 		url.QueryEscape(db.Config.Database),
 		url.QueryEscape(db.Config.CacheMode),
 		url.QueryEscape(db.Config.OpenMode),
-		url.QueryEscape(db.md5(db.Config.Password)),
 	)
 }
 func (db *SQLite3DB) getDB() (connPool *sql.DB, err error) {
@@ -139,13 +129,6 @@ func (db *SQLite3DB) AR() gcore.ActiveRecord {
 	ar.tablePrefix = db.Config.TablePrefix
 	ar.tablePrefixSQLIdentifier = db.Config.TablePrefixSQLIdentifier
 	return ar
-}
-func (db *SQLite3DB) IsEncrypted() bool {
-	ok, e := gosqlcipher.IsEncrypted(db.Config.Database)
-	if e != nil {
-		return false
-	}
-	return ok
 }
 func (db *SQLite3DB) Stats() sql.DBStats {
 	return db.ConnPool.Stats()
@@ -391,16 +374,14 @@ type SQLite3DBConfig struct {
 	SyncMode                 int
 	OpenMode                 string
 	CacheMode                string
-	Password                 string
 }
 
-func NewSQLite3DBConfigWith(dbfilename, password, openMode, cacheMode string, syncMode int) (cfg SQLite3DBConfig) {
+func NewSQLite3DBConfigWith(dbfilename, openMode, cacheMode string, syncMode int) (cfg SQLite3DBConfig) {
 	cfg = NewSQLite3DBConfig()
 	cfg.Database = dbfilename
 	cfg.OpenMode = openMode
 	cfg.CacheMode = cacheMode
 	cfg.SyncMode = syncMode
-	cfg.Password = password
 	return
 }
 func NewSQLite3DBConfig() SQLite3DBConfig {
@@ -411,7 +392,6 @@ func NewSQLite3DBConfig() SQLite3DBConfig {
 		Database:                 "test",
 		TablePrefix:              "",
 		TablePrefixSQLIdentifier: "",
-		Password:                 "",
 	}
 }
 
@@ -1077,12 +1057,4 @@ func (ar *SQLite3ActiveRecord) getWhere() string {
 		allWhere = fmt.Sprintf("\nWHERE %s", allWhere)
 	}
 	return allWhere
-}
-
-func IsEncrypted(file string) bool {
-	ok, e := gosqlcipher.IsEncrypted(file)
-	if e != nil {
-		return false
-	}
-	return ok
 }

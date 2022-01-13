@@ -76,7 +76,6 @@ func TestRegistSQLite3(t *testing.T) {
 	assert := assert.New(t)
 	cfg := NewSQLite3DBConfig()
 	cfg.OpenMode = OpenModeReadWriteCreate
-	cfg.Password = "123"
 	cfg.Database = "test.db"
 	cfg.TablePrefix = "gmc_"
 	cfg.TablePrefixSQLIdentifier = "__PREFIX__"
@@ -86,7 +85,6 @@ func TestRegistSQLite3(t *testing.T) {
 	assert.Nil(err)
 	_, err = db.Query(db.AR().Raw("select * from __PREFIX__test"))
 	assert.Nil(err)
-	assert.True(IsEncrypted("test.db"))
 	db.ConnPool.Close()
 	os.Remove("test.db")
 }
@@ -95,13 +93,11 @@ func TestRegistSQLite3_1(t *testing.T) {
 	assert := assert.New(t)
 	cfg := NewSQLite3DBConfig()
 	cfg.OpenMode = OpenModeReadWriteCreate
-	cfg.Password = ""
 	cfg.Database = "test.db"
 	db, err := NewSQLite3DB(cfg)
 	assert.Nil(err)
 	_, err = db.ExecSQL("create table test(id int)")
 	assert.Nil(err)
-	assert.False(IsEncrypted("test.db"))
 	db.ConnPool.Close()
 	os.Remove("test.db")
 }

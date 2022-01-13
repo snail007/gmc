@@ -6,12 +6,13 @@
 package gdb
 
 import (
-	"github.com/snail007/gmc/core"
-	"github.com/snail007/gmc/util/cast"
-	gmap "github.com/snail007/gmc/util/map"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/util/cast"
+	gmap "github.com/snail007/gmc/util/map"
 )
 
 var (
@@ -79,7 +80,6 @@ func Init(cfg0 gcore.Config) (err error) {
 				}
 				err = groupSQLite3.Regist(id, SQLite3DBConfig{
 					Database:                 gcast.ToString(vvv["database"]),
-					Password:                 gcast.ToString(vvv["password"]),
 					TablePrefix:              gcast.ToString(vvv["prefix"]),
 					TablePrefixSQLIdentifier: gcast.ToString(vvv["prefix_sql_holder"]),
 					SyncMode:                 gcast.ToInt(vvv["syncmode"]),

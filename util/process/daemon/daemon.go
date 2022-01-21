@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -37,10 +38,18 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-//Start daemon or forever or flog
-func Start() (err error) {
+var (
+	args = []string{}
+	once = sync.Once{}
+)
 
-	args := []string{}
+func InitFlags() (err error) {
+	once.Do(func() {
+		err = initFlags()
+	})
+	return err
+}
+func initFlags() (err error) {
 	if len(os.Args) <= 1 {
 		return
 	}
@@ -81,8 +90,17 @@ func Start() (err error) {
 		}
 	}
 	os.Args = append([]string{os.Args[0]}, args...)
+	return err
+}
+
+//Start daemon or forever or flog
+func Start() (err error) {
+	err = InitFlags()
+	if err != nil {
+		return err
+	}
 	if isDaemon {
-		args := trimArgs("daemon", a)
+		args := trimArgs("daemon", args)
 		if flog == "" {
 			args = append(args, "-flog", "null")
 		}

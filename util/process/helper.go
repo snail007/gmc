@@ -12,7 +12,9 @@ import (
 
 // Daemon make your program ability of 1.daemonize 2.forever 3.logging stdout to file.
 // If you used Daemon, you can run your program with arguments `--daemon` `--forever` `--flog foo.log` optionally.
-func Daemon(mainFunc func()) (err error) {
+// mainFunc is your `main`, if onKill not nil, it will be called when one signal of syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM,
+// syscall.SIGQUIT received,
+func Daemon(mainFunc func(), onKill func()) (err error) {
 	// daemon will os.Exit in Start()
 	err = gdaemon.Start()
 	if err != nil {
@@ -20,6 +22,9 @@ func Daemon(mainFunc func()) (err error) {
 	}
 	// so daemon never will be reach here.
 	if gdaemon.CanRun() {
+		if onKill != nil {
+			ghook.RegistShutdown(onKill)
+		}
 		// no flags of forever, flog and daemon, will reach here.
 		go mainFunc()
 		ghook.WaitShutdown()

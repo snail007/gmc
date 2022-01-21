@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -22,11 +21,15 @@ import (
 )
 
 var (
-	cmd       *exec.Cmd
-	log       = logger.New(os.Stderr, "", logger.LstdFlags)
-	isDaemon  = false
-	isForever = false
-	flog      = ""
+	cmd        *exec.Cmd
+	log        = logger.New(os.Stderr, "", logger.LstdFlags)
+	isDaemon   = false
+	isForever  = false
+	flog       = ""
+	initCalled bool
+	initError  error
+	initOSArgs []string
+	initArgs   []string
 )
 
 //SetLogger sets the logger for logging
@@ -38,22 +41,19 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-var (
-	args = []string{}
-	once = sync.Once{}
-)
-
-func InitFlags() (err error) {
-	once.Do(func() {
-		err = initFlags()
-	})
-	return err
-}
-func initFlags() (err error) {
+func InitFlags() {
+	if initCalled {
+		return
+	}
+	initCalled = true
 	if len(os.Args) <= 1 {
 		return
 	}
-	a := os.Args[1:]
+	l1 := len(os.Args)
+	initOSArgs = make([]string, l1)
+	a := make([]string, l1-1)
+	copy(initOSArgs, os.Args[:])
+	copy(a, os.Args[1:])
 	preIsFlog := false
 	for i, v := range a {
 		vv := strings.TrimSpace(v)
@@ -63,7 +63,7 @@ func initFlags() (err error) {
 			isForever = true
 		} else if vv == "--flog" || vv == "-flog" {
 			if len(a) < i+2 {
-				err = fmt.Errorf("logging file path required")
+				initError = fmt.Errorf("logging file path required")
 				return
 			}
 			flog = a[i+1]
@@ -71,12 +71,12 @@ func initFlags() (err error) {
 		} else if strings.HasPrefix(vv, "--flog=") || strings.HasPrefix(vv, "-flog=") {
 			a := strings.Split(vv, "=")
 			if len(a) != 2 {
-				err = fmt.Errorf("logging file path required")
+				initError = fmt.Errorf("logging file path required")
 				return
 			}
 			a[1] = strings.Trim(a[1], `"'`)
 			if a[1] == "" {
-				err = fmt.Errorf("logging file path required")
+				initError = fmt.Errorf("logging file path required")
 				return
 			}
 			flog = a[1]
@@ -85,22 +85,27 @@ func initFlags() (err error) {
 			if preIsFlog {
 				preIsFlog = false
 			} else {
-				args = append(args, v)
+				initArgs = append(initArgs, v)
 			}
 		}
 	}
-	os.Args = append([]string{os.Args[0]}, args...)
-	return err
+	os.Args = append([]string{os.Args[0]}, initArgs...)
+	return
 }
 
 //Start daemon or forever or flog
 func Start() (err error) {
-	err = InitFlags()
-	if err != nil {
-		return err
+	if !initCalled {
+		InitFlags()
+	}
+	if len(initOSArgs) <= 1 {
+		return
+	}
+	if initError != nil {
+		return initError
 	}
 	if isDaemon {
-		args := trimArgs("daemon", args)
+		args := trimArgs("daemon", initOSArgs[1:])
 		if flog == "" {
 			args = append(args, "-flog", "null")
 		}
@@ -148,7 +153,7 @@ func Start() (err error) {
 					}
 					time.Sleep(time.Second * 5)
 				}
-				cmd = exec.Command(os.Args[0], args...)
+				cmd = exec.Command(os.Args[0], initArgs...)
 				cmdReaderStderr, err := cmd.StderrPipe()
 				if err != nil {
 					l("ERR:%s,restarting...\n", err)

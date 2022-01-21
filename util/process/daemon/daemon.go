@@ -8,14 +8,16 @@ package gdaemon
 import (
 	"bufio"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
 	"io"
 	"io/ioutil"
 	logger "log"
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
+
+	gcore "github.com/snail007/gmc/core"
 )
 
 var (
@@ -122,8 +124,7 @@ func Start() (err error) {
 			})
 			for {
 				if cmd != nil {
-					cmd.Process.Kill()
-					cmd.Process.Release()
+					clean(false)
 					if !isForever {
 						break
 					}
@@ -179,8 +180,16 @@ func Start() (err error) {
 
 //Clean process, should be call before program exit.
 func Clean() {
+	clean(true)
+}
+
+func clean(showlog bool) {
 	if cmd != nil && cmd.ProcessState == nil {
-		l("clean process %d", cmd.Process.Pid)
+		if showlog {
+			l("clean process %d", cmd.Process.Pid)
+		}
+		cmd.Process.Signal(syscall.SIGHUP)
+		time.Sleep(time.Second)
 		cmd.Process.Kill()
 		cmd.Process.Release()
 	}

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package process
+package gprocess
 
 import (
 	gdaemon "github.com/snail007/gmc/util/process/daemon"

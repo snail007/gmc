@@ -40,12 +40,12 @@ func PostOfReader(u string, r io.Reader, timeout time.Duration, header map[strin
 	return Client.PostOfReader(u, r, timeout, header)
 }
 
-func Upload(u, fieldName, filename string, data map[string]string) (body string, resp *http.Response, err error) {
-	return Client.Upload(u, fieldName, filename, data)
+func Upload(u, fieldName, filename string, data map[string]string, timeout time.Duration, header map[string]string) (body string, resp *http.Response, err error) {
+	return Client.Upload(u, fieldName, filename, data, timeout, header)
 }
 
-func UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {
-	return Client.UploadOfReader(u, fieldName, filename, reader, data)
+func UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string, timeout time.Duration, header map[string]string) (body string, resp *http.Response, err error) {
+	return Client.UploadOfReader(u, fieldName, filename, reader, data, timeout, header)
 }
 
 func Download(u string, timeout time.Duration, header map[string]string) (data []byte, err error) {
@@ -72,6 +72,7 @@ type HTTPClient struct {
 	dns             string
 	connWrap        func(net.Conn) (conn net.Conn, err error)
 	jar             http.CookieJar
+	dialer          func(network, address string, timeout time.Duration) (net.Conn, error)
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
@@ -90,6 +91,11 @@ func (s *HTTPClient) SetConnWrap(fn func(c net.Conn) (conn net.Conn, err error))
 // SetProxyFromEnv sets if using http_proxy or all_proxy from system environment to send request.
 func (s *HTTPClient) SetProxyFromEnv(set bool) {
 	s.setProxyFromEnv = set
+	return
+}
+
+func (s *HTTPClient) SetDialer(dialer func(network, address string, timeout time.Duration) (net.Conn, error)) {
+	s.dialer = dialer
 	return
 }
 
@@ -179,10 +185,14 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 	}
 	if header != nil {
 		for k, v := range header {
+			if strings.EqualFold(k, "host") {
+				req.Host = v
+				continue
+			}
 			req.Header.Set(k, v)
 		}
 	}
-	req.Close=true
+	req.Close = true
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, 0, nil, err
@@ -218,7 +228,7 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	if err != nil {
 		return
 	}
-	req.Close=true
+	req.Close = true
 	client, err := s.newClient(timeout)
 	if err != nil {
 		return
@@ -226,6 +236,10 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	foundCT := false
 	if header != nil {
 		for k, v := range header {
+			if strings.EqualFold(k, "host") {
+				req.Host = v
+				continue
+			}
 			req.Header.Set(k, v)
 			if strings.TrimSpace(strings.ToLower(k)) == "content-type" {
 				foundCT = true
@@ -250,18 +264,18 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 // Upload uploads a file from a file `filename`,
 // fieldName is the form filed name in form, filename is the value of filed `fieldName` and also the file to upload.
 // data is the additional form data.
-func (s *HTTPClient) Upload(u, fieldName, filename string, data map[string]string) (body string, resp *http.Response, err error) {
+func (s *HTTPClient) Upload(u, fieldName, filename string, data map[string]string, timeout time.Duration, header map[string]string) (body string, resp *http.Response, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return
 	}
-	return s.UploadOfReader(u, fieldName, filename, file, data)
+	return s.UploadOfReader(u, fieldName, filename, file, data, timeout, header)
 }
 
 // UploadOfReader upload a file from a io.Reader `reader`,
 // fieldName is the form filed name in form, filename is the value of filed `fieldName`.
 // data is the additional form data.
-func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string) (body string, resp *http.Response, err error) {
+func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, data map[string]string, timeout time.Duration, header map[string]string) (body string, resp *http.Response, err error) {
 	r, w := io.Pipe()
 	m := multipart.NewWriter(w)
 	go func() {
@@ -291,11 +305,20 @@ func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader
 	if err != nil {
 		return
 	}
-	req.Close=true
+	req.Close = true
 	req.Header.Add("Content-Type", m.FormDataContentType())
 	url0, _ := url.Parse(u)
 	req.Host = url0.Host
-	c, err := s.newClient(0)
+	if header != nil {
+		for k, v := range header {
+			if strings.EqualFold(k, "host") {
+				req.Host = v
+				continue
+			}
+			req.Header.Set(k, v)
+		}
+	}
+	c, err := s.newClient(timeout)
 	if err != nil {
 		return
 	}
@@ -353,9 +376,13 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header ma
 	if err != nil {
 		return
 	}
-	req.Close=true
+	req.Close = true
 	if header != nil {
 		for k, v := range header {
+			if strings.EqualFold(k, "host") {
+				req.Host = v
+				continue
+			}
 			req.Header.Set(k, v)
 		}
 	}
@@ -407,7 +434,11 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 				}
 				ip := iparr[rand.Intn(len(iparr))]
 				addr = net.JoinHostPort(ip.String(), port)
-				conn, err = net.DialTimeout(network, addr, timeout)
+				if s.dialer != nil {
+					conn, err = s.dialer(network, addr, timeout)
+				} else {
+					conn, err = net.DialTimeout(network, addr, timeout)
+				}
 			}
 			if err == nil && s.connWrap != nil {
 				conn, err = s.connWrap(conn)

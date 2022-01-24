@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	gcore "github.com/snail007/gmc/core"
+	gmap "github.com/snail007/gmc/util/map"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -206,6 +208,27 @@ func Test(t *testing.T) {
 		fmt.Printf("db group config of name %s not found", "www")
 	}
 }
+
+func TestCount(t *testing.T) {
+	db := db()
+	db.ExecSQL("drop table count_test")
+	db.ExecSQL("create table count_test(id int)")
+	for i:=1;i<=3;i++{
+		db.Exec(db.AR().Insert("count_test",gmap.M{
+			"id":i,
+		}))
+	}
+	count,err:=Table("count_test",db).Count(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 3,int(count))
+	db.ExecSQL("delete table count_test")
+}
+func db() gcore.Database {
+	group := NewMySQLDBGroup("default")
+	group.Regist("default", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+ 	return group.DB()
+}
+
 
 type User struct {
 	Name       string    `column:"name"`

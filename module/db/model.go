@@ -11,6 +11,7 @@ import (
 
 	"github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/util/cast"
+	gmap "github.com/snail007/gmc/util/map"
 )
 
 type Model struct {
@@ -67,6 +68,16 @@ func (s *Model) ExecSQL(sql string, values ...interface{}) (lastInsertID, rowsAf
 	rowsAffected = rs.RowsAffected()
 	lastInsertID = rs.LastInsertID()
 	return
+}
+
+func (s *Model) Count(where gmap.M) (count int64, error error) {
+	db := s.db
+	ar := db.AR().From(s.table).Select("count(*) as total").Where(where)
+	rs, err := db.Query(ar)
+	if err != nil {
+		return 0, err
+	}
+	return gcast.ToInt64(rs.Value("total")), nil
 }
 
 func (s *Model) GetByID(id string) (ret map[string]string, error error) {

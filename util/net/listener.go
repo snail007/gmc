@@ -186,6 +186,7 @@ type EventListener struct {
 	addr                   *Addr
 	ctx                    Context
 	autoCloseConn          bool
+	started                bool
 }
 
 // SetAutoCloseConn if true, EventListener will close Conn after accept handler return.
@@ -246,32 +247,37 @@ func (s *EventListener) SetFirstReadTimeout(firstReadTimeout time.Duration) *Eve
 	return s
 }
 
-func (s *EventListener) Start() *EventListener {
-	go func() {
-		defer func() {
-			s.Close()
-		}()
-		for {
-			c, errTyped, err := s.l.accept()
-			// root conn context
-			switch errTyped {
-			case ErrFirstReadTimeout:
-				s.onFistReadTimeoutError(s.ctx, c, err)
-				return
-			case nil:
-				go func() {
-					// accept
-					s.onAccept(c.(*Conn).ctx, c)
-					if s.autoCloseConn {
-						c.Close()
-					}
-				}()
-			default:
-				s.onAcceptError(s.ctx, err)
-				return
-			}
-		}
+func (s *EventListener) StartAndWait() {
+	if s.started {
+		return
+	}
+	defer func() {
+		s.Close()
 	}()
+	for {
+		c, errTyped, err := s.l.accept()
+		// root conn context
+		switch errTyped {
+		case ErrFirstReadTimeout:
+			s.onFistReadTimeoutError(s.ctx, c, err)
+			return
+		case nil:
+			go func() {
+				// accept
+				s.onAccept(c.(*Conn).ctx, c)
+				if s.autoCloseConn {
+					c.Close()
+				}
+			}()
+		default:
+			s.onAcceptError(s.ctx, err)
+			return
+		}
+	}
+}
+
+func (s *EventListener) Start() *EventListener {
+	go s.StartAndWait()
 	return s
 }
 

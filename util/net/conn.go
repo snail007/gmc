@@ -281,6 +281,7 @@ type EventConn struct {
 	closeOnce      sync.Once
 	codec          []Codec
 	ctx            Context
+	started        bool
 }
 
 func (s *EventConn) Ctx() Context {
@@ -389,51 +390,56 @@ func (s *EventConn) AddCodec(codec Codec) *EventConn {
 	return s
 }
 
-func (s *EventConn) Start() {
-	go func() {
-		defer func() {
-			s.Close()
-		}()
-
-		// init Conn
-		if len(s.codec) > 0 || len(s.connFilters) > 0 {
-			conn := NewConn(s.conn)
-			// add filters
-			for _, f := range s.connFilters {
-				conn.AddFilter(f)
-			}
-			// add codec
-			for _, c := range s.codec {
-				conn.AddCodec(c)
-			}
-			s.conn = conn
-		} else {
-			if v, ok := s.conn.(*net.TCPConn); ok {
-				v.SetKeepAlive(true)
-				v.SetKeepAlivePeriod(defaultConnKeepAlivePeriod)
-			}
-		}
-
-		buf := gbytes.GetPool(s.readBufferSize).Get().([]byte)
-		defer gbytes.GetPool(s.readBufferSize).Put(buf)
-		for {
-			if s.readTimeout > 0 {
-				s.conn.SetReadDeadline(time.Now().Add(s.readTimeout))
-			}
-			n, err := s.conn.Read(buf)
-			if s.readTimeout > 0 {
-				s.conn.SetReadDeadline(time.Time{})
-			}
-			if n > 0 {
-				atomic.AddInt64(s.readBytes, int64(n))
-			}
-			if err != nil {
-				s.onReadError(s.ctx, err)
-				return
-			}
-			s.onData(s.ctx, buf[:n])
-		}
+func (s *EventConn) StartAndWait() {
+	if s.started {
+		return
+	}
+	defer func() {
+		s.Close()
 	}()
+
+	// init Conn
+	if len(s.codec) > 0 || len(s.connFilters) > 0 {
+		conn := NewConn(s.conn)
+		// add filters
+		for _, f := range s.connFilters {
+			conn.AddFilter(f)
+		}
+		// add codec
+		for _, c := range s.codec {
+			conn.AddCodec(c)
+		}
+		s.conn = conn
+	} else {
+		if v, ok := s.conn.(*net.TCPConn); ok {
+			v.SetKeepAlive(true)
+			v.SetKeepAlivePeriod(defaultConnKeepAlivePeriod)
+		}
+	}
+
+	buf := gbytes.GetPool(s.readBufferSize).Get().([]byte)
+	defer gbytes.GetPool(s.readBufferSize).Put(buf)
+	for {
+		if s.readTimeout > 0 {
+			s.conn.SetReadDeadline(time.Now().Add(s.readTimeout))
+		}
+		n, err := s.conn.Read(buf)
+		if s.readTimeout > 0 {
+			s.conn.SetReadDeadline(time.Time{})
+		}
+		if n > 0 {
+			atomic.AddInt64(s.readBytes, int64(n))
+		}
+		if err != nil {
+			s.onReadError(s.ctx, err)
+			return
+		}
+		s.onData(s.ctx, buf[:n])
+	}
+}
+
+func (s *EventConn) Start() {
+	go s.StartAndWait()
 }
 
 func NewEventConn(c net.Conn) *EventConn {
@@ -519,6 +525,7 @@ type ConnBinder struct {
 	readBufSize  int
 	trafficBytes *int64
 	ctx          Context
+	started      bool
 }
 
 func (s *ConnBinder) Ctx() Context {
@@ -564,23 +571,28 @@ func (s *ConnBinder) copy(src, dst net.Conn) error {
 	}
 }
 
-func (s *ConnBinder) Start() {
+func (s *ConnBinder) StartAndWait() {
+	if s.started {
+		return
+	}
 	g := sync.WaitGroup{}
 	g.Add(2)
 	go func() {
-		go func() {
-			defer g.Done()
-			s.copy(s.src, s.dst)
-			s.onSrcClose(s.ctx)
-		}()
-		go func() {
-			defer g.Done()
-			s.copy(s.dst, s.src)
-			s.onDstClose(s.ctx)
-		}()
-		g.Wait()
-		s.onClose()
+		defer g.Done()
+		s.copy(s.src, s.dst)
+		s.onSrcClose(s.ctx)
 	}()
+	go func() {
+		defer g.Done()
+		s.copy(s.dst, s.src)
+		s.onDstClose(s.ctx)
+	}()
+	g.Wait()
+	s.onClose()
+}
+
+func (s *ConnBinder) Start() {
+	go s.StartAndWait()
 }
 
 func NewContextConnBinder(ctx Context, src net.Conn, dst net.Conn) *ConnBinder {

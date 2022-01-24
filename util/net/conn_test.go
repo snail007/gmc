@@ -221,6 +221,7 @@ func TestEventConn(t *testing.T) {
 	}).OnClose(func(ctx Context) {
 		closed = true
 	}).Start()
+	conn.Start()
 	time.AfterFunc(time.Millisecond*1500, func() {
 		conn.Close()
 	})
@@ -355,6 +356,7 @@ func TestNewConnBinder(t *testing.T) {
 		}).OnDstClose(func(ctx Context) {
 			dstClosed = true
 		}).SetReadBufSize(100)
+		b.Start()
 		b.Start()
 		assert.Equal(t, b, b.Ctx().ConnBinder())
 	}).Start()

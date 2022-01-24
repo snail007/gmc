@@ -82,6 +82,7 @@ func TestRateCodec4(t *testing.T) {
 		l0.OnAccept(func(ctx Context, c net.Conn) {
 			c.Write(make([]byte, 10))
 		}).Start()
+		l0.Start()
 		c, _ := Dial("127.0.0.1:"+p, time.Second)
 		burstCnt = 3
 		c.AddCodec(NewRateCodec(3))

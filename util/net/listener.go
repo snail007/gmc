@@ -125,9 +125,10 @@ retry:
 		bc := NewBufferedConn(c)
 		bc.SetReadDeadline(time.Now().Add(s.firstReadTimeout))
 		_, err = bc.ReadByte()
+		bc.SetReadDeadline(time.Time{})
 		if err != nil {
 			bc.Close()
-			return nil, ErrFirstReadTimeout, err
+			return c, ErrFirstReadTimeout, err
 		}
 		bc.UnreadByte()
 		c = bc
@@ -260,7 +261,7 @@ func (s *EventListener) StartAndWait() {
 		switch errTyped {
 		case ErrFirstReadTimeout:
 			s.onFistReadTimeoutError(s.ctx, c, err)
-			return
+			continue
 		case nil:
 			go func() {
 				// accept

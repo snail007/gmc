@@ -27,13 +27,13 @@ func (s socks5Dialer) Dial(_, addr string) (net.Conn, error) {
 	return dialTCP(addr, s.tls, s.timeout)
 }
 
-func NewJumper(proxyURL string, timeout time.Duration) (j Jumper, err error) {
+func NewJumper(proxyURL string, timeout time.Duration) (j *Jumper, err error) {
 	u, e := url.Parse(proxyURL)
 	if e != nil {
 		err = e
 		return
 	}
-	j = Jumper{
+	j = &Jumper{
 		proxyURL: u,
 		timeout:  timeout,
 	}

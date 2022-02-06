@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"golang.org/x/net/proxy"
 	"net"
 	"net/url"
 	"time"
-
-	"golang.org/x/net/proxy"
 )
 
 type Jumper struct {
@@ -18,6 +18,19 @@ type Jumper struct {
 	tls      bool
 	cipher   interface{}
 }
+
+func (j *Jumper) MarshalJSON() ([]byte, error) {
+	return json.Marshal(j.MarshalMap())
+}
+
+func (j *Jumper) MarshalMap() map[string]interface{} {
+	d := map[string]interface{}{
+		"proxy_url": j.proxyURL.String(),
+		"timeout":   j.timeout / 1e6,
+	}
+	return d
+}
+
 type socks5Dialer struct {
 	timeout time.Duration
 	tls     bool

@@ -417,7 +417,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 			ctx, cancel := context.WithTimeout(c, timeout)
 			defer cancel()
 			if proxyURL != nil {
-				var j gproxy.Jumper
+				var j *gproxy.Jumper
 				j, err = gproxy.NewJumper(proxyURL.String(), timeout)
 				if err != nil {
 					return

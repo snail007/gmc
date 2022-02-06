@@ -171,6 +171,8 @@ type APIServer interface {
 	Listeners() []net.Listener
 	Listener() net.Listener
 	Ctx() Ctx
+	ListenerFactory() func() (net.Listener, error)
+	SetListenerFactory(listenerFactory func() (net.Listener, error))
 }
 
 type HTTPServer interface {
@@ -198,6 +200,8 @@ type HTTPServer interface {
 	PrintRouteTable(w io.Writer)
 	SetLog(l Logger)
 	Ctx() Ctx
+	ListenerFactory() func() (net.Listener, error)
+	SetListenerFactory(listenerFactory func() (net.Listener, error))
 }
 
 type Controller interface {

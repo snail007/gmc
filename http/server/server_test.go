@@ -10,11 +10,9 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
-
 	"github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	gsession "github.com/snail007/gmc/http/session"
-
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -600,4 +598,27 @@ func mockHTTPServer(cfg ...gcore.Config) *HTTPServer {
 	tpl, _ := gcore.ProviderTemplate()(s.ctx, "../template/tests/views")
 	s.SetTpl(tpl)
 	return s
+}
+
+func TestHTTPServer_createListener(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.InjectListeners([]net.Listener{&MyListener{}})
+	e := s.createListener()
+	assert.Nil(e)
+	assert.IsType((*MyListener)(nil), s.listener)
+	s.InjectListeners([]net.Listener{nil})
+
+	s.SetListenerFactory(func() (net.Listener, error) {
+		return &MyListener1{}, nil
+	})
+	assert.NotNil(s.ListenerFactory())
+	e = s.createListener()
+	assert.Nil(e)
+	assert.IsType((*MyListener1)(nil), s.listener)
+
+	s.InjectListeners([]net.Listener{&MyListener{}})
+	e = s.createListener()
+	assert.Nil(e)
+	assert.IsType((*MyListener)(nil), s.listener)
 }

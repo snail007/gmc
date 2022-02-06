@@ -20,6 +20,7 @@ type Listener struct {
 	onConnClose                   CloseHandler
 	filters                       []ConnFilter
 	firstReadTimeout              time.Duration
+	onFistReadTimeoutError        FirstReadTimeoutHandler
 	connCount                     *int64
 	autoCloseConnOnReadWriteError bool
 	ctx                           Context
@@ -71,12 +72,16 @@ func (s *Listener) ConnCount() int64 {
 	return atomic.LoadInt64(s.connCount)
 }
 
+func (s *Listener) OnFistReadTimeout(h FirstReadTimeoutHandler) {
+	s.onFistReadTimeoutError = h
+}
+
 func (s *Listener) Accept() (c net.Conn, err error) {
-	c, err, _ = s.accept()
+	c, err = s.accept()
 	return
 }
 
-func (s *Listener) accept() (c net.Conn, errTyped, err error) {
+func (s *Listener) accept() (c net.Conn, err error) {
 	var tempDelay time.Duration // how long to sleep on accept failure
 retry:
 	for {
@@ -94,7 +99,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue
 			} else {
-				return nil, err, err
+				return nil, err
 			}
 		}
 		break
@@ -113,7 +118,7 @@ retry:
 		goto retry
 	}
 	if err != nil {
-		return nil, err, err
+		return nil, err
 	}
 	c = fConn
 
@@ -128,7 +133,10 @@ retry:
 		bc.SetReadDeadline(time.Time{})
 		if err != nil {
 			bc.Close()
-			return c, ErrFirstReadTimeout, err
+			if s.onFistReadTimeoutError != nil {
+				s.onFistReadTimeoutError(ctx, c, err)
+			}
+			goto retry
 		}
 		bc.UnreadByte()
 		c = bc
@@ -178,16 +186,15 @@ func NewContextListener(ctx Context, l net.Listener) *Listener {
 }
 
 type EventListener struct {
-	l                      *Listener
-	onClose                CloseHandler
-	onAcceptError          ErrorHandler
-	onAccept               AcceptHandler
-	onFistReadTimeoutError FirstReadTimeoutHandler
-	closeOnce              *sync.Once
-	addr                   *Addr
-	ctx                    Context
-	autoCloseConn          bool
-	started                bool
+	l             *Listener
+	onClose       CloseHandler
+	onAcceptError ErrorHandler
+	onAccept      AcceptHandler
+	closeOnce     *sync.Once
+	addr          *Addr
+	ctx           Context
+	autoCloseConn bool
+	started       bool
 }
 
 // SetAutoCloseConn if true, EventListener will close Conn after accept handler return.
@@ -224,7 +231,7 @@ func (s *EventListener) AddListenerFilter(f ConnFilter) *EventListener {
 }
 
 func (s *EventListener) OnFistReadTimeout(h FirstReadTimeoutHandler) *EventListener {
-	s.onFistReadTimeoutError = h
+	s.l.onFistReadTimeoutError = h
 	return s
 }
 
@@ -256,12 +263,9 @@ func (s *EventListener) StartAndWait() {
 		s.Close()
 	}()
 	for {
-		c, errTyped, err := s.l.accept()
+		c, err := s.l.accept()
 		// root conn context
-		switch errTyped {
-		case ErrFirstReadTimeout:
-			s.onFistReadTimeoutError(s.ctx, c, err)
-			continue
+		switch err {
 		case nil:
 			go func() {
 				// accept
@@ -305,9 +309,8 @@ func NewContextEventListener(ctx Context, l net.Listener) *EventListener {
 			c.Close()
 			fmt.Println("[WARN] you should using OnAccept() to set a accept handler to process the connection")
 		},
-		onAcceptError:          func(Context, error) {},
-		onClose:                func(Context) {},
-		onFistReadTimeoutError: func(Context, net.Conn, error) {},
+		onAcceptError: func(Context, error) {},
+		onClose:       func(Context) {},
 	}
 	ctx.SetEventListener(el)
 	el.ctx = ctx

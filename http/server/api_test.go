@@ -7,6 +7,7 @@ package ghttpserver
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	"net"
 	"testing"
 
 	ghttputil "github.com/snail007/gmc/internal/util/http"
@@ -117,6 +118,7 @@ func TestHandle500(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal("500", data)
 }
+
 func TestHandle500_1(t *testing.T) {
 	assert := assert.New(t)
 	api := NewAPIServer(gcore.ProviderCtx()(), ":")
@@ -130,4 +132,51 @@ func TestHandle500_1(t *testing.T) {
 	data, _, err := mockResponse(w)
 	assert.Nil(err)
 	assert.Equal("Internal Server Error", data)
+}
+
+type MyListener struct {
+	net.Listener
+}
+
+func (s *MyListener) Addr() net.Addr {
+	return &net.TCPAddr{
+		IP:   net.ParseIP("0.0.0.0"),
+		Port: 123,
+		Zone: "",
+	}
+}
+
+type MyListener1 struct {
+	net.Listener
+}
+
+func (s *MyListener1) Addr() net.Addr {
+	return &net.TCPAddr{
+		IP:   net.ParseIP("0.0.0.0"),
+		Port: 123,
+		Zone: "",
+	}
+}
+
+func TestAPIServer_createListener(t *testing.T) {
+	assert := assert.New(t)
+	api := NewAPIServer(gcore.ProviderCtx()(), ":")
+	api.InjectListeners([]net.Listener{&MyListener{}})
+	e := api.createListener()
+	assert.Nil(e)
+	assert.IsType((*MyListener)(nil), api.listener)
+	api.InjectListeners([]net.Listener{nil})
+
+	api.SetListenerFactory(func() (net.Listener, error) {
+		return &MyListener1{}, nil
+	})
+	assert.NotNil(api.ListenerFactory())
+	e = api.createListener()
+	assert.Nil(e)
+	assert.IsType((*MyListener1)(nil), api.listener)
+
+	api.InjectListeners([]net.Listener{&MyListener{}})
+	e = api.createListener()
+	assert.Nil(e)
+	assert.IsType((*MyListener)(nil), api.listener)
 }

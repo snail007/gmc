@@ -27,6 +27,7 @@ import (
 
 type APIServer struct {
 	listener          net.Listener
+	listenerFactory   func() (net.Listener, error)
 	server            *http.Server
 	address           string
 	router            gcore.HTTPRouter
@@ -109,6 +110,14 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, er
 	api.config = config
 	api.ShowErrorStack(config.GetBool("apiserver.showerrorstack"))
 	return
+}
+
+func (this *APIServer) ListenerFactory() func() (net.Listener, error) {
+	return this.listenerFactory
+}
+
+func (this *APIServer) SetListenerFactory(listenerFactory func() (net.Listener, error)) {
+	this.listenerFactory = listenerFactory
 }
 
 func (this *APIServer) Ctx() gcore.Ctx {
@@ -236,17 +245,32 @@ func (this *APIServer) Group(path string) gcore.APIServer {
 func (this *APIServer) PrintRouteTable(w io.Writer) {
 	this.router.PrintRouteTable(w)
 }
-func (this *APIServer) Run() (err error) {
-	if this.listener == nil {
-		this.listener, err = net.Listen("tcp", this.address)
-		if err != nil {
-			return
+
+func (this *APIServer) createListener() (err error) {
+	defer func() {
+		if err == nil {
+			this.address = this.listener.Addr().String()
 		}
+	}()
+	if this.listener != nil {
+		return
+	}
+	if this.listenerFactory != nil {
+		this.listener, err = this.listenerFactory()
+		return
+	}
+	this.listener, err = net.Listen("tcp", this.address)
+	return
+}
+
+func (this *APIServer) Run() (err error) {
+	err = this.createListener()
+	if err != nil {
+		return
 	}
 	if this.config != nil && this.config.GetBool("apiserver.printroute") {
 		this.router.PrintRouteTable(os.Stdout)
 	}
-	this.address = this.listener.Addr().String()
 	go func() {
 		var err error
 		if this.certFile != "" && this.keyFile != "" {

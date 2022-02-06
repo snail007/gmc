@@ -43,18 +43,19 @@ func SetBinData(data map[string]string) {
 }
 
 type HTTPServer struct {
-	i18n         gcore.I18n
-	tpl          gcore.Template
-	sessionStore gcore.SessionStorage
-	router       gcore.HTTPRouter
-	logger       gcore.Logger
-	addr         string
-	listener     net.Listener
-	server       *http.Server
-	connCnt      *int64
-	config       gcore.Config
-	handler40x   func(ctx gcore.Ctx, tpl gcore.Template)
-	handler500   func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
+	i18n            gcore.I18n
+	tpl             gcore.Template
+	sessionStore    gcore.SessionStorage
+	router          gcore.HTTPRouter
+	logger          gcore.Logger
+	addr            string
+	listener        net.Listener
+	listenerFactory func() (net.Listener, error)
+	server          *http.Server
+	connCnt         *int64
+	config          gcore.Config
+	handler40x      func(ctx gcore.Ctx, tpl gcore.Template)
+	handler500      func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
 	//just for testing
 	isTestNotClosedError bool
 	staticDir            string
@@ -89,6 +90,14 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 	}
 	ctx.SetWebServer(s)
 	return s
+}
+
+func (this *HTTPServer) ListenerFactory() func() (net.Listener, error) {
+	return this.listenerFactory
+}
+
+func (this *HTTPServer) SetListenerFactory(listenerFactory func() (net.Listener, error)) {
+	this.listenerFactory = listenerFactory
 }
 
 //Init implements service.Service Init
@@ -333,15 +342,24 @@ func (s *HTTPServer) AddMiddleware3(m gcore.Middleware) {
 func (s *HTTPServer) bind(addr string) {
 	s.addr = addr
 }
+
 func (s *HTTPServer) createListener() (err error) {
-	if s.listener == nil {
-		s.listener, err = net.Listen("tcp", s.addr)
+	defer func() {
 		if err == nil {
 			s.addr = s.listener.Addr().String()
 		}
+	}()
+	if s.listener != nil {
+		return
 	}
+	if s.listenerFactory != nil {
+		s.listener, err = s.listenerFactory()
+		return
+	}
+	s.listener, err = net.Listen("tcp", s.addr)
 	return
 }
+
 func (s *HTTPServer) Listen() (err error) {
 	err = s.createListener()
 	if err != nil {

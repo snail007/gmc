@@ -6,7 +6,6 @@
 package glog
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"log"
@@ -303,9 +302,7 @@ func (s *Logger) With(namespace string) gcore.Logger {
 }
 
 func (s *Logger) WithRate(duration time.Duration) gcore.Logger {
-	// clear limiter bucket
-	r := rate.NewLimiter(rate.Every(duration), 1024)
-	r.WaitN(context.Background(), r.Burst())
+	r := rate.NewLimiter(rate.Every(duration), 1)
 	l := s.clone()
 	l.lim = r
 	return l

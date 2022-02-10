@@ -7,6 +7,7 @@ package glog_test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -312,5 +313,26 @@ func TestGLog_With(t *testing.T) {
 	assert.Nil(err)
 	t.Log(out)
 	assert.True(strings.Contains(out, "[api] INFO abc\n"))
+	assert.Contains(out, "glog_test.go")
+}
+
+func TestGLog_AddLevelWriter(t *testing.T) {
+	if gtest.RunProcess(t, func() {
+		var out bytes.Buffer
+		l := glog.New()
+		l.AddLevelWriter(&out, gcore.LogLeveInfo)
+		l.SetLevel(gcore.LogLeveNone)
+		l.Tracef("foo1")
+		l.Info("foo2")
+		fmt.Println(out.String())
+	}) {
+		return
+	}
+	assert := assert2.New(t)
+	out, _, err := gtest.NewProcess(t).Wait()
+	assert.Nil(err)
+	t.Log(">>>>",out)
+	assert.False(strings.Contains(out, "TRACE foo1\n"))
+	assert.True(strings.Contains(out, "INFO foo2\n"))
 	assert.Contains(out, "glog_test.go")
 }

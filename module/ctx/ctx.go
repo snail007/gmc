@@ -44,7 +44,7 @@ type Ctx struct {
 	conn             net.Conn
 	metadata         *gmap.Map
 	controllerMethod string
-	controller      gcore.Controller
+	controller       gcore.Controller
 }
 
 func (this *Ctx) Controller() gcore.Controller {

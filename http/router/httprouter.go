@@ -252,7 +252,7 @@ func (s *HTTPRouter) call(fn func()) (isStop bool) {
 	func() {
 		defer gcore.ProviderError()().Recover(func(e interface{}) {
 			if fmt.Sprintf("%s", e) == "__STOP__" {
-				isStop=true
+				isStop = true
 				return
 			}
 			panic(gcore.ProviderError()().Wrap(e))

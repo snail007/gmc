@@ -242,3 +242,54 @@ func TestLogger_Write2(t *testing.T) {
 	assert.Equal(!strings.Contains(out.String(), "log/log_test.go:"),
 		strings.HasSuffix(out.String(), "abc\n"))
 }
+
+func TestLogger_Write3(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := glog.New()
+	l.SetLevel(gcore.LogLeveNone)
+	l.AddLevelWriter(&out, gcore.LogLevelTrace)
+	l.Trace("foo1")
+	l.Debug("foo2")
+	l.Info("foo3")
+	l.Warn("foo4")
+	assert.Contains(out.String(), "foo1")
+	assert.Contains(out.String(), "foo2")
+	assert.Contains(out.String(), "foo3")
+	assert.Contains(out.String(), "foo4")
+}
+
+func TestLogger_Write4(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := glog.New()
+	l.SetLevel(gcore.LogLeveNone)
+	l.AddLevelWriter(&out, gcore.LogLevelTrace)
+	l.Tracef("foo1")
+	l.Debugf("foo2")
+	l.Infof("foo3")
+	l.Warnf("foo4")
+	assert.Contains(out.String(), "foo1")
+	assert.Contains(out.String(), "foo2")
+	assert.Contains(out.String(), "foo3")
+	assert.Contains(out.String(), "foo4")
+}
+
+func TestLogger_Write5(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := glog.New()
+	l.AddLevelWriter(&out, gcore.LogLeveInfo)
+	l.SetLevel(gcore.LogLeveNone)
+	l.Tracef("foo1")
+	l.Debugf("foo2")
+	l.Infof("foo3")
+	l.Warnf("foo4")
+	assert.NotContains(out.String(), "foo1")
+	assert.NotContains(out.String(), "foo2")
+	assert.Contains(out.String(), "foo3")
+	assert.Contains(out.String(), "foo4")
+}

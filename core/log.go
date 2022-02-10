@@ -54,7 +54,8 @@ type Logger interface {
 	Namespace() string
 
 	Writer() io.Writer
-	AddWriter(writer io.Writer) Logger
+	AddWriter(io.Writer) Logger
+	AddLevelWriter(io.Writer, LogLevel) Logger
 	SetOutput(w io.Writer)
 	SetFlag(f LogFlag)
 

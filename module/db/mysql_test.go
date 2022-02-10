@@ -213,22 +213,21 @@ func TestCount(t *testing.T) {
 	db := db()
 	db.ExecSQL("drop table count_test")
 	db.ExecSQL("create table count_test(id int)")
-	for i:=1;i<=3;i++{
-		db.Exec(db.AR().Insert("count_test",gmap.M{
-			"id":i,
+	for i := 1; i <= 3; i++ {
+		db.Exec(db.AR().Insert("count_test", gmap.M{
+			"id": i,
 		}))
 	}
-	count,err:=Table("count_test",db).Count(nil)
+	count, err := Table("count_test", db).Count(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 3,int(count))
+	assert.Equal(t, 3, int(count))
 	db.ExecSQL("delete table count_test")
 }
 func db() gcore.Database {
 	group := NewMySQLDBGroup("default")
 	group.Regist("default", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
- 	return group.DB()
+	return group.DB()
 }
-
 
 type User struct {
 	Name       string    `column:"name"`

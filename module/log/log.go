@@ -95,6 +95,11 @@ func AddWriter(writer io.Writer) gcore.Logger {
 	return logger
 }
 
+func AddLevelWriter(writer io.Writer, level gcore.LogLevel) gcore.Logger {
+	logger.AddLevelWriter(writer, level)
+	return logger
+}
+
 func SetRateCallback(cb func(msg string)) gcore.Logger {
 	logger.SetRateCallback(cb)
 	return logger
@@ -153,8 +158,9 @@ func SetExitFunc(exitFunc func(int)) {
 }
 
 type bufChnItem struct {
-	level gcore.LogLevel
-	msg   string
+	writer *levelWriter
+	level  gcore.LogLevel
+	msg    string
 }
 type Logger struct {
 	l           *log.Logger
@@ -173,6 +179,7 @@ type Logger struct {
 	limCallback func(msg string)
 	// for testing purpose
 	skipCheckGMC bool
+	levelWriters []*levelWriter
 }
 
 func (s *Logger) clone() *Logger {
@@ -191,6 +198,7 @@ func (s *Logger) clone() *Logger {
 		flag:         s.flag,
 		lim:          s.lim,
 		skipCheckGMC: s.skipCheckGMC,
+		levelWriters: s.levelWriters,
 	}
 }
 
@@ -206,6 +214,17 @@ func (s *Logger) ExitFunc() func(int) {
 
 func (s *Logger) SetRateCallback(cb func(msg string)) gcore.Logger {
 	s.limCallback = cb
+	return s
+}
+
+func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger {
+	s.levelWriters = append(s.levelWriters, newLogWriter(w, level))
+	min := gcore.LogLeveNone
+	for _, wr := range s.levelWriters {
+		if wr.level < min {
+			min = wr.level
+		}
+	}
 	return s
 }
 
@@ -268,7 +287,7 @@ func (s *Logger) asyncWriterInit() {
 	go func() {
 		for {
 			item := <-s.bufChn
-			s.output(item.msg)
+			s.output(item.msg, item.writer)
 			func() {
 				defer func() {
 					_ = recover()
@@ -323,105 +342,230 @@ func (s *Logger) namespace() string {
 	return ""
 }
 
+func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
+	for _, w := range s.levelWriters {
+		if w.level <= level {
+			s.write(str, w)
+		}
+	}
+}
+
+func (s *Logger) canLevelWrite(level gcore.LogLevel) bool {
+	for _, w := range s.levelWriters {
+		if w.level <= level {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Logger) Panicf(format string, v ...interface{}) {
-	if s.level > gcore.LogLevePanic {
+	levelWrite := s.canLevelWrite(gcore.LogLevePanic)
+	if s.level > gcore.LogLevePanic && !levelWrite {
 		return
 	}
 	str := s.caller(fmt.Sprintf(s.namespace()+"PANIC "+format, v...), s.skip())
-	s.write(str)
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLevePanic)
+	}
+
+	if s.level <= gcore.LogLevePanic {
+		s.write(str, nil)
+	}
 	s.WaitAsyncDone()
 	panic(str)
 }
 
 func (s *Logger) Panic(v ...interface{}) {
-	if s.level > gcore.LogLevePanic {
+	levelWrite := s.canLevelWrite(gcore.LogLevePanic)
+	if s.level > gcore.LogLevePanic && !levelWrite {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "PANIC "}
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
-	s.write(str)
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLevePanic)
+	}
+
+	if s.level <= gcore.LogLevePanic {
+		s.write(str, nil)
+	}
 	s.WaitAsyncDone()
 	panic(str)
 }
 
 func (s *Logger) Errorf(format string, v ...interface{}) {
-	if s.level > gcore.LogLeveError {
+	levelWrite := s.canLevelWrite(gcore.LogLeveError)
+	if s.level > gcore.LogLeveError && !levelWrite {
 		return
 	}
-	s.write(s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip()))
+
+	str := s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveError)
+	}
+
+	if s.level <= gcore.LogLeveError {
+		s.write(str, nil)
+	}
 	s.WaitAsyncDone()
 	s.exit()
 }
 
 func (s *Logger) Error(v ...interface{}) {
-	if s.level > gcore.LogLeveError {
+	levelWrite := s.canLevelWrite(gcore.LogLeveError)
+	if s.level > gcore.LogLeveError && !levelWrite {
 		return
 	}
+
 	v0 := []interface{}{s.namespace() + "ERROR "}
-	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveError)
+	}
+
+	if s.level <= gcore.LogLeveError {
+		s.write(str, nil)
+	}
 	s.WaitAsyncDone()
 	s.exit()
 }
 
 func (s *Logger) Warnf(format string, v ...interface{}) {
-	if s.level > gcore.LogLeveWarn {
+	levelWrite := s.canLevelWrite(gcore.LogLeveWarn)
+	if s.level > gcore.LogLeveWarn && !levelWrite {
 		return
 	}
-	s.write(s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip()))
+	str := s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveWarn)
+	}
+
+	if s.level <= gcore.LogLeveWarn {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Warn(v ...interface{}) {
-	if s.level > gcore.LogLeveWarn {
+	levelWrite := s.canLevelWrite(gcore.LogLeveWarn)
+	if s.level > gcore.LogLeveWarn && !levelWrite {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "WARN "}
-	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveWarn)
+	}
+
+	if s.level <= gcore.LogLeveWarn {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Infof(format string, v ...interface{}) {
-	if s.level > gcore.LogLeveInfo {
+	levelWrite := s.canLevelWrite(gcore.LogLeveInfo)
+	if s.level > gcore.LogLeveInfo && !levelWrite {
 		return
 	}
-	s.write(s.caller(fmt.Sprintf(s.namespace()+"INFO "+format, v...), s.skip()))
+	str := s.caller(fmt.Sprintf(s.namespace()+"INFO "+format, v...), s.skip())
 
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveInfo)
+	}
+
+	if s.level <= gcore.LogLeveInfo {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Info(v ...interface{}) {
-	if s.level > gcore.LogLeveInfo {
+	levelWrite := s.canLevelWrite(gcore.LogLeveInfo)
+	if s.level > gcore.LogLeveInfo && !levelWrite {
 		return
 	}
+
 	v0 := []interface{}{s.namespace() + "INFO "}
-	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveInfo)
+	}
+
+	if s.level <= gcore.LogLeveInfo {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Debugf(format string, v ...interface{}) {
-	if s.level > gcore.LogLeveDebug {
+	levelWrite := s.canLevelWrite(gcore.LogLeveDebug)
+	if s.level > gcore.LogLeveDebug && !levelWrite {
 		return
 	}
-	s.write(s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip()))
+	str := s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveDebug)
+	}
+
+	if s.level <= gcore.LogLeveDebug {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Debug(v ...interface{}) {
-	if s.level > gcore.LogLeveDebug {
+	levelWrite := s.canLevelWrite(gcore.LogLeveDebug)
+	if s.level > gcore.LogLeveDebug && !levelWrite {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "DEBUG "}
-	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveDebug)
+	}
+
+	if s.level <= gcore.LogLeveDebug {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Tracef(format string, v ...interface{}) {
-	if s.level > gcore.LogLevelTrace {
+	levelWrite := s.canLevelWrite(gcore.LogLevelTrace)
+	if s.level > gcore.LogLevelTrace && !levelWrite {
 		return
 	}
-	s.write(s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip()))
+	str := s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLevelTrace)
+	}
+
+	if s.level <= gcore.LogLevelTrace {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Trace(v ...interface{}) {
-	if s.level > gcore.LogLevelTrace {
+	levelWrite := s.canLevelWrite(gcore.LogLevelTrace)
+	if s.level > gcore.LogLevelTrace && !levelWrite {
 		return
 	}
 	v0 := []interface{}{s.namespace() + "TRACE "}
-	s.write(s.caller(fmt.Sprint(append(v0, v...)...), s.skip()))
+	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLevelTrace)
+	}
+
+	if s.level <= gcore.LogLevelTrace {
+		s.write(str, nil)
+	}
 }
 
 func (s *Logger) Writer() io.Writer {
@@ -436,37 +580,44 @@ func (s *Logger) SetFlag(f gcore.LogFlag) {
 	s.flag = f
 }
 
-func (s *Logger) write(str string) {
+func (s *Logger) write(str string, writer *levelWriter) {
 	if s.async {
 		select {
 		case s.bufChn <- bufChnItem{
-			msg: str,
+			msg:    str,
+			writer: writer,
 		}:
 			s.asyncWG.Add(1)
 		default:
-			s.output("WARN gmclog buf chan overflow")
+			s.output("WARN gmclog buf chan overflow", writer)
 		}
 		return
 	}
-	s.output(str)
+	s.output(str, writer)
 }
 
 func (s *Logger) Write(msg string) {
-	s.write(s.caller(msg, s.skip()))
+	s.write(s.caller(msg, s.skip()), nil)
 }
 
 func (s *Logger) WriteRaw(msg string) {
-	s.write(msg)
+	s.write(msg, nil)
 }
 
-func (s *Logger) output(str string) {
+func (s *Logger) output(str string, writer *levelWriter) {
 	if s.lim != nil && !s.lim.Allow() {
 		return
 	}
 	if s.lim != nil && s.limCallback != nil {
 		go s.limCallback(str)
 	}
-	s.l.Print(str)
+	if writer != nil {
+		writer.lock.Lock()
+		defer writer.lock.Unlock()
+		writer.Write([]byte(str))
+	} else {
+		s.l.Print(str)
+	}
 }
 
 func (s *Logger) skip() int {
@@ -498,4 +649,14 @@ func (s *Logger) caller(msg string, skip int) string {
 	}
 	msg = fmt.Sprintf("%s:%d ", file, line) + msg
 	return msg
+}
+
+type levelWriter struct {
+	io.Writer
+	level gcore.LogLevel
+	lock  *sync.Mutex
+}
+
+func newLogWriter(writer io.Writer, level gcore.LogLevel) *levelWriter {
+	return &levelWriter{Writer: writer, level: level, lock: &sync.Mutex{}}
 }

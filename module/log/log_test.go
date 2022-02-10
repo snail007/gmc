@@ -254,10 +254,10 @@ func TestLogger_Write3(t *testing.T) {
 	l.Debug("foo2")
 	l.Info("foo3")
 	l.Warn("foo4")
-	assert.Contains(out.String(), "foo1")
-	assert.Contains(out.String(), "foo2")
-	assert.Contains(out.String(), "foo3")
-	assert.Contains(out.String(), "foo4")
+	assert.Contains(out.String(), "foo1\n")
+	assert.Contains(out.String(), "foo2\n")
+	assert.Contains(out.String(), "foo3\n")
+	assert.Contains(out.String(), "foo4\n")
 }
 
 func TestLogger_Write4(t *testing.T) {
@@ -271,10 +271,10 @@ func TestLogger_Write4(t *testing.T) {
 	l.Debugf("foo2")
 	l.Infof("foo3")
 	l.Warnf("foo4")
-	assert.Contains(out.String(), "foo1")
-	assert.Contains(out.String(), "foo2")
-	assert.Contains(out.String(), "foo3")
-	assert.Contains(out.String(), "foo4")
+	assert.Contains(out.String(), "foo1\n")
+	assert.Contains(out.String(), "foo2\n")
+	assert.Contains(out.String(), "foo3\n")
+	assert.Contains(out.String(), "foo4\n")
 }
 
 func TestLogger_Write5(t *testing.T) {
@@ -290,6 +290,6 @@ func TestLogger_Write5(t *testing.T) {
 	l.Warnf("foo4")
 	assert.NotContains(out.String(), "foo1")
 	assert.NotContains(out.String(), "foo2")
-	assert.Contains(out.String(), "foo3")
-	assert.Contains(out.String(), "foo4")
+	assert.Contains(out.String(), "foo3\n")
+	assert.Contains(out.String(), "foo4\n")
 }

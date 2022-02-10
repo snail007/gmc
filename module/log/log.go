@@ -614,7 +614,11 @@ func (s *Logger) output(str string, writer *levelWriter) {
 	if writer != nil {
 		writer.lock.Lock()
 		defer writer.lock.Unlock()
-		writer.Write([]byte(str))
+		ln := ""
+		if len(str) == 0 || str[len(str)-1] != '\n' {
+			ln = "\n"
+		}
+		writer.Write([]byte(str + ln))
 	} else {
 		s.l.Print(str)
 	}

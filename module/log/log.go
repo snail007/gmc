@@ -219,12 +219,6 @@ func (s *Logger) SetRateCallback(cb func(msg string)) gcore.Logger {
 
 func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger {
 	s.levelWriters = append(s.levelWriters, newLogWriter(w, level))
-	min := gcore.LogLeveNone
-	for _, wr := range s.levelWriters {
-		if wr.level < min {
-			min = wr.level
-		}
-	}
 	return s
 }
 

@@ -275,6 +275,7 @@ func TestLogger_Write4(t *testing.T) {
 	assert.Contains(out.String(), "foo2\n")
 	assert.Contains(out.String(), "foo3\n")
 	assert.Contains(out.String(), "foo4\n")
+	t.Log(out.String())
 }
 
 func TestLogger_Write5(t *testing.T) {

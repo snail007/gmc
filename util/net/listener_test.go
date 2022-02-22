@@ -407,7 +407,7 @@ func TestNewEventListener(t *testing.T) {
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.Write([]byte("hello"))
 		conn = ctx.Data("bufConn").(net.Conn)
-		assert.Nil(t, c.(*Conn).ctx.Data("cfg1"))
+		assert.Equal(t,"abc", c.(*Conn).ctx.Data("cfg1"),)
 		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg2"))
 	}).Start()
 	time.Sleep(time.Second)

@@ -43,7 +43,7 @@ func (s *defaultContext) Clone() Context {
 		eventConn:     s.eventConn,
 		eventListener: s.eventListener,
 		connBinder:    s.connBinder,
-		data:          gmap.New(),
+		data:          s.data.Clone(),
 		hijacked:      s.hijacked,
 	}
 }

@@ -12,6 +12,7 @@ import (
 
 // Daemon make your program ability of 1.daemonize 2.forever 3.logging stdout to file.
 // If you used Daemon, you can run your program with arguments `--daemon` `--forever` `--flog foo.log` optionally.
+// If you want to disable logging, specify the -flog null.
 // mainFunc is your `main`, if onKill not nil, it will be called when one signal of syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM,
 // syscall.SIGQUIT received,
 func Daemon(mainFunc func(), onKill func()) (err error) {

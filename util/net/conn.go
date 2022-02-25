@@ -31,17 +31,6 @@ type codecs struct {
 
 func (s *codecs) Call(ctx Context) (conn net.Conn, err error) {
 	conn, err = s.call(ctx)
-	if err != nil {
-		// if occurs error, try clean.
-		for _, codec := range s.codecs {
-			func() {
-				defer func() {
-					_ = recover()
-				}()
-				codec.Close()
-			}()
-		}
-	}
 	return
 }
 

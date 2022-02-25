@@ -260,6 +260,13 @@ func (s *TLSClientCodec) AddToHTTPClient(httpClient *http.Client) *TLSClientCode
 	return s
 }
 
+func (s *TLSClientCodec) Close() error {
+	if s.Conn != nil {
+		return s.Conn.Close()
+	}
+	return nil
+}
+
 func NewTLSClientCodec() *TLSClientCodec {
 	s := &TLSClientCodec{
 		tlsCodec: tlsCodec{
@@ -308,6 +315,13 @@ func (s *TLSServerCodec) RequireClientAuth(b bool) *TLSServerCodec {
 func (s *TLSServerCodec) AddClientCa(caPEMBytes []byte) *TLSServerCodec {
 	s.addRootCaBytes(caPEMBytes)
 	return s
+}
+
+func (s *TLSServerCodec) Close() error {
+	if s.Conn != nil {
+		return s.Conn.Close()
+	}
+	return nil
 }
 
 func NewTLSServerCodec() *TLSServerCodec {

@@ -226,7 +226,9 @@ func (s *HeartbeatCodec) Close() (err error) {
 		s.ctxCancel()
 		s.bufReader.Close()
 		s.bufWriter.Close()
-		err = s.Conn.Close()
+		if s.Conn != nil {
+			err = s.Conn.Close()
+		}
 	})
 	return
 }

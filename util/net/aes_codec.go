@@ -58,6 +58,13 @@ func (s *AESCodec) Write(p []byte) (n int, err error) {
 	return s.w.Write(p)
 }
 
+func (s *AESCodec) Close() error {
+	if s.Conn != nil {
+		return s.Conn.Close()
+	}
+	return nil
+}
+
 func (s *AESCodec) Initialize(ctx Context, next NextCodec) (conn net.Conn, err error) {
 	block, err := aesNewCipher(s.key)
 	if err != nil {

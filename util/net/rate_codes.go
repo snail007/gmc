@@ -66,7 +66,9 @@ func (s *RateCodec) Close() (err error) {
 	s.closeOnce.Do(func() {
 		go s.readCancel()
 		s.writCancel()
-		err = s.Conn.Close()
+		if s.Conn!=nil{
+			err = s.Conn.Close()
+		}
 	})
 	return
 }

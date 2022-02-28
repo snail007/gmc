@@ -39,7 +39,7 @@ type (
 		SetConnBinder(connBinder *ConnBinder) Context
 		Hijacked() bool
 		ReadBytes() int64
-		Hijack(c ...Codec) (net.Conn, error)
+		Hijack() error
 		WriteBytes() int64
 		Data(key interface{}) interface{}
 		SetData(key, value interface{}) Context
@@ -56,16 +56,11 @@ type (
 	}
 	Codec interface {
 		net.Conn
-		Initialize(ctx Context, next NextCodec) (net.Conn, error)
-	}
-	NextCodec interface {
-		Call(ctx Context) (net.Conn, error)
-	}
-	NextConnFilter interface {
-		Call(ctx Context, c net.Conn) (net.Conn, error)
+		SetConn(conn net.Conn) Codec
+		Initialize(ctx Context) error
 	}
 	ErrorHandler            func(ctx Context, err error)
-	ConnFilter              func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error)
+	ConnFilter              func(ctx Context, c net.Conn) (net.Conn, error)
 	CloseHandler            func(ctx Context)
 	DataHandler             func(ctx Context, data []byte)
 	AcceptHandler           func(ctx Context, c net.Conn)

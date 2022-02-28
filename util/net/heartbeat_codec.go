@@ -186,6 +186,11 @@ retry:
 	}
 }
 
+func (s *HeartbeatCodec) SetConn(c net.Conn) Codec {
+	s.Conn = c
+	return s
+}
+
 func (s *HeartbeatCodec) Read(b []byte) (n int, err error) {
 	done := make(chan bool)
 	go func() {
@@ -226,9 +231,7 @@ func (s *HeartbeatCodec) Close() (err error) {
 		s.ctxCancel()
 		s.bufReader.Close()
 		s.bufWriter.Close()
-		if s.Conn != nil {
-			err = s.Conn.Close()
-		}
+		err = s.Conn.Close()
 	})
 	return
 }
@@ -251,8 +254,7 @@ func (s *HeartbeatCodec) SetTimeout(timeout time.Duration) *HeartbeatCodec {
 	return s
 }
 
-func (s *HeartbeatCodec) Initialize(ctx Context, next NextCodec) (conn net.Conn, err error) {
-	s.Conn = ctx.Conn()
+func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
 	s.bufReader, s.bufWriter = io.Pipe()
 	if s.timeout == 0 {
 		s.timeout = time.Second * 5
@@ -265,7 +267,7 @@ func (s *HeartbeatCodec) Initialize(ctx Context, next NextCodec) (conn net.Conn,
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	go s.backgroundRead()
 	go s.heartbeat()
-	return next.Call(ctx.SetConn(s))
+	return
 }
 
 func NewHeartbeatCodec() *HeartbeatCodec {

@@ -44,6 +44,11 @@ func NewRateCodec(bytesPerSecond int64) *RateCodec {
 	return r
 }
 
+func (s *RateCodec) SetConn(c net.Conn) Codec {
+	s.Conn = c
+	return s
+}
+
 func (s *RateCodec) Read(p []byte) (int, error) {
 	n, err := s.Conn.Read(p)
 	if err != nil {
@@ -66,9 +71,7 @@ func (s *RateCodec) Close() (err error) {
 	s.closeOnce.Do(func() {
 		go s.readCancel()
 		s.writCancel()
-		if s.Conn!=nil{
-			err = s.Conn.Close()
-		}
+		err = s.Conn.Close()
 	})
 	return
 }
@@ -100,7 +103,6 @@ func (s *RateCodec) waitN(isRead bool, n int) (err error) {
 	}
 	return
 }
-func (s *RateCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
-	s.Conn = ctx.Conn()
-	return next.Call(ctx.SetConn(s))
+func (s *RateCodec) Initialize(ctx Context) error {
+	return nil
 }

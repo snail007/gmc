@@ -50,12 +50,16 @@ func Test_defaultContext_IsTLS(t *testing.T) {
 }
 
 type errTLSCodec struct {
-	Codec
+	net.Conn
 }
 
-func (e errTLSCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
+func (e *errTLSCodec) Initialize(ctx Context) error {
 	ctx.SetData(isTLSKey, "1")
-	return next.Call(ctx)
+	return nil
+}
+func (e *errTLSCodec) SetConn(c net.Conn) Codec {
+	e.Conn = c
+	return e
 }
 
 func Test_defaultContext_IsTLS1(t *testing.T) {

@@ -29,18 +29,23 @@ type codecs struct {
 	idx    int
 }
 
-func (s *codecs) Call(ctx Context) (conn net.Conn, err error) {
-	conn, err = s.call(ctx)
-	return
-}
-
-func (s *codecs) call(ctx Context) (conn net.Conn, err error) {
+func (s *codecs) Call(ctx Context) (err error) {
 	s.idx++
 	if s.idx == len(s.codecs) {
-		// last call, no next codec, just return conn.
-		return ctx.Conn(), nil
+		// last call, no next codec, just return.
+		return nil
 	}
-	return s.codecs[s.idx].Initialize(ctx, s)
+	c := s.codecs[s.idx]
+	conn := ctx.Conn()
+	c.SetConn(conn)
+	err = c.Initialize(ctx)
+	if err == nil {
+		ctx.SetConn(c)
+	}
+	if ctx.Hijacked() || err != nil {
+		return err
+	}
+	return s.Call(ctx)
 }
 
 func newCodecs(cs []Codec) *codecs {
@@ -62,7 +67,11 @@ func (s *connFilters) Call(ctx Context, c net.Conn) (conn net.Conn, err error) {
 		// last call, no next filter, just return conn.
 		return c, nil
 	}
-	return s.filters[s.idx](ctx, c, s)
+	c0, err := s.filters[s.idx](ctx, c)
+	if ctx.Hijacked() || err != nil {
+		return nil, err
+	}
+	return s.Call(ctx, c0)
 }
 
 func newConnFilters(filters []ConnFilter) *connFilters {
@@ -164,8 +173,8 @@ func (s *Conn) initialize() (err error) {
 	fConn, err := newConnFilters(s.filters).Call(s.ctx, s.Conn)
 	// checking hijack
 	if s.ctx.Hijacked() {
-		// hijacked by filter, just return nil.
-		return nil
+		// hijacked by filter, just return hijack err if it has.
+		return err
 	}
 	if err != nil {
 		return err
@@ -173,16 +182,11 @@ func (s *Conn) initialize() (err error) {
 	s.Conn = fConn
 
 	// init codec
-	codecConn, err := newCodecs(s.codec).Call(s.ctx.(*defaultContext))
-	// checking hijack
-	if s.ctx.Hijacked() {
-		// hijacked by codec, just return nil.
-		return nil
-	}
+	err = newCodecs(s.codec).Call(s.ctx.(*defaultContext))
 	if err != nil {
 		return err
 	}
-	s.Conn = codecConn
+	s.Conn = s.ctx.Conn()
 	return nil
 }
 func (s *Conn) Read(b []byte) (n int, err error) {

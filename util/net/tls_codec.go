@@ -104,14 +104,14 @@ func (s *TLSClientCodec) PinServerCert(serverCertPEMBytes []byte) (err error) {
 	return
 }
 
-func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, err error) {
+func (s *TLSClientCodec) Initialize(ctx Context) (err error) {
 	ctx.SetData(isTLSKey, true)
 	if s.config.RootCAs == nil {
 		s.config.RootCAs = x509.NewCertPool()
 	}
 	err = s.initRootCas(s.config.RootCAs)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	s.config.InsecureSkipVerify = true
 	s.config.ServerName = s.serverName
@@ -200,7 +200,7 @@ func (s *TLSClientCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 		return
 	}
 	s.Conn = tlsConn
-	return next.Call(ctx.SetConn(s))
+	return
 }
 
 func (s *TLSClientCodec) AddServerCa(caPEMBytes []byte) *TLSClientCodec {
@@ -260,11 +260,9 @@ func (s *TLSClientCodec) AddToHTTPClient(httpClient *http.Client) *TLSClientCode
 	return s
 }
 
-func (s *TLSClientCodec) Close() error {
-	if s.Conn != nil {
-		return s.Conn.Close()
-	}
-	return nil
+func (s *TLSClientCodec) SetConn(c net.Conn) Codec {
+	s.Conn = c
+	return s
 }
 
 func NewTLSClientCodec() *TLSClientCodec {
@@ -281,14 +279,14 @@ type TLSServerCodec struct {
 	tlsCodec
 }
 
-func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, err error) {
+func (s *TLSServerCodec) Initialize(ctx Context) (err error) {
 	ctx.SetData(isTLSKey, true)
 	if s.config.ClientCAs == nil {
 		s.config.ClientCAs = x509.NewCertPool()
 	}
 	err = s.initRootCas(s.config.ClientCAs)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// To make sure choose the server certificate depends on the request server name.
 	s.config.BuildNameToCertificate()
@@ -297,10 +295,10 @@ func (s *TLSServerCodec) Initialize(ctx Context, next NextCodec) (c net.Conn, er
 	err = tlsConn.Handshake()
 	ctx.Conn().SetDeadline(time.Time{})
 	if err != nil {
-		return
+		return err
 	}
 	s.Conn = tlsConn
-	return next.Call(ctx.SetConn(s))
+	return
 }
 
 func (s *TLSServerCodec) RequireClientAuth(b bool) *TLSServerCodec {
@@ -317,11 +315,9 @@ func (s *TLSServerCodec) AddClientCa(caPEMBytes []byte) *TLSServerCodec {
 	return s
 }
 
-func (s *TLSServerCodec) Close() error {
-	if s.Conn != nil {
-		return s.Conn.Close()
-	}
-	return nil
+func (s *TLSServerCodec) SetConn(c net.Conn) Codec {
+	s.Conn = c
+	return s
 }
 
 func NewTLSServerCodec() *TLSServerCodec {

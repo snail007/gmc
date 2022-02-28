@@ -253,10 +253,10 @@ func TestEventConn2(t *testing.T) {
 	closed := false
 	readErr := false
 	writeErr := false
-	conn.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
-		return next.Call(ctx, c)
+	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return c, nil
 	})
-	conn.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		// just return c, skip the next
 		return c, nil
 	})
@@ -313,14 +313,14 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	assert.NoError(t, err)
 	var d []byte
 	var n int
-	el := NewEventListener(l).AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el := NewEventListener(l).AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		bc := NewBufferedConn(NewBufferedConn(c))
 		d, err = bc.PeekMax(1024)
 		c = bc
 		n = bc.Buffered()
 		s, _ := Read(bc, 10)
 		assert.Equal(t, "hello", s)
-		return next.Call(ctx, c)
+		return c, err
 	})
 	el.Start()
 	time.Sleep(time.Second)
@@ -377,13 +377,13 @@ func TestConn_FilterHijacked(t *testing.T) {
 	called := false
 	hijacked := false
 	el := NewEventListener(l)
-	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		hijacked = true
-		return ctx.Hijack()
+		return nil, ctx.Hijack()
 	})
-	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		called = true
-		return next.Call(ctx, c)
+		return c, nil
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		// trigger lazy initialization
@@ -417,8 +417,7 @@ func TestConn_CodecHijacked(t *testing.T) {
 	accepted := false
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
-		a, b := ctx.Hijack()
-		assert.Nil(t, a)
+		b := ctx.Hijack()
 		assert.Equal(t, errHijackedAlready, b)
 		assert.False(t, ctx.IsTLS())
 		conn = c.(*Conn).Conn
@@ -461,7 +460,7 @@ func TestConn_CodecHijackedFail(t *testing.T) {
 	time.Sleep(time.Second)
 	assert.True(t, *hijacked)
 	assert.False(t, *called)
-	assert.Equal(t, errHijackedFail, hasError)
+	assert.NotNil(t, hasError)
 }
 
 func TestConn_CodecHijackedFail1(t *testing.T) {
@@ -509,7 +508,7 @@ func TestConn_CodecHijackedFail2(t *testing.T) {
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitHijackedFailCodec(hijacked, func(ctx Context) {
-			ctx.Hijack(nil, nil)
+			ctx.Hijack()
 		})
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
@@ -524,7 +523,7 @@ func TestConn_CodecHijackedFail2(t *testing.T) {
 	time.Sleep(time.Second)
 	assert.True(t, *hijacked)
 	assert.False(t, *called)
-	assert.Equal(t, errHijackedFail, hasError)
+	assert.NotNil(t, hasError)
 }
 
 func TestConn_CodecError(t *testing.T) {

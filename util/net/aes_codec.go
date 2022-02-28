@@ -58,26 +58,23 @@ func (s *AESCodec) Write(p []byte) (n int, err error) {
 	return s.w.Write(p)
 }
 
-func (s *AESCodec) Close() error {
-	if s.Conn != nil {
-		return s.Conn.Close()
-	}
-	return nil
+func (s *AESCodec) SetConn(c net.Conn) Codec {
+	s.Conn = c
+	return s
 }
 
-func (s *AESCodec) Initialize(ctx Context, next NextCodec) (conn net.Conn, err error) {
+func (s *AESCodec) Initialize(ctx Context) (err error) {
 	block, err := aesNewCipher(s.key)
 	if err != nil {
-		return
+		return err
 	}
-	s.Conn = ctx.Conn()
 	riv := sha256.New().Sum(s.key)
 	rStream := cipher.NewCFBDecrypter(block, riv[:aes.BlockSize])
 	s.r = &cipher.StreamReader{S: rStream, R: s.Conn}
 	wiv := sha256.New().Sum(riv)
 	wStream := cipher.NewCFBEncrypter(block, wiv[:aes.BlockSize])
 	s.w = &cipher.StreamWriter{S: wStream, W: s.Conn}
-	return next.Call(ctx.SetConn(s))
+	return
 }
 
 func NewAESCodec(password string) *AESCodec {

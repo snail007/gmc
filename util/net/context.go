@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	errHijackedFail    = fmt.Errorf("hijack error, unsupported argument")
 	errHijackedAlready = fmt.Errorf("hijack error, conn hijacked already")
 )
 
@@ -83,17 +82,12 @@ func (s *defaultContext) ReadBytes() int64 {
 	return s.conn.ReadBytes()
 }
 
-func (s *defaultContext) Hijack(c ...Codec) (net.Conn, error) {
+func (s *defaultContext) Hijack() error {
 	if s.hijacked {
-		return nil, errHijackedAlready
-	}
-	if len(c) == 1 {
-		s.conn.Conn = c[0]
-	} else if len(c) >= 2 {
-		return nil, errHijackedFail
+		return errHijackedAlready
 	}
 	s.hijacked = true
-	return nil, nil
+	return nil
 }
 
 func (s *defaultContext) WriteBytes() int64 {

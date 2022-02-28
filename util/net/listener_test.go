@@ -37,9 +37,9 @@ func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	timeout := false
-	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		c = NewBufferedConn(c)
-		return next.Call(ctx, c)
+		return c, nil
 	})
 	el.SetFirstReadTimeout(time.Millisecond * 100).
 		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
@@ -57,10 +57,10 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 	el := NewEventListener(l)
 	called := false
 	hijacked := false
-	el.AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		// hijack the conn, do anything with c
 		hijacked = true
-		return ctx.Hijack()
+		return nil, ctx.Hijack()
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		called = true
@@ -78,18 +78,18 @@ func TestNewEventListener_FilterError(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	var hasErr error
-	el.AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
-		return next.Call(ctx, c)
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		return c, nil
 	})
-	el.AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		//skip the next filer
 		return c, nil
 	})
-	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		c = NewBufferedConn(c)
-		return next.Call(ctx, c)
+		return c, nil
 	})
-	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return nil, fmt.Errorf("error")
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
@@ -107,7 +107,7 @@ func TestNewEventListener_ListenerFilterError(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	hasErr := false
-	el.AddListenerFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return nil, fmt.Errorf("error")
 	})
 	el.OnAcceptError(func(ctx Context, err error) {
@@ -144,9 +144,9 @@ func TestListener_Accept(t *testing.T) {
 		addr = ctx.Conn().LocalAddr().String()
 		cnt1 = l1.ConnCount()
 	})
-	l1.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	l1.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		cnt0 = l1.ConnCount()
-		return next.Call(ctx, c)
+		return c, nil
 	})
 	l1.SetAutoCloseConnOnReadWriteError(true)
 	g := sync.WaitGroup{}
@@ -262,10 +262,13 @@ type initErrorCodec struct {
 func newInitErrorCodec(called *bool) *initErrorCodec {
 	return &initErrorCodec{called: called}
 }
-
-func (i *initErrorCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
+func (i *initErrorCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+func (i *initErrorCodec) Initialize(ctx Context) error {
 	*i.called = true
-	return nil, fmt.Errorf("init error")
+	return fmt.Errorf("init error")
 }
 
 type tempNetError struct {
@@ -292,23 +295,32 @@ type initHijackedCodec struct {
 	called *bool
 }
 
+func (i *initHijackedCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+
 func newInitHijackedCodec(called *bool) *initHijackedCodec {
 	return &initHijackedCodec{
 		called: called,
 	}
 }
 
-func (i *initHijackedCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
-	i.Conn = ctx.Conn()
+func (i *initHijackedCodec) Initialize(ctx Context) error {
 	// hijack the conn, do anything with conn, and just call ctx.Hijack at return.
 	*i.called = true
-	return ctx.Hijack(i)
+	return ctx.Hijack()
 }
 
 type initHijackedFailCodec struct {
 	net.Conn
 	called    *bool
 	modifyCtx func(ctx Context)
+}
+
+func (i *initHijackedFailCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
 }
 
 func newInitHijackedFailCodec(called *bool, m func(ctx Context)) *initHijackedFailCodec {
@@ -318,14 +330,14 @@ func newInitHijackedFailCodec(called *bool, m func(ctx Context)) *initHijackedFa
 	}
 }
 
-func (i *initHijackedFailCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
-	i.Conn = ctx.Conn()
+func (i *initHijackedFailCodec) Initialize(ctx Context) error {
 	// hijack the conn, do anything with conn, and just return ErrCodecHijacked at return.
 	*i.called = true
 	if i.modifyCtx != nil {
 		i.modifyCtx(ctx)
 	}
-	return ctx.Hijack(nil, nil)
+	ctx.Hijack()
+	return fmt.Errorf("hijack fail")
 }
 
 type initPassThroughCodec struct {
@@ -338,11 +350,14 @@ func newInitPassThroughCodec(called *bool) *initPassThroughCodec {
 		called: called,
 	}
 }
-
-func (i *initPassThroughCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
+func (i *initPassThroughCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+func (i *initPassThroughCodec) Initialize(ctx Context) error {
 	// pass through
 	*i.called = true
-	return next.Call(ctx)
+	return nil
 }
 
 type initCodec struct {
@@ -355,14 +370,14 @@ func newInitCodec2(called *bool) *initCodec {
 		called: called,
 	}
 }
-
-func (i *initCodec) Initialize(ctx Context, next NextCodec) (net.Conn, error) {
-	// implements the Context's net.Conn
-	i.Conn = ctx.Conn()
+func (i *initCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+func (i *initCodec) Initialize(ctx Context) error {
 	// do something
 	*i.called = true
-	// call next codec, must call ctx.SetConn inject current codec to context.
-	return next.Call(ctx.SetConn(i))
+	return ctx.Hijack()
 }
 
 func TestNewEventListener_OnCodecError(t *testing.T) {
@@ -395,11 +410,11 @@ func TestNewEventListener(t *testing.T) {
 	ctx := NewContext()
 	ctx.SetData("cfg1", "abc")
 	el := NewContextEventListener(ctx, l)
-	el.AddConnFilter(func(ctx Context, c net.Conn, next NextConnFilter) (net.Conn, error) {
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		ctx.SetData("cfg2", "abc")
 		c = NewBufferedConn(c)
 		ctx.SetData("bufConn", c)
-		return next.Call(ctx, c)
+		return c, nil
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return NewAESCodec("abc")
@@ -407,7 +422,7 @@ func TestNewEventListener(t *testing.T) {
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.Write([]byte("hello"))
 		conn = ctx.Data("bufConn").(net.Conn)
-		assert.Equal(t,"abc", c.(*Conn).ctx.Data("cfg1"),)
+		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg1"))
 		assert.Equal(t, "abc", c.(*Conn).ctx.Data("cfg2"))
 	}).Start()
 	time.Sleep(time.Second)

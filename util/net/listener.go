@@ -287,7 +287,7 @@ func (s *EventListener) Start() *EventListener {
 }
 
 func (s *EventListener) Close() *EventListener {
-	if s==nil{
+	if s == nil {
 		return nil
 	}
 	s.closeOnce.Do(func() {

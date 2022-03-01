@@ -113,8 +113,8 @@ retry:
 
 	// init listener filters and checking hijack
 	fConn, err := newConnFilters(s.filters).Call(ctx, c)
-	if ctx.Hijacked() {
-		// hijacked by filter, just call next accept.
+	if ctx.IsHijacked() {
+		// isHijacked by filter, just call next accept.
 		goto retry
 	}
 	if err != nil {

@@ -56,10 +56,10 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	called := false
-	hijacked := false
+	isHijacked := false
 	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		// hijack the conn, do anything with c
-		hijacked = true
+		// isHijacked the conn, do anything with c
+		isHijacked = true
 		return nil, ctx.Hijack()
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
@@ -69,7 +69,7 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
 	assert.False(t, called)
-	assert.True(t, hijacked)
+	assert.True(t, isHijacked)
 }
 
 func TestNewEventListener_FilterError(t *testing.T) {
@@ -307,7 +307,7 @@ func newInitHijackedCodec(called *bool) *initHijackedCodec {
 }
 
 func (i *initHijackedCodec) Initialize(ctx Context) error {
-	// hijack the conn, do anything with conn, and just call ctx.Hijack at return.
+	// isHijacked the conn, do anything with conn, and just call ctx.Hijack at return.
 	*i.called = true
 	return ctx.Hijack()
 }
@@ -331,13 +331,13 @@ func newInitHijackedFailCodec(called *bool, m func(ctx Context)) *initHijackedFa
 }
 
 func (i *initHijackedFailCodec) Initialize(ctx Context) error {
-	// hijack the conn, do anything with conn, and just return ErrCodecHijacked at return.
+	// isHijacked the conn, do anything with conn, and just return ErrCodecHijacked at return.
 	*i.called = true
 	if i.modifyCtx != nil {
 		i.modifyCtx(ctx)
 	}
 	ctx.Hijack()
-	return fmt.Errorf("hijack fail")
+	return fmt.Errorf("isHijacked fail")
 }
 
 type initPassThroughCodec struct {

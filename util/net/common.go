@@ -37,7 +37,8 @@ type (
 		SetEventListener(eventListener *EventListener) Context
 		ConnBinder() *ConnBinder
 		SetConnBinder(connBinder *ConnBinder) Context
-		Hijacked() bool
+		IsHijacked() bool
+		IsBreak() bool
 		ReadBytes() int64
 		Hijack() error
 		WriteBytes() int64

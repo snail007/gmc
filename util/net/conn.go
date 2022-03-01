@@ -42,7 +42,7 @@ func (s *codecs) Call(ctx Context) (err error) {
 	if err == nil {
 		ctx.SetConn(c)
 	}
-	if ctx.Hijacked() || err != nil {
+	if ctx.IsBreak() || ctx.IsHijacked() || err != nil {
 		return err
 	}
 	return s.Call(ctx)
@@ -68,8 +68,11 @@ func (s *connFilters) Call(ctx Context, c net.Conn) (conn net.Conn, err error) {
 		return c, nil
 	}
 	c0, err := s.filters[s.idx](ctx, c)
-	if ctx.Hijacked() || err != nil {
+	if ctx.IsHijacked() || err != nil {
 		return nil, err
+	}
+	if ctx.IsBreak() {
+		return c0, err
 	}
 	return s.Call(ctx, c0)
 }
@@ -172,8 +175,8 @@ func (s *Conn) initialize() (err error) {
 	// init filters
 	fConn, err := newConnFilters(s.filters).Call(s.ctx, s.Conn)
 	// checking hijack
-	if s.ctx.Hijacked() {
-		// hijacked by filter, just return hijack err if it has.
+	if s.ctx.IsHijacked() {
+		// isHijacked by filter, just return hijack err if it has.
 		return err
 	}
 	if err != nil {

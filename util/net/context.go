@@ -6,15 +6,10 @@
 package gnet
 
 import (
-	"fmt"
 	"net"
 	"time"
 
 	gmap "github.com/snail007/gmc/util/map"
-)
-
-var (
-	errHijackedAlready = fmt.Errorf("hijack error, conn hijacked already")
 )
 
 type defaultContext struct {
@@ -24,7 +19,8 @@ type defaultContext struct {
 	eventListener *EventListener
 	connBinder    *ConnBinder
 	data          *gmap.Map
-	hijacked      bool
+	isHijacked    bool
+	isBreak       bool
 }
 
 func (s *defaultContext) Listener() *Listener {
@@ -43,7 +39,7 @@ func (s *defaultContext) Clone() Context {
 		eventListener: s.eventListener,
 		connBinder:    s.connBinder,
 		data:          s.data.Clone(),
-		hijacked:      s.hijacked,
+		isHijacked:    s.isHijacked,
 	}
 }
 
@@ -74,20 +70,25 @@ func (s *defaultContext) SetEventListener(eventListener *EventListener) Context 
 	return s
 }
 
-func (s *defaultContext) Hijacked() bool {
-	return s.hijacked
-}
-
 func (s *defaultContext) ReadBytes() int64 {
 	return s.conn.ReadBytes()
 }
 
+func (s *defaultContext) IsHijacked() bool {
+	return s.isHijacked
+}
+
 func (s *defaultContext) Hijack() error {
-	if s.hijacked {
-		return errHijackedAlready
-	}
-	s.hijacked = true
+	s.isHijacked = true
 	return nil
+}
+
+func (s *defaultContext) IsBreak() bool {
+	return s.isBreak
+}
+
+func (s *defaultContext) Break() {
+	s.isBreak = true
 }
 
 func (s *defaultContext) WriteBytes() int64 {

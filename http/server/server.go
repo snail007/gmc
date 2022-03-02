@@ -12,8 +12,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/internal/util/http"
 	"io"
 	"io/ioutil"
 	"log"
@@ -25,6 +23,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
 )
 
 var (
@@ -449,20 +450,20 @@ func (s *HTTPServer) initStatic() {
 func (s *HTTPServer) initTLSConfig() (err error) {
 	if s.config.GetBool("httpserver.tlsenable") {
 		tlsCfg := &tls.Config{}
+		clientCertPool := x509.NewCertPool()
 		if s.config.GetBool("httpserver.tlsclientauth") {
 			tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+			caBytes, e := ioutil.ReadFile(s.config.GetString("httpserver.tlsclientsca"))
+			if e != nil {
+				return e
+			}
+			ok := clientCertPool.AppendCertsFromPEM(caBytes)
+			if !ok {
+				err = gcore.ProviderError()().New(("failed to parse tls clients root certificate"))
+				return
+			}
+			tlsCfg.ClientCAs = clientCertPool
 		}
-		clientCertPool := x509.NewCertPool()
-		caBytes, e := ioutil.ReadFile(s.config.GetString("httpserver.tlsclientsca"))
-		if e != nil {
-			return e
-		}
-		ok := clientCertPool.AppendCertsFromPEM(caBytes)
-		if !ok {
-			err = gcore.ProviderError()().New(("failed to parse tls clients root certificate"))
-			return
-		}
-		tlsCfg.ClientCAs = clientCertPool
 		s.server.TLSConfig = tlsCfg
 	}
 	return

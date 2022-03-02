@@ -26,31 +26,29 @@ type BufferedConn interface {
 
 type codecs struct {
 	codecs []Codec
-	idx    int
 }
 
 func (s *codecs) Call(ctx Context) (err error) {
-	s.idx++
-	if s.idx == len(s.codecs) {
-		// last call, no next codec, just return.
-		return nil
-	}
-	c := s.codecs[s.idx]
-	conn := ctx.Conn()
-	c.SetConn(conn)
-	err = c.Initialize(ctx)
-	if err == nil {
+	for _, c := range s.codecs {
+		c.SetConn(ctx.Conn())
+		err = c.Initialize(ctx)
+		if err != nil {
+			return
+		}
+		if ctx.IsContinue() {
+			ctx.(*defaultContext).isContinue = false
+			continue
+		}
 		ctx.SetConn(c)
+		if ctx.IsBreak() {
+			return
+		}
 	}
-	if ctx.IsBreak() || ctx.IsHijacked() || err != nil {
-		return err
-	}
-	return s.Call(ctx)
+	return nil
 }
 
 func newCodecs(cs []Codec) *codecs {
 	f := &codecs{
-		idx:    -1,
 		codecs: cs,
 	}
 	return f
@@ -58,28 +56,29 @@ func newCodecs(cs []Codec) *codecs {
 
 type connFilters struct {
 	filters []ConnFilter
-	idx     int
 }
 
-func (s *connFilters) Call(ctx Context, c net.Conn) (conn net.Conn, err error) {
-	s.idx++
-	if s.idx == len(s.filters) {
-		// last call, no next filter, just return conn.
-		return c, nil
+func (s *connFilters) Call(ctx Context, c net.Conn) (net.Conn, error) {
+	var err error
+	conn := c
+	for _, cf := range s.filters {
+		conn, err = cf(ctx, conn)
+		if err != nil {
+			return nil, err
+		}
+		if ctx.IsContinue() {
+			ctx.(*defaultContext).isContinue = false
+			continue
+		}
+		if ctx.IsBreak() {
+			return conn, err
+		}
 	}
-	c0, err := s.filters[s.idx](ctx, c)
-	if ctx.IsHijacked() || err != nil {
-		return nil, err
-	}
-	if ctx.IsBreak() {
-		return c0, err
-	}
-	return s.Call(ctx, c0)
+	return conn, err
 }
 
 func newConnFilters(filters []ConnFilter) *connFilters {
 	f := &connFilters{
-		idx:     -1,
 		filters: filters,
 	}
 	return f
@@ -174,18 +173,13 @@ func (s *Conn) initialize() (err error) {
 
 	// init filters
 	fConn, err := newConnFilters(s.filters).Call(s.ctx, s.Conn)
-	// checking hijack
-	if s.ctx.IsHijacked() {
-		// isHijacked by filter, just return hijack err if it has.
-		return err
-	}
 	if err != nil {
 		return err
 	}
 	s.Conn = fConn
 
 	// init codec
-	err = newCodecs(s.codec).Call(s.ctx.(*defaultContext))
+	err = newCodecs(s.codec).Call(s.ctx)
 	if err != nil {
 		return err
 	}

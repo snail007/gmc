@@ -21,6 +21,7 @@ type defaultContext struct {
 	data          *gmap.Map
 	isHijacked    bool
 	isBreak       bool
+	isContinue    bool
 }
 
 func (s *defaultContext) Listener() *Listener {
@@ -78,9 +79,10 @@ func (s *defaultContext) IsHijacked() bool {
 	return s.isHijacked
 }
 
-func (s *defaultContext) Hijack() error {
+func (s *defaultContext) Hijack() {
 	s.isHijacked = true
-	return nil
+	s.isBreak = true
+	return
 }
 
 func (s *defaultContext) IsBreak() bool {
@@ -89,6 +91,14 @@ func (s *defaultContext) IsBreak() bool {
 
 func (s *defaultContext) Break() {
 	s.isBreak = true
+}
+
+func (s *defaultContext) Continue() {
+	s.isContinue = true
+}
+
+func (s *defaultContext) IsContinue() bool {
+	return s.isContinue
 }
 
 func (s *defaultContext) WriteBytes() int64 {

@@ -60,7 +60,8 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		// isHijacked the conn, do anything with c
 		isHijacked = true
-		return nil, ctx.Hijack()
+		ctx.Hijack()
+		return nil, nil
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		called = true
@@ -309,7 +310,8 @@ func newInitHijackedCodec(called *bool) *initHijackedCodec {
 func (i *initHijackedCodec) Initialize(ctx Context) error {
 	// isHijacked the conn, do anything with conn, and just call ctx.Hijack at return.
 	*i.called = true
-	return ctx.Hijack()
+	ctx.Hijack()
+	return nil
 }
 
 type initHijackedFailCodec struct {
@@ -377,7 +379,8 @@ func (i *initCodec) SetConn(conn net.Conn) Codec {
 func (i *initCodec) Initialize(ctx Context) error {
 	// do something
 	*i.called = true
-	return ctx.Hijack()
+	ctx.Hijack()
+	return nil
 }
 
 func TestNewEventListener_OnCodecError(t *testing.T) {

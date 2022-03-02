@@ -370,16 +370,17 @@ func TestNewConnBinder(t *testing.T) {
 	assert.True(t, dstClosed)
 }
 
-func TestConn_FilterHijacked(t *testing.T) {
+func TestConn_FilterBreak(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	called := false
-	isHijacked := false
+	isBreak := false
 	el := NewEventListener(l)
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		isHijacked = true
-		return nil, ctx.Hijack()
+		isBreak = true
+		ctx.Break()
+		return c, nil
 	})
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		called = true
@@ -393,23 +394,121 @@ func TestConn_FilterHijacked(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Millisecond * 500)
-	assert.True(t, isHijacked)
+	assert.True(t, isBreak)
 	assert.False(t, called)
 }
+func TestConn_FilterContinue(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := false
+	isContinue := false
+	el := NewEventListener(l)
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		isContinue = true
+		ctx.Continue()
+		return c, nil
+	})
+	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
+		called = true
+		return c, nil
+	})
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		// trigger lazy initialization
+		c.Write([]byte(""))
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Millisecond * 500)
+	assert.True(t, isContinue)
+	assert.True(t, called)
+}
 
-func TestConn_CodecHijacked(t *testing.T) {
+type breakCodec struct {
+	net.Conn
+	called *bool
+}
+
+func (i *breakCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+
+func (i *breakCodec) Initialize(ctx Context) error {
+	*i.called = true
+	ctx.Break()
+	return nil
+}
+
+func newBreakCodec(called *bool) *breakCodec {
+	return &breakCodec{
+		called: called,
+	}
+}
+
+type continueCodec struct {
+	net.Conn
+	called *bool
+}
+
+func (i *continueCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+
+func (i *continueCodec) Initialize(ctx Context) error {
+	*i.called = true
+	ctx.Continue()
+	return nil
+}
+
+func newContinueCodec(called *bool) *continueCodec {
+	return &continueCodec{
+		called: called,
+	}
+}
+
+type breakFailCodec struct {
+	net.Conn
+	called    *bool
+	modifyCtx func(ctx Context)
+}
+
+func (i *breakFailCodec) SetConn(conn net.Conn) Codec {
+	i.Conn = conn
+	return i
+}
+
+func (i *breakFailCodec) Initialize(ctx Context) error {
+	*i.called = true
+	if i.modifyCtx != nil {
+		i.modifyCtx(ctx)
+	}
+	ctx.Break()
+	return fmt.Errorf("break fail")
+}
+
+func newBreakFailCodec(called *bool, m func(ctx Context)) *breakFailCodec {
+	return &breakFailCodec{
+		called:    called,
+		modifyCtx: m,
+	}
+}
+
+func TestConn_CodecBreak(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	called := new(bool)
-	isHijacked := new(bool)
+	isBreak := new(bool)
 	el := NewEventListener(l)
 	var conn net.Conn
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitHijackedCodec(isHijacked)
+		return newBreakCodec(isBreak)
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
@@ -425,18 +524,49 @@ func TestConn_CodecHijacked(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isHijacked)
+	assert.True(t, *isBreak)
 	assert.False(t, *called)
 	assert.True(t, accepted)
-	assert.IsType(t, &initHijackedCodec{}, conn)
+	assert.IsType(t, &breakCodec{}, conn)
 }
-
-func TestConn_CodecHijackedFail(t *testing.T) {
+func TestConn_CodecContinue(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	called := new(bool)
-	isHijacked := new(bool)
+	isContinue := new(bool)
+	el := NewEventListener(l)
+	var conn net.Conn
+	el.AddCodecFactory(func(ctx Context) Codec {
+		return newInitPassThroughCodec(new(bool))
+	})
+	el.AddCodecFactory(func(ctx Context) Codec {
+		*called=true
+		return newContinueCodec(isContinue)
+	})
+	accepted := false
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.(*Conn).doInitialize()
+		assert.False(t, ctx.IsTLS())
+		conn = c.(*Conn).Conn
+		accepted = true
+	})
+	el.Start()
+	time.Sleep(time.Millisecond * 500)
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, *isContinue)
+	assert.True(t, *called)
+	assert.True(t, accepted)
+	assert.IsType(t, &initPassThroughCodec{}, conn)
+}
+
+func TestConn_CodecBreakFail(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := new(bool)
+	isBreak := new(bool)
 	var hasError error
 	el := NewEventListener(l)
 
@@ -444,7 +574,7 @@ func TestConn_CodecHijackedFail(t *testing.T) {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitHijackedFailCodec(isHijacked, nil)
+		return newBreakFailCodec(isBreak, nil)
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
@@ -456,17 +586,17 @@ func TestConn_CodecHijackedFail(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isHijacked)
+	assert.True(t, *isBreak)
 	assert.False(t, *called)
 	assert.NotNil(t, hasError)
 }
 
-func TestConn_CodecHijackedFail1(t *testing.T) {
+func TestConn_CodecBreakFail1(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	called := new(bool)
-	isHijacked := new(bool)
+	isBreak := new(bool)
 	var hasError error
 	el := NewEventListener(l)
 
@@ -474,7 +604,7 @@ func TestConn_CodecHijackedFail1(t *testing.T) {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitHijackedFailCodec(isHijacked, nil)
+		return newBreakFailCodec(isBreak, nil)
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
@@ -487,17 +617,17 @@ func TestConn_CodecHijackedFail1(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isHijacked)
+	assert.True(t, *isBreak)
 	assert.False(t, *called)
 	assert.Error(t, hasError)
 }
 
-func TestConn_CodecHijackedFail2(t *testing.T) {
+func TestConn_CodecBreakFail2(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	called := new(bool)
-	isHijacked := new(bool)
+	isBreak := new(bool)
 	var hasError error
 	el := NewEventListener(l)
 
@@ -505,8 +635,8 @@ func TestConn_CodecHijackedFail2(t *testing.T) {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitHijackedFailCodec(isHijacked, func(ctx Context) {
-			ctx.Hijack()
+		return newBreakFailCodec(isBreak, func(ctx Context) {
+			ctx.Break()
 		})
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
@@ -519,7 +649,7 @@ func TestConn_CodecHijackedFail2(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isHijacked)
+	assert.True(t, *isBreak)
 	assert.False(t, *called)
 	assert.NotNil(t, hasError)
 }

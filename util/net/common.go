@@ -38,9 +38,12 @@ type (
 		ConnBinder() *ConnBinder
 		SetConnBinder(connBinder *ConnBinder) Context
 		IsHijacked() bool
+		Hijack()
 		IsBreak() bool
+		Break()
+		IsContinue() bool
+		Continue()
 		ReadBytes() int64
-		Hijack() error
 		WriteBytes() int64
 		Data(key interface{}) interface{}
 		SetData(key, value interface{}) Context

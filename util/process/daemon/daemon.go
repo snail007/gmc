@@ -112,6 +112,7 @@ func Start() (err error) {
 		var cmd *exec.Cmd
 		//fmt.Println("$$" + serviceArgsStr + "$$")
 		cmd = exec.Command(os.Args[0], args...)
+		cmd.Env = os.Environ()
 		err = cmd.Start()
 		if err != nil {
 			err = fmt.Errorf("starting forever fail, error: %s", err)
@@ -154,6 +155,7 @@ func Start() (err error) {
 					time.Sleep(time.Second * 5)
 				}
 				cmd = exec.Command(os.Args[0], initArgs...)
+				cmd.Env = os.Environ()
 				cmdReaderStderr, err := cmd.StderrPipe()
 				if err != nil {
 					l("ERR:%s,restarting...\n", err)

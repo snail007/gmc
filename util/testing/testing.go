@@ -47,6 +47,10 @@ func newCmdFromEnv(runName string) (cmd, binName string) {
 	} else {
 		race = ""
 	}
+	timeout := "15m"
+	if v := os.Getenv("GMCT_TEST_TIMEOUT"); v != "" {
+		timeout = v
+	}
 	if packages != "" {
 		// packages is not empty, means run with gmct.
 		cover := ""
@@ -54,17 +58,17 @@ func newCmdFromEnv(runName string) (cmd, binName string) {
 		io.ReadFull(rand.Reader, rb)
 		binName = filepath.Join(os.TempDir(), fmt.Sprintf("gmct_testing_%x.bin", rb))
 		cover = fmt.Sprintf("-covermode=atomic -coverpkg=%s", packages)
-		testCompileCmd := fmt.Sprintf(`go test -c -o %s -run=%s %s %s %s`,
+		testCompileCmd := fmt.Sprintf(`go test -timeout `+timeout+` -c -o %s -run=%s %s %s %s`,
 			binName, runName, race, cover, pkg)
 		c := exec.Command("bash", "-c", testCompileCmd)
 		c.Env = append(c.Env, os.Environ()...)
 		c.Run()
 		os.Chmod(binName, 0755)
-		cmd = fmt.Sprintf("%s -test.v=true -test.run=%s -test.coverprofile=%s",
+		cmd = fmt.Sprintf("%s -test.v=true -test.timeout="+timeout+" -test.run=%s -test.coverprofile=%s",
 			binName, runName, coverfile)
 		return
 	}
-	cmd = fmt.Sprintf(`go test -v -run=%s %s %s`,
+	cmd = fmt.Sprintf(`go test -timeout `+timeout+` -v -run=%s %s %s`,
 		runName, race, pkg)
 	return
 }

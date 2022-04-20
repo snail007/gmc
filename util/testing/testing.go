@@ -260,9 +260,11 @@ func (s *Process) Kill() (err error) {
 			break
 		}
 	}
+	timeoutTimer := time.NewTimer(time.Second * 3)
+	defer timeoutTimer.Stop()
 	select {
 	case <-s.exitChn:
-	case <-time.After(time.Second * 3):
+	case <-timeoutTimer.C:
 		fmt.Println("[WARN] kill timeout, force kill pid", s.c.Process.Pid)
 		if s.c.Process != nil {
 			s.c.Process.Kill()

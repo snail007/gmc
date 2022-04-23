@@ -231,13 +231,21 @@ func (s *Conn) AddCodec(codec Codec) *Conn {
 	return s
 }
 
-func NewConn(conn net.Conn) *Conn {
-	return NewContextConn(NewContext(), conn)
+func NewConn(conn net.Conn, force ...bool) *Conn {
+	return newContextConn(NewContext(), conn, force...)
 }
 
-func NewContextConn(ctx Context, conn net.Conn) *Conn {
+func NewContextConn(ctx Context, conn net.Conn, force ...bool) *Conn {
+	return newContextConn(ctx, conn, force...)
+}
+
+func newContextConn(ctx Context, conn net.Conn, f ...bool) *Conn {
+	force := false
+	if len(f) == 1 {
+		force = f[0]
+	}
 	var c *Conn
-	if v, ok := conn.(*Conn); ok {
+	if v, ok := conn.(*Conn); ok && !force {
 		c = v
 	} else {
 		c = &Conn{

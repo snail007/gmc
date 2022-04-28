@@ -286,13 +286,13 @@ func (w *worker) start() {
 				w.SetStatus(statusRunning)
 				w.pool.debugLog("GPool: worker[%s] running ...", w.id)
 				for {
-					w.pool.debugLog("GPool: worker[%s] read break", w.id)
+					//w.pool.debugLog("GPool: worker[%s] read break", w.id)
 					if w.isBreak() {
 						w.pool.debugLog("GPool: worker[%s] break", w.id)
-						break
+						return
 					}
 					if fn = w.pool.pop(); fn != nil {
-						w.pool.debugLog("GPool: worker[%s] called", w.id)
+						//w.pool.debugLog("GPool: worker[%s] called", w.id)
 						w.pool.run(fn)
 					} else {
 						w.pool.debugLog("GPool: worker[%s] no task, break", w.id)
@@ -308,8 +308,8 @@ func newWorker(pool *GPool) *worker {
 	w := &worker{
 		pool:      pool,
 		id:        pool.newWorkerID(),
-		wakeupSig: make(chan bool, 1),
-		breakSig:  make(chan bool, 1),
+		wakeupSig: make(chan bool,1),
+		breakSig:  make(chan bool,1),
 		status:    statusWaiting,
 	}
 	w.start()

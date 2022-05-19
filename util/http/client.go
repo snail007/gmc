@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -432,7 +431,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 				if len(iparr) == 0 {
 					return nil, fmt.Errorf("can not resolve domain %s", host)
 				}
-				ip := iparr[rand.Intn(len(iparr))]
+				ip := iparr[0]
 				addr = net.JoinHostPort(ip.String(), port)
 				if s.dialer != nil {
 					conn, err = s.dialer(network, addr, timeout)

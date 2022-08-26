@@ -1,3 +1,8 @@
+// Copyright 2020 The GMC Author. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// More information at https://github.com/snail007/gmc
+
 package ghttp
 
 import (
@@ -72,11 +77,13 @@ type HTTPClient struct {
 	connWrap        func(net.Conn) (conn net.Conn, err error)
 	jar             http.CookieJar
 	dialer          func(network, address string, timeout time.Duration) (net.Conn, error)
+	basicAuthUser   string
+	basicAuthPass   string
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
-func NewHTTPClient() HTTPClient {
-	return HTTPClient{
+func NewHTTPClient() *HTTPClient {
+	return &HTTPClient{
 		jar: NewCookieJar(),
 	}
 }
@@ -96,6 +103,11 @@ func (s *HTTPClient) SetProxyFromEnv(set bool) {
 func (s *HTTPClient) SetDialer(dialer func(network, address string, timeout time.Duration) (net.Conn, error)) {
 	s.dialer = dialer
 	return
+}
+
+func (s *HTTPClient) SetBasicAuth(username, password string) {
+	s.basicAuthUser = username
+	s.basicAuthPass = password
 }
 
 // SetProxy sets the proxies used for send request.
@@ -167,6 +179,12 @@ func (s *HTTPClient) SetRootCaCerts(caPemBytes ...[]byte) (err error) {
 	return
 }
 
+func (s *HTTPClient) setBasicAuth(req *http.Request) {
+	if s.basicAuthUser != "" {
+		req.SetBasicAuth(s.basicAuthUser, s.basicAuthPass)
+	}
+}
+
 // Get send a HTTP GET request, no header, just passive nil.
 func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
 	defer func() {
@@ -182,6 +200,7 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 	if err != nil {
 		return
 	}
+	s.setBasicAuth(req)
 	if header != nil {
 		for k, v := range header {
 			if strings.EqualFold(k, "host") {
@@ -227,6 +246,7 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	if err != nil {
 		return
 	}
+	s.setBasicAuth(req)
 	req.Close = true
 	client, err := s.newClient(timeout)
 	if err != nil {
@@ -304,6 +324,7 @@ func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader
 	if err != nil {
 		return
 	}
+	s.setBasicAuth(req)
 	req.Close = true
 	req.Header.Add("Content-Type", m.FormDataContentType())
 	url0, _ := url.Parse(u)
@@ -375,6 +396,7 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header ma
 	if err != nil {
 		return
 	}
+	s.setBasicAuth(req)
 	req.Close = true
 	if header != nil {
 		for k, v := range header {

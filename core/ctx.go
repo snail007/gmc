@@ -6,6 +6,7 @@
 package gcore
 
 import (
+	"io"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -46,6 +47,7 @@ type Ctx interface {
 	TimeUsed() time.Duration
 	SetTimeUsed(t time.Duration)
 	Write(data ...interface{}) (n int, err error)
+	WriteTo(w io.Writer, data ...interface{}) (n int, err error)
 	WriteE(data ...interface{}) (n int, err error)
 	WriteHeader(statusCode int)
 	StatusCode() int
@@ -73,8 +75,11 @@ type Ctx interface {
 	GetPost(key string, Default ...string) (val string)
 	Host() (host string)
 	JSON(code int, data interface{}) (err error)
+	JSONTo(w io.Writer, code int, data interface{}) (err error)
 	PrettyJSON(code int, data interface{}) (err error)
+	PrettyJSONTo(w io.Writer, code int, data interface{}) (err error)
 	JSONP(code int, data interface{}) (err error)
+	JSONPTo(w io.Writer, code int, data interface{}) (err error)
 	Redirect(url string) (val string)
 	SetHeader(key, value string)
 	Header(key string) string

@@ -262,7 +262,12 @@ func (this *Ctx) SetTimeUsed(t time.Duration) {
 
 // Write output data to response
 func (this *Ctx) Write(data ...interface{}) (n int, err error) {
-	return ghttputil.Write(this.Response(), data...)
+	return this.WriteTo(this.Response(), data...)
+}
+
+// WriteTo output data to io.writer
+func (this *Ctx) WriteTo(w io.Writer, data ...interface{}) (n int, err error) {
+	return ghttputil.Write(w, data...)
 }
 
 // WriteE outputs data to response and sets http status code 500
@@ -574,9 +579,17 @@ func (this *Ctx) Host() (host string) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (this *Ctx) JSON(code int, data interface{}) (err error) {
-	this.Status(code)
-	this.SetHeader("Content-Type", "application/json")
-	_, err = this.Write(data)
+	return this.JSONTo(this.Response(), code, data)
+}
+
+// JSONTo serializes the given struct as JSON into the io.Writer.
+// It also sets the Content-Type as "application/json".
+func (this *Ctx) JSONTo(w io.Writer, code int, data interface{}) (err error) {
+	if w, ok := w.(http.ResponseWriter); ok {
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/json")
+	}
+	_, err = this.WriteTo(w, data)
 	return
 }
 
@@ -585,8 +598,18 @@ func (this *Ctx) JSON(code int, data interface{}) (err error) {
 // development purposes since printing pretty JSON is more CPU and bandwidth consuming.
 // Use Ctx.JSON() instead.
 func (this *Ctx) PrettyJSON(code int, data interface{}) (err error) {
-	this.Status(code)
-	this.SetHeader("Content-Type", "application/json")
+	return this.PrettyJSONTo(this.Response(), code, data)
+}
+
+// PrettyJSONTo serializes the given struct as pretty JSON (indented) into the io.Writers.
+// It also sets the Content-Type as "application/json". WARNING: we recommend to use this only for
+// development purposes since printing pretty JSON is more CPU and bandwidth consuming.
+// Use Ctx.JSON() instead.
+func (this *Ctx) PrettyJSONTo(w io.Writer, code int, data interface{}) (err error) {
+	if w, ok := w.(http.ResponseWriter); ok {
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/json")
+	}
 	_, err = ghttputil.WritePretty(this.Response(), data)
 	return
 }
@@ -594,9 +617,17 @@ func (this *Ctx) PrettyJSON(code int, data interface{}) (err error) {
 // JSONP serializes the given struct as JSON into the response body.
 // It sets the Content-Type as "application/javascript".
 func (this *Ctx) JSONP(code int, data interface{}) (err error) {
+	return this.JSONPTo(this.Response(), code, data)
+}
+
+// JSONPTo serializes the given struct as JSON into the io.Writer body.
+// It sets the Content-Type as "application/javascript".
+func (this *Ctx) JSONPTo(w io.Writer, code int, data interface{}) (err error) {
 	callback := this.GET("callback", "_jsonp")
-	this.response.WriteHeader(code)
-	this.response.Header().Set("Content-Type", "application/javascript")
+	if w, ok := w.(http.ResponseWriter); ok {
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/javascript")
+	}
 	var buf = &bytes.Buffer{}
 	buf.Write([]byte(callback + "("))
 	_, err = ghttputil.Write(buf, data)
@@ -604,7 +635,7 @@ func (this *Ctx) JSONP(code int, data interface{}) (err error) {
 		return
 	}
 	buf.Write([]byte(")"))
-	_, err = this.Write(buf.Bytes())
+	_, err = this.WriteTo(w, buf.Bytes())
 	return
 }
 

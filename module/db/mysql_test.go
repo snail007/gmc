@@ -78,11 +78,10 @@ func TestHaving(t *testing.T) {
 }
 
 func TestOrderBy(t *testing.T) {
-	want1 := "SELECT * \nFROM `test`    \nORDER BY `id` DESC,`name` ASC"
-	want2 := "SELECT * \nFROM `test`    \nORDER BY `name` ASC,`id` DESC"
+	want := "SELECT * \nFROM `test`    \nORDER BY `id` DESC,`name` ASC"
 	got := strings.TrimSpace(ar().From("test").OrderBy("id", "desc").OrderBy("name", "asc").SQL())
-	if (want1 != got) && (want2 != got) {
-		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want1, got)
+	if want != got {
+		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
 func TestLimit(t *testing.T) {

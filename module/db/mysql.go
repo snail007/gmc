@@ -391,7 +391,7 @@ type MySQLActiveRecord struct {
 	arWhere                  [][]interface{}
 	arGroupBy                []string
 	arHaving                 [][]interface{}
-	arOrderBy                map[string]string
+	arOrderBy                *gmap.Map
 	arLimit                  string
 	arSet                    map[string][]interface{}
 	arUpdateBatch            []interface{}
@@ -422,7 +422,7 @@ func (ar *MySQLActiveRecord) Reset() {
 	ar.arWhere = [][]interface{}{}
 	ar.arGroupBy = []string{}
 	ar.arHaving = [][]interface{}{}
-	ar.arOrderBy = map[string]string{}
+	ar.arOrderBy = gmap.New()
 	ar.arLimit = ""
 	ar.arSet = map[string][]interface{}{}
 	ar.arUpdateBatch = []interface{}{}
@@ -493,7 +493,7 @@ func (ar *MySQLActiveRecord) HavingWrap(having, leftWrap, rightWrap string) gcor
 }
 
 func (ar *MySQLActiveRecord) OrderBy(column, typ string) gcore.ActiveRecord {
-	ar.arOrderBy[column] = typ
+	ar.arOrderBy.Store(column, typ)
 	return ar
 }
 
@@ -834,16 +834,17 @@ func (ar *MySQLActiveRecord) compileGroupBy() string {
 
 func (ar *MySQLActiveRecord) compileOrderBy() string {
 	orderBy := []string{}
-	for _, val := range sortMapSS(ar.arOrderBy, true) {
-		key := val["col"].(string)
-		Type := strings.ToUpper(val["value"].(string))
+	ar.arOrderBy.RangeFast(func(k, v interface{}) bool {
+ 		key := k.(string)
+		Type := strings.ToUpper(v.(string))
 		_key := strings.Split(key, ".")
 		if len(_key) == 2 {
 			orderBy = append(orderBy, fmt.Sprintf("%s.%s %s", ar.protectIdentifier(ar.checkPrefix(_key[0])), ar.protectIdentifier(_key[1]), Type))
 		} else {
 			orderBy = append(orderBy, fmt.Sprintf("%s %s", ar.protectIdentifier(_key[0]), Type))
 		}
-	}
+		return true
+	})
 	return strings.Join(orderBy, ",")
 }
 func (ar *MySQLActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap string, index int) string {

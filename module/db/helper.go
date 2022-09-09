@@ -135,13 +135,7 @@ func isBool(v interface{}) bool {
 	}
 	return reflect.TypeOf(v).Kind() == reflect.Bool
 }
-func sortMapSS(data gmap.Mss, asc bool) []map[string]interface{} {
-	m := gmap.M{}
-	for k, v := range data {
-		m[k] = v
-	}
-	return sortMap(m, asc)
-}
+
 func sortMap(data gmap.M, asc bool) []map[string]interface{} {
 	var keys []string
 	for k := range data {

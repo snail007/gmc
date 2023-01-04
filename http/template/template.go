@@ -43,11 +43,14 @@ type Template struct {
 // NewTemplate create a template object, and config it.
 // rootDir is root path of view files folder.
 func NewTemplate(ctx gcore.Ctx, rootDir string) (t *Template, err error) {
-	absRootDir, err := filepath.Abs(rootDir)
-	if err != nil {
-		return
+	absRootDir := ""
+	if rootDir != "" {
+		absRootDir, err = filepath.Abs(rootDir)
+		if err != nil {
+			return
+		}
+		absRootDir = strings.Replace(absRootDir, "\\", "/", -1)
 	}
-	absRootDir = strings.Replace(absRootDir, "\\", "/", -1)
 	tpl := gotemplate.New("gmc").Option("missingkey=zero")
 	t = &Template{
 		rootDir: absRootDir,

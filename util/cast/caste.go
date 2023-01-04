@@ -3,11 +3,6 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
-//
-// Use of this source code is governed by an MIT-style
-// license that can be found in the LICENSE file.
-
 package gcast
 
 import (
@@ -102,7 +97,7 @@ func ToBoolE(i interface{}) (bool, error) {
 		return b, nil
 	case nil:
 		return false, nil
-	case int,int8,int32,int64:
+	case int, int8, int32, int64:
 		if i != 0 {
 			return true, nil
 		}
@@ -978,7 +973,7 @@ const (
 
 func durationString(d time.Duration) string {
 	if d < day {
-		return d.String()
+		return d.Round(time.Millisecond).String()
 	}
 
 	var b strings.Builder

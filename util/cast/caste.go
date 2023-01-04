@@ -973,7 +973,7 @@ const (
 
 func durationString(d time.Duration) string {
 	if d < day {
-		return d.Round(time.Millisecond).String()
+		return d.String()
 	}
 
 	var b strings.Builder

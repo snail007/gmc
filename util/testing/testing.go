@@ -129,7 +129,7 @@ func NewProcess(t *testing.T) *Process {
 	os.Setenv("GMCT_COVER_ADDR_FILE", addrFile)
 	export := []string{}
 	for _, v := range os.Environ() {
-		if strings.ContainsAny(v, `./\ &^*()`) {
+		if strings.ContainsAny(v, ` &`) {
 			continue
 		}
 		ev := strings.Split(v, "=")

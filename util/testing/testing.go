@@ -150,6 +150,7 @@ func NewProcess(t *testing.T) *Process {
 		testFuncName: testFuncName,
 		isVerbose:    isVerbose,
 		cmdStr:       cmdStr,
+		exportStr:    exportStr,
 		cleanFile:    binName,
 		exitChn:      make(chan bool, 1),
 		addrFile:     addrFile,
@@ -157,6 +158,7 @@ func NewProcess(t *testing.T) *Process {
 }
 
 type Process struct {
+	exportStr    string
 	c            *exec.Cmd
 	cleanFile    string
 	testFuncName string
@@ -193,6 +195,7 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 	}()
 	if s.isVerbose {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
+		fmt.Println(s.exportStr)
 		fmt.Println(s.cmdStr)
 	}
 	b, err := s.c.CombinedOutput()
@@ -219,6 +222,7 @@ func (s *Process) Start() (err error) {
 	s.startCalled = true
 	if s.isVerbose {
 		fmt.Printf(">>> start child testing process %s\n", s.testFuncName)
+		fmt.Println(s.exportStr)
 		fmt.Println(s.cmdStr)
 	}
 	s.c.Stdout = &s.buf

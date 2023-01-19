@@ -566,7 +566,7 @@ func mockConfig() gcore.Config {
 	cfg := gcore.ProviderConfig()()
 	cfg.SetConfigFile("../../module/app/app.toml")
 	cfg.ReadInConfig()
-	cfg.Set("template.dir", "")
+	cfg.Set("template.dir", "../template/tests/views")
 	return cfg
 }
 
@@ -595,8 +595,6 @@ func mockHTTPServer(cfg ...gcore.Config) *HTTPServer {
 	s.SetLogger(gcore.ProviderLogger()(s.ctx, ""))
 	st, _ := gsession.NewMemoryStore(gsession.NewMemoryStoreConfig())
 	s.SetSessionStore(st)
-	tpl, _ := gcore.ProviderTemplate()(s.ctx, "../template/tests/views")
-	s.SetTpl(tpl)
 	return s
 }
 

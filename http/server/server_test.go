@@ -607,7 +607,7 @@ func TestHTTPServer_createListener(t *testing.T) {
 	assert.IsType((*MyListener)(nil), s.listener)
 	s.InjectListeners([]net.Listener{nil})
 
-	s.SetListenerFactory(func() (net.Listener, error) {
+	s.SetListenerFactory(func(_ string) (net.Listener, error) {
 		return &MyListener1{}, nil
 	})
 	assert.NotNil(s.ListenerFactory())

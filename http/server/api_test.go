@@ -167,7 +167,7 @@ func TestAPIServer_createListener(t *testing.T) {
 	assert.IsType((*MyListener)(nil), api.listener)
 	api.InjectListeners([]net.Listener{nil})
 
-	api.SetListenerFactory(func() (net.Listener, error) {
+	api.SetListenerFactory(func(_ string) (net.Listener, error) {
 		return &MyListener1{}, nil
 	})
 	assert.NotNil(api.ListenerFactory())

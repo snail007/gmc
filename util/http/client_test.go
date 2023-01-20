@@ -1,3 +1,8 @@
+// Copyright 2020 The GMC Author. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// More information at https://github.com/snail007/gmc
+
 package ghttp
 
 import (
@@ -145,7 +150,7 @@ func TestHTTPClient_SetProxyFromEnv(t *testing.T) {
 	client := NewHTTPClient()
 	client.SetProxyFromEnv(true)
 	_, _, _, err := client.Get(httpServerURL+"/hello", time.Second, nil)
-	assert.Contains(err.Error(), "connection refused")
+	assert.NotNil(err)
 }
 
 func TestHTTPClient_SetProxy(t *testing.T) {

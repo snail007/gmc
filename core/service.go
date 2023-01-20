@@ -20,8 +20,8 @@ type Service interface {
 	SetLog(log Logger)
 	// called After Init
 	InjectListeners([]net.Listener)
-	ListenerFactory() func() (net.Listener, error)
-	SetListenerFactory(listenerFactory func() (net.Listener, error))
+	ListenerFactory() func(addr string) (net.Listener, error)
+	SetListenerFactory(listenerFactory func(addr string) (net.Listener, error))
 	Listeners() []net.Listener
 }
 

@@ -51,7 +51,7 @@ type HTTPServer struct {
 	logger          gcore.Logger
 	addr            string
 	listener        net.Listener
-	listenerFactory func() (net.Listener, error)
+	listenerFactory func(addr string) (net.Listener, error)
 	server          *http.Server
 	connCnt         *int64
 	config          gcore.Config
@@ -93,11 +93,11 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 	return s
 }
 
-func (this *HTTPServer) ListenerFactory() func() (net.Listener, error) {
+func (this *HTTPServer) ListenerFactory() func(addr string) (net.Listener, error) {
 	return this.listenerFactory
 }
 
-func (this *HTTPServer) SetListenerFactory(listenerFactory func() (net.Listener, error)) {
+func (this *HTTPServer) SetListenerFactory(listenerFactory func(addr string) (net.Listener, error)) {
 	this.listenerFactory = listenerFactory
 }
 
@@ -354,7 +354,7 @@ func (s *HTTPServer) createListener() (err error) {
 		return
 	}
 	if s.listenerFactory != nil {
-		s.listener, err = s.listenerFactory()
+		s.listener, err = s.listenerFactory(s.addr)
 		return
 	}
 	s.listener, err = net.Listen("tcp", s.addr)
@@ -459,7 +459,7 @@ func (s *HTTPServer) initTLSConfig() (err error) {
 			}
 			ok := clientCertPool.AppendCertsFromPEM(caBytes)
 			if !ok {
-				err = gcore.ProviderError()().New(("failed to parse tls clients root certificate"))
+				err = gcore.ProviderError()().New("failed to parse tls clients root certificate")
 				return
 			}
 			tlsCfg.ClientCAs = clientCertPool

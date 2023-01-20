@@ -27,7 +27,7 @@ import (
 
 type APIServer struct {
 	listener          net.Listener
-	listenerFactory   func() (net.Listener, error)
+	listenerFactory   func(addr string) (net.Listener, error)
 	server            *http.Server
 	address           string
 	router            gcore.HTTPRouter
@@ -101,7 +101,7 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, er
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
 			api = nil
-			err = gcore.ProviderError()().New(("failed to parse tls clients root certificate"))
+			err = gcore.ProviderError()().New("failed to parse tls clients root certificate")
 			return
 		}
 		tlsCfg.ClientCAs = clientCertPool
@@ -112,11 +112,11 @@ func NewDefaultAPIServer(ctx gcore.Ctx, config gcore.Config) (api *APIServer, er
 	return
 }
 
-func (this *APIServer) ListenerFactory() func() (net.Listener, error) {
+func (this *APIServer) ListenerFactory() func(addr string) (net.Listener, error) {
 	return this.listenerFactory
 }
 
-func (this *APIServer) SetListenerFactory(listenerFactory func() (net.Listener, error)) {
+func (this *APIServer) SetListenerFactory(listenerFactory func(addr string) (net.Listener, error)) {
 	this.listenerFactory = listenerFactory
 }
 
@@ -256,7 +256,7 @@ func (this *APIServer) createListener() (err error) {
 		return
 	}
 	if this.listenerFactory != nil {
-		this.listener, err = this.listenerFactory()
+		this.listener, err = this.listenerFactory(this.address)
 		return
 	}
 	this.listener, err = net.Listen("tcp", this.address)

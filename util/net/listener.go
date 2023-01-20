@@ -6,15 +6,63 @@
 package gnet
 
 import (
+	"errors"
 	"fmt"
+	glog "github.com/snail007/gmc/module/log"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
+var _ net.Listener = &Listener{}
+var _ net.Listener = &ProtocolListener{}
+var (
+	defaultConnQueueSize = 2048
+	ClosedListenerError  = errors.New("listener is closed")
+)
+
+type ProtocolChecker func(listener *Listener, conn BufferedConn) bool
+
+type ProtocolListenerOption struct {
+	Name              string
+	Checker           ProtocolChecker
+	ConnQueueSize     int
+	OnQueueOverflow   func(l net.Listener, opt *ProtocolListenerOption, conn BufferedConn)
+	OverflowAutoClose bool
+}
+
+type ProtocolListener struct {
+	opt       *ProtocolListenerOption
+	connChn   chan net.Conn
+	closed    bool
+	closeOnce sync.Once
+	l         *Listener
+}
+
+func (s *ProtocolListener) Accept() (net.Conn, error) {
+	conn, ok := <-s.connChn
+	if !ok {
+		return nil, ClosedListenerError
+	}
+	return conn, nil
+}
+
+func (s *ProtocolListener) Close() error {
+	s.closeOnce.Do(func() {
+		s.closed = true
+		close(s.connChn)
+	})
+	return nil
+}
+
+func (s *ProtocolListener) Addr() net.Addr {
+	return s.l.listener.Addr()
+}
+
 type Listener struct {
-	net.Listener
+	listener                      net.Listener
+	protocolListeners             []*ProtocolListener
 	codecFactory                  []CodecFactory
 	connFilters                   []ConnFilter
 	onConnClose                   CloseHandler
@@ -24,6 +72,32 @@ type Listener struct {
 	connCount                     *int64
 	autoCloseConnOnReadWriteError bool
 	ctx                           Context
+}
+
+func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener {
+	if opt.ConnQueueSize <= 0 {
+		opt.ConnQueueSize = defaultConnQueueSize
+	}
+	l := &ProtocolListener{
+		connChn: make(chan net.Conn, opt.ConnQueueSize),
+		l:       s,
+		opt:     opt,
+	}
+	s.protocolListeners = append(s.protocolListeners, l)
+	return l
+}
+
+func (s *Listener) Close() error {
+	for _, v := range s.protocolListeners {
+		if !v.closed {
+			v.Close()
+		}
+	}
+	return s.listener.Close()
+}
+
+func (s *Listener) Addr() net.Addr {
+	return s.listener.Addr()
 }
 
 func (s *Listener) Ctx() Context {
@@ -85,7 +159,7 @@ func (s *Listener) accept() (c net.Conn, err error) {
 	var tempDelay time.Duration // how long to sleep on accept failure
 retry:
 	for {
-		c, err = s.Listener.Accept()
+		c, err = s.listener.Accept()
 		if err != nil {
 			if ne, ok := err.(net.Error); ok && ne.Temporary() {
 				if tempDelay == 0 {
@@ -142,6 +216,30 @@ retry:
 		c = bc
 	}
 
+	//protocol check
+	if len(s.protocolListeners) > 0 {
+		bc := NewBufferedConn(c)
+		for _, v := range s.protocolListeners {
+			if !v.closed && v.opt.Checker(s, bc) {
+				select {
+				case v.connChn <- bc:
+				default:
+					if v.opt.OnQueueOverflow != nil {
+						v.opt.OnQueueOverflow(v, v.opt, bc)
+					} else {
+						bc.Close()
+						glog.Warn("protocol listener's conn queue is overflow, name: %s, size: %d", v.opt.Name, v.opt.ConnQueueSize)
+					}
+					if v.opt.OverflowAutoClose {
+						bc.Close()
+					}
+				}
+				goto retry
+			}
+		}
+		c = bc
+	}
+
 	// init Conn
 	conn := NewContextConn(ctx, c)
 	conn.rawConn = rawConn
@@ -164,7 +262,13 @@ retry:
 
 	return
 }
-
+func NewListenerAddr(addr string) (*Listener, error) {
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	return NewListener(l), nil
+}
 func NewListener(l net.Listener) *Listener {
 	return NewContextListener(NewContext(), l)
 }
@@ -175,7 +279,7 @@ func NewContextListener(ctx Context, l net.Listener) *Listener {
 		lis = v
 	} else {
 		lis = &Listener{
-			Listener:    l,
+			listener:    l,
 			onConnClose: func(Context) {},
 			connCount:   new(int64),
 		}
@@ -300,7 +404,13 @@ func (s *EventListener) Close() *EventListener {
 func (s *EventListener) ConnCount() int64 {
 	return s.l.ConnCount()
 }
-
+func NewEventListenerAddr(addr string) (*EventListener, error) {
+	l, err := NewListenerAddr(addr)
+	if err != nil {
+		return nil, err
+	}
+	return NewEventListener(l), nil
+}
 func NewEventListener(l net.Listener) *EventListener {
 	return NewContextEventListener(NewContext(), l)
 }

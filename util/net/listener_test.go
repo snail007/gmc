@@ -6,10 +6,14 @@
 package gnet
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -75,9 +79,9 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 
 func TestNewEventListener_FilterError(t *testing.T) {
 	t.Parallel()
-	l, _ := net.Listen("tcp", ":0")
-	_, p, _ := net.SplitHostPort(l.Addr().String())
-	el := NewEventListener(l)
+	el, err := NewEventListenerAddr(":0")
+	assert.Nil(t, err)
+	p := NewAddr(el.Addr()).Port()
 	var hasErr error
 	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return c, nil
@@ -96,7 +100,7 @@ func TestNewEventListener_FilterError(t *testing.T) {
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		_, hasErr = Read(c, 5)
 	}).Start()
-	_, err := net.Dial("tcp", "127.0.0.1:"+p)
+	_, err = net.Dial("tcp", "127.0.0.1:"+p)
 	assert.NoError(t, err)
 	time.Sleep(time.Second)
 	assert.Equal(t, "error", hasErr.Error())
@@ -461,4 +465,194 @@ func TestEventListener_AutoCloseConn(t *testing.T) {
 	assert.Error(t, err)
 	time.Sleep(time.Second)
 	assert.Error(t, hasErr)
+}
+func TestProtocolListener_1(t *testing.T) {
+	t.Parallel()
+	l, err := NewListenerAddr(":0")
+	assert.Nil(t, err)
+	httpListener := l.NewProtocolListener(&ProtocolListenerOption{
+		Name: "http",
+		Checker: func(listener *Listener, conn BufferedConn) bool {
+			h, err := conn.PeekMax(7)
+			if err != nil {
+				return false
+			}
+			return isHTTP(h)
+		},
+	})
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+			conn.Close()
+		}
+	}()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/http", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("okay"))
+	})
+	server := http.Server{
+		Handler: mux,
+	}
+	go server.Serve(httpListener)
+	time.Sleep(time.Second)
+	addr := fmt.Sprintf("http://%s/http", NewAddr(httpListener.Addr()).PortLocalAddr())
+	resp, err := http.Get(addr)
+	assert.Nil(t, err)
+	d, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "okay", string(d))
+	l.Close()
+}
+
+func TestProtocolListener_2(t *testing.T) {
+	t.Parallel()
+	l, err := NewListenerAddr(":0")
+	assert.Nil(t, err)
+	counter := new(int64)
+	httpListener := l.NewProtocolListener(&ProtocolListenerOption{
+		Name: "http",
+		Checker: func(listener *Listener, conn BufferedConn) bool {
+			h, err := conn.PeekMax(7)
+			if err != nil {
+				return false
+			}
+			return isHTTP(h)
+		},
+		OverflowAutoClose: true,
+		OnQueueOverflow: func(l net.Listener, opt *ProtocolListenerOption, conn BufferedConn) {
+			atomic.AddInt64(counter, 1)
+			conn.Close()
+		},
+		ConnQueueSize: 9,
+	})
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+			conn.Close()
+		}
+	}()
+	time.Sleep(time.Second)
+	addr := fmt.Sprintf("http://%s/http", NewAddr(httpListener.Addr()).PortLocalAddr())
+	for i := 0; i < 10; i++ {
+		go http.Get(addr)
+	}
+	time.Sleep(time.Second)
+	l.Close()
+	assert.Equal(t, atomic.LoadInt64(counter), int64(1))
+}
+
+func TestProtocolListener_3(t *testing.T) {
+	t.Parallel()
+	l, err := NewListenerAddr(":0")
+	assert.Nil(t, err)
+	httpListener := l.NewProtocolListener(&ProtocolListenerOption{
+		Name: "http",
+		Checker: func(listener *Listener, conn BufferedConn) bool {
+			h, err := conn.PeekMax(7)
+			if err != nil {
+				return false
+			}
+			return isHTTP(h)
+		},
+		ConnQueueSize: 1,
+	})
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+			conn.Close()
+		}
+	}()
+	time.Sleep(time.Second)
+	addr := fmt.Sprintf("http://%s/http", NewAddr(httpListener.Addr()).PortLocalAddr())
+	for i := 0; i < 2; i++ {
+		go http.Get(addr)
+	}
+	time.Sleep(time.Second)
+	httpListener.Close()
+	http.Get(addr)
+	time.Sleep(time.Second)
+	l.Close()
+}
+
+func isHTTP(head []byte) bool {
+	if len(head) < 3 {
+		return false
+	}
+	keys := []string{"GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
+	for _, key := range keys {
+		if bytes.HasPrefix(head, []byte(key)) || bytes.HasPrefix(head, []byte(strings.ToLower(key))) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestProtocolListener_4(t *testing.T) {
+	t.Parallel()
+	l, err := NewListenerAddr(":0")
+	assert.Nil(t, err)
+	httpListener := l.NewProtocolListener(&ProtocolListenerOption{
+		Name: "http",
+		Checker: func(listener *Listener, conn BufferedConn) bool {
+			h, err := conn.PeekMax(7)
+			if err != nil {
+				return false
+			}
+			return isHTTP(h)
+		},
+	})
+	jsonLister := l.NewProtocolListener(&ProtocolListenerOption{
+		Name: "json",
+		Checker: func(listener *Listener, conn BufferedConn) bool {
+			h, err := conn.PeekMax(1)
+			if err != nil {
+				return false
+			}
+			return string(h) == "{"
+		},
+	})
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+			conn.Close()
+		}
+	}()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/http", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("okay"))
+	})
+	server := http.Server{
+		Handler: mux,
+	}
+	go server.Serve(httpListener)
+	time.Sleep(time.Second)
+	addr := fmt.Sprintf("http://%s/http", NewAddr(httpListener.Addr()).PortLocalAddr())
+	resp, err := http.Get(addr)
+	assert.Nil(t, err)
+	d, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "okay", string(d))
+	okay := false
+	go func() {
+		jsonLister.Accept()
+		okay = true
+	}()
+	time.Sleep(time.Second)
+	c, _ := Dial(NewAddr(jsonLister.Addr()).PortLocalAddr(), time.Second)
+	c.Write([]byte("{}"))
+	time.Sleep(time.Second)
+	assert.True(t, okay)
+	l.Close()
 }

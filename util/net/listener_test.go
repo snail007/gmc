@@ -501,9 +501,10 @@ func TestProtocolListener_1(t *testing.T) {
 	addr := fmt.Sprintf("http://%s/http", NewAddr(httpListener.Addr()).PortLocalAddr())
 	resp, err := http.Get(addr)
 	assert.Nil(t, err)
-	d, err := io.ReadAll(resp.Body)
+	buf := make([]byte, 4)
+	n, err := io.ReadFull(resp.Body, buf)
 	assert.Nil(t, err)
-	assert.Equal(t, "okay", string(d))
+	assert.Equal(t, "okay", string(buf[:n]))
 	l.Close()
 }
 

@@ -612,7 +612,7 @@ func (s *Logger) output(str string, writer *levelWriter) {
 		if len(str) == 0 || str[len(str)-1] != '\n' {
 			ln = "\n"
 		}
-		writer.Write([]byte(time.Now().Format("2006/01/02 15:04:05.000000") +" "+ str + ln))
+		writer.Write([]byte(time.Now().Format("2006/01/02 15:04:05.000000") + " " + str + ln))
 	} else {
 		s.l.Print(str)
 	}

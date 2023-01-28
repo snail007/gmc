@@ -3,11 +3,6 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-// Copyright © 2014 Steve Francia <spf@spf13.com>.
-//
-// Use of this source code is governed by an MIT-style
-// license that can be found in the LICENSE file.
-
 package gcast
 
 import (
@@ -566,7 +561,7 @@ func TestToStringMapStringE(t *testing.T) {
 	var interfaceMapString = map[interface{}]string{"key 1": "value 1", "key 2": "value 2", "key 3": "value 3"}
 	var interfaceMapInterface = map[interface{}]interface{}{"key 1": "value 1", "key 2": "value 2", "key 3": "value 3"}
 	var jsonString = `{"key 1": "value 1", "key 2": "value 2", "key 3": "value 3"}`
-	var invalidJsonString = `{"key 1": "value 1", "key 2": "value 2", "key 3": "value 3"`
+	var invalidJSONString = `{"key 1": "value 1", "key 2": "value 2", "key 3": "value 3"`
 	var emptyString = ""
 
 	tests := []struct {
@@ -583,7 +578,7 @@ func TestToStringMapStringE(t *testing.T) {
 		// errors
 		{nil, nil, true},
 		{testing.T{}, nil, true},
-		{invalidJsonString, nil, true},
+		{invalidJSONString, nil, true},
 		{emptyString, nil, true},
 	}
 

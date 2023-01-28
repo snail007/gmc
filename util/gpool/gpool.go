@@ -308,8 +308,8 @@ func newWorker(pool *GPool) *worker {
 	w := &worker{
 		pool:      pool,
 		id:        pool.newWorkerID(),
-		wakeupSig: make(chan bool,1),
-		breakSig:  make(chan bool,1),
+		wakeupSig: make(chan bool, 1),
+		breakSig:  make(chan bool, 1),
 		status:    statusWaiting,
 	}
 	w.start()

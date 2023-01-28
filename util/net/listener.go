@@ -19,7 +19,7 @@ var _ net.Listener = &Listener{}
 var _ net.Listener = &ProtocolListener{}
 var (
 	defaultConnQueueSize = 2048
-	ClosedListenerError  = errors.New("listener is closed")
+	ErrClosedListener    = errors.New("listener is closed")
 )
 
 type ProtocolChecker func(listener *Listener, conn BufferedConn) bool
@@ -43,7 +43,7 @@ type ProtocolListener struct {
 func (s *ProtocolListener) Accept() (net.Conn, error) {
 	conn, ok := <-s.connChn
 	if !ok {
-		return nil, ClosedListenerError
+		return nil, ErrClosedListener
 	}
 	return conn, nil
 }

@@ -835,7 +835,7 @@ func (ar *MySQLActiveRecord) compileGroupBy() string {
 func (ar *MySQLActiveRecord) compileOrderBy() string {
 	orderBy := []string{}
 	ar.arOrderBy.RangeFast(func(k, v interface{}) bool {
- 		key := k.(string)
+		key := k.(string)
 		Type := strings.ToUpper(v.(string))
 		_key := strings.Split(key, ".")
 		if len(_key) == 2 {

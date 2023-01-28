@@ -2,8 +2,8 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
-// This go file used go >= go1.14.
 
+//go:build go1.14
 // +build go1.14
 
 package gnet

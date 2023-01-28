@@ -541,7 +541,7 @@ func TestConn_CodecContinue(t *testing.T) {
 		return newInitPassThroughCodec(new(bool))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		*called=true
+		*called = true
 		return newContinueCodec(isContinue)
 	})
 	accepted := false

@@ -331,7 +331,7 @@ func TestGLog_AddLevelWriter(t *testing.T) {
 	assert := assert2.New(t)
 	out, _, err := gtest.NewProcess(t).Wait()
 	assert.Nil(err)
-	t.Log(">>>>",out)
+	t.Log(">>>>", out)
 	assert.False(strings.Contains(out, "TRACE foo1\n"))
 	assert.True(strings.Contains(out, "INFO foo2\n"))
 	assert.Contains(out, "glog_test.go")

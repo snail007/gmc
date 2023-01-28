@@ -1,9 +1,10 @@
-// +build !windows
-
 // Copyright 2020 The GMC Author. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
+
+//go:build !windows
+// +build !windows
 
 package gapp
 
@@ -21,7 +22,7 @@ import (
 func (s *GMCApp) reloadSignalMonitor() {
 	go func() {
 		// s.logger.Printf("monitor USR2 signal ...")
-		ch := make(chan os.Signal)
+		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, syscall.SIGUSR2)
 		<-ch
 		s.logger.Infof("Received USR2 signal , now reloading ...")

@@ -6,6 +6,7 @@
 package gerror
 
 import (
+	"fmt"
 	"testing"
 
 	gcore "github.com/snail007/gmc/core"
@@ -84,4 +85,21 @@ func TestWrap(t *testing.T) {
 	}
 	f1()
 	assert.Contains(t, str, "*errors.errorString")
+}
+
+func TestTry(t *testing.T) {
+	e := Try(func() {
+		a := 0
+		fmt.Print(1 / a)
+	})
+	assert.Contains(t, e, "integer divide by zero")
+}
+
+func TestTryWithStack(t *testing.T) {
+	e := TryWithStack(func() {
+		a := 0
+		fmt.Print(1 / a)
+	})
+	assert.Contains(t, e.StackStr(), "divideError")
+	assert.Contains(t, e.ErrorStack(), "integer divide by zero")
 }

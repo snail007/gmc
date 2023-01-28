@@ -29,17 +29,24 @@ import (
 )
 
 var (
-	bindata = map[string][]byte{}
+	defaultBinData = map[string][]byte{}
 )
 
-func SetBinData(data map[string]string) {
-	bindata = map[string][]byte{}
+//SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
+func SetBinBase64(data map[string]string) {
 	for k, v := range data {
 		b, err := base64.StdEncoding.DecodeString(v)
 		if err != nil {
 			panic("init static bin data fail, error: " + err.Error())
 		}
-		bindata[k] = b
+		defaultBinData[k] = b
+	}
+}
+
+//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
+func SetBinBytes(data map[string][]byte) {
+	for k, v := range data {
+		defaultBinData[k] = v
 	}
 }
 
@@ -68,6 +75,14 @@ type HTTPServer struct {
 	isShutdown           bool
 	remoteAddrDataMap    *sync.Map
 	ctx                  gcore.Ctx
+	binData              map[string][]byte
+}
+
+//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
+func (s *HTTPServer) SetBinBytes(binData map[string][]byte) {
+	for k, v := range binData {
+		s.binData[k] = v
+	}
 }
 
 func (s *HTTPServer) SetCtx(ctx gcore.Ctx) {
@@ -88,6 +103,7 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 		middleware2:       []gcore.Middleware{},
 		middleware3:       []gcore.Middleware{},
 		remoteAddrDataMap: &sync.Map{},
+		binData:           map[string][]byte{},
 	}
 	ctx.SetWebServer(s)
 	return s
@@ -205,7 +221,6 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				s.handle50x(reqCtx, err)
 			}
 		}
-
 		// middleware2
 		if s.callMiddleware(reqCtx, s.middleware2) {
 			return
@@ -475,11 +490,15 @@ func (s *HTTPServer) serveStatic(w http.ResponseWriter, r *http.Request) {
 	path = strings.TrimPrefix(path, s.staticUrlpath)
 	var b []byte
 	var ok bool
-	//1. find in bindata
-	if len(bindata) > 0 {
-		b, ok = bindata[path]
+	//1. find in s.binData
+	b, ok = s.binData[path]
+
+	//2. find in defaultBinData
+	if !ok {
+		b, ok = defaultBinData[path]
 	}
-	//2. find in system path
+
+	//3. find in system path
 	if !ok {
 		var e error
 		b, e = ioutil.ReadFile(filepath.Join(s.staticDir, path))

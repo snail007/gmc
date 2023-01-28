@@ -389,10 +389,10 @@ func Test_Handle500(t *testing.T) {
 func Test_SetBindata(t *testing.T) {
 	assert := assert.New(t)
 	str := base64.StdEncoding.EncodeToString([]byte("{}"))
-	SetBinData(map[string]string{
+	SetBinBase64(map[string]string{
 		"js/juqery.js": str,
 	})
-	assert.NotNil(bindata["js/juqery.js"])
+	assert.NotNil(defaultBinData["js/juqery.js"])
 	s := mockHTTPServer()
 	w, r := mockRequest("/static/js/juqery.js")
 	r.Header.Set("Accept-Encoding", "gzip")
@@ -406,7 +406,7 @@ func Test_SetBindata(t *testing.T) {
 	buf := make([]byte, 128)
 	n, _ := gz.Read(buf)
 	assert.Equal("{}", string(buf[:n]))
-	bindata = nil
+	defaultBinData = map[string][]byte{}
 }
 func Test_SetBindata_1(t *testing.T) {
 	assert := assert.New(t)
@@ -423,22 +423,22 @@ func Test_SetBindata_1(t *testing.T) {
 func Test_SetBindata_2(t *testing.T) {
 	assert := assert.New(t)
 	str := base64.StdEncoding.EncodeToString([]byte("{}"))
-	SetBinData(map[string]string{
+	SetBinBase64(map[string]string{
 		"js/juqery.js": str,
 	})
-	assert.NotNil(bindata["js/juqery.js"])
+	assert.NotNil(defaultBinData["js/juqery.js"])
 	s := mockHTTPServer()
 	w, r := mockRequest("/static/js/juqery.js")
 	s.serveStatic(w, r)
 	resp := w.Result()
 	b, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal("{}", string(b))
-	bindata = nil
+	defaultBinData = map[string][]byte{}
 }
 func Test_SetBindata_3(t *testing.T) {
 	assert := assert.New(t)
 	assert.Panics(func() {
-		SetBinData(map[string]string{
+		SetBinBase64(map[string]string{
 			"/js/juqery.js": ".",
 		})
 	})
@@ -619,4 +619,11 @@ func TestHTTPServer_createListener(t *testing.T) {
 	e = s.createListener()
 	assert.Nil(e)
 	assert.IsType((*MyListener)(nil), s.listener)
+}
+
+func TestSetBinBytes(t *testing.T) {
+	SetBinBytes(map[string][]byte{
+		"test/a": []byte("aa"),
+	})
+	assert.Equal(t, defaultBinData["test/a"], []byte("aa"))
 }

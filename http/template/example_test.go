@@ -12,6 +12,7 @@ import (
 )
 
 func Example() {
+	defaultTpl.binData = map[string][]byte{}
 	ctx := gcore.ProviderCtx()()
 	ctx.Logger().SetOutput(ioutil.Discard)
 	ctx.SetConfig(gcore.ProviderConfig()())

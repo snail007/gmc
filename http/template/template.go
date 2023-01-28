@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	defaultTpl = New()
+	DefaultTpl = New()
 )
 
 //SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
@@ -31,17 +31,17 @@ func SetBinBase64(data map[string]string) {
 		}
 		binData[k] = b
 	}
-	defaultTpl.SetBinData(data)
+	DefaultTpl.SetBinData(data)
 }
 
 //SetBinBytes key is file path no slash prefix, value is file's bytes contents.
 func SetBinBytes(files map[string][]byte) {
-	defaultTpl.SetBinBytes(files)
+	DefaultTpl.SetBinBytes(files)
 }
 
 //SetBinString key is file path no slash prefix, value is file's string contents.
 func SetBinString(files map[string]string) {
-	defaultTpl.SetBinString(files)
+	DefaultTpl.SetBinString(files)
 }
 
 type Template struct {
@@ -171,6 +171,9 @@ func (s *Template) Parse() (err error) {
 	}
 	s.parsed = true
 	s.Funcs(addFunc(s.ctx))
+	if len(DefaultTpl.binData) > 0 {
+		s.SetBinBytes(DefaultTpl.binData)
+	}
 	if len(s.binData) > 0 {
 		s.ctx.Logger().Infof("parse views from binary data")
 		err = s.parseFromBinData()

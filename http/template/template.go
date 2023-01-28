@@ -84,10 +84,8 @@ func New() (t *Template) {
 	t = &Template{
 		tpl:     tpl,
 		ext:     ".html",
-		ctx:     gcore.ProviderCtx()(),
 		binData: map[string][]byte{},
 	}
-	t.ctx.SetTemplate(t)
 	return
 }
 
@@ -289,6 +287,7 @@ func (s *Template) Ctx() gcore.Ctx {
 }
 
 func (s *Template) SetCtx(ctx gcore.Ctx) {
+	ctx.SetTemplate(s)
 	s.ctx = ctx
 }
 

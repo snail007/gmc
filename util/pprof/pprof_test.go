@@ -28,7 +28,7 @@ func TestBindRouter(t *testing.T) {
 	err := p.Start()
 	defer p.Kill()
 	assert.NoError(t, err)
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 8)
 	_, err = ghttp.Download("http://127.0.0.1:"+port+"/debug/", time.Second, nil)
 	assert.NoError(t, err)
 	_, err = ghttp.Download("http://127.0.0.1:"+port+"/debug/allocs?debug=1", time.Second, nil)

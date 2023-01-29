@@ -59,7 +59,7 @@ jobs:
           mkdir -p $GOPATH/src/github.com/snail007
           cd ../ && cp -R gmc $SNAIL007PATH/ && cd $SNAIL007PATH/gmc
           go get -v -t -d ./...
-          go test --race -covermode=atomic ./...
+          go test -covermode=count ./...
   codecov:
     environment: gmc
     name: codecov
@@ -92,7 +92,7 @@ jobs:
       - name: Set up Go 1.15
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15.x
+          go-version: 1.18.x
         id: go
 
       - name: Checkout code

@@ -16,6 +16,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -154,6 +156,7 @@ func NewProcess(t *testing.T) *Process {
 		cleanFile:    binName,
 		exitChn:      make(chan bool, 1),
 		addrFile:     addrFile,
+		exited:       new(int32),
 	}
 }
 
@@ -164,9 +167,9 @@ type Process struct {
 	testFuncName string
 	isVerbose    bool
 	cmdStr       string
-	buf          bytes.Buffer
+	buffer       *bufWrapper
 	exitChn      chan bool
-	exited       bool
+	exited       *int32
 	started      bool
 	startCalled  bool
 	addrFile     string
@@ -186,7 +189,7 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 	}
 	s.started = true
 	defer func() {
-		s.exited = true
+		atomic.StoreInt32(s.exited, 1)
 		os.Remove(s.cleanFile)
 		if s.isVerbose {
 			fmt.Printf("OUTPUT:\n %s", out)
@@ -213,6 +216,29 @@ func (s *Process) Wait() (out string, exitCode int, err error) {
 	return
 }
 
+type bufWrapper struct {
+	buf  bytes.Buffer
+	lock sync.RWMutex
+}
+
+func (s *bufWrapper) Read(p []byte) (n int, err error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.buf.Read(p)
+}
+
+func (s *bufWrapper) Write(p []byte) (n int, err error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *bufWrapper) String() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.buf.String()
+}
+
 // Start starts testing subprocess and return immediately with no wait.
 func (s *Process) Start() (err error) {
 	if s.started {
@@ -225,14 +251,15 @@ func (s *Process) Start() (err error) {
 		fmt.Println(s.exportStr)
 		fmt.Println(s.cmdStr)
 	}
-	s.c.Stdout = &s.buf
-	s.c.Stderr = &s.buf
+	s.buffer = &bufWrapper{}
+	s.c.Stdout = s.buffer
+	s.c.Stderr = s.buffer
 	err = s.c.Start()
 	if err == nil {
 		go func() {
 			s.c.Process.Wait()
 			s.exitChn <- true
-			s.exited = true
+			atomic.StoreInt32(s.exited, 1)
 			os.Remove(s.cleanFile)
 		}()
 	}
@@ -279,13 +306,13 @@ func (s *Process) Kill() (err error) {
 
 // IsRunning returns true if testing subprocess is running, otherwise returns false.
 func (s *Process) IsRunning() bool {
-	return !s.exited
+	return atomic.LoadInt32(s.exited) == 0
 }
 
 // Output acquires the subprocess stdout and stderr output after Start called.
 func (s *Process) Output() string {
 	var b bytes.Buffer
-	for _, line := range strings.Split(s.buf.String(), "\n") {
+	for _, line := range strings.Split(s.buffer.String(), "\n") {
 		if strings.Contains(line, "warning: no packages being tested depend on matches for pattern") {
 			continue
 		}

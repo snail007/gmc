@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -207,18 +208,18 @@ func TestLogger_Errorf(t *testing.T) {
 
 func TestLogger_WithRate(t *testing.T) {
 	t.Parallel()
-	cnt := 0
+	cnt := new(int32)
 	l := glog.New()
 	l0 := l.WithRate(time.Second)
 	l0.SetOutput(ioutil.Discard)
 	l0.SetRateCallback(func(msg string) {
-		cnt++
+		atomic.AddInt32(cnt, 1)
 	})
 	for i := 0; i < 35; i++ {
 		l0.Write("hello")
 		time.Sleep(time.Millisecond * 100)
 	}
-	assert2.True(t, cnt >= 3)
+	assert2.True(t, atomic.LoadInt32(cnt) >= 3)
 }
 
 func TestLogger_Write1(t *testing.T) {

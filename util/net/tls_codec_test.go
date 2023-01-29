@@ -8,6 +8,7 @@ package gnet
 import (
 	"crypto/x509"
 	"fmt"
+	gatomic "github.com/snail007/gmc/util/sync/atomic"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -343,9 +344,12 @@ func TestTLSCodec_9(t *testing.T) {
 		c0.AddClientCa([]byte("aaa"))
 		return c0
 	})
-	var hasErr error
+	var hasErr = gatomic.NewBool()
 	l0.OnAccept(func(ctx Context, c net.Conn) {
-		_, hasErr = Read(c, 5)
+		_, e := Read(c, 5)
+		if e != nil {
+			hasErr.SetTrue()
+		}
 		c.Close()
 	})
 	l0.Start()
@@ -364,7 +368,7 @@ func TestTLSCodec_9(t *testing.T) {
 	_, err := Read(conn0, 5)
 	time.Sleep(time.Second)
 	assert.Error(t, err)
-	assert.Error(t, hasErr)
+	assert.True(t, hasErr.IsTrue())
 }
 
 func TestTLSCodec_10(t *testing.T) {

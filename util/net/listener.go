@@ -35,7 +35,7 @@ type ProtocolListenerOption struct {
 type ProtocolListener struct {
 	opt       *ProtocolListenerOption
 	connChn   chan net.Conn
-	closed    bool
+	closed    *int32
 	closeOnce sync.Once
 	l         *Listener
 }
@@ -49,10 +49,7 @@ func (s *ProtocolListener) Accept() (net.Conn, error) {
 }
 
 func (s *ProtocolListener) Close() error {
-	s.closeOnce.Do(func() {
-		s.closed = true
-		close(s.connChn)
-	})
+	atomic.StoreInt32(s.closed, 1)
 	return nil
 }
 
@@ -82,6 +79,7 @@ func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener
 		connChn: make(chan net.Conn, opt.ConnQueueSize),
 		l:       s,
 		opt:     opt,
+		closed:  new(int32),
 	}
 	s.protocolListeners = append(s.protocolListeners, l)
 	return l
@@ -89,7 +87,7 @@ func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener
 
 func (s *Listener) Close() error {
 	for _, v := range s.protocolListeners {
-		if !v.closed {
+		if atomic.LoadInt32(v.closed) == 0 {
 			v.Close()
 		}
 	}
@@ -220,7 +218,12 @@ retry:
 	if len(s.protocolListeners) > 0 {
 		bc := NewBufferedConn(c)
 		for _, v := range s.protocolListeners {
-			if !v.closed && v.opt.Checker(s, bc) {
+			if atomic.LoadInt32(v.closed) == 1 {
+				v.closeOnce.Do(func() {
+					close(v.connChn)
+				})
+			}
+			if atomic.LoadInt32(v.closed) == 0 && v.opt.Checker(s, bc) {
 				select {
 				case v.connChn <- bc:
 				default:
@@ -228,7 +231,7 @@ retry:
 						v.opt.OnQueueOverflow(v, v.opt, bc)
 					} else {
 						bc.Close()
-						glog.Warn("protocol listener's conn queue is overflow, name: %s, size: %d", v.opt.Name, v.opt.ConnQueueSize)
+						glog.Warnf("protocol listener's conn queue is overflow, name: %s, size: %d", v.opt.Name, v.opt.ConnQueueSize)
 					}
 					if v.opt.OverflowAutoClose {
 						bc.Close()

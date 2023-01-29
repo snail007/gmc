@@ -56,12 +56,14 @@ type HTTPServer struct {
 	sessionStore    gcore.SessionStorage
 	router          gcore.HTTPRouter
 	logger          gcore.Logger
+	loggerLock      sync.RWMutex
 	addr            string
 	listener        net.Listener
 	listenerFactory func(addr string) (net.Listener, error)
 	server          *http.Server
 	connCnt         *int64
-	config          gcore.Config
+	cfg             gcore.Config
+	configLock      sync.RWMutex
 	handler40x      func(ctx gcore.Ctx, tpl gcore.Template)
 	handler500      func(ctx gcore.Ctx, tpl gcore.Template, err interface{})
 	//just for testing
@@ -72,7 +74,7 @@ type HTTPServer struct {
 	middleware1          []gcore.Middleware
 	middleware2          []gcore.Middleware
 	middleware3          []gcore.Middleware
-	isShutdown           bool
+	isShutdown           *int32
 	remoteAddrDataMap    *sync.Map
 	ctx                  gcore.Ctx
 	binData              map[string][]byte
@@ -104,6 +106,7 @@ func NewHTTPServer(ctx gcore.Ctx) *HTTPServer {
 		middleware3:       []gcore.Middleware{},
 		remoteAddrDataMap: &sync.Map{},
 		binData:           map[string][]byte{},
+		isShutdown:        new(int32),
 	}
 	ctx.SetWebServer(s)
 	return s
@@ -120,7 +123,7 @@ func (this *HTTPServer) SetListenerFactory(listenerFactory func(addr string) (ne
 //Init implements service.Service Init
 func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	connCnt := int64(0)
-	s.config = cfg
+	s.SetConfig(cfg)
 	s.server = &http.Server{}
 	s.logger = gcore.ProviderLogger()(s.ctx, "")
 	s.connCnt = &connCnt
@@ -140,7 +143,7 @@ func (s *HTTPServer) Ctx() gcore.Ctx {
 func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init i18n
-	if s.config.GetBool("i18n.enable") {
+	if s.Config().GetBool("i18n.enable") {
 		s.i18n, err = gcore.ProviderI18n()(s.ctx)
 		if err != nil {
 			return
@@ -169,7 +172,7 @@ func (s *HTTPServer) initBaseObjets() (err error) {
 
 	// init http server router
 	s.router = gcore.ProviderHTTPRouter()(s.ctx)
-	s.addr = s.config.GetString("httpserver.listen")
+	s.addr = s.Config().GetString("httpserver.listen")
 
 	// init static files handler, must be after router inited
 	s.initStatic()
@@ -265,14 +268,14 @@ func (s *HTTPServer) handle50x(c gcore.Ctx, err interface{}) {
 		c.WriteHeader(http.StatusInternalServerError)
 		c.Response().Header().Set("Content-Type", "text/plain")
 		info := "Internal Server Error"
-		if err != nil && s.config.GetBool("httpserver.showerrorstack") {
+		if err != nil && s.Config().GetBool("httpserver.showerrorstack") {
 			info += "\n" + msg
 		}
 		c.Write(info)
 	} else {
 		s.handler500(c, s.tpl, err)
 	}
-	s.logger.Warn(c.Request().URL.String() + "\n" + msg)
+	s.Logger().Warn(c.Request().URL.String() + "\n" + msg)
 }
 
 // AddFuncMap adds helper functions to template
@@ -281,10 +284,14 @@ func (s *HTTPServer) AddFuncMap(f map[string]interface{}) {
 }
 
 func (s *HTTPServer) SetConfig(c gcore.Config) {
-	s.config = c
+	s.configLock.Lock()
+	defer s.configLock.Unlock()
+	s.cfg = c
 }
 func (s *HTTPServer) Config() gcore.Config {
-	return s.config
+	s.configLock.RLock()
+	defer s.configLock.RUnlock()
+	return s.cfg
 }
 
 func (s *HTTPServer) ActiveConnCount() int64 {
@@ -310,6 +317,8 @@ func (s *HTTPServer) Server() *http.Server {
 	return s.server
 }
 func (s *HTTPServer) SetLogger(l gcore.Logger) {
+	s.loggerLock.Lock()
+	defer s.loggerLock.Unlock()
 	s.logger = l
 	s.server.ErrorLog = func() *log.Logger {
 		ns := s.logger.Namespace()
@@ -321,6 +330,8 @@ func (s *HTTPServer) SetLogger(l gcore.Logger) {
 	}()
 }
 func (s *HTTPServer) Logger() gcore.Logger {
+	s.loggerLock.RLock()
+	defer s.loggerLock.RUnlock()
 	return s.logger
 }
 func (s *HTTPServer) SetRouter(r gcore.HTTPRouter) {
@@ -386,22 +397,22 @@ func (s *HTTPServer) Listen() (err error) {
 			err := s.server.Serve(s.listener)
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
-					if s.isShutdown {
-						s.logger.Infof("http server graceful shutdown on http://%s", s.addr)
+					if atomic.LoadInt32(s.isShutdown) == 1 {
+						s.Logger().Infof("http server graceful shutdown on http://%s", s.addr)
 					} else {
-						s.logger.Infof("http server closed on http://%s", s.addr)
+						s.Logger().Infof("http server closed on http://%s", s.addr)
 						s.server.Close()
 					}
 					break
 				} else {
-					s.logger.Warnf("http server Serve fail on http://%s , error : %s", s.addr, err)
+					s.Logger().Warnf("http server Serve fail on http://%s , error : %s", s.addr, err)
 					time.Sleep(time.Second * 3)
 					continue
 				}
 			}
 		}
 	}()
-	s.logger.Infof("http server listen on http://%s", s.listener.Addr())
+	s.Logger().Infof("http server listen on http://%s", s.listener.Addr())
 	return
 }
 func (s *HTTPServer) ListenTLS() (err error) {
@@ -411,26 +422,26 @@ func (s *HTTPServer) ListenTLS() (err error) {
 	}
 	go func() {
 		for {
-			err := s.server.ServeTLS(s.listener, s.config.GetString("httpserver.tlscert"),
-				s.config.GetString("httpserver.tlskey"))
+			err := s.server.ServeTLS(s.listener, s.Config().GetString("httpserver.tlscert"),
+				s.Config().GetString("httpserver.tlskey"))
 			if err != nil {
 				if !s.isTestNotClosedError && strings.Contains(err.Error(), "closed") {
-					if s.isShutdown {
-						s.logger.Infof("https server graceful shutdown on https://%s", s.addr)
+					if atomic.LoadInt32(s.isShutdown) == 1 {
+						s.Logger().Infof("https server graceful shutdown on https://%s", s.addr)
 					} else {
-						s.logger.Infof("https server closed on https://%s", s.addr)
+						s.Logger().Infof("https server closed on https://%s", s.addr)
 						s.server.Close()
 					}
 					break
 				} else {
-					s.logger.Warnf("http server ServeTLS fail , error : %s", err)
+					s.Logger().Warnf("http server ServeTLS fail , error : %s", err)
 					time.Sleep(time.Second * 3)
 					continue
 				}
 			}
 		}
 	}()
-	s.logger.Infof("https server listen on https://%s", s.listener.Addr())
+	s.Logger().Infof("https server listen on https://%s", s.listener.Addr())
 	return
 }
 
@@ -452,8 +463,8 @@ func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 
 // must be called after router inited
 func (s *HTTPServer) initStatic() {
-	s.staticDir = s.config.GetString("static.dir")
-	s.staticUrlpath = s.config.GetString("static.urlpath")
+	s.staticDir = s.Config().GetString("static.dir")
+	s.staticUrlpath = s.Config().GetString("static.urlpath")
 	if s.staticDir != "" && s.staticUrlpath != "" {
 		if strings.HasSuffix(s.staticUrlpath, "/") {
 			s.staticUrlpath = strings.TrimRight(s.staticUrlpath, "/")
@@ -463,12 +474,12 @@ func (s *HTTPServer) initStatic() {
 	}
 }
 func (s *HTTPServer) initTLSConfig() (err error) {
-	if s.config.GetBool("httpserver.tlsenable") {
+	if s.Config().GetBool("httpserver.tlsenable") {
 		tlsCfg := &tls.Config{}
 		clientCertPool := x509.NewCertPool()
-		if s.config.GetBool("httpserver.tlsclientauth") {
+		if s.Config().GetBool("httpserver.tlsclientauth") {
 			tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
-			caBytes, e := ioutil.ReadFile(s.config.GetString("httpserver.tlsclientsca"))
+			caBytes, e := ioutil.ReadFile(s.Config().GetString("httpserver.tlsclientsca"))
 			if e != nil {
 				return e
 			}
@@ -538,8 +549,8 @@ func (s *HTTPServer) PrintRouteTable(w io.Writer) {
 //Start implements service.Service Start
 func (s *HTTPServer) Start() (err error) {
 	defer func() {
-		if err == nil && s.config.GetBool("httpserver.printroute") {
-			s.PrintRouteTable(s.logger.Writer())
+		if err == nil && s.Config().GetBool("httpserver.printroute") {
+			s.PrintRouteTable(s.Logger().Writer())
 		}
 	}()
 	// delay template Parse
@@ -547,7 +558,7 @@ func (s *HTTPServer) Start() (err error) {
 	if err != nil {
 		return
 	}
-	if s.config.GetBool("httpserver.tlsenable") {
+	if s.Config().GetBool("httpserver.tlsenable") {
 		return s.ListenTLS()
 	}
 	return s.Listen()
@@ -561,10 +572,10 @@ func (s *HTTPServer) Stop() {
 
 //GracefulStop implements service.Service GracefulStop
 func (s *HTTPServer) GracefulStop() {
-	if s.isShutdown {
+	if atomic.LoadInt32(s.isShutdown) == 1 {
 		return
 	}
-	s.isShutdown = true
+	atomic.StoreInt32(s.isShutdown, 1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	s.server.Shutdown(ctx)
@@ -573,6 +584,8 @@ func (s *HTTPServer) GracefulStop() {
 
 //SetLog implements service.Service SetLog
 func (s *HTTPServer) SetLog(l gcore.Logger) {
+	s.loggerLock.Lock()
+	defer s.loggerLock.Unlock()
 	s.logger = l
 	return
 }
@@ -580,7 +593,7 @@ func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware
 	for _, fn := range middleware {
 		func() {
 			defer gcore.ProviderError()().Recover(func(e interface{}) {
-				s.logger.Warnf("middleware panic error : %s", gcore.ProviderError()().StackError(e))
+				s.Logger().Warnf("middleware panic error : %s", gcore.ProviderError()().StackError(e))
 				isStop = false
 			})
 			isStop = fn(ctx)

@@ -19,7 +19,7 @@ func TestNew(t *testing.T) {
 	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	rd := NewRedisCache(cfg)
-	//Set
+	//SetVal
 	err := rd.Set("k3", "aaa", time.Minute)
 	assert.Nil(err)
 	//Get
@@ -52,7 +52,7 @@ func TestNew_2(t *testing.T) {
 	//cfg.Password = "123"
 	cfg.Prefix = "__pre__"
 	rd := NewRedisCache(cfg)
-	//Set
+	//SetVal
 	err := rd.Set("k3", "aaa", time.Minute)
 	assert.Nil(err)
 	//Get
@@ -66,7 +66,7 @@ func TestReisIncr(t *testing.T) {
 	cfg.Addr = "127.0.0.1:6379"
 	cfg.Debug = true
 	rd := NewRedisCache(cfg)
-	// Set
+	// SetVal
 	err := rd.Set("k3", "1", time.Minute)
 	assert.Nil(err)
 	// incr

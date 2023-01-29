@@ -876,7 +876,7 @@ func indirect(a interface{}) interface{} {
 		return nil
 	}
 	if t := reflect.TypeOf(a); t.Kind() != reflect.Ptr {
-		// Avoid creating a reflect.Value if it's not a pointer.
+		// Avoid creating a reflect.Val if it's not a pointer.
 		return a
 	}
 	v := reflect.ValueOf(a)

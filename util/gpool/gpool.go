@@ -13,6 +13,7 @@ import (
 	gmap "github.com/snail007/gmc/util/map"
 	"io"
 	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -216,22 +217,33 @@ func (s *GPool) SetLogger(l gcore.Logger) {
 }
 
 type worker struct {
-	status    int
-	pool      *GPool
-	wakeupSig chan bool
-	breakSig  chan bool
-	id        string
+	status          int
+	statusLock      sync.RWMutex
+	pool            *GPool
+	wakeupSig       chan bool
+	wakeupSigClosed *int32
+	breakSig        chan bool
+	id              string
+	closeOnce       sync.Once
 }
 
 func (w *worker) Status() int {
+	w.statusLock.RLock()
+	defer w.statusLock.RUnlock()
 	return w.status
 }
 
 func (w *worker) SetStatus(status int) {
+	w.statusLock.Lock()
+	defer w.statusLock.Unlock()
 	w.status = status
 }
 
 func (w *worker) Wakeup() bool {
+	if atomic.LoadInt32(w.wakeupSigClosed) == 1 {
+		close(w.wakeupSig)
+		return false
+	}
 	defer gcore.ProviderError()().Recover()
 	select {
 	case w.wakeupSig <- true:
@@ -261,9 +273,12 @@ func (w *worker) breakLoop() bool {
 }
 
 func (w *worker) Stop() {
-	defer gcore.ProviderError()().Recover()
-	w.breakLoop()
-	close(w.wakeupSig)
+	w.closeOnce.Do(func() {
+		defer gcore.ProviderError()().Recover()
+		atomic.StoreInt32(w.wakeupSigClosed, 1)
+		w.breakLoop()
+		//close(w.wakeupSig)
+	})
 }
 
 func (w *worker) start() {
@@ -306,11 +321,12 @@ func (w *worker) start() {
 
 func newWorker(pool *GPool) *worker {
 	w := &worker{
-		pool:      pool,
-		id:        pool.newWorkerID(),
-		wakeupSig: make(chan bool, 1),
-		breakSig:  make(chan bool, 1),
-		status:    statusWaiting,
+		pool:            pool,
+		id:              pool.newWorkerID(),
+		wakeupSig:       make(chan bool, 1),
+		wakeupSigClosed: new(int32),
+		breakSig:        make(chan bool, 1),
+		status:          statusWaiting,
 	}
 	w.start()
 	return w

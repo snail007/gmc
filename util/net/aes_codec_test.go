@@ -86,7 +86,7 @@ func TestAESCodec(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 3)
-	assert.True(t, *outputCnt > 50)
+	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 }
 
 func TestAESCodec128(t *testing.T) {
@@ -160,7 +160,7 @@ func TestAESCodec128(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 3)
-	assert.True(t, *outputCnt > 50)
+	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 }
 
 func TestAESCodec192(t *testing.T) {
@@ -234,7 +234,7 @@ func TestAESCodec192(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 3)
-	assert.True(t, *outputCnt > 50)
+	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 }
 
 func TestAESCodec256(t *testing.T) {
@@ -308,7 +308,7 @@ func TestAESCodec256(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 3)
-	assert.True(t, *outputCnt > 50)
+	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 }
 
 func TestNewAESCodec_Error(t *testing.T) {

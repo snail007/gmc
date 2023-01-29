@@ -7,6 +7,7 @@ package gnet
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/util/sync/atomic"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -86,7 +87,7 @@ func TestMultipleCodec(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 3)
-	assert.True(t, *outputCnt > 50)
+	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 	assert.IsType(t, (*net.TCPConn)(nil), conn.RawConn())
 	assert.IsType(t, (*AESCodec)(nil), conn.Conn)
 }
@@ -163,35 +164,35 @@ func TestMultipleCodec2(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	assert.True(t, conn.ReadBytes() > 450)
 	assert.True(t, conn.WriteBytes() > 450)
-	assert.True(t, *outputCnt > 50)
+	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 }
 
 func TestMultipleCodec3(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := new(bool)
+	called := gatomic.NewBool()
 	el := NewEventListener(l)
-	var conn net.Conn
+	conn := &gatomic.Value{}
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitCodec2(called)
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
-		conn = c.(*Conn).Conn
+		conn.SetVal(c.(*Conn).Conn)
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *called)
-	assert.IsType(t, &initCodec{}, conn)
+	assert.True(t, called.IsTrue())
+	assert.IsType(t, &initCodec{}, conn.Val())
 }
 
 func TestEventConn(t *testing.T) {
@@ -211,7 +212,7 @@ func TestEventConn(t *testing.T) {
 	conn.SetTimeout(time.Second)
 	assert.Equal(t, time.Second, conn.ReadTimeout())
 	assert.Equal(t, time.Second, conn.WriteTimeout())
-	closed := false
+	closed := gatomic.NewBool()
 	conn.OnData(func(ctx Context, data []byte) {
 		s := ctx.EventConn()
 		assert.Equal(t, "hello", string(data))
@@ -219,7 +220,7 @@ func TestEventConn(t *testing.T) {
 		s.Write([]byte("hi"))
 		assert.Equal(t, int64(2), s.WriteBytes())
 	}).OnClose(func(ctx Context) {
-		closed = true
+		closed.SetTrue()
 	}).Start()
 	conn.Start()
 	time.AfterFunc(time.Millisecond*1500, func() {
@@ -228,7 +229,7 @@ func TestEventConn(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	assert.Contains(t, conn.LocalAddr().String(), "127.0.0.1:")
 	assert.Contains(t, conn.RemoteAddr().String(), "127.0.0.1:")
-	assert.True(t, closed)
+	assert.True(t, closed.IsTrue())
 	assert.Equal(t, conn.ctx, conn.Ctx())
 }
 
@@ -250,9 +251,9 @@ func TestEventConn2(t *testing.T) {
 	conn.SetTimeout(time.Second)
 	assert.Equal(t, time.Second, conn.ReadTimeout())
 	assert.Equal(t, time.Second, conn.WriteTimeout())
-	closed := false
-	readErr := false
-	writeErr := false
+	closed := gatomic.NewBool()
+	readErr := gatomic.NewBool()
+	writeErr := gatomic.NewBool()
 	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return c, nil
 	})
@@ -268,11 +269,11 @@ func TestEventConn2(t *testing.T) {
 		s.Write([]byte("hi"))
 		assert.Equal(t, int64(2), s.WriteBytes())
 	}).OnReadError(func(ctx Context, err error) {
-		readErr = true
+		readErr.SetTrue()
 	}).OnWriterError(func(ctx Context, err error) {
-		writeErr = true
+		writeErr.SetTrue()
 	}).OnClose(func(ctx Context) {
-		closed = true
+		closed.SetTrue()
 	})
 	conn.Write([]byte("hi"))
 	conn.Start()
@@ -282,9 +283,9 @@ func TestEventConn2(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	assert.Contains(t, conn.LocalAddr().String(), "127.0.0.1:")
 	assert.Contains(t, conn.RemoteAddr().String(), "127.0.0.1:")
-	assert.True(t, closed)
-	assert.True(t, readErr)
-	assert.True(t, writeErr)
+	assert.True(t, closed.IsTrue())
+	assert.True(t, readErr.IsTrue())
+	assert.True(t, writeErr.IsTrue())
 }
 
 func TestEventConn3(t *testing.T) {
@@ -297,8 +298,8 @@ func TestEventConn3(t *testing.T) {
 	}()
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewEventConn(c)
-	conn.AddCodec(newInitPassThroughCodec(new(bool)))
-	conn.AddCodec(newInitErrorCodec(new(bool)))
+	conn.AddCodec(newInitPassThroughCodec(gatomic.NewBool()))
+	conn.AddCodec(newInitErrorCodec(gatomic.NewBool()))
 	conn.OnReadError(func(ctx Context, err error) {
 		ctx.SetData("test", "abc")
 	})
@@ -311,11 +312,12 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	t.Parallel()
 	l, p, err := RandomListen("")
 	assert.NoError(t, err)
-	var d []byte
+	var str = gatomic.NewString()
 	var n int
 	el := NewEventListener(l).AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		bc := NewBufferedConn(NewBufferedConn(c))
-		d, err = bc.PeekMax(1024)
+		d, err := bc.PeekMax(1024)
+		str.SetVal(string(d))
 		c = bc
 		n = bc.Buffered()
 		s, _ := Read(bc, 10)
@@ -329,7 +331,7 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(time.Millisecond * 200)
 	assert.NoError(t, err)
-	assert.Equal(t, "hello", string(d))
+	assert.Equal(t, "hello", str.Val())
 	assert.Equal(t, n, 5)
 	Write(":0", "error")
 }
@@ -340,21 +342,22 @@ func TestNewConnBinder(t *testing.T) {
 	assert.NoError(t, err)
 	l2, p2, err := RandomListen("")
 	assert.NoError(t, err)
-	closed := false
-	srcClosed := false
-	dstClosed := false
-	str := ""
+	closed := gatomic.NewBool()
+	srcClosed := gatomic.NewBool()
+	dstClosed := gatomic.NewBool()
+	str := gatomic.NewString()
 	NewEventListener(l2).OnAccept(func(ctx Context, c net.Conn) {
-		str, _ = Read(c, 3)
+		s, _ := Read(c, 3)
+		str.SetVal(s)
 	}).Start()
 	NewEventListener(l1).OnAccept(func(ctx Context, c net.Conn) {
 		c2, _ := net.Dial("tcp", "127.0.0.1:"+p2)
 		b := NewConnBinder(c, c2).OnClose(func() {
-			closed = true
+			closed.SetTrue()
 		}).OnSrcClose(func(ctx Context) {
-			srcClosed = true
+			srcClosed.SetTrue()
 		}).OnDstClose(func(ctx Context) {
-			dstClosed = true
+			dstClosed.SetTrue()
 		}).SetReadBufSize(100)
 		b.Start()
 		b.Start()
@@ -364,26 +367,26 @@ func TestNewConnBinder(t *testing.T) {
 	err = Write("127.0.0.1:"+p1, "hello")
 	assert.NoError(t, err)
 	time.Sleep(time.Second * 2)
-	assert.Equal(t, "hel", str)
-	assert.True(t, closed)
-	assert.True(t, srcClosed)
-	assert.True(t, dstClosed)
+	assert.Equal(t, "hel", str.Val())
+	assert.True(t, closed.IsTrue())
+	assert.True(t, srcClosed.IsTrue())
+	assert.True(t, dstClosed.IsTrue())
 }
 
 func TestConn_FilterBreak(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := false
-	isBreak := false
+	called := gatomic.NewBool()
+	isBreak := gatomic.NewBool()
 	el := NewEventListener(l)
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		isBreak = true
+		isBreak.SetTrue()
 		ctx.Break()
 		return c, nil
 	})
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		called = true
+		called.SetTrue()
 		return c, nil
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
@@ -394,23 +397,23 @@ func TestConn_FilterBreak(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Millisecond * 500)
-	assert.True(t, isBreak)
-	assert.False(t, called)
+	assert.True(t, isBreak.IsTrue())
+	assert.False(t, called.IsTrue())
 }
 func TestConn_FilterContinue(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := false
-	isContinue := false
+	called := gatomic.NewBool()
+	isContinue := gatomic.NewBool()
 	el := NewEventListener(l)
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		isContinue = true
+		isContinue.SetTrue()
 		ctx.Continue()
 		return c, nil
 	})
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
-		called = true
+		called.SetTrue()
 		return c, nil
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
@@ -421,13 +424,13 @@ func TestConn_FilterContinue(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Millisecond * 500)
-	assert.True(t, isContinue)
-	assert.True(t, called)
+	assert.True(t, isContinue.IsTrue())
+	assert.True(t, called.IsTrue())
 }
 
 type breakCodec struct {
 	net.Conn
-	called *bool
+	called *gatomic.Bool
 }
 
 func (i *breakCodec) SetConn(conn net.Conn) Codec {
@@ -436,12 +439,12 @@ func (i *breakCodec) SetConn(conn net.Conn) Codec {
 }
 
 func (i *breakCodec) Initialize(ctx Context) error {
-	*i.called = true
+	i.called.SetTrue()
 	ctx.Break()
 	return nil
 }
 
-func newBreakCodec(called *bool) *breakCodec {
+func newBreakCodec(called *gatomic.Bool) *breakCodec {
 	return &breakCodec{
 		called: called,
 	}
@@ -449,7 +452,7 @@ func newBreakCodec(called *bool) *breakCodec {
 
 type continueCodec struct {
 	net.Conn
-	called *bool
+	called *gatomic.Bool
 }
 
 func (i *continueCodec) SetConn(conn net.Conn) Codec {
@@ -458,12 +461,12 @@ func (i *continueCodec) SetConn(conn net.Conn) Codec {
 }
 
 func (i *continueCodec) Initialize(ctx Context) error {
-	*i.called = true
+	i.called.SetTrue()
 	ctx.Continue()
 	return nil
 }
 
-func newContinueCodec(called *bool) *continueCodec {
+func newContinueCodec(called *gatomic.Bool) *continueCodec {
 	return &continueCodec{
 		called: called,
 	}
@@ -471,7 +474,7 @@ func newContinueCodec(called *bool) *continueCodec {
 
 type breakFailCodec struct {
 	net.Conn
-	called    *bool
+	called    *gatomic.Bool
 	modifyCtx func(ctx Context)
 }
 
@@ -481,7 +484,7 @@ func (i *breakFailCodec) SetConn(conn net.Conn) Codec {
 }
 
 func (i *breakFailCodec) Initialize(ctx Context) error {
-	*i.called = true
+	i.called.SetTrue()
 	if i.modifyCtx != nil {
 		i.modifyCtx(ctx)
 	}
@@ -489,7 +492,7 @@ func (i *breakFailCodec) Initialize(ctx Context) error {
 	return fmt.Errorf("break fail")
 }
 
-func newBreakFailCodec(called *bool, m func(ctx Context)) *breakFailCodec {
+func newBreakFailCodec(called *gatomic.Bool, m func(ctx Context)) *breakFailCodec {
 	return &breakFailCodec{
 		called:    called,
 		modifyCtx: m,
@@ -500,12 +503,12 @@ func TestConn_CodecBreak(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := new(bool)
-	isBreak := new(bool)
+	called := gatomic.NewBool()
+	isBreak := gatomic.NewBool()
 	el := NewEventListener(l)
 	var conn net.Conn
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakCodec(isBreak)
@@ -513,65 +516,65 @@ func TestConn_CodecBreak(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	accepted := false
+	accepted := gatomic.NewBool()
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
 		assert.False(t, ctx.IsTLS())
 		conn = c.(*Conn).Conn
-		accepted = true
+		accepted.SetTrue()
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isBreak)
-	assert.False(t, *called)
-	assert.True(t, accepted)
+	assert.True(t, isBreak.IsTrue())
+	assert.False(t, called.IsTrue())
+	assert.True(t, accepted.IsTrue())
 	assert.IsType(t, &breakCodec{}, conn)
 }
 func TestConn_CodecContinue(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := new(bool)
-	isContinue := new(bool)
+	called := gatomic.NewBool()
+	isContinue := gatomic.NewBool()
 	el := NewEventListener(l)
-	var conn net.Conn
+	var conn = gatomic.NewValue()
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		*called = true
+		called.SetTrue()
 		return newContinueCodec(isContinue)
 	})
-	accepted := false
+	accepted := gatomic.NewBool()
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
 		assert.False(t, ctx.IsTLS())
-		conn = c.(*Conn).Conn
-		accepted = true
+		conn.SetVal(c.(*Conn).Conn)
+		accepted.SetTrue()
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isContinue)
-	assert.True(t, *called)
-	assert.True(t, accepted)
-	assert.IsType(t, &initPassThroughCodec{}, conn)
+	assert.True(t, isContinue.IsTrue())
+	assert.True(t, called.IsTrue())
+	assert.True(t, accepted.IsTrue())
+	assert.IsType(t, &initPassThroughCodec{}, conn.Val())
 }
 
 func TestConn_CodecBreakFail(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := new(bool)
-	isBreak := new(bool)
-	var hasError error
+	called := gatomic.NewBool()
+	isBreak := gatomic.NewBool()
+	var hasError = gatomic.NewBool()
 	el := NewEventListener(l)
 
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakFailCodec(isBreak, nil)
@@ -580,28 +583,31 @@ func TestConn_CodecBreakFail(t *testing.T) {
 		return newInitPassThroughCodec(called)
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
-		_, hasError = Read(c, 1)
+		_, e := Read(c, 1)
+		if e != nil {
+			hasError.SetTrue()
+		}
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isBreak)
-	assert.False(t, *called)
-	assert.NotNil(t, hasError)
+	assert.True(t, isBreak.IsTrue())
+	assert.False(t, called.IsTrue())
+	assert.True(t, hasError.IsTrue())
 }
 
 func TestConn_CodecBreakFail1(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := new(bool)
-	isBreak := new(bool)
-	var hasError error
+	called := gatomic.NewBool()
+	isBreak := gatomic.NewBool()
+	var hasError = gatomic.NewBool()
 	el := NewEventListener(l)
 
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakFailCodec(isBreak, nil)
@@ -611,28 +617,31 @@ func TestConn_CodecBreakFail1(t *testing.T) {
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		//if codec init error, Conn will close the conn, so here read EOF
-		_, hasError = Read(c, 1)
+		_, e := Read(c, 1)
+		if e != nil {
+			hasError.SetTrue()
+		}
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isBreak)
-	assert.False(t, *called)
-	assert.Error(t, hasError)
+	assert.True(t, isBreak.IsTrue())
+	assert.False(t, called.IsTrue())
+	assert.True(t, hasError.IsTrue())
 }
 
 func TestConn_CodecBreakFail2(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := new(bool)
-	isBreak := new(bool)
-	var hasError error
+	called := gatomic.NewBool()
+	isBreak := gatomic.NewBool()
+	var hasError = gatomic.NewBool()
 	el := NewEventListener(l)
 
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakFailCodec(isBreak, func(ctx Context) {
@@ -643,26 +652,29 @@ func TestConn_CodecBreakFail2(t *testing.T) {
 		return newInitPassThroughCodec(called)
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
-		_, hasError = Read(c, 1)
+		_, e := Read(c, 1)
+		if e != nil {
+			hasError.SetTrue()
+		}
 	})
 	el.Start()
 	time.Sleep(time.Millisecond * 500)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *isBreak)
-	assert.False(t, *called)
-	assert.NotNil(t, hasError)
+	assert.True(t, isBreak.IsTrue())
+	assert.False(t, called.IsTrue())
+	assert.True(t, hasError.IsTrue())
 }
 
 func TestConn_CodecError(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := false
-	hasErr := new(bool)
+	called := gatomic.NewBool()
+	hasErr := gatomic.NewBool()
 	el := NewEventListener(l)
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(new(bool))
+		return newInitPassThroughCodec(gatomic.NewBool())
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitErrorCodec(hasErr)
@@ -674,15 +686,15 @@ func TestConn_CodecError(t *testing.T) {
 	time.Sleep(time.Second)
 	net.Dial("tcp", "127.0.0.1:"+p)
 	time.Sleep(time.Second)
-	assert.True(t, *hasErr)
-	assert.False(t, called)
+	assert.True(t, hasErr.IsTrue())
+	assert.False(t, called.IsTrue())
 }
 
 func TestConn_CodecError1(t *testing.T) {
 	t.Parallel()
 	c, _ := net.Dial("tcp", ":")
 	c0 := NewConn(c)
-	c0.AddCodec(newInitErrorCodec(new(bool)))
+	c0.AddCodec(newInitErrorCodec(gatomic.NewBool()))
 	_, err := c0.Write([]byte(""))
 	assert.Error(t, err)
 }

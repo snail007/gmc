@@ -63,7 +63,7 @@ func TestFileCache_String(t *testing.T) {
 }
 func TestFileIncr(t *testing.T) {
 	assert := assert.New(t)
-	// Set
+	// SetVal
 	err := cFile.Set("k3", "1", time.Minute)
 	assert.Nil(err)
 

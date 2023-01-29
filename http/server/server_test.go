@@ -13,7 +13,10 @@ import (
 	"github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	gsession "github.com/snail007/gmc/http/session"
+	gctx "github.com/snail007/gmc/module/ctx"
+	ghttppprof "github.com/snail007/gmc/util/pprof"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -39,6 +42,20 @@ func TestNew(t *testing.T) {
 	s0.bind(addr)
 	err = s0.Listen()
 	assert.NotNil(err)
+}
+func StartWebPProf(pprofAddr string) {
+	s := "pprof http debugger server"
+	_, p, _ := net.SplitHostPort(pprofAddr)
+	if p == "" {
+		log.Printf("%s port required", s)
+	}
+	api := NewAPIServer(gctx.NewCtx(), pprofAddr)
+	ghttppprof.BindRouter(api.Router(), "/proxy/pprof/")
+	err := api.Run()
+	if err != nil {
+		log.Printf("%s run error: %s", s, err)
+	}
+	log.Printf("%s on: %s", s, api.Listener().Addr())
 }
 func TestRouting(t *testing.T) {
 	assert := assert.New(t)
@@ -244,12 +261,12 @@ func TestListenTLS(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
 	s.SetConfig(mockConfig())
-	s.config.Set("httpserver.listen", ":")
-	s.config.Set("httpserver.tlscert", "server.crt")
-	s.config.Set("httpserver.tlskey", "server.key")
-	s.config.Set("httpserver.tlsenable", true)
-	s.config.Set("httpserver.tlsclientauth", true)
-	s.config.Set("httpserver.tlsclientsca", "server.crt")
+	s.Config().Set("httpserver.listen", ":")
+	s.Config().Set("httpserver.tlscert", "server.crt")
+	s.Config().Set("httpserver.tlskey", "server.key")
+	s.Config().Set("httpserver.tlsenable", true)
+	s.Config().Set("httpserver.tlsclientauth", true)
+	s.Config().Set("httpserver.tlsclientsca", "server.crt")
 	err := s.initTLSConfig()
 	assert.Nil(err)
 	err = s.ListenTLS()
@@ -260,12 +277,12 @@ func TestListenTLS_0(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
 	s.SetConfig(mockConfig())
-	s.config.Set("httpserver.listen", ":")
-	s.config.Set("httpserver.tlscert", "server.crt")
-	s.config.Set("httpserver.tlskey", "server.key")
-	s.config.Set("httpserver.tlsenable", true)
-	s.config.Set("httpserver.tlsclientauth", true)
-	s.config.Set("httpserver.tlsclientsca", "server.crt")
+	s.Config().Set("httpserver.listen", ":")
+	s.Config().Set("httpserver.tlscert", "server.crt")
+	s.Config().Set("httpserver.tlskey", "server.key")
+	s.Config().Set("httpserver.tlsenable", true)
+	s.Config().Set("httpserver.tlsclientauth", true)
+	s.Config().Set("httpserver.tlsclientsca", "server.crt")
 	err := s.initTLSConfig()
 	assert.Nil(err)
 	err = s.ListenTLS()
@@ -277,12 +294,12 @@ func TestListenTLS_1(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
 	s.SetConfig(mockConfig())
-	s.config.Set("httpserver.listen", ":")
-	s.config.Set("httpserver.tlscert", "server.crt")
-	s.config.Set("httpserver.tlskey", "server.key")
-	s.config.Set("httpserver.tlsenable", true)
-	s.config.Set("httpserver.tlsclientauth", true)
-	s.config.Set("httpserver.tlsclientsca", "none.crt")
+	s.Config().Set("httpserver.listen", ":")
+	s.Config().Set("httpserver.tlscert", "server.crt")
+	s.Config().Set("httpserver.tlskey", "server.key")
+	s.Config().Set("httpserver.tlsenable", true)
+	s.Config().Set("httpserver.tlsclientauth", true)
+	s.Config().Set("httpserver.tlsclientsca", "none.crt")
 	err := s.initTLSConfig()
 	assert.NotNil(err)
 }
@@ -290,12 +307,12 @@ func TestListenTLS_2(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
 	s.SetConfig(mockConfig())
-	s.config.Set("httpserver.listen", ":")
-	s.config.Set("httpserver.tlscert", "server.crt")
-	s.config.Set("httpserver.tlskey", "server.key")
-	s.config.Set("httpserver.tlsenable", true)
-	s.config.Set("httpserver.tlsclientauth", true)
-	s.config.Set("httpserver.tlsclientsca", "server.key")
+	s.Config().Set("httpserver.listen", ":")
+	s.Config().Set("httpserver.tlscert", "server.crt")
+	s.Config().Set("httpserver.tlskey", "server.key")
+	s.Config().Set("httpserver.tlsenable", true)
+	s.Config().Set("httpserver.tlsclientauth", true)
+	s.Config().Set("httpserver.tlsclientsca", "server.key")
 	err := s.initTLSConfig()
 	assert.NotNil(err)
 	s.initBaseObjets()
@@ -322,19 +339,19 @@ func TestListen_2(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()
 	s.SetConfig(mockConfig())
-	s.config.Set("httpserver.listen", ":")
-	s.config.Set("httpserver.tlscert", "server.crt")
-	s.config.Set("httpserver.tlskey", "server.key")
-	s.config.Set("httpserver.tlsenable", true)
+	s.Config().Set("httpserver.listen", ":")
+	s.Config().Set("httpserver.tlscert", "server.crt")
+	s.Config().Set("httpserver.tlskey", "server.key")
+	s.Config().Set("httpserver.tlsenable", true)
 	err := s.ListenTLS()
 	assert.Nil(err)
 
 	s0 := mockHTTPServer()
 	s.SetConfig(mockConfig())
-	s.config.Set("httpserver.listen", ":")
-	s.config.Set("httpserver.tlscert", "server.crt")
-	s.config.Set("httpserver.tlskey", "server.key")
-	s.config.Set("httpserver.tlsenable", true)
+	s.Config().Set("httpserver.listen", ":")
+	s.Config().Set("httpserver.tlscert", "server.crt")
+	s.Config().Set("httpserver.tlskey", "server.key")
+	s.Config().Set("httpserver.tlsenable", true)
 
 	s0.addr = s.listener.Addr().String()
 	err = s0.ListenTLS()
@@ -456,6 +473,22 @@ func Test_SetBindata_4(t *testing.T) {
 	b, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal("d", string(b))
 }
+
+func Test_SetBinBytes(t *testing.T) {
+	assert := assert.New(t)
+	cfg := mockConfig()
+	cfg.Set("static.urlpath", "/static")
+	s := mockHTTPServer(cfg)
+	s.SetBinBytes(map[string][]byte{
+		"js/jquery.js": []byte("{}"),
+	})
+	w, r := mockRequest("/static/js/jquery.js")
+	s.serveStatic(w, r)
+	resp := w.Result()
+	b, _ := ioutil.ReadAll(resp.Body)
+	assert.Equal("{}", string(b))
+}
+
 func Test_Service(t *testing.T) {
 	assert := assert.New(t)
 	s := mockHTTPServer()

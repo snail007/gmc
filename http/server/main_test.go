@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 	gcore.RegisterCookies(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.Cookies {
 		return gcookie.New(ctx.Response(), ctx.Request())
 	})
-
+	//StartWebPProf(":8877")
 	os.Exit(m.Run())
 }
 

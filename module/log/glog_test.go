@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -290,15 +291,15 @@ func TestGlog_WithRate(t *testing.T) {
 	glog.SetRateCallback(func(msg string) {})
 	l0 := glog.WithRate(time.Second)
 	glog.AddWriter(ioutil.Discard)
-	cnt := 0
+	cnt := new(int32)
 	l0.SetRateCallback(func(msg string) {
-		cnt++
+		atomic.AddInt32(cnt, 1)
 	})
 	for i := 0; i < 35; i++ {
 		l0.Write("hello")
 		time.Sleep(time.Millisecond * 100)
 	}
-	assert2.True(t, cnt >= 3)
+	assert2.True(t, atomic.LoadInt32(cnt) >= 3)
 }
 
 func TestGLog_With(t *testing.T) {

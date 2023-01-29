@@ -202,6 +202,10 @@ type HTTPServer interface {
 	Ctx() Ctx
 	ListenerFactory() func(addr string) (net.Listener, error)
 	SetListenerFactory(listenerFactory func(addr string) (net.Listener, error))
+	SetBinBytes(binData map[string][]byte)
+	Listen() (err error)
+	ListenTLS() (err error)
+	SetCtx(ctx Ctx)
 }
 
 type Controller interface {

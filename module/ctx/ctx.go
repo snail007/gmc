@@ -646,7 +646,7 @@ func (this *Ctx) Redirect(url string) (val string) {
 	return
 }
 
-// SetHeader is a intelligent shortcut for ctx.Response().Header().Set(key, value).
+// SetHeader is a intelligent shortcut for ctx.Response().Header().SetVal(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `ctx.Response().Header().Del(key)`
 func (this *Ctx) SetHeader(key, value string) {

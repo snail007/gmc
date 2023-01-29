@@ -7,6 +7,7 @@ package gnet
 
 import (
 	"fmt"
+	gatomic "github.com/snail007/gmc/util/sync/atomic"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -92,7 +93,7 @@ func TestHeartbeatCodec(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 15)
-	assert.Equal(t, *errCnt, int32(4))
+	assert.Equal(t, atomic.LoadInt32(errCnt), int32(4))
 	t.Log("outputCnt:", *outputCnt)
 	assert.True(t, *outputCnt > 250)
 }
@@ -105,16 +106,20 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return NewHeartbeatCodec()
 	})
+	str := gatomic.NewString()
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		buf := make([]byte, 1024)
-		_, err = c.Read(buf)
+		_, err := c.Read(buf)
+		if err != nil {
+			str.SetVal(err.Error())
+		}
 	})
 	el.Start()
 	time.Sleep(time.Second)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	c.Write([]byte("hello"))
 	time.Sleep(time.Millisecond * 200)
-	assert.Contains(t, err.Error(), "unrecognized msg type:")
+	assert.Contains(t, str.Val(), "unrecognized msg type:")
 }
 
 type tempErrorConn struct {

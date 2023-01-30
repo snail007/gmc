@@ -7,6 +7,7 @@ package gatomic
 
 import (
 	assert2 "github.com/stretchr/testify/assert"
+	"io"
 	"net"
 	"sync"
 	"testing"
@@ -37,7 +38,7 @@ func TestNewValue(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		go func() {
 			defer g.Done()
-			value.SetAfterGet(func(x interface{}) interface{} {
+			value.GetAndSet(func(x interface{}) interface{} {
 				assert.Equal(1, x.(data).cnt)
 				d := x.(data)
 				d.cnt = 1
@@ -51,7 +52,6 @@ func TestNewValue(t *testing.T) {
 func TestString_IsEmpty(t *testing.T) {
 	type fields struct {
 		val string
-		l   sync.RWMutex
 	}
 	tests := []struct {
 		name   string
@@ -69,7 +69,6 @@ func TestString_IsEmpty(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &String{
 				val: tt.fields.val,
-				l:   tt.fields.l,
 			}
 			assert2.Equalf(t, tt.want, a.IsEmpty(), "IsEmpty()")
 		})
@@ -176,4 +175,16 @@ func TestBytes_SetBytes1(t *testing.T) {
 	a := NewBytes()
 	a.SetBytes([]byte("abc"))
 	assert2.Equal(t, []byte("abc"), a.Bytes())
+}
+
+func TestAny_SetVal(t *testing.T) {
+	a := NewAny("string")
+	a.SetVal(io.Reader(nil))
+	a.SetVal(io.ReadCloser(nil))
+	assert2.IsType(t, io.Reader(nil), a.Val())
+	assert2.IsType(t, io.ReadCloser(nil), a.Val())
+	a.GetAndSet(func(oldVal interface{}) (newVal interface{}) {
+		assert2.IsType(t, io.ReadCloser(nil), oldVal)
+		return oldVal
+	})
 }

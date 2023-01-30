@@ -11,9 +11,57 @@ import (
 	"sync/atomic"
 )
 
+type baseValue struct {
+	l sync.RWMutex
+}
+
+func (s *baseValue) get(f func()) {
+	s.l.RLock()
+	defer s.l.RUnlock()
+	f()
+}
+
+func (s *baseValue) set(f func()) {
+	s.l.Lock()
+	defer s.l.Unlock()
+	f()
+}
+
+type Any struct {
+	baseValue
+	val interface{}
+}
+
+func NewAny(x ...interface{}) *Any {
+	var val interface{}
+	if len(x) == 1 && x[0] != nil {
+		val = x[0]
+	}
+	return &Any{val: val}
+}
+
+func (s *Any) SetVal(x interface{}) {
+	s.set(func() {
+		s.val = x
+	})
+}
+
+func (s *Any) Val() (x interface{}) {
+	s.get(func() {
+		x = s.val
+	})
+	return
+}
+
+func (s *Any) GetAndSet(f func(oldVal interface{}) (newVal interface{})) {
+	s.set(func() {
+		f(s.val)
+	})
+}
+
 type Value struct {
+	baseValue
 	val atomic.Value
-	l   sync.RWMutex
 }
 
 func NewValue(x ...interface{}) *Value {
@@ -25,46 +73,27 @@ func NewValue(x ...interface{}) *Value {
 }
 
 func (s *Value) SetVal(x interface{}) {
-	s.l.Lock()
-	defer s.l.Unlock()
-	s.val.Store(x)
+	s.set(func() {
+		s.val.Store(x)
+	})
 }
 
-func (s *Value) Val() interface{} {
-	s.l.RLock()
-	defer s.l.RUnlock()
-	return s.val.Load()
+func (s *Value) Val() (x interface{}) {
+	s.get(func() {
+		x = s.val.Load()
+	})
+	return
 }
 
-func (s *Value) SetAfterGet(f func(oldVal interface{}) (newVal interface{})) {
-	s.l.Lock()
-	defer s.l.Unlock()
-	s.val.Store(f(s.val.Load()))
+func (s *Value) GetAndSet(f func(oldVal interface{}) (newVal interface{})) {
+	s.set(func() {
+		s.val.Store(f(s.val.Load()))
+	})
 }
 
 type String struct {
+	baseValue
 	val string
-	l   sync.RWMutex
-}
-
-func (a *String) IsEmpty() bool {
-	return len(a.Val()) == 0
-}
-
-func (a *String) Val() string {
-	a.l.RLock()
-	defer a.l.RUnlock()
-	return a.val
-}
-
-func (a *String) String() string {
-	return a.Val()
-}
-
-func (a *String) SetVal(val string) {
-	a.l.Lock()
-	defer a.l.Unlock()
-	a.val = val
 }
 
 func NewString(val ...string) *String {
@@ -75,56 +104,78 @@ func NewString(val ...string) *String {
 	return &String{val: v}
 }
 
-func NewBool() *Bool {
-	a := new(int32)
-	return &Bool{val: a}
+func (s *String) IsEmpty() bool {
+	return len(s.Val()) == 0
+}
+
+func (s *String) Val() (x string) {
+	s.get(func() {
+		x = s.val
+	})
+	return
+}
+
+func (s *String) String() string {
+	return s.Val()
+}
+
+func (s *String) SetVal(val string) {
+	s.set(func() {
+		s.val = val
+	})
 }
 
 type Bool struct {
 	val *int32
 }
 
-func (i *Bool) IsTrue() bool {
-	return atomic.LoadInt32(i.val) == 1
+func NewBool() *Bool {
+	a := new(int32)
+	return &Bool{val: a}
 }
 
-func (i *Bool) IsFalse() bool {
-	return atomic.LoadInt32(i.val) == 0
+func (s *Bool) IsTrue() bool {
+	return atomic.LoadInt32(s.val) == 1
 }
 
-func (i *Bool) SetTrue() {
-	atomic.StoreInt32(i.val, 1)
+func (s *Bool) IsFalse() bool {
+	return atomic.LoadInt32(s.val) == 0
 }
 
-func (i *Bool) SetFalse() {
-	atomic.StoreInt32(i.val, 0)
+func (s *Bool) SetTrue() {
+	atomic.StoreInt32(s.val, 1)
+}
+
+func (s *Bool) SetFalse() {
+	atomic.StoreInt32(s.val, 0)
 }
 
 type Bytes struct {
+	baseValue
 	bytes []byte
-	l     sync.RWMutex
 }
 
-func (a *Bytes) Bytes() []byte {
-	a.l.RLock()
-	defer a.l.RUnlock()
-	return a.bytes
+func (s *Bytes) Bytes() (x []byte) {
+	s.get(func() {
+		x = s.bytes
+	})
+	return
 }
 
-func (a *Bytes) Len() int {
-	return len(a.Bytes())
+func (s *Bytes) Len() int {
+	return len(s.Bytes())
 }
 
-func (a *Bytes) SetBytes(data []byte) {
-	a.l.Lock()
-	defer a.l.Unlock()
-	a.bytes = data
+func (s *Bytes) SetBytes(data []byte) {
+	s.set(func() {
+		s.bytes = data
+	})
 }
 
-func (a *Bytes) Append(bytes []byte) {
-	a.l.Lock()
-	defer a.l.Unlock()
-	a.bytes = append(a.bytes, bytes...)
+func (s *Bytes) Append(bytes []byte) {
+	s.set(func() {
+		s.bytes = append(s.bytes, bytes...)
+	})
 }
 
 func NewBytes(val ...[]byte) *Bytes {
@@ -136,20 +187,8 @@ func NewBytes(val ...[]byte) *Bytes {
 }
 
 type Conn struct {
+	baseValue
 	conn net.Conn
-	l    sync.RWMutex
-}
-
-func (c *Conn) Val() net.Conn {
-	c.l.RLock()
-	defer c.l.RUnlock()
-	return c.conn
-}
-
-func (c *Conn) SetVal(conn net.Conn) {
-	c.l.Lock()
-	defer c.l.Unlock()
-	c.conn = conn
 }
 
 func NewConn(conn ...net.Conn) *Conn {
@@ -158,4 +197,17 @@ func NewConn(conn ...net.Conn) *Conn {
 		v = conn[0]
 	}
 	return &Conn{conn: v}
+}
+
+func (s *Conn) Val() (x net.Conn) {
+	s.get(func() {
+		x = s.conn
+	})
+	return
+}
+
+func (s *Conn) SetVal(conn net.Conn) {
+	s.set(func() {
+		s.conn = conn
+	})
 }

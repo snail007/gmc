@@ -1,9 +1,13 @@
 package gmap
 
-import "fmt"
+import (
+	"fmt"
+	gcast "github.com/snail007/gmc/util/cast"
+	"sort"
+)
 
-// strToInterface converts map[string]string to map[string]interface{}
-func strToInterface(a map[string]string) (b map[string]interface{}) {
+// ToAny converts map[string]string to map[string]interface{}
+func ToAny(a map[string]string) (b map[string]interface{}) {
 	b = map[string]interface{}{}
 	for k, v := range a {
 		b[k] = v
@@ -11,8 +15,8 @@ func strToInterface(a map[string]string) (b map[string]interface{}) {
 	return
 }
 
-// InterfaceToStr converts map[string]interface{} to map[string]string
-func InterfaceToStr(a map[string]interface{}) (b map[string]string) {
+// ToString converts map[string]interface{} to map[string]string
+func ToString(a map[string]interface{}) (b map[string]string) {
 	b = map[string]string{}
 	for k, v := range a {
 		switch vv := v.(type) {
@@ -23,4 +27,31 @@ func InterfaceToStr(a map[string]interface{}) (b map[string]string) {
 		}
 	}
 	return
+}
+
+func SortStr(s []map[string]string, key string, aes bool) {
+	sort.Slice(s, func(i, j int) bool {
+		if aes {
+			return Less(s[i][key], s[j][key])
+		}
+		return !Less(s[i][key], s[j][key])
+	})
+	return
+}
+
+func Sort(s []map[string]interface{}, key string, aes bool) {
+	sort.Slice(s, func(i, j int) bool {
+		if aes {
+			return Less(s[i][key], s[j][key])
+		}
+		return !Less(s[i][key], s[j][key])
+	})
+	return
+}
+
+func Less(v1, v2 interface{}) bool {
+	s1 := gcast.ToString(v1)
+	a := []string{s1, gcast.ToString(v2)}
+	sort.Strings(a)
+	return a[0] == s1
 }

@@ -6,6 +6,7 @@
 package gmap
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
@@ -32,8 +33,8 @@ func TestInterfaceToStr(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotB := InterfaceToStr(tt.args.a); !reflect.DeepEqual(gotB, tt.wantB) {
-				t.Errorf("InterfaceToStr() = %v, want %v", gotB, tt.wantB)
+			if gotB := ToString(tt.args.a); !reflect.DeepEqual(gotB, tt.wantB) {
+				t.Errorf("ToString() = %v, want %v", gotB, tt.wantB)
 			}
 		})
 	}
@@ -56,9 +57,55 @@ func Test_strToInterface(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotB := strToInterface(tt.args.a); !reflect.DeepEqual(gotB, tt.wantB) {
-				t.Errorf("strToInterface() = %v, want %v", gotB, tt.wantB)
+			if gotB := ToAny(tt.args.a); !reflect.DeepEqual(gotB, tt.wantB) {
+				t.Errorf("ToAny() = %v, want %v", gotB, tt.wantB)
 			}
 		})
 	}
+}
+
+func TestCompare(t *testing.T) {
+	assert.True(t, Less("a", "aab"))
+	assert.False(t, Less("c", "aab"))
+	assert.True(t, Less("123", "234"))
+}
+
+func TestSortAnyKey(t *testing.T) {
+	s := []map[string]interface{}{
+		{"name": "c"}, {"name": "a"}, {"name": "b"},
+	}
+	Sort(s, "name", true)
+	assert.Equal(t, "a", s[0]["name"])
+	assert.Equal(t, "b", s[1]["name"])
+	assert.Equal(t, "c", s[2]["name"])
+}
+
+func TestSortAnyKey_2(t *testing.T) {
+	s := []map[string]interface{}{
+		{"name": "c"}, {"name": "a"}, {"name": "b"},
+	}
+	Sort(s, "name", false)
+	assert.Equal(t, "c", s[0]["name"])
+	assert.Equal(t, "b", s[1]["name"])
+	assert.Equal(t, "a", s[2]["name"])
+}
+
+func TestSortStr_1(t *testing.T) {
+	s := []map[string]string{
+		{"name": "c"}, {"name": "a"}, {"name": "b"},
+	}
+	SortStr(s, "name", true)
+	assert.Equal(t, "a", s[0]["name"])
+	assert.Equal(t, "b", s[1]["name"])
+	assert.Equal(t, "c", s[2]["name"])
+}
+
+func TestSortStr(t *testing.T) {
+	s := []map[string]string{
+		{"name": "c"}, {"name": "a"}, {"name": "b"},
+	}
+	SortStr(s, "name", false)
+	assert.Equal(t, "c", s[0]["name"])
+	assert.Equal(t, "b", s[1]["name"])
+	assert.Equal(t, "a", s[2]["name"])
 }

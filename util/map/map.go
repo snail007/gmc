@@ -22,7 +22,7 @@ type (
 )
 
 // Map a map can kept the sequence of keys when range the map
-// have more useful function, Len(), Shift(), Pop(),gKeys(), etc.
+// have more useful function, Len(), Shift(), Pop(),Keys(), etc.
 type Map struct {
 	keys     *glinklist.LinkList
 	data     map[interface{}]interface{}

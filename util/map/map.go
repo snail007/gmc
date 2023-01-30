@@ -436,7 +436,7 @@ func (s *Map) IndexOf(k interface{}) int {
 	return s.keys.IndexOf(k)
 }
 
-// String returns string format of the SetVal.
+// String returns string format of the Set.
 func (s *Map) String() string {
 	return fmt.Sprintf("%v", s.ToMap())
 }

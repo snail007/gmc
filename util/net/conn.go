@@ -7,12 +7,12 @@ package gnet
 
 import (
 	"bufio"
-	gbytes "github.com/snail007/gmc/util/bytes"
-	gatomic "github.com/snail007/gmc/util/sync/atomic"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gbytes "github.com/snail007/gmc/util/bytes"
 )
 
 type BufferedConn interface {
@@ -265,7 +265,7 @@ func newContextConn(ctx Context, conn net.Conn, f ...bool) *Conn {
 }
 
 type EventConn struct {
-	conn           *gatomic.Conn
+	conn           net.Conn
 	onReadError    ErrorHandler
 	onWriterError  ErrorHandler
 	onClose        CloseHandler
@@ -303,12 +303,7 @@ func (s *EventConn) SetReadBufferSize(readBufferSize int) *EventConn {
 	s.readBufferSize = readBufferSize
 	return s
 }
-func (s *EventConn) getConn() net.Conn {
-	return s.conn.Val()
-}
-func (s *EventConn) setConn(c net.Conn) {
-	s.conn.SetVal(c)
-}
+
 func (s *EventConn) Write(b []byte) (n int, err error) {
 	defer func() {
 		if n > 0 {
@@ -316,11 +311,11 @@ func (s *EventConn) Write(b []byte) (n int, err error) {
 		}
 	}()
 	if s.writeTimeout > 0 {
-		s.getConn().SetWriteDeadline(time.Now().Add(s.readTimeout))
+		s.conn.SetWriteDeadline(time.Now().Add(s.readTimeout))
 	}
-	n, err = s.getConn().Write(b)
+	n, err = s.conn.Write(b)
 	if s.writeTimeout > 0 {
-		s.getConn().SetWriteDeadline(time.Time{})
+		s.conn.SetWriteDeadline(time.Time{})
 	}
 	if err != nil {
 		s.onWriterError(s.ctx, err)
@@ -330,11 +325,11 @@ func (s *EventConn) Write(b []byte) (n int, err error) {
 }
 
 func (s *EventConn) RemoteAddr() net.Addr {
-	return s.getConn().RemoteAddr()
+	return s.conn.RemoteAddr()
 }
 
 func (s *EventConn) LocalAddr() net.Addr {
-	return s.getConn().LocalAddr()
+	return s.conn.LocalAddr()
 }
 
 func (s *EventConn) ReadTimeout() time.Duration {
@@ -383,7 +378,7 @@ func (s *EventConn) OnData(onData DataHandler) *EventConn {
 
 func (s *EventConn) Close() {
 	s.closeOnce.Do(func() {
-		s.getConn().Close()
+		s.conn.Close()
 		s.onClose(s.ctx)
 	})
 }
@@ -403,7 +398,7 @@ func (s *EventConn) StartAndWait() {
 
 	// init Conn
 	if len(s.codec) > 0 || len(s.connFilters) > 0 {
-		conn := NewConn(s.getConn())
+		conn := NewConn(s.conn)
 		// add filters
 		for _, f := range s.connFilters {
 			conn.AddFilter(f)
@@ -412,9 +407,9 @@ func (s *EventConn) StartAndWait() {
 		for _, c := range s.codec {
 			conn.AddCodec(c)
 		}
-		s.setConn(net.Conn(conn))
+		s.conn = conn
 	} else {
-		if v, ok := s.getConn().(*net.TCPConn); ok {
+		if v, ok := s.conn.(*net.TCPConn); ok {
 			v.SetKeepAlive(true)
 			v.SetKeepAlivePeriod(defaultConnKeepAlivePeriod)
 		}
@@ -424,11 +419,11 @@ func (s *EventConn) StartAndWait() {
 	defer gbytes.GetPool(s.readBufferSize).Put(buf)
 	for {
 		if s.readTimeout > 0 {
-			s.getConn().SetReadDeadline(time.Now().Add(s.readTimeout))
+			s.conn.SetReadDeadline(time.Now().Add(s.readTimeout))
 		}
-		n, err := s.getConn().Read(buf)
+		n, err := s.conn.Read(buf)
 		if s.readTimeout > 0 {
-			s.getConn().SetReadDeadline(time.Time{})
+			s.conn.SetReadDeadline(time.Time{})
 		}
 		if n > 0 {
 			atomic.AddInt64(s.readBytes, int64(n))
@@ -455,7 +450,7 @@ func NewContextEventConn(ctx Context, c net.Conn) *EventConn {
 		writeBytes:     new(int64),
 		readBytes:      new(int64),
 		readBufferSize: defaultEventConnReadBufferSize,
-		conn:           gatomic.NewConn(c),
+		conn:           c,
 		onReadError:    func(Context, error) {},
 		onWriterError:  func(Context, error) {},
 		onClose:        func(Context) {},

@@ -61,7 +61,7 @@ func TestMemCache_String(t *testing.T) {
 }
 func TestIncr(t *testing.T) {
 	assert := assert.New(t)
-	// SetVal
+	// Set
 	err := cMem.Set("k3", "1", time.Minute)
 	assert.Nil(err)
 

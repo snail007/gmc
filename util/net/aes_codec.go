@@ -12,7 +12,6 @@ import (
 	"hash"
 	"io"
 	"net"
-	"sync"
 
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -40,46 +39,7 @@ type AESOptions struct {
 	// Type optionally. It must be: aes-128 or aes-192 or aes-256, if empty default is aes-256.
 	Type string
 	// HashFunc optionally, default is sha256.New
-	HashFunc     func() hash.Hash
-	saltLock     sync.RWMutex
-	hashFuncLock sync.RWMutex
-	typeLock     sync.RWMutex
-}
-
-func (s *AESOptions) salt() []byte {
-	s.saltLock.RLock()
-	defer s.saltLock.RUnlock()
-	return s.Salt
-}
-
-func (s *AESOptions) setSalt(salt []byte) {
-	s.saltLock.Lock()
-	defer s.saltLock.Unlock()
-	s.Salt = salt
-}
-
-func (s *AESOptions) hashFunc() func() hash.Hash {
-	s.hashFuncLock.RLock()
-	defer s.hashFuncLock.RUnlock()
-	return s.HashFunc
-}
-
-func (s *AESOptions) setHashFunc(f func() hash.Hash) {
-	s.hashFuncLock.Lock()
-	defer s.hashFuncLock.Unlock()
-	s.HashFunc = f
-}
-
-func (s *AESOptions) typ() string {
-	s.typeLock.RLock()
-	defer s.typeLock.RUnlock()
-	return s.Type
-}
-
-func (s *AESOptions) setType(t string) {
-	s.typeLock.Lock()
-	defer s.typeLock.Unlock()
-	s.Type = t
+	HashFunc func() hash.Hash
 }
 
 type AESCodec struct {
@@ -124,8 +84,8 @@ func NewAESCodec(password string) *AESCodec {
 }
 
 func NewAESCodecFromOptions(c *AESOptions) *AESCodec {
-	if len(c.salt()) == 0 {
-		c.setSalt(aesDefaultSalt)
+	if len(c.Salt) == 0 {
+		c.Salt = aesDefaultSalt
 	}
 
 	iterations := aesDefaultIterations
@@ -143,9 +103,9 @@ func NewAESCodecFromOptions(c *AESOptions) *AESCodec {
 			keySize = 32
 		}
 	}
-	if c.hashFunc() == nil {
-		c.setHashFunc(aesDefaultHashFunc)
+	if c.HashFunc == nil {
+		c.HashFunc = aesDefaultHashFunc
 	}
-	key := pbkdf2.Key([]byte(c.Password), c.salt(), iterations, keySize, c.hashFunc())
+	key := pbkdf2.Key([]byte(c.Password), c.Salt, iterations, keySize, c.HashFunc)
 	return &AESCodec{key: key}
 }

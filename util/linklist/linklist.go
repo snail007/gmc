@@ -7,7 +7,7 @@
 //
 // To iterate over a list (where l is a *LinkList):
 //	for e := l.Front(); e != nil; e = e.Next() {
-//		// do something with e.Val
+//		// do something with e.Value
 //	}
 //
 package glinklist
@@ -125,7 +125,7 @@ func (l *LinkList) insert(e, at *Element) *Element {
 	return e
 }
 
-// insertValue is a convenience wrapper for insert(&Element{Val: v}, at).
+// insertValue is a convenience wrapper for insert(&Element{Value: v}, at).
 func (l *LinkList) insertValue(v interface{}, at *Element) *Element {
 	return l.insert(&Element{Value: v}, at)
 }
@@ -159,7 +159,7 @@ func (l *LinkList) move(e, at *Element) *Element {
 }
 
 // Remove removes e from l if e is an element of list l.
-// It returns the element value e.Val.
+// It returns the element value e.Value.
 // The element must not be nil.
 func (l *LinkList) Remove(e *Element) interface{} {
 	l.Lock()

@@ -19,7 +19,7 @@ func TestNew(t *testing.T) {
 	cfg := NewRedisCacheConfig()
 	cfg.Addr = "127.0.0.1:6379"
 	rd := NewRedisCache(cfg)
-	//SetVal
+	//Set
 	err := rd.Set("k3", "aaa", time.Minute)
 	assert.Nil(err)
 	//Get

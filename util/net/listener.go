@@ -35,7 +35,7 @@ type ProtocolListenerOption struct {
 type ProtocolListener struct {
 	opt       *ProtocolListenerOption
 	connChn   chan net.Conn
-	closed    *int32
+	closed    bool
 	closeOnce sync.Once
 	l         *Listener
 }
@@ -49,7 +49,10 @@ func (s *ProtocolListener) Accept() (net.Conn, error) {
 }
 
 func (s *ProtocolListener) Close() error {
-	atomic.StoreInt32(s.closed, 1)
+	s.closeOnce.Do(func() {
+		s.closed = true
+		close(s.connChn)
+	})
 	return nil
 }
 
@@ -79,7 +82,6 @@ func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener
 		connChn: make(chan net.Conn, opt.ConnQueueSize),
 		l:       s,
 		opt:     opt,
-		closed:  new(int32),
 	}
 	s.protocolListeners = append(s.protocolListeners, l)
 	return l
@@ -87,7 +89,7 @@ func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener
 
 func (s *Listener) Close() error {
 	for _, v := range s.protocolListeners {
-		if atomic.LoadInt32(v.closed) == 0 {
+		if !v.closed {
 			v.Close()
 		}
 	}
@@ -218,12 +220,7 @@ retry:
 	if len(s.protocolListeners) > 0 {
 		bc := NewBufferedConn(c)
 		for _, v := range s.protocolListeners {
-			if atomic.LoadInt32(v.closed) == 1 {
-				v.closeOnce.Do(func() {
-					close(v.connChn)
-				})
-			}
-			if atomic.LoadInt32(v.closed) == 0 && v.opt.Checker(s, bc) {
+			if !v.closed && v.opt.Checker(s, bc) {
 				select {
 				case v.connChn <- bc:
 				default:

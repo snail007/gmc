@@ -6,7 +6,6 @@
 package gatomic
 
 import (
-	"net"
 	"sync"
 	"sync/atomic"
 )
@@ -155,6 +154,14 @@ type Bytes struct {
 	bytes []byte
 }
 
+func NewBytes(val ...[]byte) *Bytes {
+	var v []byte
+	if len(val) == 1 {
+		v = val[0]
+	}
+	return &Bytes{bytes: v}
+}
+
 func (s *Bytes) Bytes() (x []byte) {
 	s.get(func() {
 		x = s.bytes
@@ -175,39 +182,5 @@ func (s *Bytes) SetBytes(data []byte) {
 func (s *Bytes) Append(bytes []byte) {
 	s.set(func() {
 		s.bytes = append(s.bytes, bytes...)
-	})
-}
-
-func NewBytes(val ...[]byte) *Bytes {
-	var v []byte
-	if len(val) == 1 {
-		v = val[0]
-	}
-	return &Bytes{bytes: v}
-}
-
-type Conn struct {
-	baseValue
-	conn net.Conn
-}
-
-func NewConn(conn ...net.Conn) *Conn {
-	var v net.Conn
-	if len(conn) == 1 {
-		v = conn[0]
-	}
-	return &Conn{conn: v}
-}
-
-func (s *Conn) Val() (x net.Conn) {
-	s.get(func() {
-		x = s.conn
-	})
-	return
-}
-
-func (s *Conn) SetVal(conn net.Conn) {
-	s.set(func() {
-		s.conn = conn
 	})
 }

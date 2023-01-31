@@ -8,7 +8,6 @@ package gatomic
 import (
 	assert2 "github.com/stretchr/testify/assert"
 	"io"
-	"net"
 	"sync"
 	"testing"
 )
@@ -151,13 +150,6 @@ func TestBytes_SetBytes(t *testing.T) {
 	a := NewBytes([]byte("abc"))
 	a.Append([]byte("abc"))
 	assert2.Equal(t, []byte("abcabc"), a.Bytes())
-}
-
-func TestConn_SetVal(t *testing.T) {
-	a := NewConn(nil)
-	assert2.Nil(t, a.Val())
-	a.SetVal(net.Conn(nil))
-	assert2.IsType(t, net.Conn(nil), a.Val())
 }
 
 func TestString_SetVal(t *testing.T) {

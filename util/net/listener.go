@@ -74,7 +74,7 @@ type Listener struct {
 	ctx                           Context
 }
 
-func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener {
+func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) *Listener {
 	if opt.ConnQueueSize <= 0 {
 		opt.ConnQueueSize = defaultConnQueueSize
 	}
@@ -84,7 +84,7 @@ func (s *Listener) NewProtocolListener(opt *ProtocolListenerOption) net.Listener
 		opt:     opt,
 	}
 	s.protocolListeners = append(s.protocolListeners, l)
-	return l
+	return NewListener(l)
 }
 
 func (s *Listener) Close() error {

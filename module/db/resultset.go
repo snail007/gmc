@@ -7,6 +7,7 @@ package gdb
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	gcast "github.com/snail007/gmc/util/cast"
 	"reflect"
 	"strconv"
 	"time"
@@ -120,7 +121,7 @@ func (rs *ResultSet) Struct(strucT interface{}) (Struct interface{}, err error) 
 	if rs.Len() > 0 {
 		return rs.mapToStruct(rs.Row(), strucT)
 	}
-	return nil, gcore.ProviderError()().New(("rs is empty"))
+	return nil, gcore.ProviderError()().New("rs is empty")
 }
 func (rs *ResultSet) Values(column string) (values []string) {
 	values = []string{}
@@ -146,7 +147,7 @@ func (rs *ResultSet) Value(column string) (value string) {
 func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) (struCt interface{}, err error) {
 	rv := reflect.New(reflect.TypeOf(Struct)).Elem()
 	if reflect.TypeOf(Struct).Kind() != reflect.Struct {
-		return nil, gcore.ProviderError()().New(("v must be struct"))
+		return nil, gcore.ProviderError()().New("v must be struct")
 	}
 	fieldType := rv.Type()
 	for i, fieldCount := 0, rv.NumField(); i < fieldCount; i++ {
@@ -190,6 +191,10 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) 
 					fieldVal.Set(reflect.ValueOf(val))
 				}
 			}
+		case reflect.Interface:
+			fieldVal.SetString(gcast.ToString(mapData[name]))
+		default:
+			fieldVal.SetString(gcast.ToString(mapData[name]))
 		}
 	}
 	return rv.Interface(), err

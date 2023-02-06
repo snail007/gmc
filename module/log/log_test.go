@@ -150,6 +150,26 @@ func TestLogger_Warnf(t *testing.T) {
 	assert.True(strings.HasSuffix(out.String(), "WARN a10\n"))
 }
 
+func TestLogger_Error(t *testing.T) {
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := gcore.ProviderLogger()(nil, "")
+	l.SetOutput(&out)
+	l.Error("a")
+	t.Log(out.String(), len(out.String()))
+	assert.True(strings.HasSuffix(out.String(), "ERROR a\n"))
+}
+
+func TestLogger_Errorf(t *testing.T) {
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := gcore.ProviderLogger()(nil, "")
+	l.SetOutput(&out)
+	l.Errorf("a%d", 10)
+	t.Log(out.String(), len(out.String()))
+	assert.True(strings.HasSuffix(out.String(), "ERROR a10\n"))
+}
+
 func TestLogger_Panic(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
@@ -168,11 +188,11 @@ func TestLogger_Panicf(t *testing.T) {
 	l.Panicf("a%d", 10)
 }
 
-func TestLogger_Error(t *testing.T) {
+func TestLogger_Fatal(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
-		l.Error("a")
+		l.Fatal("a")
 	}
 	var out bytes.Buffer
 	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
@@ -180,18 +200,18 @@ func TestLogger_Error(t *testing.T) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		assert.True(strings.HasSuffix(out.String(), "ERROR a\n"))
+		assert.True(strings.HasSuffix(out.String(), "FATAL a\n"))
 		return
 	} else {
 		assert.Fail("expecting unsuccessful exit")
 	}
 }
 
-func TestLogger_Errorf(t *testing.T) {
+func TestLogger_Fatalf(t *testing.T) {
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	if os.Getenv("ASSERT_EXISTS_"+t.Name()) == "1" {
-		l.Errorf("a%d", 10)
+		l.Fatalf("a%d", 10)
 	}
 	var out bytes.Buffer
 	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
@@ -199,7 +219,7 @@ func TestLogger_Errorf(t *testing.T) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		assert.True(strings.HasSuffix(out.String(), "ERROR a10\n"))
+		assert.True(strings.HasSuffix(out.String(), "FATAL a10\n"))
 		return
 	} else {
 		assert.Fail("expecting unsuccessful exit")

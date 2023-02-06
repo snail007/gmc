@@ -390,6 +390,43 @@ func (s *Logger) Panic(v ...interface{}) {
 	panic(str)
 }
 
+func (s *Logger) Fatalf(format string, v ...interface{}) {
+	levelWrite := s.canLevelWrite(gcore.LogLeveFatal)
+	if s.level > gcore.LogLeveFatal && !levelWrite {
+		return
+	}
+	str := s.caller(fmt.Sprintf(s.namespace()+"FATAL "+format, v...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveFatal)
+	}
+
+	if s.level <= gcore.LogLeveFatal {
+		s.write(str, nil)
+	}
+	s.WaitAsyncDone()
+	s.exit()
+}
+
+func (s *Logger) Fatal(v ...interface{}) {
+	levelWrite := s.canLevelWrite(gcore.LogLeveFatal)
+	if s.level > gcore.LogLeveFatal && !levelWrite {
+		return
+	}
+	v0 := []interface{}{s.namespace() + "FATAL "}
+	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
+
+	if levelWrite {
+		s.levelWrite(str, gcore.LogLeveFatal)
+	}
+
+	if s.level <= gcore.LogLeveFatal {
+		s.write(str, nil)
+	}
+	s.WaitAsyncDone()
+	s.exit()
+}
+
 func (s *Logger) Errorf(format string, v ...interface{}) {
 	levelWrite := s.canLevelWrite(gcore.LogLeveError)
 	if s.level > gcore.LogLeveError && !levelWrite {

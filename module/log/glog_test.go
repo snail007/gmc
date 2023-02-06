@@ -8,6 +8,9 @@ package glog_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/snail007/gmc"
+	gctx "github.com/snail007/gmc/module/ctx"
+	ghttppprof "github.com/snail007/gmc/util/pprof"
 	"io"
 	"io/ioutil"
 	"os"
@@ -113,37 +116,21 @@ func TestGlog(t *testing.T) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"WARN a"}
 		}},
 		{"glog.Error", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
-			oldExit := glog.ExitFunc()
 			glog.SetLevel(gcore.LogLevePanic)
-			glog.Error("b")
+			glog.Warnf("b")
 			glog.SetLevel(gcore.LogLeveError)
 			out.Reset()
-			gotCode := 0
-			glog.SetExitCode(2)
-			glog.SetExitFunc(func(code int) {
-				gotCode = code
-			})
-			glog.Error("a")
-			assert.Equal(2, gotCode)
-			glog.SetExitFunc(oldExit)
+			glog.Errorf("%s", "a")
 			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
 		}},
 		{"glog.Errorf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
-			oldExit := glog.ExitFunc()
 			glog.SetLevel(gcore.LogLevePanic)
-			glog.Errorf("b")
+			glog.Warnf("b")
 			glog.SetLevel(gcore.LogLeveError)
 			out.Reset()
-			gotCode := 0
-			glog.SetExitCode(3)
-			glog.SetExitFunc(func(code int) {
-				gotCode = code
-			})
 			glog.Errorf("%s", "a")
-			assert.Equal(3, gotCode)
-			glog.SetExitFunc(oldExit)
 			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
@@ -301,7 +288,19 @@ func TestGlog_WithRate(t *testing.T) {
 	}
 	assert2.True(t, atomic.LoadInt32(cnt) >= 3)
 }
-
+func StartWebPProf(log gcore.Logger) {
+	s := "pprof server"
+	api, err := gmc.New.APIServer(gctx.NewCtx(), ":8809")
+	if err != nil {
+		log.Panicf("start %s error: %s", s, err)
+	}
+	ghttppprof.BindRouter(api.Router(), "/proxy/.pprof/")
+	err = api.Run()
+	if err != nil {
+		log.Panicf("%s run error: %s", s, err)
+	}
+	//log.Infof("%s on: %s", s, api.Listener().Addr())
+}
 func TestGLog_With(t *testing.T) {
 	if gtest.RunProcess(t, func() {
 		l := glog.With("api")

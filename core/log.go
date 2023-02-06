@@ -16,6 +16,7 @@ const (
 	LogLeveInfo
 	LogLeveWarn
 	LogLeveError
+	LogLeveFatal
 	LogLevePanic
 	LogLeveNone
 )
@@ -31,6 +32,9 @@ type LogFlag int
 type Logger interface {
 	Panic(v ...interface{})
 	Panicf(format string, v ...interface{})
+
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
 
 	Error(v ...interface{})
 	Errorf(format string, v ...interface{})

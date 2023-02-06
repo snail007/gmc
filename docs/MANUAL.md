@@ -595,14 +595,14 @@ func main() {
 	// 2. parse config file
 	cfg, err := gmc.New.ConfigFile("conf/app.toml")
 	if err != nil {
-		app.Logger().Error(err)
+		app.Logger().Panic(err)
 	}
 	// 3. create api server
 	ctx := gmc.New.Ctx()
 	ctx.SetConfig(cfg)
 	api, err := gmc.New.APIServerDefault(ctx)
 	if err != nil {
-		app.Logger().Error(err)
+		app.Logger().Panic(err)
 	}
 	//4. init db, cache, handlers
 	// int db

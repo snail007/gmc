@@ -405,8 +405,6 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 	if s.level <= gcore.LogLeveError {
 		s.write(str, nil)
 	}
-	s.WaitAsyncDone()
-	s.exit()
 }
 
 func (s *Logger) Error(v ...interface{}) {
@@ -425,8 +423,6 @@ func (s *Logger) Error(v ...interface{}) {
 	if s.level <= gcore.LogLeveError {
 		s.write(str, nil)
 	}
-	s.WaitAsyncDone()
-	s.exit()
 }
 
 func (s *Logger) Warnf(format string, v ...interface{}) {

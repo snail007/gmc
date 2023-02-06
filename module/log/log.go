@@ -36,6 +36,14 @@ func Panicf(format string, v ...interface{}) {
 	logger.Panicf(format, v...)
 }
 
+func Fatal(v ...interface{}) {
+	logger.Fatal(v...)
+}
+
+func Fatalf(format string, v ...interface{}) {
+	logger.Fatalf(format, v...)
+}
+
 func Error(v ...interface{}) {
 	logger.Error(v...)
 }

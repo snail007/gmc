@@ -120,7 +120,7 @@ func TestGlog(t *testing.T) {
 			glog.Warnf("b")
 			glog.SetLevel(gcore.LogLeveError)
 			out.Reset()
-			glog.Errorf("%s", "a")
+			glog.Error("%s", "a")
 			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
@@ -134,6 +134,26 @@ func TestGlog(t *testing.T) {
 			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}
+		}},
+		{"glog.Fatal", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LogLeveFatal)
+			glog.SetExitFunc(func(i int) {})
+			out.Reset()
+			args = []interface{}{&out}
+			glog.Fatal("a")
+			return
+		}, func(args []interface{}) (out string, contains []string) {
+			return (args[0].(*bytes.Buffer)).String(), []string{"FATAL a"}
+		}},
+		{"glog.Fatalf", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
+			glog.SetLevel(gcore.LogLeveFatal)
+			glog.SetExitFunc(func(i int) {})
+			out.Reset()
+			args = []interface{}{&out}
+			glog.Fatalf("%s", "a")
+			return
+		}, func(args []interface{}) (out string, contains []string) {
+			return (args[0].(*bytes.Buffer)).String(), []string{"FATAL a"}
 		}},
 		{"glog.Panic", func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool) {
 			glog.SetLevel(gcore.LogLeveNone)

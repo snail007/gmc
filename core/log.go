@@ -16,8 +16,8 @@ const (
 	LogLeveInfo
 	LogLeveWarn
 	LogLeveError
-	LogLeveFatal
 	LogLevePanic
+	LogLeveFatal
 	LogLeveNone
 )
 const (

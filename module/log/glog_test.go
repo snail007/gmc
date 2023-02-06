@@ -120,7 +120,7 @@ func TestGlog(t *testing.T) {
 			glog.Warnf("b")
 			glog.SetLevel(gcore.LogLeveError)
 			out.Reset()
-			glog.Error("%s", "a")
+			glog.Error("a")
 			return []interface{}{&out}, false
 		}, func(args []interface{}) (out string, contains []string) {
 			return (args[0].(*bytes.Buffer)).String(), []string{"ERROR a"}

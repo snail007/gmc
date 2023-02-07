@@ -7,6 +7,7 @@ package gdb
 
 import (
 	"fmt"
+	gcast "github.com/snail007/gmc/util/cast"
 	"strings"
 	"testing"
 	"time"
@@ -259,7 +260,7 @@ var rawRows = []map[string][]byte{
 	},
 }
 var (
-	loc, _ = time.LoadLocation("PRC")
+	timeTest, _ = gcast.StringToDate("2017-10-10 09:00:09 +0800 CST")
 )
 
 func TestStruct(t *testing.T) {
@@ -272,7 +273,7 @@ func TestStruct(t *testing.T) {
 	assert.Equal(uint(60), s.(User).Weight)
 	assert.Equal(float32(160.3), s.(User).Height)
 	assert.True(s.(User).Sex)
-	assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(loc).String())
+	assert.Equal(timeTest.Unix(), s.(User).CreateTime.Unix())
 }
 func TestStructs(t *testing.T) {
 	assert := assert.New(t)
@@ -285,7 +286,7 @@ func TestStructs(t *testing.T) {
 		assert.Equal(uint(60), s.(User).Weight)
 		assert.Equal(float32(160.3), s.(User).Height)
 		assert.True(s.(User).Sex)
-		assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(loc).String())
+		assert.Equal(timeTest.Unix(), s.(User).CreateTime.Unix())
 	}
 }
 func TestMapStructs(t *testing.T) {
@@ -299,7 +300,7 @@ func TestMapStructs(t *testing.T) {
 		assert.Equal(uint(60), s.(User).Weight)
 		assert.Equal(float32(160.3), s.(User).Height)
 		assert.True(s.(User).Sex)
-		assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(loc).String())
+		assert.Equal(timeTest.Unix(), s.(User).CreateTime.Unix())
 	}
 }
 func TestUpdateBatch0(t *testing.T) {

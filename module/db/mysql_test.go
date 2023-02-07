@@ -235,7 +235,7 @@ type User struct {
 	Height     float32   `column:"height"`
 	Sex        bool      `column:"sex"`
 	CreateTime time.Time `column:"create_time"`
-	Foo        *string   `column:"foo"`
+	Foo        string    `column:"foo"`
 }
 
 var rawRows = []map[string][]byte{

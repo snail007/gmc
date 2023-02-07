@@ -166,11 +166,12 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 		if !fieldVal.CanSet() {
 			continue
 		}
+
 		field := structType.Field(i)
 		fieldType := field.Type
 		fieldKind := fieldType.Kind()
 		if fieldKind == reflect.Ptr {
-			fieldType = reflect.TypeOf(fieldType).Elem()
+			fieldType = fieldType.Elem()
 			fieldKind = fieldType.Kind()
 		}
 		col := strings.Split(field.Tag.Get(tag), ",")[0]
@@ -181,6 +182,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 		if !ok {
 			continue
 		}
+		fmt.Println(fieldKind.String(), fieldType.Name())
 	BREAK:
 		switch fieldKind {
 		case reflect.Uint8:
@@ -218,7 +220,6 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 		case reflect.Map, reflect.Struct:
 			switch field.Type.Name() {
 			case "Time":
-				fmt.Println(">>>", field.Type.PkgPath())
 				unix, e := gcast.ToInt64E(val)
 				if e == nil {
 					value = time.Unix(unix, 0).In(time.Local)
@@ -230,7 +231,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 			default:
 				d := []byte(gcast.ToString(val))
 				if !json.Valid(d) {
-					err = fmt.Errorf("convert json string to map filed fail, json format error, field: %s", field.Name)
+					err = fmt.Errorf("convert json string to map filed fail, json format error")
 					break BREAK
 				}
 				var iv interface{}
@@ -241,7 +242,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 				}
 				e := json.Unmarshal(d, &iv)
 				if e != nil {
-					err = fmt.Errorf("unspported json to map or struct filed fail, field: %s", field.Name)
+					err = fmt.Errorf("unspported json to map or struct filed fail")
 					break BREAK
 				}
 				if ivIsPtr {
@@ -253,9 +254,9 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 		}
 		rValue := reflect.ValueOf(value)
 		if !rValue.IsValid() {
-			e := fmt.Errorf("unspported field: %s, type: %s", field.Name, fieldType.Name())
+			e := fmt.Errorf("unspported field: %s, type: %s", field.Name, field.Type.String())
 			if err != nil {
-				e = errors.Wrap(err, "convert to field error")
+				e = errors.Wrapf(err, "convert to field error, field: %s, type: %s", field.Name, field.Type.String())
 			}
 			return nil, e
 		}

@@ -258,6 +258,9 @@ var rawRows = []map[string][]byte{
 		"pid":         []byte("2"),
 	},
 }
+var (
+	loc, _ = time.LoadLocation("PRC")
+)
 
 func TestStruct(t *testing.T) {
 	assert := assert.New(t)
@@ -269,7 +272,7 @@ func TestStruct(t *testing.T) {
 	assert.Equal(uint(60), s.(User).Weight)
 	assert.Equal(float32(160.3), s.(User).Height)
 	assert.True(s.(User).Sex)
-	assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(time.FixedZone("CST", 3600*8)).String())
+	assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(loc).String())
 }
 func TestStructs(t *testing.T) {
 	assert := assert.New(t)
@@ -282,7 +285,7 @@ func TestStructs(t *testing.T) {
 		assert.Equal(uint(60), s.(User).Weight)
 		assert.Equal(float32(160.3), s.(User).Height)
 		assert.True(s.(User).Sex)
-		assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(time.FixedZone("CST", 3600*8)).String())
+		assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(loc).String())
 	}
 }
 func TestMapStructs(t *testing.T) {
@@ -296,7 +299,7 @@ func TestMapStructs(t *testing.T) {
 		assert.Equal(uint(60), s.(User).Weight)
 		assert.Equal(float32(160.3), s.(User).Height)
 		assert.True(s.(User).Sex)
-		assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(time.FixedZone("CST", 3600*8)).String())
+		assert.Equal("2017-10-10 09:00:09 +0800 CST", s.(User).CreateTime.In(loc).String())
 	}
 }
 func TestUpdateBatch0(t *testing.T) {

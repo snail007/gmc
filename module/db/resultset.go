@@ -6,7 +6,9 @@
 package gdb
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	gcore "github.com/snail007/gmc/core"
 	gcast "github.com/snail007/gmc/util/cast"
 	"reflect"
@@ -157,58 +159,107 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 	if reflect.TypeOf(Struct).Kind() != reflect.Struct {
 		return nil, gcore.ProviderError()().New("v must be struct")
 	}
-	fieldType := rv.Type()
+	structType := rv.Type()
+	var value interface{}
 	for i, fieldCount := 0, rv.NumField(); i < fieldCount; i++ {
 		fieldVal := rv.Field(i)
 		if !fieldVal.CanSet() {
 			continue
 		}
-		structField := fieldType.Field(i)
-		structTag := structField.Tag
-		col := strings.Split(structTag.Get(tag), ",")[0]
+		field := structType.Field(i)
+		fieldType := field.Type
+		fieldKind := fieldType.Kind()
+		if fieldKind == reflect.Ptr {
+			fieldType = reflect.TypeOf(fieldType).Elem()
+			fieldKind = fieldType.Kind()
+		}
+		col := strings.Split(field.Tag.Get(tag), ",")[0]
 		val, ok := mapData[col]
 		if !ok {
-			val, ok = mapData[structField.Name]
+			val, ok = mapData[field.Name]
 		}
 		if !ok {
 			continue
 		}
-		switch structField.Type.Kind() {
-		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint, reflect.Uintptr:
-			fieldVal.SetUint(gcast.ToUint64(val))
-		case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
-			fieldVal.SetInt(gcast.ToInt64(val))
+	BREAK:
+		switch fieldKind {
+		case reflect.Uint8:
+			value = gcast.ToUint8(val)
+		case reflect.Uint16:
+			value = gcast.ToUint16(val)
+		case reflect.Uint32:
+			value = gcast.ToUint32(val)
+		case reflect.Uint64:
+			value = gcast.ToUint64(val)
+		case reflect.Uint:
+			value = gcast.ToUint(val)
+		case reflect.Int8:
+			value = gcast.ToInt8(val)
+		case reflect.Int16:
+			value = gcast.ToInt16(val)
+		case reflect.Int32:
+			value = gcast.ToInt32(val)
+		case reflect.Int64:
+			value = gcast.ToInt64(val)
+		case reflect.Int:
+			value = gcast.ToInt(val)
 		case reflect.String:
-			fieldVal.SetString(gcast.ToString(val))
+			value = gcast.ToString(val)
 		case reflect.Slice:
 			if fieldVal.Type() == typeOfBytes {
-				fieldVal.Set(reflect.ValueOf([]byte(gcast.ToString(val))))
-			} else {
-				return nil, fmt.Errorf("unspported struct filed type: %s", structField.Name)
+				value = []byte(gcast.ToString(val))
 			}
 		case reflect.Bool:
-			fieldVal.SetBool(gcast.ToBool(val))
-		case reflect.Float32, reflect.Float64:
-			fieldVal.SetFloat(gcast.ToFloat64(val))
-		case reflect.Struct:
-			if structField.Type.Name() == "Time" {
+			value = gcast.ToBool(val)
+		case reflect.Float32:
+			value = gcast.ToFloat32(val)
+		case reflect.Float64:
+			value = gcast.ToFloat64(val)
+		case reflect.Map, reflect.Struct:
+			switch field.Type.Name() {
+			case "Time":
+				fmt.Println(">>>", field.Type.PkgPath())
 				unix, e := gcast.ToInt64E(val)
 				if e == nil {
-					fieldVal.Set(reflect.ValueOf(time.Unix(unix, 0).In(time.Local)))
+					value = time.Unix(unix, 0).In(time.Local)
+				} else if v, e := gcast.StringToDateInDefaultLocation(gcast.ToString(val), time.Local); e == nil {
+					value = v
 				} else {
-					v, e := gcast.StringToDateInDefaultLocation(gcast.ToString(val), time.Local)
-					if e == nil {
-						fieldVal.Set(reflect.ValueOf(v))
-					} else {
-						return nil, fmt.Errorf("convert string to datetime fail, filed: %s, error: %s", structField.Name, e)
-					}
+					err = e
 				}
-			} else {
-				return nil, fmt.Errorf("unspported struct filed type: %s", structField.Type.Name())
+			default:
+				d := []byte(gcast.ToString(val))
+				if !json.Valid(d) {
+					err = fmt.Errorf("convert json string to map filed fail, json format error, field: %s", field.Name)
+					break BREAK
+				}
+				var iv interface{}
+				ivIsPtr := false
+				if fieldKind == reflect.Struct {
+					ivIsPtr = true
+					iv = reflect.New(field.Type).Interface()
+				}
+				e := json.Unmarshal(d, &iv)
+				if e != nil {
+					err = fmt.Errorf("unspported json to map or struct filed fail, field: %s", field.Name)
+					break BREAK
+				}
+				if ivIsPtr {
+					value = reflect.ValueOf(iv).Elem().Interface()
+				} else {
+					value = iv
+				}
 			}
-		default:
-			fieldVal.Set(reflect.ValueOf(val))
 		}
+		rValue := reflect.ValueOf(value)
+		if !rValue.IsValid() {
+			e := fmt.Errorf("unspported field: %s, type: %s", field.Name, fieldType.Name())
+			if err != nil {
+				e = errors.Wrap(err, "convert to field error")
+			}
+			return nil, e
+		}
+		fieldVal.Set(rValue)
 	}
 	return rv.Interface(), err
 }

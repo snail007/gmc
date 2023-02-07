@@ -260,7 +260,7 @@ var rawRows = []map[string][]byte{
 	},
 }
 var (
-	timeTest, _ = gcast.StringToDate("2017-10-10 09:00:09 +0800 CST")
+	timeTest, _ = gcast.StringToDateInDefaultLocation("2017-10-10 09:00:09", time.Local)
 )
 
 func TestStruct(t *testing.T) {

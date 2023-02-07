@@ -72,11 +72,11 @@ type ResultSet interface {
 	RowsAffected() int64
 	TimeUsed() int
 	MapRows(keyColumn string) (rowsMap map[string]map[string]string)
-	MapStructs(keyColumn string, strucT interface{}) (structsMap map[string]interface{}, err error)
+	MapStructs(keyColumn string, strucT interface{}, tagName ...string) (structsMap map[string]interface{}, err error)
 	Rows() (rows []map[string]string)
-	Structs(strucT interface{}) (structs []interface{}, err error)
+	Structs(strucT interface{}, tagName ...string) (structs []interface{}, err error)
 	Row() (row map[string]string)
-	Struct(strucT interface{}) (Struct interface{}, err error)
+	Struct(strucT interface{}, tagName ...string) (Struct interface{}, err error)
 	Values(column string) (values []string)
 	MapValues(keyColumn, valueColumn string) (values map[string]string)
 	Value(column string) (value string)

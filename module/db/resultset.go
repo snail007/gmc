@@ -6,10 +6,11 @@
 package gdb
 
 import (
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gcast "github.com/snail007/gmc/util/cast"
 	"reflect"
-	"strconv"
+	"strings"
 	"time"
 )
 
@@ -64,7 +65,7 @@ func (rs *ResultSet) MapRows(keyColumn string) (rowsMap map[string]map[string]st
 	}
 	return
 }
-func (rs *ResultSet) MapStructs(keyColumn string, strucT interface{}) (structsMap map[string]interface{}, err error) {
+func (rs *ResultSet) MapStructs(keyColumn string, strucT interface{}, tagName ...string) (structsMap map[string]interface{}, err error) {
 	structsMap = map[string]interface{}{}
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
@@ -72,7 +73,7 @@ func (rs *ResultSet) MapStructs(keyColumn string, strucT interface{}) (structsMa
 			newRow[k] = string(v)
 		}
 		var _struct interface{}
-		_struct, err = rs.mapToStruct(newRow, strucT)
+		_struct, err = rs.mapToStruct(newRow, strucT, tagName...)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +92,7 @@ func (rs *ResultSet) Rows() (rows []map[string]string) {
 	}
 	return
 }
-func (rs *ResultSet) Structs(strucT interface{}) (structs []interface{}, err error) {
+func (rs *ResultSet) Structs(strucT interface{}, tagName ...string) (structs []interface{}, err error) {
 	structs = []interface{}{}
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
@@ -99,7 +100,7 @@ func (rs *ResultSet) Structs(strucT interface{}) (structs []interface{}, err err
 			newRow[k] = string(v)
 		}
 		var _struct interface{}
-		_struct, err = rs.mapToStruct(newRow, strucT)
+		_struct, err = rs.mapToStruct(newRow, strucT, tagName...)
 		if err != nil {
 			return nil, err
 		}
@@ -117,9 +118,9 @@ func (rs *ResultSet) Row() (row map[string]string) {
 	}
 	return
 }
-func (rs *ResultSet) Struct(strucT interface{}) (Struct interface{}, err error) {
+func (rs *ResultSet) Struct(strucT interface{}, tagName ...string) (Struct interface{}, err error) {
 	if rs.Len() > 0 {
-		return rs.mapToStruct(rs.Row(), strucT)
+		return rs.mapToStruct(rs.Row(), strucT, tagName...)
 	}
 	return nil, gcore.ProviderError()().New("rs is empty")
 }
@@ -144,7 +145,14 @@ func (rs *ResultSet) Value(column string) (value string) {
 	}
 	return
 }
-func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) (struCt interface{}, err error) {
+
+var typeOfBytes = reflect.TypeOf([]byte(nil))
+
+func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, tagName ...string) (struCt interface{}, err error) {
+	tag := "column"
+	if len(tagName) == 1 {
+		tag = tagName[0]
+	}
 	rv := reflect.New(reflect.TypeOf(Struct)).Elem()
 	if reflect.TypeOf(Struct).Kind() != reflect.Struct {
 		return nil, gcore.ProviderError()().New("v must be struct")
@@ -155,46 +163,51 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) 
 		if !fieldVal.CanSet() {
 			continue
 		}
-
 		structField := fieldType.Field(i)
 		structTag := structField.Tag
-		name := structTag.Get("column")
-
-		if _, ok := mapData[name]; !ok {
+		col := strings.Split(structTag.Get(tag), ",")[0]
+		val, ok := mapData[col]
+		if !ok {
+			val, ok = mapData[structField.Name]
+		}
+		if !ok {
 			continue
 		}
 		switch structField.Type.Kind() {
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint, reflect.Uintptr:
-			if val, err := strconv.ParseUint(mapData[name], 10, 64); err == nil {
-				fieldVal.SetUint(val)
-			}
+			fieldVal.SetUint(gcast.ToUint64(val))
 		case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
-			if val, err := strconv.ParseInt(mapData[name], 10, 64); err == nil {
-				fieldVal.SetInt(val)
-			}
+			fieldVal.SetInt(gcast.ToInt64(val))
 		case reflect.String:
-			fieldVal.SetString(mapData[name])
+			fieldVal.SetString(gcast.ToString(val))
+		case reflect.Slice:
+			if fieldVal.Type() == typeOfBytes {
+				fieldVal.Set(reflect.ValueOf([]byte(gcast.ToString(val))))
+			} else {
+				return nil, fmt.Errorf("unspported struct filed type: %s", structField.Name)
+			}
 		case reflect.Bool:
-			val := false
-			if mapData[name] == "1" {
-				val = true
-			}
-			fieldVal.SetBool(val)
+			fieldVal.SetBool(gcast.ToBool(val))
 		case reflect.Float32, reflect.Float64:
-			if val, err := strconv.ParseFloat(mapData[name], 64); err == nil {
-				fieldVal.SetFloat(val)
-			}
+			fieldVal.SetFloat(gcast.ToFloat64(val))
 		case reflect.Struct:
 			if structField.Type.Name() == "Time" {
-				val, err := time.ParseInLocation("2006-01-02 15:04:05", mapData[name], time.UTC)
-				if err == nil {
-					fieldVal.Set(reflect.ValueOf(val))
+				unix, e := gcast.ToInt64E(val)
+				if e == nil {
+					fieldVal.Set(reflect.ValueOf(time.Unix(unix, 0).In(time.Local)))
+				} else {
+					v, e := gcast.StringToDateInDefaultLocation(gcast.ToString(val), time.Local)
+					if e == nil {
+						fieldVal.Set(reflect.ValueOf(v))
+					} else {
+						return nil, fmt.Errorf("convert string to datetime fail, filed: %s, error: %s", structField.Name, e)
+					}
 				}
+			} else {
+				return nil, fmt.Errorf("unspported struct filed type: %s", structField.Type.Name())
 			}
-		case reflect.Interface:
-			fieldVal.SetString(gcast.ToString(mapData[name]))
 		default:
-			fieldVal.SetString(gcast.ToString(mapData[name]))
+			fieldVal.Set(reflect.ValueOf(val))
 		}
 	}
 	return rv.Interface(), err

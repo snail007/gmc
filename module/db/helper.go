@@ -149,7 +149,7 @@ func sortMap(data gmap.M, asc bool) []map[string]interface{} {
 	var m []gmap.M
 	for _, k := range keys {
 		col := k
-		if strings.Contains(k, ":") {
+		if strings.Index(k, ":") > 0 {
 			col = k[strings.Index(k, ":")+1:]
 		}
 		m = append(m, gmap.M{

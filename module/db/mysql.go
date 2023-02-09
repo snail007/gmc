@@ -915,8 +915,12 @@ func (ar *MySQLActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWra
 				op = "="
 			}
 			op = strings.ToUpper(op)
-			_where = append(_where, fmt.Sprintf("%s %s ?", k, op))
-			ar.values = append(ar.values, value)
+			if key[0] == ':' {
+				_where = append(_where, key[1:])
+			} else {
+				_where = append(_where, fmt.Sprintf("%s %s ?", k, op))
+				ar.values = append(ar.values, value)
+			}
 		}
 	}
 	return fmt.Sprintf(" %s %s %s ", leftWrap, strings.Join(_where, " AND "), rightWrap)

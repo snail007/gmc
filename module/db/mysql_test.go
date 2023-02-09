@@ -69,11 +69,13 @@ func TestWhere1(t *testing.T) {
 	got := strings.TrimSpace(_ar.From("test").Where(map[string]interface{}{
 		":`name` >= `age`": "",
 	}).SQL())
+	assert.Len(t, _ar.values, 0)
 	t.Log(want)
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
+
 func TestGroupBy(t *testing.T) {
 	want := "SELECT * \nFROM `test`  \nGROUP BY `name`,`uid`"
 	got := strings.TrimSpace(ar().From("test").GroupBy("name,uid").SQL())

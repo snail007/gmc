@@ -334,3 +334,14 @@ func TestUpdateBatch0(t *testing.T) {
 	fmt.Println(ar.SQL(), ar.Values())
 	// assert.Fail("")
 }
+
+func TestMySQLActiveRecord_WhereRaw(t *testing.T) {
+	_ar := ar()
+	want := "SELECT * \nFROM `test` \nWHERE `name` >= `age`"
+	got := strings.TrimSpace(_ar.From("test").WhereRaw("`name` >= `age`").SQL())
+	assert.Len(t, _ar.values, 0)
+	t.Log(want)
+	if want != got {
+		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
+	}
+}

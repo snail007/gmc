@@ -43,6 +43,7 @@ type ActiveRecord interface {
 	Values() []interface{}
 	Where(where map[string]interface{}) ActiveRecord
 	WhereWrap(where map[string]interface{}, leftWrap, rightWrap string) ActiveRecord
+	WhereRaw(where string) ActiveRecord
 	Wrap(v string) string
 }
 

@@ -482,6 +482,10 @@ func (ar *SQLite3ActiveRecord) Where(where gmap.M) gcore.ActiveRecord {
 	}
 	return ar
 }
+func (ar *SQLite3ActiveRecord) WhereRaw(where string) gcore.ActiveRecord {
+	ar.Where(gmap.M{":" + where: ""})
+	return ar
+}
 func (ar *SQLite3ActiveRecord) WhereWrap(where gmap.M, leftWrap, rightWrap string) gcore.ActiveRecord {
 	if len(where) > 0 {
 		ar.arWhere = append(ar.arWhere, []interface{}{where, leftWrap, rightWrap, len(ar.arWhere)})

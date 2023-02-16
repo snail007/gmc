@@ -31,7 +31,7 @@ func SetBinBase64(data map[string]string) {
 		}
 		binData[k] = b
 	}
-	defaultTpl.SetBinData(data)
+	defaultTpl.SetBinBase64(data)
 }
 
 //SetBinBytes key is file path no slash prefix, value is file's bytes contents.
@@ -57,19 +57,22 @@ func (s *Template) BinData() map[string][]byte {
 	return s.binData
 }
 
+//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
 func (s *Template) SetBinBytes(binData map[string][]byte) {
 	for k, v := range binData {
 		s.binData[k] = v
 	}
 }
 
+//SetBinString key is file path no slash prefix, value is file's string contents.
 func (s *Template) SetBinString(binData map[string]string) {
 	for k, v := range binData {
 		s.binData[k] = []byte(v)
 	}
 }
 
-func (s *Template) SetBinData(binData map[string]string) {
+//SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
+func (s *Template) SetBinBase64(binData map[string]string) {
 	for k, v := range binData {
 		b, err := base64.StdEncoding.DecodeString(v)
 		if err != nil {

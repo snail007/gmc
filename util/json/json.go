@@ -2,6 +2,7 @@ package gjson
 
 import (
 	"encoding/json"
+	gcast "github.com/snail007/gmc/util/cast"
 	"io"
 )
 
@@ -9,12 +10,25 @@ type JSONResult struct {
 	data map[string]interface{}
 }
 
-func NewResult() *JSONResult {
+//NewResult Optional args: code int, message string, data interface{}
+func NewResult(d ...interface{}) *JSONResult {
+	code := 0
+	message := ""
+	var data interface{}
+	if len(d) >= 1 {
+		code = gcast.ToInt(d[0])
+	}
+	if len(d) >= 2 {
+		message = gcast.ToString(d[1])
+	}
+	if len(d) >= 1 {
+		data = gcast.ToInt(d[2])
+	}
 	return &JSONResult{
 		data: map[string]interface{}{
-			"code":    0,
-			"message": "",
-			"data":    nil,
+			"code":    code,
+			"message": message,
+			"data":    data,
 		},
 	}
 }

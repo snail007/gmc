@@ -2,6 +2,7 @@ package gjson
 
 import (
 	"encoding/json"
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gcast "github.com/snail007/gmc/util/cast"
 	"io"
@@ -9,6 +10,14 @@ import (
 
 type JSONResult struct {
 	data map[string]interface{}
+	ctx  gcore.Ctx
+}
+
+//NewResultCtx Optional args: code int, message string, data interface{}
+func NewResultCtx(ctx gcore.Ctx, d ...interface{}) *JSONResult {
+	r := NewResult(d...)
+	r.ctx = ctx
+	return r
 }
 
 //NewResult Optional args: code int, message string, data interface{}
@@ -48,12 +57,12 @@ func (s *JSONResult) Code(code int) *JSONResult {
 	return s.Set("code", code)
 }
 
-func (s *JSONResult) Message(msg string) *JSONResult {
-	return s.Set("message", msg)
+func (s *JSONResult) Message(format string, msg ...interface{}) *JSONResult {
+	return s.Set("message", fmt.Sprintf(format, msg...))
 }
 
-func (s *JSONResult) Data(msg interface{}) *JSONResult {
-	return s.Set("message", msg)
+func (s *JSONResult) Data(d interface{}) *JSONResult {
+	return s.Set("data", d)
 }
 
 func (s *JSONResult) WriteTo(dst io.Writer) (err error) {
@@ -64,4 +73,18 @@ func (s *JSONResult) WriteTo(dst io.Writer) (err error) {
 func (s *JSONResult) WriteToCtx(ctx gcore.Ctx) (err error) {
 	_, err = ctx.Response().Write(s.ToJSON())
 	return
+}
+
+//Success worked with NewResultCtx()
+func (s *JSONResult) Success(d ...interface{}) (err error) {
+	var data interface{}
+	if len(d) == 1 {
+		data = d[0]
+	}
+	return s.Data(data).WriteToCtx(s.ctx)
+}
+
+//Fail worked with NewResultCtx()
+func (s *JSONResult) Fail(format string, v ...interface{}) (err error) {
+	return s.Code(1).Message(format, v...).WriteToCtx(s.ctx)
 }

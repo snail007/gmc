@@ -2,6 +2,7 @@ package gjson
 
 import (
 	"encoding/json"
+	gcore "github.com/snail007/gmc/core"
 	gcast "github.com/snail007/gmc/util/cast"
 	"io"
 )
@@ -57,5 +58,10 @@ func (s *JSONResult) Data(msg interface{}) *JSONResult {
 
 func (s *JSONResult) WriteTo(dst io.Writer) (err error) {
 	_, err = dst.Write(s.ToJSON())
+	return
+}
+
+func (s *JSONResult) WriteToCtx(ctx gcore.Ctx) (err error) {
+	_, err = ctx.Response().Write(s.ToJSON())
 	return
 }

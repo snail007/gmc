@@ -51,7 +51,7 @@ func (s *JSONResult) Message(msg string) *JSONResult {
 	return s.Set("message", msg)
 }
 
-func (s *JSONResult) Data(msg string) *JSONResult {
+func (s *JSONResult) Data(msg interface{}) *JSONResult {
 	return s.Set("message", msg)
 }
 

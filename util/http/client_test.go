@@ -79,37 +79,37 @@ func TestHTTPClient_UploadOfReader(t *testing.T) {
 func TestHTTPClient_Get(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, err := client.Get(httpServerURL+"/hello", 1, map[string]string{"token": "200"})
+	body, _, _, err := client.Get(httpServerURL+"/hello", 1, nil, map[string]string{"token": "200"})
 	assert.Nil(body)
-	assert.Contains(err.Error(), "timeout")
+	assert.Contains(err.Error(), "deadline")
 }
 
 func TestHTTPClient_Get1(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, _ := client.Get(httpServerURL+"/hello", time.Second, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get(httpServerURL+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Equal("hello", string(body))
 }
 
 func TestHTTPClient_Get2(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, err := client.Get(httpServerURL+"/sleep", time.Second, map[string]string{"token": "200"})
+	body, _, _, err := client.Get(httpServerURL+"/sleep", time.Second, nil, map[string]string{"token": "200"})
 	assert.Nil(body)
-	assert.Contains(err.Error(), "timeout")
+	assert.Contains(err.Error(), "deadline")
 }
 
 func TestHTTPClient_Get3(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, _ := client.Get(httpServerURL+"/sleep", time.Second*3, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get(httpServerURL+"/sleep", time.Second*3, nil, map[string]string{"token": "200"})
 	assert.Equal("hello", string(body))
 }
 
 func TestHTTPClient_Get4(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	body, _, _, _ := client.Get(httpsServerURL+"/hello", time.Second, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get(httpsServerURL+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(string(body), "hello")
 }
 
@@ -117,7 +117,7 @@ func TestHTTPClient_Get4_1(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetPinCert(cert)
-	body, _, _, _ := client.Get(httpsServerURL+"/hello", time.Second, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get(httpsServerURL+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(string(body), "hello")
 }
 
@@ -125,14 +125,14 @@ func TestHTTPClient_Get4_2(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetRootCaCerts(cert)
-	body, _, _, _ := client.Get(httpsServerURL+"/hello", time.Second, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get(httpsServerURL+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(string(body), "hello")
 }
 
 func TestHTTPClient_Get5(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
-	_, _, _, err := client.Get(httpsServerURL2+"/hello", time.Second, map[string]string{"token": "200"})
+	_, _, _, err := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(err.Error(), "tls: bad certificate")
 }
 
@@ -140,7 +140,7 @@ func TestHTTPClient_Get6(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetClientCert(cert, key)
-	body, _, _, _ := client.Get(httpsServerURL2+"/hello", time.Second, map[string]string{"token": "200"})
+	body, _, _, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(string(body), "hello")
 }
 
@@ -149,7 +149,7 @@ func TestHTTPClient_SetProxyFromEnv(t *testing.T) {
 	os.Setenv("HTTP_PROXY", "127.0.0.1:10000")
 	client := NewHTTPClient()
 	client.SetProxyFromEnv(true)
-	_, _, _, err := client.Get(httpServerURL+"/hello", time.Second, nil)
+	_, _, _, err := client.Get(httpServerURL+"/hello", time.Second, nil, nil)
 	assert.NotNil(err)
 }
 
@@ -157,7 +157,7 @@ func TestHTTPClient_SetProxy(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetProxy("127.0.0.1:10000")
-	_, _, _, err := client.Get(httpServerURL+"/hello", time.Second, nil)
+	_, _, _, err := client.Get(httpServerURL+"/hello", time.Second, nil, nil)
 	assert.Contains(err.Error(), "connection refused")
 }
 
@@ -165,9 +165,9 @@ func TestHTTPClient_SetDNS(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetDNS("114.114.114.114:53")
-	body1, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, map[string]string{"token": "200"})
+	body1, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, nil, map[string]string{"token": "200"})
 	client.SetDNS("8.8.8.8:53")
-	body2, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, map[string]string{"token": "200"})
+	body2, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, nil, map[string]string{"token": "200"})
 	assert.True(strings.Contains(string(body1), "STATUS OK") || strings.Contains(string(body2), "STATUS OK"))
 }
 
@@ -187,17 +187,17 @@ func TestDownload(t *testing.T) {
 			u:       httpServerURL + "/hello",
 			timeout: time.Second,
 			header:  nil,
-		}, []byte("hello"), false},
+		}, []byte("hello"), true},
 		{"", args{
 			u:       httpServerURL + "/none",
 			timeout: time.Second,
 			header:  nil,
-		}, nil, true},
+		}, []byte("404 page not found\n"), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotData, err := Download(tt.args.u, tt.args.timeout, tt.args.header)
-			if (err != nil) != tt.wantErr {
+			gotData, _, err := Download(tt.args.u, tt.args.timeout, nil, tt.args.header)
+			if (err == nil) != tt.wantErr {
 				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -243,11 +243,11 @@ func TestDownloadToFile(t *testing.T) {
 			timeout: time.Second,
 			header:  nil,
 			file:    "b.txt",
-		}, true},
+		}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := DownloadToFile(tt.args.u, tt.args.timeout, tt.args.header, tt.args.file); (err != nil) != tt.wantErr {
+			if _, err := DownloadToFile(tt.args.u, tt.args.timeout, nil, tt.args.header, tt.args.file); (err != nil) != tt.wantErr {
 				t.Errorf("DownloadToFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -275,13 +275,13 @@ func TestDownloadToWriter(t *testing.T) {
 			u:       httpServerURL + "/none",
 			timeout: 0,
 			header:  nil,
-		}, "", true},
+		}, "404 page not found\n", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writer := &bytes.Buffer{}
-			err := DownloadToWriter(tt.args.u, tt.args.timeout, tt.args.header, writer)
-			if (err != nil) != tt.wantErr {
+			resp, err := DownloadToWriter(tt.args.u, tt.args.timeout, nil, tt.args.header, writer)
+			if (err != nil || resp.StatusCode != 200) != tt.wantErr {
 				t.Errorf("DownloadToWriter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -323,7 +323,7 @@ func TestGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotBody, gotCode, _, err := Get(tt.args.u, tt.args.timeout, tt.args.header)
+			gotBody, gotCode, _, err := Get(tt.args.u, tt.args.timeout, nil, tt.args.header)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return

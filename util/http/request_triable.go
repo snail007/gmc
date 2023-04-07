@@ -1,6 +1,9 @@
 package ghttp
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 // TriableRequest when request fail, retry to request with MaxTryCount.
 type TriableRequest struct {
@@ -11,13 +14,13 @@ type TriableRequest struct {
 
 // NewTriableRequest new a TriableRequest, maxTry is the max retry count when a request error occurred.
 // If client is nil, default client will be used.
-func NewTriableRequest(req *http.Request, client *http.Client, maxTry int) *TriableRequest {
+func NewTriableRequest(req *http.Request, client *http.Client, maxTry int, timeout time.Duration) *TriableRequest {
 	if client == nil {
 		if client == nil {
 			client = defaultClient()
 		}
 	}
-	return &TriableRequest{req: req, client: client, maxTry: maxTry}
+	return &TriableRequest{req: withTimeout(req, timeout), client: client, maxTry: maxTry}
 }
 
 // Execute send request with retrying ability.

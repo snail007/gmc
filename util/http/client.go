@@ -32,8 +32,8 @@ var (
 	Client = NewHTTPClient()
 )
 
-func Get(u string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
-	return Client.Get(u, timeout, header)
+func Get(u string, timeout time.Duration, queryData, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
+	return Client.Get(u, timeout, queryData, header)
 }
 
 func Post(u string, data map[string]string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
@@ -52,16 +52,16 @@ func UploadOfReader(u, fieldName string, filename string, reader io.ReadCloser, 
 	return Client.UploadOfReader(u, fieldName, filename, reader, data, timeout, header)
 }
 
-func Download(u string, timeout time.Duration, header map[string]string) (data []byte, err error) {
-	return Client.Download(u, timeout, header)
+func Download(u string, timeout time.Duration, queryData, header map[string]string) (data []byte, resp *http.Response, err error) {
+	return Client.Download(u, timeout, queryData, header)
 }
 
-func DownloadToFile(u string, timeout time.Duration, header map[string]string, file string) (err error) {
-	return Client.DownloadToFile(u, timeout, header, file)
+func DownloadToFile(u string, timeout time.Duration, queryData, header map[string]string, file string) (resp *http.Response, err error) {
+	return Client.DownloadToFile(u, timeout, queryData, header, file)
 }
 
-func DownloadToWriter(u string, timeout time.Duration, header map[string]string, writer io.Writer) (err error) {
-	return Client.DownloadToWriter(u, timeout, header, writer)
+func DownloadToWriter(u string, timeout time.Duration, queryData, header map[string]string, writer io.Writer) (resp *http.Response, err error) {
+	return Client.DownloadToWriter(u, timeout, queryData, header, writer)
 }
 
 // HTTPClient do http get, post etc.
@@ -81,13 +81,20 @@ type HTTPClient struct {
 	basicAuthPass     string
 	httpClientFactory func(r *http.Request) *http.Client
 	preHandler        func(r *http.Request)
+	keepalive         bool
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
+// Keepalive is enabled in default.
 func NewHTTPClient() *HTTPClient {
 	return &HTTPClient{
-		jar: NewCookieJar(),
+		keepalive: true,
+		jar:       NewCookieJar(),
 	}
+}
+
+func (s *HTTPClient) SetKeepalive(keepalive bool) {
+	s.keepalive = keepalive
 }
 
 // SetHttpClientFactory sets a http.Client factory, the http.Client it's returned, will be used to send the processed http.Request.
@@ -201,89 +208,35 @@ func (s *HTTPClient) setBasicAuth(req *http.Request) {
 }
 
 // Get send a HTTP GET request, no header, just passive nil.
-func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	req, err := http.NewRequest("GET", u, nil)
+func (s *HTTPClient) Get(u string, timeout time.Duration, queryData, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
+	req, cancel, err := NewGet(u, timeout, queryData, header)
+	defer cancel()
 	if err != nil {
 		return
 	}
-	s.setBasicAuth(req)
-	if header != nil {
-		for k, v := range header {
-			if strings.EqualFold(k, "host") {
-				req.Host = v
-				continue
-			}
-			req.Header.Set(k, v)
-		}
-	}
-	req.Close = true
-
-	client, err := s.newClient(req, timeout)
-	if err != nil {
-		return
-	}
-	if s.preHandler != nil {
-		s.preHandler(req)
-	}
-	resp, err = client.Do(req)
-	if err != nil {
-		return nil, 0, nil, err
-	}
-	code = resp.StatusCode
-	body, err = ioutil.ReadAll(resp.Body)
-	return
+	return s.call(req, timeout)
 }
 
 // Post send an HTTP POST request, no header, just passive nil.
 // data is form key value.
 func (s *HTTPClient) Post(u string, data map[string]string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
-	postParamsString := ""
-	if data != nil {
-		var postParams []string
-		for k, v := range data {
-			postParams = append(postParams, url.QueryEscape(k)+"="+url.QueryEscape(v))
-		}
-		postParamsString = strings.Join(postParams, "&")
-	}
-	return s.PostOfReader(u, strings.NewReader(postParamsString), timeout, header)
+	return s.PostOfReader(u, strings.NewReader(encodeData(data)), timeout, header)
 }
 
 // PostOfReader send a HTTP POST request, no header, just passive nil.
 // data is an io.Reader.
 func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-	req, err := http.NewRequest("POST", u, r)
+	ctx, cancel := getTimeoutContext(timeout)
+	defer cancel()
+	req, err := NewPostReaderWithContext(ctx, u, r, header)
 	if err != nil {
 		return
 	}
+	return s.call(req, timeout)
+}
+
+func (s *HTTPClient) callRaw(req *http.Request, timeout time.Duration) (resp *http.Response, err error) {
 	s.setBasicAuth(req)
-	req.Close = true
-	foundCT := false
-	if header != nil {
-		for k, v := range header {
-			if strings.EqualFold(k, "host") {
-				req.Host = v
-				continue
-			}
-			req.Header.Set(k, v)
-			if strings.TrimSpace(strings.ToLower(k)) == "content-type" {
-				foundCT = true
-			}
-		}
-	}
-	if !foundCT {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	}
 	client, err := s.newClient(req, timeout)
 	if err != nil {
 		return
@@ -292,14 +245,20 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 		s.preHandler(req)
 	}
 	resp, err = client.Do(req)
+	return
+}
+
+func (s *HTTPClient) call(req *http.Request, timeout time.Duration) (body []byte, code int, resp *http.Response, err error) {
+	defer CloseResponse(resp)
+	resp, err = s.callRaw(req, timeout)
 	if err != nil {
 		return
 	}
 	body, err = ioutil.ReadAll(resp.Body)
-	code = resp.StatusCode
 	if err != nil {
 		return
 	}
+	code = resp.StatusCode
 	return
 }
 
@@ -343,103 +302,49 @@ func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader
 			return
 		}
 	}()
-	req, err := http.NewRequest("POST", u, r)
+	ctx, cancel := getTimeoutContext(timeout)
+	defer cancel()
+	if header == nil {
+		header = map[string]string{}
+	}
+	header["Content-Type"] = m.FormDataContentType()
+	req, err := NewPostReaderWithContext(ctx, u, r, header)
 	if err != nil {
 		return
 	}
-	s.setBasicAuth(req)
-	req.Close = true
-	req.Header.Add("Content-Type", m.FormDataContentType())
-	url0, _ := url.Parse(u)
-	req.Host = url0.Host
-	if header != nil {
-		for k, v := range header {
-			if strings.EqualFold(k, "host") {
-				req.Host = v
-				continue
-			}
-			req.Header.Set(k, v)
-		}
+	b, _, resp, err := s.call(req, timeout)
+	if err == nil {
+		body = string(b)
 	}
-	c, err := s.newClient(req, timeout)
-	if err != nil {
-		return
-	}
-	resp, err = c.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	body = string(b)
 	return
 }
 
 //Download gets url bytes contents.
-func (s *HTTPClient) Download(u string, timeout time.Duration, header map[string]string) (data []byte, err error) {
-	body, code, resp, err := s.Get(u, timeout, header)
-	if err != nil {
-		return
-	}
-	if code != 200 {
-		err = fmt.Errorf("WARN HTTP REQUEST FAIL, HTTP_CODE: %d, BODY: %s", resp.StatusCode, string(body))
-		return
-	}
-	defer resp.Body.Close()
-	data = body
+func (s *HTTPClient) Download(u string, timeout time.Duration, queryData, header map[string]string) (data []byte, resp *http.Response, err error) {
+	data, _, resp, err = s.Get(u, timeout, queryData, header)
 	return
 }
 
 //DownloadToFile gets url bytes contents and save to the file.
-func (s *HTTPClient) DownloadToFile(u string, timeout time.Duration, header map[string]string, file string) (err error) {
+func (s *HTTPClient) DownloadToFile(u string, timeout time.Duration, queryData, header map[string]string, file string) (resp *http.Response, err error) {
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
 		return
 	}
 	defer f.Close()
-	return s.DownloadToWriter(u, timeout, header, f)
+	return s.DownloadToWriter(u, timeout, queryData, header, f)
 }
 
 //DownloadToWriter gets url bytes contents and copy to the writer at realtime.
-func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header map[string]string, writer io.Writer) (err error) {
-	var resp *http.Response
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-	req, err := http.NewRequest("GET", u, nil)
+func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, queryData, header map[string]string, writer io.Writer) (resp *http.Response, err error) {
+	req, cancel, err := NewGet(u, timeout, queryData, header)
+	defer cancel()
 	if err != nil {
 		return
 	}
-	s.setBasicAuth(req)
-	req.Close = true
-	if header != nil {
-		for k, v := range header {
-			if strings.EqualFold(k, "host") {
-				req.Host = v
-				continue
-			}
-			req.Header.Set(k, v)
-		}
-	}
-	client, err := s.newClient(req, timeout)
+	resp, err = s.callRaw(req, timeout)
+	defer CloseResponse(resp)
 	if err != nil {
-		return
-	}
-	if s.preHandler != nil {
-		s.preHandler(req)
-	}
-	resp, err = client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		err = fmt.Errorf("WARN HTTP REQUEST FAIL, HTTP_CODE: %d, BODY: %s", resp.StatusCode, string(body))
 		return
 	}
 	_, err = io.Copy(writer, resp.Body)
@@ -455,7 +360,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   timeout,
 		ExpectContinueTimeout: 1 * time.Second,
-		DisableKeepAlives:     true,
+		DisableKeepAlives:     !s.keepalive,
 		Proxy: func(req *http.Request) (u *url.URL, err error) {
 			// do nothing, disable default, process in DialContext
 			return
@@ -615,7 +520,6 @@ func (s *CookieJar) Cookies(u *url.URL) []*http.Cookie {
 
 var defaultHTTPClient = &http.Client{
 	Transport: http.DefaultTransport,
-	Timeout:   time.Second * 60,
 }
 
 func defaultClient() *http.Client {

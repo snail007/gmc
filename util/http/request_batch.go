@@ -24,23 +24,46 @@ func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest 
 	return &BatchRequest{reqArr: reqArr, client: client}
 }
 
-// Index returns the index of response that first success request in requests.
-func (s *BatchRequest) Index() int {
-	return s.firstSuccessIndex
-}
-
-// ErrorFirst returns the first request error.
-func (s *BatchRequest) ErrorFirst() error {
+// Success returns requests at least one is success in waitFirstSuccess mode.
+//returns all requests are success in non waitFirstSuccess mode.
+func (s *BatchRequest) Success() bool {
+	if s.waitFirstSuccess {
+		return s.respArr[0] != nil
+	}
 	for _, v := range s.errArr {
 		if v != nil {
-			return v
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
-// Errors returns all request's error.
-func (s *BatchRequest) Errors() (errors []error) {
+// Result returns the first response or first error when all request fail.
+func (s *BatchRequest) Result() (*http.Response, error) {
+	for _, v := range s.respArr {
+		if v != nil {
+			return v, nil
+		}
+	}
+	for _, v := range s.errArr {
+		if v != nil {
+			return nil, v
+		}
+	}
+	// this never occurred
+	return nil, nil
+}
+
+// ResultAll returns all request's result,
+// len(requests) = len(responses) = len(errros),
+// responses[0] is the response of requests[0], it may be nil if requests[0] has an error.
+// errros[0] is the error of requests[0], it may be nil if requests[0] has no error.
+func (s *BatchRequest) ResultAll() ([]*http.Response, []error) {
+	return s.respArr, s.errArr
+}
+
+// ErrorAll returns all request's non nil error,
+func (s *BatchRequest) ErrorAll() (errors []error) {
 	for _, v := range s.errArr {
 		if v != nil {
 			errors = append(errors, v)
@@ -49,18 +72,14 @@ func (s *BatchRequest) Errors() (errors []error) {
 	return
 }
 
-// ErrorLast returns the last request error.
-func (s *BatchRequest) ErrorLast() error {
-	if len(s.errArr) == 0 {
-		return nil
-	}
-	for i := len(s.errArr) - 1; i >= 0; i++ {
-		v := s.errArr[i]
+// ResponseAll returns all request's non nil response,
+func (s *BatchRequest) ResponseAll() (responses []*http.Response) {
+	for _, v := range s.respArr {
 		if v != nil {
-			return v
+			responses = append(responses, v)
 		}
 	}
-	return nil
+	return
 }
 
 // SetPool sets a *gpool.GPool to execute request. In default goroutine will be used.
@@ -74,9 +93,7 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 	return s
 }
 
-// Execute batch send requests, len(respArr) equals len(errArr),
-// respArr[0] is the response of requests[0], it may be nil if requests[0] has an error.
-// errArr[0] is the error of requests[0], it may be nil if requests[0] has no error.
+// Execute batch send requests,
 //	In default Execute will wait all request done. If you want to get the first success response,
 // using BatchRequest.WaitFirstSuccess().Execute(), Execute() will return immediately when get a success response.
 //	If all requests are fail, Execute() return after all requests done.

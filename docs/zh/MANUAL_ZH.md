@@ -1137,15 +1137,57 @@ kill -USR2 11297
 
 # GMC 工具包
 
-## gpool
+## gpool 协程池
 
-## gmap
+## gmap 线程安全,key有序的Map
 
-## glog
+## glist 线程安全的list
 
-## gsize
+## glinklist 线程安全的链表
 
-## gcast
+## gset 线程安全,有序的set
+
+## glog 打印日志
+
+## gbytes 字节大小各种转换
+
+## gcast 各种数据转换
+
+## gcaptcha 轻量验证码
+
+## gcompress 解压缩
+
+## gfile 文件相关操作
+
+## ghttp 好用的HTTP请求
+
+## gjson 接口输出json相关操作
+
+## gnet 强大的网络包
+
+## gos 系统os相关
+
+## gpaginator 数据分页条
+
+## ghttppprof pprof工具
+
+## gprocess 方便的命令行支持后台守护运行和记录日志
+
+## ghook 程序被杀时执行代码
+
+## gdaemon 命令行支持后台守护运行和记录日志
+
+## gprofiling 程序支持profile
+
+## gproxy 使用代理Dial
+
+## grand 随机相关
+
+## gstrings string相关
+
+## gsync 同步相关
+
+## gtesting 单元测试相关，gmc自身单测也在用
 
 # 其它功能
 

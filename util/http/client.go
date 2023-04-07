@@ -66,19 +66,21 @@ func DownloadToWriter(u string, timeout time.Duration, header map[string]string,
 
 // HTTPClient do http get, post etc.
 type HTTPClient struct {
-	pinCert         *x509.Certificate
-	clientCert      tls.Certificate
-	clientAuth      bool
-	caCertPool      *x509.CertPool
-	proxyURL        *url.URL
-	opts            *x509.VerifyOptions
-	setProxyFromEnv bool
-	dns             string
-	connWrap        func(net.Conn) (conn net.Conn, err error)
-	jar             http.CookieJar
-	dialer          func(network, address string, timeout time.Duration) (net.Conn, error)
-	basicAuthUser   string
-	basicAuthPass   string
+	pinCert           *x509.Certificate
+	clientCert        tls.Certificate
+	clientAuth        bool
+	caCertPool        *x509.CertPool
+	proxyURL          *url.URL
+	opts              *x509.VerifyOptions
+	setProxyFromEnv   bool
+	dns               string
+	connWrap          func(net.Conn) (conn net.Conn, err error)
+	jar               http.CookieJar
+	dialer            func(network, address string, timeout time.Duration) (net.Conn, error)
+	basicAuthUser     string
+	basicAuthPass     string
+	httpClientFactory func(r *http.Request) *http.Client
+	preHandler        func(r *http.Request)
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
@@ -86,6 +88,19 @@ func NewHTTPClient() *HTTPClient {
 	return &HTTPClient{
 		jar: NewCookieJar(),
 	}
+}
+
+// SetHttpClientFactory sets a http.Client factory, the http.Client it's returned, will be used to send the processed http.Request.
+// the argument is the processed http.Request, you can modify it in your any purpose, and the modified  http.Request
+// will be sent by the returned client.
+func (s *HTTPClient) SetHttpClientFactory(httpClientFactory func(r *http.Request) *http.Client) {
+	s.httpClientFactory = httpClientFactory
+}
+
+// SetPreHandler handle the processed http.Request, you can modify it in your any purpose, and the modified  http.Request
+// will be sent by the returned client.
+func (s *HTTPClient) SetPreHandler(preHandler func(r *http.Request)) {
+	s.preHandler = preHandler
 }
 
 // SetConnWrap called after net.DialTimeout, you can change the conn，return it, if no change just return it.
@@ -192,10 +207,7 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 			resp.Body.Close()
 		}
 	}()
-	client, err := s.newClient(timeout)
-	if err != nil {
-		return
-	}
+
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return
@@ -211,6 +223,14 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 		}
 	}
 	req.Close = true
+
+	client, err := s.newClient(req, timeout)
+	if err != nil {
+		return
+	}
+	if s.preHandler != nil {
+		s.preHandler(req)
+	}
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, 0, nil, err
@@ -220,12 +240,12 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, header map[string]stri
 	return
 }
 
-// Post send a HTTP POST request, no header, just passive nil.
+// Post send an HTTP POST request, no header, just passive nil.
 // data is form key value.
 func (s *HTTPClient) Post(u string, data map[string]string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
 	postParamsString := ""
 	if data != nil {
-		postParams := []string{}
+		var postParams []string
 		for k, v := range data {
 			postParams = append(postParams, url.QueryEscape(k)+"="+url.QueryEscape(v))
 		}
@@ -248,10 +268,6 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	}
 	s.setBasicAuth(req)
 	req.Close = true
-	client, err := s.newClient(timeout)
-	if err != nil {
-		return
-	}
 	foundCT := false
 	if header != nil {
 		for k, v := range header {
@@ -267,6 +283,13 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	}
 	if !foundCT {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	client, err := s.newClient(req, timeout)
+	if err != nil {
+		return
+	}
+	if s.preHandler != nil {
+		s.preHandler(req)
 	}
 	resp, err = client.Do(req)
 	if err != nil {
@@ -338,7 +361,7 @@ func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader
 			req.Header.Set(k, v)
 		}
 	}
-	c, err := s.newClient(timeout)
+	c, err := s.newClient(req, timeout)
 	if err != nil {
 		return
 	}
@@ -388,10 +411,6 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header ma
 			resp.Body.Close()
 		}
 	}()
-	client, err := s.newClient(timeout)
-	if err != nil {
-		return
-	}
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return
@@ -406,6 +425,13 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, header ma
 			}
 			req.Header.Set(k, v)
 		}
+	}
+	client, err := s.newClient(req, timeout)
+	if err != nil {
+		return
+	}
+	if s.preHandler != nil {
+		s.preHandler(req)
 	}
 	resp, err = client.Do(req)
 	if err != nil {
@@ -551,8 +577,12 @@ func (s *HTTPClient) getProxyURL() (proxyURL *url.URL) {
 }
 
 // new a http.Client
-func (s *HTTPClient) newClient(timeout time.Duration) (client *http.Client, err error) {
-	client = &http.Client{}
+func (s *HTTPClient) newClient(req *http.Request, timeout time.Duration) (client *http.Client, err error) {
+	if s.httpClientFactory != nil {
+		client = s.httpClientFactory(req)
+	} else {
+		client = defaultClient()
+	}
 	client.Jar = s.jar
 	client.Transport, err = s.newTransport(timeout)
 	return
@@ -581,4 +611,13 @@ func (s *CookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
 
 func (s *CookieJar) Cookies(u *url.URL) []*http.Cookie {
 	return s.jar.Cookies(u)
+}
+
+var defaultHTTPClient = &http.Client{
+	Transport: http.DefaultTransport,
+	Timeout:   time.Second * 60,
+}
+
+func defaultClient() *http.Client {
+	return defaultHTTPClient
 }

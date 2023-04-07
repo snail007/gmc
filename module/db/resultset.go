@@ -182,7 +182,6 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 		if !ok {
 			continue
 		}
-		fmt.Println(fieldKind.String(), fieldType.Name())
 	BREAK:
 		switch fieldKind {
 		case reflect.Uint8:
@@ -205,7 +204,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 			value = gcast.ToInt64(val)
 		case reflect.Int:
 			value = gcast.ToInt(val)
-		case reflect.String:
+		case reflect.String, reflect.Interface:
 			value = gcast.ToString(val)
 		case reflect.Slice:
 			if fieldVal.Type() == typeOfBytes {

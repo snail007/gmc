@@ -230,7 +230,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 			default:
 				d := []byte(gcast.ToString(val))
 				if !json.Valid(d) {
-					err = fmt.Errorf("convert json string to map filed fail, json format error")
+					err = fmt.Errorf("convert json string to map field fail, json format error, field: %s, type: %s", field.Name, fieldKind.String())
 					break BREAK
 				}
 				var iv interface{}
@@ -241,7 +241,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 				}
 				e := json.Unmarshal(d, &iv)
 				if e != nil {
-					err = fmt.Errorf("unspported json to map or struct filed fail")
+					err = fmt.Errorf("unspported json to map or struct field fail, field: %s, type: %s", field.Name, fieldKind.String())
 					break BREAK
 				}
 				if ivIsPtr {
@@ -250,10 +250,13 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 					value = iv
 				}
 			}
+		default:
+			err = fmt.Errorf("unspported struct field type, field: %s, type: %s", field.Name, fieldKind.String())
+			return nil, err
 		}
 		rValue := reflect.ValueOf(value)
 		if !rValue.IsValid() {
-			e := fmt.Errorf("unspported field: %s, type: %s", field.Name, field.Type.String())
+			e := fmt.Errorf("unspported field: %s, type: %s", field.Name, fieldKind.String())
 			if err != nil {
 				e = errors.Wrapf(err, "convert to field error, field: %s, type: %s", field.Name, field.Type.String())
 			}

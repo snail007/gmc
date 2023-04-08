@@ -30,7 +30,8 @@ level=0
 output=[0]
 # only worked when output contains 1
 dir="./logs"
-# filename in logs dir.
+archive_dir=""
+# filename in logs dir or archive_dir.
 # available placeholders are:
 # %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
 filename="gmcapi_%Y%m%d.log"

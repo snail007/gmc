@@ -26,8 +26,8 @@ func TestNewFromConfig(t *testing.T) {
 				# 0,1 => console, file
 				output=[0,1]
 				# only worked when output contains 1
-				dir="./logs"
-				# filename in logs dir.
+				logsDir="./logs"
+				# filename in logs logsDir.
 				# available placeholders are:
 				# %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
 				filename="web_%s.log"
@@ -53,8 +53,8 @@ func TestNewFromConfig1(t *testing.T) {
 				# 0,1 => console, file
 				output=[0]
 				# only worked when output contains 1
-				dir="./logs"
-				# filename in logs dir.
+				logsDir="./logs"
+				# filename in logs logsDir.
 				# available placeholders are:
 				# %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
 				filename="web_%s.log"

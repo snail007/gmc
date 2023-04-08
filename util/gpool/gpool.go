@@ -54,9 +54,13 @@ func (s *GPool) SetDebug(debug bool) {
 
 // New create a gpool object to using
 func New(workerCount int) (p *GPool) {
+	return NewWithLogger(workerCount, gcore.ProviderLogger()(nil, ""))
+}
+
+func NewWithLogger(workerCount int, logger gcore.Logger) (p *GPool) {
 	p = &GPool{
 		tasks:         glist.New(),
-		logger:        gcore.ProviderLogger()(nil, ""),
+		logger:        logger,
 		workers:       gmap.New(),
 		initWorkCount: workerCount,
 	}

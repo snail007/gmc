@@ -6,7 +6,9 @@
 package glog
 
 import (
+	"errors"
 	"fmt"
+	"github.com/snail007/gmc/util/gpool"
 	"io"
 	"log"
 	"os"
@@ -22,6 +24,7 @@ import (
 
 var (
 	logger = New("")
+	pool   = gpool.NewWithLogger(10, nil)
 )
 
 func init() {
@@ -231,7 +234,7 @@ func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger 
 }
 
 func (s *Logger) AddWriter(w io.Writer) gcore.Logger {
-	s.l.SetOutput(io.MultiWriter(s.l.Writer(), w))
+	s.l.SetOutput(newMultiWriter(s.l.Writer(), w))
 	return s
 }
 
@@ -345,11 +348,21 @@ func (s *Logger) namespace() string {
 }
 
 func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
+	if len(s.levelWriters) == 0 {
+		return
+	}
+	g := sync.WaitGroup{}
+	g.Add(len(s.levelWriters))
 	for _, w := range s.levelWriters {
 		if w.level <= level {
-			s.write(str, w)
+			w0 := w
+			pool.Submit(func() {
+				defer g.Done()
+				s.write(str, w0)
+			})
 		}
 	}
+	g.Wait()
 }
 
 func (s *Logger) canLevelWrite(level gcore.LogLevel) bool {
@@ -698,4 +711,49 @@ type levelWriter struct {
 
 func newLogWriter(writer io.Writer, level gcore.LogLevel) *levelWriter {
 	return &levelWriter{Writer: writer, level: level, lock: &sync.Mutex{}}
+}
+
+type multiWriter struct {
+	writers []io.Writer
+}
+
+var ErrShortWrite = errors.New("short write")
+
+func (t *multiWriter) Write(p []byte) (n int, err error) {
+	if len(t.writers) == 0 {
+		return
+	}
+	g := sync.WaitGroup{}
+	g.Add(len(t.writers))
+	for _, w := range t.writers {
+		w0 := w
+		pool.Submit(func() {
+			defer g.Done()
+			n, e := w0.Write(p)
+			if e != nil {
+				err = e
+				return
+			}
+			if n != len(p) {
+				err = ErrShortWrite
+			}
+		})
+	}
+	g.Wait()
+	if err != nil {
+		return
+	}
+	return len(p), nil
+}
+
+func newMultiWriter(writers ...io.Writer) io.Writer {
+	allWriters := make([]io.Writer, 0, len(writers))
+	for _, w := range writers {
+		if mw, ok := w.(*multiWriter); ok {
+			allWriters = append(allWriters, mw.writers...)
+		} else {
+			allWriters = append(allWriters, w)
+		}
+	}
+	return &multiWriter{allWriters}
 }

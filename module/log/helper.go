@@ -34,8 +34,7 @@ func NewFromConfig(c gcore.Config, prefix ...string) (l gcore.Logger) {
 		case 0:
 			writers = append(writers, os.Stdout)
 		case 1:
-			w0 := NewFileWriter(cfg.GetString("filename"),
-				cfg.GetString("dir"), cfg.GetBool("gzip"))
+			w0 := NewFileWriter(cfg.GetString("filename"), cfg.GetString("logsDir"), cfg.GetString("archive_dir"), cfg.GetBool("gzip"))
 			writers = append(writers, w0)
 		}
 	}

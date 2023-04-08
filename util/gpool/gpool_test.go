@@ -3,13 +3,14 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package gpool
+package gpool_test
 
 import (
 	_ "github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
+	"github.com/snail007/gmc/util/gpool"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -19,7 +20,7 @@ import (
 //testing here
 
 func TestNewGPool(t *testing.T) {
-	p := New(3)
+	p := gpool.New(3)
 	if p != nil {
 		t.Log("New is okay")
 	} else {
@@ -29,7 +30,7 @@ func TestNewGPool(t *testing.T) {
 }
 
 func TestSubmit(t *testing.T) {
-	p := New(3)
+	p := gpool.New(3)
 	a := make(chan bool)
 	p.Submit(func() {
 		a <- true
@@ -48,7 +49,7 @@ func TestSubmit(t *testing.T) {
 	time.Sleep(time.Second)
 }
 func TestStop(t *testing.T) {
-	p := New(3)
+	p := gpool.New(3)
 	a := make(chan bool)
 	p.Submit(func() {
 		time.Sleep(time.Second)
@@ -64,12 +65,12 @@ func TestStop(t *testing.T) {
 	p.Stop()
 }
 func TestSetLogger(t *testing.T) {
-	p := New(3)
+	p := gpool.New(3)
 	p.SetLogger(nil)
 	p.Stop()
 }
 func TestRunning(t *testing.T) {
-	p := New(3)
+	p := gpool.New(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})
@@ -93,7 +94,7 @@ func TestRunning(t *testing.T) {
 
 func TestIncrease(t *testing.T) {
 	assert := assert2.New(t)
-	p := New(3)
+	p := gpool.New(3)
 	for i := 0; i < 3; i++ {
 		p.Submit(func() {
 			time.Sleep(time.Second * 5)
@@ -112,7 +113,7 @@ func TestIncrease(t *testing.T) {
 
 func TestDecrease(t *testing.T) {
 	assert := assert2.New(t)
-	p := New(2)
+	p := gpool.New(2)
 	for i := 0; i < 6; i++ {
 		p.Submit(func() {
 			time.Sleep(time.Second)
@@ -127,7 +128,7 @@ func TestDecrease(t *testing.T) {
 }
 
 func TestAwaiting(t *testing.T) {
-	p := New(3)
+	p := gpool.New(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})
@@ -151,7 +152,7 @@ func TestAwaiting(t *testing.T) {
 
 func TestGPool_MaxWaitCount(t *testing.T) {
 	assert := assert2.New(t)
-	p := New(1)
+	p := gpool.New(1)
 	p.SetDebug(true)
 	assert.True(p.IsDebug())
 	p.SetMaxTaskAwaitCount(2)
@@ -191,7 +192,5 @@ func TestMain(m *testing.M) {
 	gcore.RegisterError(gcore.DefaultProviderKey, func() gcore.Error {
 		return gerror.New()
 	})
-
-	pSubmit = New(500000)
 	os.Exit(m.Run())
 }

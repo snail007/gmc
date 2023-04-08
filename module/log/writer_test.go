@@ -3,10 +3,9 @@
 // license that can be found in the LICENSE file.
 // More information at https://github.com/snail007/gmc
 
-package glog_test
+package glog
 
 import (
-	glog "github.com/snail007/gmc/module/log"
 	gfile "github.com/snail007/gmc/util/file"
 	assert2 "github.com/stretchr/testify/assert"
 	"io"
@@ -23,7 +22,7 @@ func TestNewFileWriter(t *testing.T) {
 		os.RemoveAll(dir)
 	}()
 	assert := assert2.New(t)
-	w := glog.NewFileWriter("logs-%h%i%s.log", dir, false)
+	w := NewFileWriter("logs-%h%i%s.log", dir, "", false)
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
 	fs, err := filepath.Glob(dir + "/*.log")
@@ -44,7 +43,7 @@ func TestNewFileWriter1(t *testing.T) {
 	assert.Nil(err)
 	f.Close()
 	defer os.Remove(f.Name())
-	w := glog.NewFileWriter("foo.log", dir, false)
+	w := NewFileWriter("foo.log", dir, "", false)
 	assert.Nil(w)
 }
 
@@ -55,7 +54,7 @@ func TestNewFileWriter_Gzip(t *testing.T) {
 		os.RemoveAll(dir)
 	}()
 	assert := assert2.New(t)
-	w := glog.NewFileWriter("logs-%h%i%s.log", dir, true)
+	w := NewFileWriter("logs-%h%i%s.log", dir, "", true)
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
 	fs, err := filepath.Glob(dir + "/*.log")
@@ -72,15 +71,26 @@ func TestNewFileWriter_Gzip(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	dir := "fwwlogs"
+	archiveDir := "%Y%m%d"
+	fileName := "a_%h%i%s.log"
 	os.RemoveAll(dir)
 	defer func() {
 		os.RemoveAll(dir)
 	}()
 	assert := assert2.New(t)
-	w := glog.NewFileWriter("a.log", dir, false)
+	w := NewFileWriter(fileName, dir, archiveDir, true)
 	assert.Implements((*io.Writer)(nil), w)
-	assert.DirExists(dir)
 	_, err := w.Write([]byte("abc"))
 	assert.Nil(err)
-	assert.Contains(gfile.ReadAll(dir+"/a.log"), "abc")
+	time.Sleep(time.Second * 2)
+	f := dir + "/" + timeFormatText(time.Now(), fileName)
+	_, err = w.Write([]byte("abc"))
+	assert.Nil(err)
+	assert.DirExists(gfile.Abs(dir))
+	filepath.Glob(dir + "/*")
+	d := filepath.Join(gfile.Abs(dir), timeFormatText(time.Now(), archiveDir))
+	time.Sleep(time.Second * 2)
+	assert.DirExists(d)
+	t.Log(f)
+	assert.Contains(gfile.ReadAll(f), "abc")
 }

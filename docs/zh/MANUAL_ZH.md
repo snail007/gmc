@@ -1094,7 +1094,8 @@ GMC官方提供了一些常用功能的中间价，需要同学可以拿去使�
 ##############################################################
 [accesslog]
 dir="./logs"
-# filename in logs dir.
+archive_dir=""
+# filename in logs dir or archive_dir.
 # available placeholders are:
 # %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21
 filename="access_%Y%m%d.log"

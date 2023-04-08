@@ -15,6 +15,7 @@ type BatchRequest struct {
 	respArr           []*http.Response
 	errArr            []error
 	firstSuccessIndex int
+	doFunc            func(req *http.Request) (*http.Response, error)
 }
 
 func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest {
@@ -22,6 +23,11 @@ func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest 
 		client = defaultClient()
 	}
 	return &BatchRequest{reqArr: reqArr, client: client}
+}
+
+func (s *BatchRequest) DoFunc(doFunc func(req *http.Request) (*http.Response, error)) *BatchRequest {
+	s.doFunc = doFunc
+	return s
 }
 
 // Success returns requests at least one is success in waitFirstSuccess mode.
@@ -93,6 +99,13 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 	return s
 }
 
+func (s *BatchRequest) do(req *http.Request) (*http.Response, error) {
+	if s.doFunc != nil {
+		return s.doFunc(req)
+	}
+	return s.client.Do(req)
+}
+
 // Execute batch send requests,
 //	In default Execute will wait all request done. If you want to get the first success response,
 // using BatchRequest.WaitFirstSuccess().Execute(), Execute() will return immediately when get a success response.
@@ -109,7 +122,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			idx := i
 			worker := func() {
 				defer g.Done()
-				resp, err := s.client.Do(req)
+				resp, err := s.do(req)
 				respMap.Store(idx, resp)
 				errMap.Store(idx, err)
 			}
@@ -146,7 +159,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			idx := i
 			worker := func() {
 				defer g.Done()
-				resp, err := s.client.Do(req)
+				resp, err := s.do(req)
 				errMap.Store(idx, err)
 				if err != nil {
 					return

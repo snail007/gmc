@@ -6,7 +6,6 @@
 package ghttp
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -36,11 +35,11 @@ func (s *Response) BodyE() ([]byte, error) {
 	if s.body != nil {
 		return s.body, nil
 	}
-	if s.Response != nil && s.Response.Body != nil {
+	if s.Response.Body != nil {
 		var err error
 		s.body, err = ioutil.ReadAll(s.Response.Body)
 		s.Response.Body.Close()
 		return s.body, err
 	}
-	return nil, fmt.Errorf("response is nil")
+	return nil, nil
 }

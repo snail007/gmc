@@ -18,6 +18,9 @@ type Response struct {
 }
 
 func NewResponse(response *http.Response) *Response {
+	if response == nil {
+		return nil
+	}
 	return &Response{Response: response}
 }
 

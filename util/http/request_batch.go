@@ -123,11 +123,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			worker := func() {
 				defer g.Done()
 				resp, err := s.do(idx, req)
-				if resp != nil {
-					respMap.Store(idx, NewResponse(resp))
-				} else {
-					respMap.Store(idx, nil)
-				}
+				respMap.Store(idx, NewResponse(resp))
 				errMap.Store(idx, err)
 			}
 			if s.pool != nil {

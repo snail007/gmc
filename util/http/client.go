@@ -41,19 +41,19 @@ func Post(u string, data map[string]string, timeout time.Duration, header map[st
 }
 
 func NewTriableGet(URL string, maxTry int, timeout time.Duration, queryData, header map[string]string) (tr *TriableRequest, err error) {
-	return Client.newTriableGetPost(true, URL, maxTry, timeout, queryData, header)
+	return Client.NewTriableGet(URL, maxTry, timeout, queryData, header)
 }
 
-func NewTriablePost(URL string, maxTry int, timeout time.Duration, queryData, header map[string]string) (tr *TriableRequest, err error) {
-	return Client.newTriableGetPost(false, URL, maxTry, timeout, queryData, header)
+func NewTriablePost(URL string, maxTry int, timeout time.Duration, data, header map[string]string) (tr *TriableRequest, err error) {
+	return Client.NewTriablePost(URL, maxTry, timeout, data, header)
 }
 
 func NewBatchGet(urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
-	return Client.mGetPost(true, urlArr, timeout, data, header)
+	return Client.NewBatchGet(urlArr, timeout, data, header)
 }
 
 func NewBatchPost(urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
-	return Client.mGetPost(false, urlArr, timeout, data, header)
+	return Client.NewBatchPost(urlArr, timeout, data, header)
 }
 
 func PostOfReader(u string, r io.Reader, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
@@ -229,8 +229,8 @@ func (s *HTTPClient) NewTriableGet(URL string, maxTry int, timeout time.Duration
 }
 
 // NewTriablePost new a triable request with max retry count
-func (s *HTTPClient) NewTriablePost(URL string, maxTry int, timeout time.Duration, queryData, header map[string]string) (tr *TriableRequest, err error) {
-	return s.newTriableGetPost(false, URL, maxTry, timeout, queryData, header)
+func (s *HTTPClient) NewTriablePost(URL string, maxTry int, timeout time.Duration, data, header map[string]string) (tr *TriableRequest, err error) {
+	return s.newTriableGetPost(false, URL, maxTry, timeout, data, header)
 }
 
 func (s *HTTPClient) newTriableGetPost(isGET bool, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
@@ -241,13 +241,12 @@ func (s *HTTPClient) newTriableGetPost(isGET bool, URL string, maxTry int, timeo
 	} else {
 		req, cancel, err = NewPost(URL, timeout, data, header)
 	}
-	defer cancel()
 	if err != nil {
 		return
 	}
 	return NewTriableRequest(req, nil, maxTry, timeout).DoFunc(func(req *http.Request) (*http.Response, error) {
-		_, _, resp, e := s.call(req, timeout)
-		return resp, e
+		defer cancel()
+		return s.callRaw(req, timeout)
 	}), nil
 }
 
@@ -264,11 +263,6 @@ func (s *HTTPClient) NewBatchPost(urlArr []string, timeout time.Duration, data, 
 func (s *HTTPClient) mGetPost(isGET bool, urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
 	var reqs []*http.Request
 	var cancels []context.CancelFunc
-	defer func() {
-		for _, v := range cancels {
-			v()
-		}
-	}()
 	for _, v := range urlArr {
 		var r *http.Request
 		var cancel context.CancelFunc
@@ -284,9 +278,9 @@ func (s *HTTPClient) mGetPost(isGET bool, urlArr []string, timeout time.Duration
 		}
 		reqs = append(reqs, r)
 	}
-	return NewBatchRequest(reqs, nil).DoFunc(func(req *http.Request) (*http.Response, error) {
-		_, _, resp, e := s.call(req, timeout)
-		return resp, e
+	return NewBatchRequest(reqs, nil).DoFunc(func(idx int, req *http.Request) (*http.Response, error) {
+		defer cancels[idx]()
+		return s.callRaw(req, timeout)
 	}), nil
 }
 

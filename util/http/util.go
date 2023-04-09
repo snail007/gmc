@@ -109,24 +109,21 @@ func withTimeout(req *http.Request, timeout time.Duration) *http.Request {
 }
 
 func setHeader(req *http.Request, header map[string]string) {
+	isFormReq := req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch
+	defer func() {
+		if isFormReq && req.Header.Get("Content-Type") == "" {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+	}()
 	if header == nil {
 		return
 	}
-	foundContentType := false
-	if header != nil {
-		for k, v := range header {
-			if strings.EqualFold(k, "host") {
-				req.Host = v
-				continue
-			}
-			req.Header.Set(k, v)
-			if strings.TrimSpace(strings.ToLower(k)) == "content-type" {
-				foundContentType = true
-			}
+	for k, v := range header {
+		if strings.EqualFold(k, "host") {
+			req.Host = v
+			continue
 		}
-	}
-	if !foundContentType && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch) {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set(k, v)
 	}
 }
 

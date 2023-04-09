@@ -12,10 +12,10 @@ type BatchRequest struct {
 	client            *http.Client
 	waitFirstSuccess  bool
 	pool              *gpool.GPool
-	respArr           []*http.Response
+	respArr           []*Response
 	errArr            []error
 	firstSuccessIndex int
-	doFunc            func(req *http.Request) (*http.Response, error)
+	doFunc            func(idx int, req *http.Request) (*http.Response, error)
 }
 
 func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest {
@@ -25,7 +25,7 @@ func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest 
 	return &BatchRequest{reqArr: reqArr, client: client}
 }
 
-func (s *BatchRequest) DoFunc(doFunc func(req *http.Request) (*http.Response, error)) *BatchRequest {
+func (s *BatchRequest) DoFunc(doFunc func(idx int, req *http.Request) (*http.Response, error)) *BatchRequest {
 	s.doFunc = doFunc
 	return s
 }
@@ -45,7 +45,7 @@ func (s *BatchRequest) Success() bool {
 }
 
 // Result returns the first response or first error when all request fail.
-func (s *BatchRequest) Result() (*http.Response, error) {
+func (s *BatchRequest) Result() (*Response, error) {
 	for _, v := range s.respArr {
 		if v != nil {
 			return v, nil
@@ -64,7 +64,7 @@ func (s *BatchRequest) Result() (*http.Response, error) {
 // len(requests) = len(responses) = len(errros),
 // responses[0] is the response of requests[0], it may be nil if requests[0] has an error.
 // errros[0] is the error of requests[0], it may be nil if requests[0] has no error.
-func (s *BatchRequest) ResultAll() ([]*http.Response, []error) {
+func (s *BatchRequest) ResultAll() ([]*Response, []error) {
 	return s.respArr, s.errArr
 }
 
@@ -79,7 +79,7 @@ func (s *BatchRequest) ErrorAll() (errors []error) {
 }
 
 // ResponseAll returns all request's non nil response,
-func (s *BatchRequest) ResponseAll() (responses []*http.Response) {
+func (s *BatchRequest) ResponseAll() (responses []*Response) {
 	for _, v := range s.respArr {
 		if v != nil {
 			responses = append(responses, v)
@@ -99,9 +99,9 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 	return s
 }
 
-func (s *BatchRequest) do(req *http.Request) (*http.Response, error) {
+func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 	if s.doFunc != nil {
-		return s.doFunc(req)
+		return s.doFunc(idx, req)
 	}
 	return s.client.Do(req)
 }
@@ -122,8 +122,12 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			idx := i
 			worker := func() {
 				defer g.Done()
-				resp, err := s.do(req)
-				respMap.Store(idx, resp)
+				resp, err := s.do(idx, req)
+				if resp != nil {
+					respMap.Store(idx, NewResponse(resp))
+				} else {
+					respMap.Store(idx, nil)
+				}
 				errMap.Store(idx, err)
 			}
 			if s.pool != nil {
@@ -139,7 +143,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			if respValue == nil {
 				s.respArr = append(s.respArr, nil)
 			} else {
-				s.respArr = append(s.respArr, respValue.(*http.Response))
+				s.respArr = append(s.respArr, respValue.(*Response))
 			}
 			errValue, _ := errMap.Load(i)
 			if errValue == nil {
@@ -159,14 +163,13 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			idx := i
 			worker := func() {
 				defer g.Done()
-				resp, err := s.do(req)
+				resp, err := s.do(idx, req)
 				errMap.Store(idx, err)
 				if err != nil {
 					return
 				}
 				select {
 				case firstSuccessChn <- resp:
-
 				default:
 				}
 			}
@@ -197,7 +200,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			}
 		case resp := <-firstSuccessChn:
 			// at least one request success
-			s.respArr = append(s.respArr, resp)
+			s.respArr = append(s.respArr, NewResponse(resp))
 			s.errArr = append(s.errArr, nil)
 		}
 	}

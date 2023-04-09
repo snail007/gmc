@@ -5,10 +5,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	gctx "github.com/snail007/gmc/module/ctx"
+	gcast "github.com/snail007/gmc/util/cast"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -104,6 +107,42 @@ func initHTTPServer() {
 	r.HandleFunc("/sleep", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Second * 2)
 		w.Write([]byte("hello"))
+	})
+	cnt := new(int32)
+	r.HandleFunc("/try1", func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(cnt, 1) <= 3 {
+			time.Sleep(time.Second * 3)
+		}
+		ctx := gctx.NewCtxWithHTTP(w, r)
+		ctx.Write(ctx.GET("msg") + ctx.POST("msg") + ctx.Header("h1"))
+	})
+	cnt2 := new(int32)
+	r.HandleFunc("/try2", func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(cnt2, 1) <= 3 {
+			time.Sleep(time.Second * 3)
+		}
+		ctx := gctx.NewCtxWithHTTP(w, r)
+		s := ctx.GET("msg") + ctx.POST("msg") + ctx.Header("h1")
+		w.Write([]byte(s))
+	})
+	r.HandleFunc("/batch", func(w http.ResponseWriter, r *http.Request) {
+		ctx := gctx.NewCtxWithHTTP(w, r)
+		idx := ctx.GET("idx")
+		if idx == "" {
+			idx = ctx.POST("idx")
+		}
+		sleepStr := ctx.GET("sleep")
+		if sleepStr == "" {
+			sleepStr = ctx.POST("sleep")
+		}
+		if ctx.GET("nosleep") == "1" {
+			sleepStr = ""
+		}
+		sleep := gcast.ToInt(sleepStr)
+		if sleep > 0 {
+			time.Sleep(time.Second * time.Duration(sleep))
+		}
+		ctx.Write(idx)
 	})
 	httpServer = http.Server{
 		Handler: r,

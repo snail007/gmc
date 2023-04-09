@@ -272,10 +272,10 @@ func (s *HTTPClient) mGetPost(isGET bool, urlArr []string, timeout time.Duration
 		} else {
 			r, cancel, e = NewPost(v, timeout, data, header)
 		}
-		cancels = append(cancels, cancel)
 		if e != nil {
 			return nil, e
 		}
+		cancels = append(cancels, cancel)
 		reqs = append(reqs, r)
 	}
 	return NewBatchRequest(reqs, nil).DoFunc(func(idx int, req *http.Request) (*http.Response, error) {

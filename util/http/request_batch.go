@@ -16,6 +16,7 @@ type BatchRequest struct {
 	errArr            []error
 	firstSuccessIndex int
 	doFunc            func(idx int, req *http.Request) (*http.Response, error)
+	afterExecute      func(*BatchRequest)
 }
 
 func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest {
@@ -23,6 +24,11 @@ func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest 
 		client = defaultClient()
 	}
 	return &BatchRequest{reqArr: reqArr, client: client}
+}
+
+func (s *BatchRequest) AfterExecute(afterExecute func(*BatchRequest)) *BatchRequest {
+	s.afterExecute = afterExecute
+	return s
 }
 
 func (s *BatchRequest) DoFunc(doFunc func(idx int, req *http.Request) (*http.Response, error)) *BatchRequest {
@@ -111,6 +117,11 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 // using BatchRequest.WaitFirstSuccess().Execute(), Execute() will return immediately when get a success response.
 //	If all requests are fail, Execute() return after all requests done.
 func (s *BatchRequest) Execute() *BatchRequest {
+	defer func() {
+		if s.afterExecute != nil {
+			s.afterExecute(s)
+		}
+	}()
 	if !s.waitFirstSuccess {
 		// default wait all
 		respMap := gmap.New()

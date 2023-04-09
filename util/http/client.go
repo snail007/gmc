@@ -281,6 +281,10 @@ func (s *HTTPClient) mGetPost(isGET bool, urlArr []string, timeout time.Duration
 	return NewBatchRequest(reqs, nil).DoFunc(func(idx int, req *http.Request) (*http.Response, error) {
 		defer cancels[idx]()
 		return s.callRaw(req, timeout)
+	}).AfterExecute(func(_ *BatchRequest) {
+		for _, v := range cancels {
+			v()
+		}
 	}), nil
 }
 

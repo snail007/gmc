@@ -35,25 +35,14 @@ func NewTriableRequest(req *http.Request, client *http.Client, maxTry int, timeo
 }
 
 // NewTriableURL new a TriableRequest by URL.
-func NewTriableURL(method string, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
-	if IsFormMethod(method) {
-		return newTriableGetPostURL(false, URL, maxTry, timeout, data, header)
-	}
-	return newTriableGetPostURL(true, URL, maxTry, timeout, data, header)
-}
-
-func newTriableGetPostURL(isGET bool, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
+func NewTriableURL(client *http.Client, method string, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
 	var req *http.Request
 	var cancel context.CancelFunc
-	if isGET {
-		req, cancel, err = NewGet(URL, timeout, data, header)
-	} else {
-		req, cancel, err = NewPost(URL, timeout, data, header)
-	}
+	req, cancel, err = NewRequest(method, URL, timeout, data, header)
 	if err != nil {
 		return
 	}
-	return NewTriableRequest(req, nil, maxTry, timeout).
+	return NewTriableRequest(req, client, maxTry, timeout).
 		AfterDo(func(resp *Response) {
 			cancel()
 		}), nil
@@ -95,6 +84,9 @@ func (s *TriableRequest) init() *TriableRequest {
 	s.reqBody = nil
 	if len(s.reqBody) == 0 && s.req.Body != nil {
 		s.reqBody, _ = ioutil.ReadAll(s.req.Body)
+	}
+	if s.client == nil && s.doFunc == nil {
+		s.client = defaultClient()
 	}
 	return s
 }

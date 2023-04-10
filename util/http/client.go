@@ -235,7 +235,7 @@ func (s *HTTPClient) NewTriablePost(URL string, maxTry int, timeout time.Duratio
 }
 
 func (s *HTTPClient) newTriableGetPost(method string, URL string, maxTry int, timeout time.Duration, data, header map[string]string) (tr *TriableRequest, err error) {
-	tr, err = NewTriableURL(method, URL, maxTry, timeout, data, header)
+	tr, err = NewTriableURL(nil, method, URL, maxTry, timeout, data, header)
 	if err != nil {
 		return
 	}
@@ -256,7 +256,7 @@ func (s *HTTPClient) NewBatchPost(urlArr []string, timeout time.Duration, data, 
 }
 
 func (s *HTTPClient) batchGetPost(method string, urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
-	br, err = NewBatchURL(method, urlArr, timeout, data, header)
+	br, err = NewBatchURL(nil, method, urlArr, timeout, data, header)
 	if err != nil {
 		return
 	}

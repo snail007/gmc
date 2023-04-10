@@ -26,7 +26,7 @@ func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest 
 }
 
 // NewBatchURL new a BatchRequest by url slice []string.
-func NewBatchURL(method string, urlArr []string, timeout time.Duration, data, header map[string]string) (tr *BatchRequest, err error) {
+func NewBatchURL(client *http.Client, method string, urlArr []string, timeout time.Duration, data, header map[string]string) (tr *BatchRequest, err error) {
 	var reqs []*http.Request
 	var cancels []context.CancelFunc
 	for _, v := range urlArr {
@@ -37,14 +37,14 @@ func NewBatchURL(method string, urlArr []string, timeout time.Duration, data, he
 		cancels = append(cancels, cancel)
 		reqs = append(reqs, r)
 	}
-	return NewBatchRequest(reqs, nil).
+	return NewBatchRequest(reqs, client).
 		AfterDo(func(resp *Response) {
 			cancels[resp.idx]()
 		}), nil
 }
 
 func (s *BatchRequest) init() *BatchRequest {
-	if s.client == nil {
+	if s.client == nil && s.doFunc == nil {
 		s.client = defaultClient()
 	}
 	return s

@@ -29,9 +29,6 @@ func NewTriableRequest(req *http.Request, client *http.Client, maxTry int, timeo
 		}
 	}
 	tr := &TriableRequest{req: req, timeout: timeout, client: client, maxTry: maxTry}
-	if req.Body != nil {
-		tr.reqBody, _ = ioutil.ReadAll(req.Body)
-	}
 	return tr
 }
 
@@ -40,22 +37,7 @@ func (s *TriableRequest) DoFunc(doFunc func(req *http.Request) (*http.Response, 
 	return s
 }
 
-func (s *TriableRequest) Success() bool {
-	return s.resp != nil
-}
-
-func (s *TriableRequest) Response() *Response {
-	return s.resp
-}
-
-func (s *TriableRequest) Err() error {
-	for _, v := range s.errs {
-		return v
-	}
-	return nil
-}
-
-func (s *TriableRequest) Errs() []error {
+func (s *TriableRequest) ErrAll() []error {
 	return s.errs
 }
 
@@ -66,24 +48,52 @@ func (s *TriableRequest) do(req *http.Request) (*http.Response, error) {
 	return s.client.Do(req)
 }
 
+func (s *TriableRequest) init() *TriableRequest {
+	s.resp = nil
+	s.errs = nil
+	s.reqBody = nil
+	if len(s.reqBody) == 0 && s.req.Body != nil {
+		s.reqBody, _ = ioutil.ReadAll(s.req.Body)
+	}
+	return s
+}
+
+func (s *TriableRequest) forDo() *http.Request {
+	req := withTimeout(s.req, s.timeout)
+	if s.reqBody != nil {
+		req.Body = ioutil.NopCloser(bytes.NewReader(s.reqBody))
+	}
+	return req
+}
+
 // Execute send request with retrying ability.
-func (s *TriableRequest) Execute() *TriableRequest {
+func (s *TriableRequest) Execute() *Response {
+	s.init()
 	var err error
 	var resp *http.Response
-	for s.maxTry >= 0 {
-		req := withTimeout(s.req, s.timeout)
-		if s.reqBody != nil {
-			req.Body = ioutil.NopCloser(bytes.NewReader(s.reqBody))
-		}
+	maxTry := s.maxTry
+	tryCount := 0
+	for tryCount <= maxTry {
+		req := s.forDo()
+		startTime := time.Now()
 		resp, err = s.do(req)
+		endTime := time.Now()
+		s.resp = &Response{
+			idx:       tryCount,
+			req:       req,
+			Response:  resp,
+			respErr:   err,
+			usedTime:  endTime.Sub(startTime),
+			startTime: startTime,
+			endTime:   endTime,
+		}
 		if err != nil {
 			s.errs = append(s.errs, err)
-			s.maxTry--
+			tryCount++
 			continue
 		}
-		s.resp = NewResponse(resp)
 		s.errs = nil
 		break
 	}
-	return s
+	return s.resp
 }

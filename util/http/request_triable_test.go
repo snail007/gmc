@@ -16,18 +16,18 @@ func TestHTTPClient_NewTriableGet(t *testing.T) {
 	t.Parallel()
 	req, err := NewTriableGet(httpServerURL+"/try1", 3, time.Second, gmap.Mss{"msg": "he"}, gmap.Mss{"h1": "llo"})
 	assert2.Nil(t, err)
-	assert2.True(t, req.Execute().Success())
-	t.Log(string(req.Response().Body()))
-	assert2.True(t, string(req.Response().Body()) == "hello")
+	resp := req.Execute()
+	assert2.Nil(t, resp.Err())
+	assert2.True(t, string(resp.Body()) == "hello")
 }
 
 func TestHTTPClient_NewTriablePost(t *testing.T) {
 	t.Parallel()
 	req, err := NewTriablePost(httpServerURL+"/try2", 3, time.Second, gmap.Mss{"msg": "he"}, gmap.Mss{"h1": "llo"})
 	assert2.Nil(t, err)
-	assert2.True(t, req.Execute().Success())
-	assert2.Nil(t, req.Err())
-	assert2.Len(t, req.Errs(), 0)
-	assert2.NotNil(t, req.Execute().Response())
-	assert2.True(t, string(req.Response().Body()) == "hello")
+	resp := req.Execute()
+	assert2.Nil(t, resp.Err())
+	assert2.Len(t, req.ErrAll(), 0)
+	assert2.NotNil(t, resp.Response)
+	assert2.True(t, string(resp.Body()) == "hello")
 }

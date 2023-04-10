@@ -27,7 +27,9 @@ func TestBatchGet_1(t *testing.T) {
 	assert2.False(t, resp.Success())
 	assert2.Len(t, r.RespAll(), 4)
 	assert2.Nil(t, resp.Resp())
+	assert2.NotNil(t, r.RespAll()[0].Request())
 	assert2.Equal(t, 4, resp.ErrorCount())
+	assert2.Nil(t, r.RespAll()[0].Body())
 }
 
 func TestBatchGet_2(t *testing.T) {

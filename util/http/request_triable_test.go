@@ -19,6 +19,7 @@ func TestHTTPClient_NewTriableGet(t *testing.T) {
 	resp := req.Execute()
 	assert2.Nil(t, resp.Err())
 	assert2.True(t, string(resp.Body()) == "hello")
+	assert2.True(t, string(resp.Body()) == "hello")
 }
 
 func TestHTTPClient_NewTriablePost(t *testing.T) {

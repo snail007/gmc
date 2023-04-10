@@ -23,6 +23,10 @@ type Response struct {
 	endTime   time.Time
 }
 
+func (s *Response) Request() *http.Request {
+	return s.req
+}
+
 func (s *Response) UsedTime() time.Duration {
 	return s.usedTime
 }
@@ -49,7 +53,7 @@ func (s *Response) Body() []byte {
 }
 
 func (s *Response) BodyE() ([]byte, error) {
-	if s.Response == nil {
+	if s.Response == nil || s.Response.Body == nil || s.respErr != nil {
 		return nil, nil
 	}
 	if s.bodyErr != nil {
@@ -58,10 +62,7 @@ func (s *Response) BodyE() ([]byte, error) {
 	if s.body != nil {
 		return s.body, nil
 	}
-	if s.Response.Body != nil {
-		s.body, s.bodyErr = ioutil.ReadAll(s.Response.Body)
-		s.Response.Body.Close()
-		return s.body, s.bodyErr
-	}
-	return nil, nil
+	s.body, s.bodyErr = ioutil.ReadAll(s.Response.Body)
+	s.Response.Body.Close()
+	return s.body, s.bodyErr
 }

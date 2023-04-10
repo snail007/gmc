@@ -10,22 +10,19 @@ import (
 	"time"
 )
 
+type AfterDoFunc func(resp *Response)
+
 func NewRequest(method, URL string, timeout time.Duration, data, header map[string]string) (req *http.Request, cancel context.CancelFunc, err error) {
-	switch method {
-	case http.MethodPost, http.MethodPut, http.MethodPatch:
-		return NewPost(URL, timeout, data, header)
-	default:
-		return NewGet(URL, timeout, data, header)
-	}
+	ctx, cancel := getTimeoutContext(timeout)
+	req, err = NewRequestWithContext(ctx, method, URL, data, header)
+	return
 }
 
-func NewRequestWithContext(ctx context.Context, method, URL string, timeout time.Duration, data, header map[string]string) (req *http.Request, err error) {
-	switch method {
-	case http.MethodPost, http.MethodPut, http.MethodPatch:
+func NewRequestWithContext(ctx context.Context, method, URL string, data, header map[string]string) (req *http.Request, err error) {
+	if IsFormMethod(method) {
 		return NewPostWithContext(ctx, URL, data, header)
-	default:
-		return NewGetWithContext(ctx, URL, data, header)
 	}
+	return NewGetWithContext(ctx, URL, data, header)
 }
 
 func NewGet(URL string, timeout time.Duration, queryData, header map[string]string) (req *http.Request, cancel context.CancelFunc, err error) {
@@ -35,7 +32,7 @@ func NewGet(URL string, timeout time.Duration, queryData, header map[string]stri
 }
 
 func NewGetWithContext(ctx context.Context, URL string, queryData, header map[string]string) (req *http.Request, err error) {
-	req, err = http.NewRequestWithContext(ctx, "GET", appendQuery(URL, queryData), nil)
+	req, err = http.NewRequestWithContext(ctx, "GET", AppendQuery(URL, queryData), nil)
 	if err != nil {
 		return
 	}
@@ -50,7 +47,7 @@ func NewPost(URL string, timeout time.Duration, data, header map[string]string) 
 }
 
 func NewPostWithContext(ctx context.Context, URL string, data, header map[string]string) (req *http.Request, err error) {
-	return NewPostReaderWithContext(ctx, URL, bytes.NewReader([]byte(encodeData(data))), header)
+	return NewPostReaderWithContext(ctx, URL, bytes.NewReader([]byte(EncodeData(data))), header)
 }
 
 func NewPostReaderWithContext(ctx context.Context, URL string, r io.Reader, header map[string]string) (req *http.Request, err error) {
@@ -72,21 +69,21 @@ func getTimeoutContext(timeout time.Duration) (ctx context.Context, cancel conte
 	return
 }
 
-func appendQuery(URL string, queryData map[string]string) string {
+func AppendQuery(URL string, queryData map[string]string) string {
 	if len(queryData) == 0 {
 		return URL
 	}
-	return URL + getConcatChar(URL) + encodeData(queryData)
+	return URL + GetConcatChar(URL) + EncodeData(queryData)
 }
 
-func getConcatChar(URL string) string {
+func GetConcatChar(URL string) string {
 	if strings.Contains(URL, "?") {
 		return "&"
 	}
 	return "?"
 }
 
-func encodeData(data map[string]string) string {
+func EncodeData(data map[string]string) string {
 	values := url.Values{}
 	if data != nil {
 		for k, v := range data {
@@ -95,6 +92,7 @@ func encodeData(data map[string]string) string {
 	}
 	return values.Encode()
 }
+
 func withTimeout(req *http.Request, timeout time.Duration) *http.Request {
 	if timeout == 0 {
 		return req
@@ -108,10 +106,17 @@ func withTimeout(req *http.Request, timeout time.Duration) *http.Request {
 	return req
 }
 
+func IsFormRequest(req *http.Request) bool {
+	return IsFormMethod(req.Method)
+}
+
+func IsFormMethod(method string) bool {
+	return method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch
+}
+
 func setHeader(req *http.Request, header map[string]string) {
-	isFormReq := req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch
 	defer func() {
-		if isFormReq && req.Header.Get("Content-Type") == "" {
+		if IsFormRequest(req) && req.Header.Get("Content-Type") == "" {
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		}
 	}()

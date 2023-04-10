@@ -1,6 +1,7 @@
 package ghttp
 
 import (
+	"context"
 	"github.com/snail007/gmc/util/gpool"
 	gmap "github.com/snail007/gmc/util/map"
 	"net/http"
@@ -16,11 +17,30 @@ type BatchRequest struct {
 	respArr           []*Response
 	firstSuccessIndex int
 	doFunc            func(idx int, req *http.Request) (*http.Response, error)
-	afterExecute      func(*BatchRequest)
+	afterDo           []AfterDoFunc
 }
 
+// NewBatchRequest new a BatchRequest by []*http.Request.
 func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest {
 	return &BatchRequest{reqArr: reqArr, client: client}
+}
+
+// NewBatchURL new a BatchRequest by url slice []string.
+func NewBatchURL(method string, urlArr []string, timeout time.Duration, data, header map[string]string) (tr *BatchRequest, err error) {
+	var reqs []*http.Request
+	var cancels []context.CancelFunc
+	for _, v := range urlArr {
+		r, cancel, e := NewRequest(method, v, timeout, data, header)
+		if e != nil {
+			return nil, e
+		}
+		cancels = append(cancels, cancel)
+		reqs = append(reqs, r)
+	}
+	return NewBatchRequest(reqs, nil).
+		AfterDo(func(resp *Response) {
+			cancels[resp.idx]()
+		}), nil
 }
 
 func (s *BatchRequest) init() *BatchRequest {
@@ -30,11 +50,19 @@ func (s *BatchRequest) init() *BatchRequest {
 	return s
 }
 
-func (s *BatchRequest) AfterExecute(afterExecute func(*BatchRequest)) *BatchRequest {
-	s.afterExecute = afterExecute
+// AfterDo add a callback call after request sent.
+func (s *BatchRequest) AfterDo(afterDo AfterDoFunc) *BatchRequest {
+	s.afterDo = append(s.afterDo, afterDo)
 	return s
 }
 
+func (s *BatchRequest) callAfterDo(resp *Response) {
+	for _, f := range s.afterDo {
+		f(resp)
+	}
+}
+
+// DoFunc sets a request sender.
 func (s *BatchRequest) DoFunc(doFunc func(idx int, req *http.Request) (*http.Response, error)) *BatchRequest {
 	s.doFunc = doFunc
 	return s
@@ -64,11 +92,13 @@ func (s *BatchRequest) Resp() *Response {
 	return nil
 }
 
-// RespAll returns all request's response,
-func (s *BatchRequest) RespAll() (responses []*Response) {
+// RespAll returns all request's response, if you want to get if the response is success,
+// checking if Response.Err() is nil.
+func (s *BatchRequest) RespAll() (responseAll []*Response) {
 	return s.respArr
 }
 
+// ErrorCount returns count of fail requests.
 func (s *BatchRequest) ErrorCount() int {
 	failCnt := 0
 	for _, v := range s.respArr {
@@ -103,11 +133,6 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 //	If all requests are fail, Execute() return after all requests done.
 func (s *BatchRequest) Execute() *BatchRequest {
 	s.init()
-	defer func() {
-		if s.afterExecute != nil {
-			s.afterExecute(s)
-		}
-	}()
 	if !s.waitFirstSuccess {
 		// default wait all
 		respMap := gmap.New()
@@ -130,6 +155,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 					startTime: startTime,
 					endTime:   endTime,
 				}
+				s.callAfterDo(response)
 				respMap.Store(idx, response)
 			}
 			if s.pool != nil {
@@ -167,6 +193,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 					startTime: startTime,
 					endTime:   endTime,
 				}
+				s.callAfterDo(response)
 				respMap.Store(idx, response)
 				if err != nil {
 					return

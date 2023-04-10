@@ -2,6 +2,7 @@ package ghttp
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -17,10 +18,11 @@ type TriableRequest struct {
 	resp    *Response
 	errs    []error
 	doFunc  func(req *http.Request) (*http.Response, error)
+	afterDo []AfterDoFunc
 	body    []byte
 }
 
-// NewTriableRequest new a TriableRequest, maxTry is the max retry count when a request error occurred.
+// NewTriableRequest new a TriableRequest by *http.Request, maxTry is the max retry count when a request error occurred.
 // If client is nil, default client will be used.
 func NewTriableRequest(req *http.Request, client *http.Client, maxTry int, timeout time.Duration) *TriableRequest {
 	if client == nil {
@@ -32,11 +34,50 @@ func NewTriableRequest(req *http.Request, client *http.Client, maxTry int, timeo
 	return tr
 }
 
+// NewTriableURL new a TriableRequest by URL.
+func NewTriableURL(method string, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
+	if IsFormMethod(method) {
+		return newTriableGetPostURL(false, URL, maxTry, timeout, data, header)
+	}
+	return newTriableGetPostURL(true, URL, maxTry, timeout, data, header)
+}
+
+func newTriableGetPostURL(isGET bool, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
+	var req *http.Request
+	var cancel context.CancelFunc
+	if isGET {
+		req, cancel, err = NewGet(URL, timeout, data, header)
+	} else {
+		req, cancel, err = NewPost(URL, timeout, data, header)
+	}
+	if err != nil {
+		return
+	}
+	return NewTriableRequest(req, nil, maxTry, timeout).
+		AfterDo(func(resp *Response) {
+			cancel()
+		}), nil
+}
+
+// AfterDo add a callback call after request sent.
+func (s *TriableRequest) AfterDo(afterDo AfterDoFunc) *TriableRequest {
+	s.afterDo = append(s.afterDo, afterDo)
+	return s
+}
+
+func (s *TriableRequest) callAfterDo(resp *Response) {
+	for _, f := range s.afterDo {
+		f(resp)
+	}
+}
+
+// DoFunc sets a request sender.
 func (s *TriableRequest) DoFunc(doFunc func(req *http.Request) (*http.Response, error)) *TriableRequest {
 	s.doFunc = doFunc
 	return s
 }
 
+// ErrAll returns all requests error.
 func (s *TriableRequest) ErrAll() []error {
 	return s.errs
 }
@@ -87,6 +128,7 @@ func (s *TriableRequest) Execute() *Response {
 			startTime: startTime,
 			endTime:   endTime,
 		}
+		s.callAfterDo(s.resp)
 		if err != nil {
 			s.errs = append(s.errs, err)
 			tryCount++

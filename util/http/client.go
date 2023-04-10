@@ -225,67 +225,45 @@ func (s *HTTPClient) setBasicAuth(req *http.Request) {
 
 // NewTriableGet new a triable request with max retry count
 func (s *HTTPClient) NewTriableGet(URL string, maxTry int, timeout time.Duration, queryData, header map[string]string) (tr *TriableRequest, err error) {
-	return s.newTriableGetPost(true, URL, maxTry, timeout, queryData, header)
+	return s.newTriableGetPost(http.MethodGet, URL, maxTry, timeout, queryData, header)
+
 }
 
 // NewTriablePost new a triable request with max retry count
 func (s *HTTPClient) NewTriablePost(URL string, maxTry int, timeout time.Duration, data, header map[string]string) (tr *TriableRequest, err error) {
-	return s.newTriableGetPost(false, URL, maxTry, timeout, data, header)
+	return s.newTriableGetPost(http.MethodPost, URL, maxTry, timeout, data, header)
 }
 
-func (s *HTTPClient) newTriableGetPost(isGET bool, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
-	var req *http.Request
-	var cancel context.CancelFunc
-	if isGET {
-		req, cancel, err = NewGet(URL, timeout, data, header)
-	} else {
-		req, cancel, err = NewPost(URL, timeout, data, header)
-	}
+func (s *HTTPClient) newTriableGetPost(method string, URL string, maxTry int, timeout time.Duration, data, header map[string]string) (tr *TriableRequest, err error) {
+	tr, err = NewTriableURL(method, URL, maxTry, timeout, data, header)
 	if err != nil {
 		return
 	}
-	return NewTriableRequest(req, nil, maxTry, timeout).DoFunc(func(req *http.Request) (*http.Response, error) {
-		defer cancel()
+	tr.DoFunc(func(req *http.Request) (*http.Response, error) {
 		return s.callRaw(req, timeout)
-	}), nil
+	})
+	return tr, nil
 }
 
 // NewBatchGet  new a batch get requests
 func (s *HTTPClient) NewBatchGet(urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
-	return s.mGetPost(true, urlArr, timeout, data, header)
+	return s.batchGetPost(http.MethodGet, urlArr, timeout, data, header)
 }
 
 // NewBatchPost new a batch post requests
 func (s *HTTPClient) NewBatchPost(urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
-	return s.mGetPost(false, urlArr, timeout, data, header)
+	return s.batchGetPost(http.MethodPost, urlArr, timeout, data, header)
 }
 
-func (s *HTTPClient) mGetPost(isGET bool, urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
-	var reqs []*http.Request
-	var cancels []context.CancelFunc
-	for _, v := range urlArr {
-		var r *http.Request
-		var cancel context.CancelFunc
-		var e error
-		if isGET {
-			r, cancel, e = NewGet(v, timeout, data, header)
-		} else {
-			r, cancel, e = NewPost(v, timeout, data, header)
-		}
-		if e != nil {
-			return nil, e
-		}
-		cancels = append(cancels, cancel)
-		reqs = append(reqs, r)
+func (s *HTTPClient) batchGetPost(method string, urlArr []string, timeout time.Duration, data, header map[string]string) (br *BatchRequest, err error) {
+	br, err = NewBatchURL(method, urlArr, timeout, data, header)
+	if err != nil {
+		return
 	}
-	return NewBatchRequest(reqs, nil).DoFunc(func(idx int, req *http.Request) (*http.Response, error) {
-		defer cancels[idx]()
+	br.DoFunc(func(idx int, req *http.Request) (*http.Response, error) {
 		return s.callRaw(req, timeout)
-	}).AfterExecute(func(_ *BatchRequest) {
-		for _, v := range cancels {
-			v()
-		}
-	}), nil
+	})
+	return br, nil
 }
 
 // Get send a HTTP GET request, no header, just passive nil.
@@ -301,7 +279,7 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, queryData, header map[
 // Post send an HTTP POST request, no header, just passive nil.
 // data is form key value.
 func (s *HTTPClient) Post(u string, data map[string]string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
-	return s.PostOfReader(u, strings.NewReader(encodeData(data)), timeout, header)
+	return s.PostOfReader(u, strings.NewReader(EncodeData(data)), timeout, header)
 }
 
 // PostOfReader send a HTTP POST request, no header, just passive nil.

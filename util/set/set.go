@@ -31,8 +31,10 @@ func (s *Set) AddFront(value ...interface{}) {
 }
 
 // Delete removes a value from set.
-func (s *Set) Delete(value interface{}) {
-	s.data.Delete(value)
+func (s *Set) Delete(value ...interface{}) {
+	for _, k := range value {
+		s.data.Delete(k)
+	}
 }
 
 // Contains returns true if value exists in set s, otherwise false.

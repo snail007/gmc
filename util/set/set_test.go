@@ -8,6 +8,7 @@ package gset
 import (
 	"fmt"
 	assert "github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -211,4 +212,15 @@ func TestSet_AddFront(t *testing.T) {
 		l.AddFront(i)
 	}
 	assert.Equal("[1 0]", fmt.Sprintf("%s", l))
+}
+
+func TestSet_CartesianProduct(t *testing.T) {
+	s := New()
+	s.Add(1, 2)
+	s1 := New()
+	s1.Add(3, 4)
+	want := [][]interface{}{{1, 3}, {1, 4}, {2, 3}, {2, 4}}
+	if got := s.CartesianProduct(s1); !reflect.DeepEqual(got, want) {
+		t.Errorf("CartesianProduct() = %v, want %v", got, want)
+	}
 }

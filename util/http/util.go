@@ -93,19 +93,6 @@ func EncodeData(data map[string]string) string {
 	return values.Encode()
 }
 
-func withTimeout(req *http.Request, timeout time.Duration) *http.Request {
-	if timeout == 0 {
-		return req
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	req = req.WithContext(ctx)
-	go func() {
-		<-ctx.Done()
-		cancel()
-	}()
-	return req
-}
-
 func IsFormRequest(req *http.Request) bool {
 	return IsFormMethod(req.Method)
 }

@@ -235,7 +235,7 @@ func (s *HTTPClient) NewTriablePost(URL string, maxTry int, timeout time.Duratio
 }
 
 func (s *HTTPClient) newTriableGetPost(method string, URL string, maxTry int, timeout time.Duration, data, header map[string]string) (tr *TriableRequest, err error) {
-	tr, err = NewTriableURL(nil, method, URL, maxTry, timeout, data, header)
+	tr, err = NewTriableRequestByURL(nil, method, URL, maxTry, timeout, data, header)
 	if err != nil {
 		return
 	}
@@ -279,7 +279,12 @@ func (s *HTTPClient) Get(u string, timeout time.Duration, queryData, header map[
 // Post send an HTTP POST request, no header, just passive nil.
 // data is form key value.
 func (s *HTTPClient) Post(u string, data map[string]string, timeout time.Duration, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
-	return s.PostOfReader(u, strings.NewReader(EncodeData(data)), timeout, header)
+	req, cancel, err := NewPost(u, timeout, data, header)
+	defer cancel()
+	if err != nil {
+		return
+	}
+	return s.call(req, timeout)
 }
 
 // PostOfReader send a HTTP POST request, no header, just passive nil.

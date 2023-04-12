@@ -24,28 +24,38 @@ type TriableRequest struct {
 
 // NewTriableRequest new a TriableRequest by *http.Request, maxTry is the max retry count when a request error occurred.
 // If client is nil, default client will be used.
-func NewTriableRequest(req *http.Request, client *http.Client, maxTry int, timeout time.Duration) *TriableRequest {
-	if client == nil {
-		if client == nil {
-			client = defaultClient()
-		}
-	}
+func NewTriableRequest(client *http.Client, req *http.Request, maxTry int, timeout time.Duration) *TriableRequest {
 	tr := &TriableRequest{req: req, timeout: timeout, client: client, maxTry: maxTry}
 	return tr
 }
 
-// NewTriableURL new a TriableRequest by URL.
-func NewTriableURL(client *http.Client, method string, URL string, maxTry int, timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
+// NewTriableRequestByURL new a TriableRequest by URL.
+func NewTriableRequestByURL(client *http.Client, method string, URL string, maxTry int,
+	timeout time.Duration, data map[string]string, header map[string]string) (tr *TriableRequest, err error) {
 	var req *http.Request
 	var cancel context.CancelFunc
 	req, cancel, err = NewRequest(method, URL, timeout, data, header)
 	if err != nil {
 		return
 	}
-	return NewTriableRequest(req, client, maxTry, timeout).
+	return NewTriableRequest(client, req, maxTry, timeout).
 		AfterDo(func(resp *Response) {
 			cancel()
 		}), nil
+}
+
+func (s *TriableRequest) init() *TriableRequest {
+	s.resp = nil
+	s.errs = nil
+	s.reqBody = nil
+	if len(s.reqBody) == 0 && s.req.Body != nil {
+		s.reqBody, _ = ioutil.ReadAll(s.req.Body)
+		s.req.Body = ioutil.NopCloser(bytes.NewReader(s.reqBody))
+	}
+	if s.client == nil && s.doFunc == nil {
+		s.client = defaultClient()
+	}
+	return s
 }
 
 // AfterDo add a callback call after request sent.
@@ -78,25 +88,16 @@ func (s *TriableRequest) do(req *http.Request) (*http.Response, error) {
 	return s.client.Do(req)
 }
 
-func (s *TriableRequest) init() *TriableRequest {
-	s.resp = nil
-	s.errs = nil
-	s.reqBody = nil
-	if len(s.reqBody) == 0 && s.req.Body != nil {
-		s.reqBody, _ = ioutil.ReadAll(s.req.Body)
+func (s *TriableRequest) forDo() (req *http.Request, cancel context.CancelFunc) {
+	if s.timeout == 0 {
+		return s.req, func() {}
 	}
-	if s.client == nil && s.doFunc == nil {
-		s.client = defaultClient()
-	}
-	return s
-}
-
-func (s *TriableRequest) forDo() *http.Request {
-	req := withTimeout(s.req, s.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+	req = s.req.WithContext(ctx)
 	if s.reqBody != nil {
 		req.Body = ioutil.NopCloser(bytes.NewReader(s.reqBody))
 	}
-	return req
+	return req, cancel
 }
 
 // Execute send request with retrying ability.
@@ -107,10 +108,11 @@ func (s *TriableRequest) Execute() *Response {
 	maxTry := s.maxTry
 	tryCount := 0
 	for tryCount <= maxTry {
-		req := s.forDo()
+		req, cancel := s.forDo()
 		startTime := time.Now()
 		resp, err = s.do(req)
 		endTime := time.Now()
+		cancel()
 		s.resp = &Response{
 			idx:       tryCount,
 			req:       req,

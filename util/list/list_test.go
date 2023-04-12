@@ -8,6 +8,7 @@ package glist
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -345,5 +346,16 @@ func TestList_ToStringSlice(t *testing.T) {
 	m1 := m.ToStringSlice()
 	for i := 0; i < 100; i++ {
 		assert.Equal(fmt.Sprintf("%d", i), m1[i])
+	}
+}
+
+func TestList_CartesianProduct(t *testing.T) {
+	s := New()
+	s.Add(1, 2)
+	s1 := New()
+	s1.Add(3, 4)
+	want := [][]interface{}{{1, 3}, {1, 4}, {2, 3}, {2, 4}}
+	if got := s.CartesianProduct(s1); !reflect.DeepEqual(got, want) {
+		t.Errorf("CartesianProduct() = %v, want %v", got, want)
 	}
 }

@@ -7,6 +7,7 @@ package gset
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/util/collection"
 	gmap "github.com/snail007/gmc/util/map"
 )
 
@@ -137,6 +138,19 @@ func (s *Set) IndexOf(k interface{}) int {
 // String returns string format of the Set.
 func (s *Set) String() string {
 	return fmt.Sprintf("%v", s.ToSlice())
+}
+
+// CartesianProduct → {(x, y) | ∀ x ∈ s1, ∀ y ∈ s2}
+// For example:
+//		CartesianProduct(A, B), where A = {1, 2} and B = {7, 8}
+//        => {(1, 7), (1, 8), (2, 7), (2, 8)}
+func (s *Set) CartesianProduct(sets ...*Set) [][]interface{} {
+	var dstSets [][]interface{}
+	dstSets = append(dstSets, s.ToSlice())
+	for _, set := range sets {
+		dstSets = append(dstSets, set.ToSlice())
+	}
+	return collection.CartesianProduct(dstSets...)
 }
 
 // New returns a new *Set object

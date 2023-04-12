@@ -262,6 +262,9 @@ func (s *List) CartesianProduct(sets ...*List) [][]interface{} {
 	var dstSets [][]interface{}
 	dstSets = append(dstSets, s.ToSlice())
 	for _, set := range sets {
+		if set.IsEmpty() {
+			continue
+		}
 		dstSets = append(dstSets, set.ToSlice())
 	}
 	return collection.CartesianProduct(dstSets...)

@@ -17,7 +17,8 @@
 # $local_addr : local address the client connect to.
 ##############################################################
 [accesslog]
-dir="./logs"
+dir = "./logs"
+archive_dir = ""
 # filename in logs dir.
 # available placeholders are:
 # %Y:Year 2020, %m:Month 10, %d:Day 10, %H:24Hours 21

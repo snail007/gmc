@@ -10,16 +10,17 @@ import (
 
 // TriableRequest when request fail, retry to request with MaxTryCount.
 type TriableRequest struct {
-	req     *http.Request
-	client  *http.Client
-	reqBody []byte
-	maxTry  int
-	timeout time.Duration
-	resp    *Response
-	errs    []error
-	doFunc  func(req *http.Request) (*http.Response, error)
-	afterDo []AfterDoFunc
-	body    []byte
+	req            *http.Request
+	client         *http.Client
+	reqBody        []byte
+	maxTry         int
+	timeout        time.Duration
+	resp           *Response
+	errs           []error
+	doFunc         func(req *http.Request) (*http.Response, error)
+	afterDo        []AfterDoFunc
+	checkErrorFunc func(int, *http.Request, *http.Response) error
+	body           []byte
 }
 
 // NewTriableRequest new a TriableRequest by *http.Request, maxTry is the max retry count when a request error occurred.
@@ -58,6 +59,12 @@ func (s *TriableRequest) init() *TriableRequest {
 	return s
 }
 
+// CheckErrorFunc if returns an error, the request treat as fail.
+func (s *TriableRequest) CheckErrorFunc(checkErrorFunc func(idx int, req *http.Request, resp *http.Response) error) *TriableRequest {
+	s.checkErrorFunc = checkErrorFunc
+	return s
+}
+
 // AfterDo add a callback call after request sent.
 func (s *TriableRequest) AfterDo(afterDo AfterDoFunc) *TriableRequest {
 	s.afterDo = append(s.afterDo, afterDo)
@@ -81,11 +88,25 @@ func (s *TriableRequest) ErrAll() []error {
 	return s.errs
 }
 
-func (s *TriableRequest) do(req *http.Request) (*http.Response, error) {
+func (s *TriableRequest) do(tryCount int, req *http.Request) (*http.Response, error) {
+	var resp *http.Response
+	var err error
 	if s.doFunc != nil {
-		return s.doFunc(req)
+		resp, err = s.doFunc(req)
+	} else {
+		resp, err = s.client.Do(req)
 	}
-	return s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if s.checkErrorFunc != nil {
+		err = s.checkErrorFunc(tryCount, req, resp)
+		if err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+	}
+	return resp, nil
 }
 
 func (s *TriableRequest) forDo() (req *http.Request, cancel context.CancelFunc) {
@@ -110,7 +131,7 @@ func (s *TriableRequest) Execute() *Response {
 	for tryCount <= maxTry {
 		req, cancel := s.forDo()
 		startTime := time.Now()
-		resp, err = s.do(req)
+		resp, err = s.do(tryCount, req)
 		endTime := time.Now()
 		cancel()
 		s.resp = &Response{

@@ -1,9 +1,11 @@
 package ghttp
 
 import (
+	"bytes"
 	"context"
 	"github.com/snail007/gmc/util/gpool"
 	gmap "github.com/snail007/gmc/util/map"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -18,6 +20,8 @@ type BatchRequest struct {
 	firstSuccessIndex int
 	doFunc            func(idx int, req *http.Request) (*http.Response, error)
 	afterDo           []AfterDoFunc
+	maxTry            int
+	checkErrorFunc    func(int, *http.Request, *http.Response) error
 }
 
 // NewBatchRequest new a BatchRequest by []*http.Request.
@@ -37,16 +41,29 @@ func NewBatchURL(client *http.Client, method string, urlArr []string, timeout ti
 		cancels = append(cancels, cancel)
 		reqs = append(reqs, r)
 	}
-	return NewBatchRequest(reqs, client).
+	s := NewBatchRequest(reqs, client).
 		AfterDo(func(resp *Response) {
 			cancels[resp.idx]()
-		}), nil
+		})
+	return s, nil
 }
 
 func (s *BatchRequest) init() *BatchRequest {
 	if s.client == nil && s.doFunc == nil {
 		s.client = defaultClient()
 	}
+	return s
+}
+
+//MaxTry sets the max retry count when a request error occurred.
+func (s *BatchRequest) MaxTry(maxTry int) *BatchRequest {
+	s.maxTry = maxTry
+	return s
+}
+
+// CheckErrorFunc if returns an error, the request treat as fail.
+func (s *BatchRequest) CheckErrorFunc(checkErrorFunc func(idx int, req *http.Request, resp *http.Response) error) *BatchRequest {
+	s.checkErrorFunc = checkErrorFunc
 	return s
 }
 
@@ -121,10 +138,63 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 }
 
 func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
-	if s.doFunc != nil {
-		return s.doFunc(idx, req)
+	var call = func(idx int, req *http.Request) (*http.Response, error) {
+		var resp *http.Response
+		var err error
+		if s.doFunc != nil {
+			resp, err = s.doFunc(idx, req)
+		} else {
+			resp, err = s.client.Do(req)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if s.checkErrorFunc != nil {
+			err = s.checkErrorFunc(idx, req, resp)
+			if err != nil {
+				resp.Body.Close()
+				return nil, err
+			}
+		}
+		return resp, nil
 	}
-	return s.client.Do(req)
+	if s.maxTry == 0 {
+		return call(idx, req)
+	}
+	maxTry := s.maxTry
+	tryCount := 0
+	var body []byte
+	if IsFormRequest(req) {
+		body, _ = ioutil.ReadAll(req.Body)
+	}
+	var resp *http.Response
+	var err error
+	deadline, ok := req.Context().Deadline()
+	var timeout time.Duration
+	if ok {
+		timeout = deadline.Sub(time.Now())
+	}
+	for tryCount <= maxTry {
+		if len(body) > 0 {
+			req.Body = ioutil.NopCloser(bytes.NewReader(body))
+		}
+		var cancel context.CancelFunc
+		var ctx context.Context
+		if timeout > 0 {
+			ctx, cancel = context.WithTimeout(context.Background(), timeout)
+			req = req.WithContext(ctx)
+		}
+		resp, err = call(idx, req)
+		if cancel != nil {
+			cancel()
+		}
+		if err != nil {
+			tryCount++
+			continue
+		}
+		break
+	}
+	return resp, err
 }
 
 // Execute batch send requests,

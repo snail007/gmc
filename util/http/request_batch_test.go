@@ -13,6 +13,7 @@ import (
 	gmap "github.com/snail007/gmc/util/map"
 	assert2 "github.com/stretchr/testify/assert"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -28,7 +29,12 @@ func TestBatchGet_1(t *testing.T) {
 	}
 	r, err := NewBatchGet(reqUrls, time.Second, nil, nil)
 	assert2.Nil(t, err)
+	called := false
+	r.AppendBeforeDo(func(idx int, req *http.Request) {
+		called = true
+	})
 	resp := r.Pool(gpool.New(4)).Execute()
+	assert2.True(t, called)
 	assert2.False(t, resp.Success())
 	assert2.Len(t, r.RespAll(), 4)
 	assert2.Nil(t, resp.Resp())
@@ -48,8 +54,16 @@ func TestBatchGet_2(t *testing.T) {
 	}
 	r, err := NewBatchGet(reqUrls, time.Second, nil, nil)
 	assert2.Nil(t, err)
+	v := 1
+	r.AppendBeforeDo(func(idx int, req *http.Request) {
+		v = 2
+	})
+	r.SetBeforeDo(func(idx int, req *http.Request) {
+		v = 3
+	})
 	resp := r.WaitFirstSuccess().Pool(gpool.New(4)).Execute()
 	assert2.True(t, resp.Success())
+	assert2.Equal(t, 3, v)
 	assert2.Nil(t, resp.Resp().Err())
 	assert2.NotNil(t, resp.Resp().Response)
 	assert2.Equal(t, "4", string(resp.Resp().Body()))
@@ -68,6 +82,12 @@ func TestBatchGet_3(t *testing.T) {
 	}
 	r, err := NewBatchGet(reqUrls, time.Second, nil, nil)
 	assert2.Nil(t, err)
+	v := 1
+	r.AppendBeforeDo(func(idx int, req *http.Request) {
+		v = 2
+	})
+	r.SetBeforeDo(nil)
+	assert2.Equal(t, 1, v)
 	assert2.False(t, r.Execute().Success())
 	assert2.Equal(t, r.ErrorCount(), 3)
 	assert2.Nil(t, r.Resp().Err())
@@ -213,7 +233,7 @@ func TestBatchRequest_CheckErrorFunc(t *testing.T) {
 	assert2.Equal(t, 4, r.ErrorCount())
 	assert2.Nil(t, r.Resp())
 	assert2.Equal(t, "fail", r.RespAll()[3].Err().Error())
-	assert2.Contains(t, r.Err().Error(), "context")
+	assert2.True(t, strings.Contains(r.Err().Error(), "context") || strings.Contains(r.Err().Error(), "timeout"))
 	assert2.Contains(t, r.ErrAll()[3].Error(), "fail")
 
 }

@@ -18,7 +18,12 @@ func TestHTTPClient_NewTriableGet(t *testing.T) {
 	t.Parallel()
 	req, err := NewTriableGet(httpServerURL+"/try1?key=1", 3, time.Second, gmap.Mss{"msg": "he"}, gmap.Mss{"h1": "llo"})
 	assert2.Nil(t, err)
+	called := false
+	req.AppendBeforeDo(func(idx int, req *http.Request) {
+		called = true
+	})
 	resp := req.Execute()
+	assert2.True(t, called)
 	assert2.Nil(t, resp.Err())
 	assert2.Len(t, req.ErrAll(), 0)
 	assert2.True(t, string(resp.Body()) == "hello")
@@ -31,7 +36,15 @@ func TestTriableRequest_CheckErrorFunc(t *testing.T) {
 	req.CheckErrorFunc(func(idx int, req *http.Request, resp *http.Response) error {
 		return fmt.Errorf("fail")
 	})
+	v := 1
+	req.AppendBeforeDo(func(idx int, req *http.Request) {
+		v = 2
+	})
+	req.SetBeforeDo(func(idx int, req *http.Request) {
+		v = 3
+	})
 	resp := req.Execute()
+	assert2.Equal(t, 3, v)
 	assert2.Equal(t, "fail", resp.Err().Error())
 	assert2.Equal(t, 3, resp.Idx())
 	assert2.True(t, string(resp.Body()) == "")
@@ -42,7 +55,13 @@ func TestHTTPClient_NewTriablePost(t *testing.T) {
 	req, err := NewTriablePost(httpServerURL+"/try1?key=3", 3,
 		time.Second, gmap.Mss{"msg": "he"}, gmap.Mss{"h1": "llo", "host": "example.com"})
 	assert2.Nil(t, err)
+	v := 1
+	req.AppendBeforeDo(func(idx int, req *http.Request) {
+		v = 2
+	})
+	req.SetBeforeDo(nil)
 	resp := req.Execute()
+	assert2.Equal(t, 1, v)
 	assert2.Nil(t, resp.Err())
 	assert2.Len(t, req.ErrAll(), 0)
 	assert2.NotNil(t, resp.Response)

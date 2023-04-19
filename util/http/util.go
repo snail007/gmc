@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+type BeforeDoFunc func(idx int, req *http.Request)
 type AfterDoFunc func(resp *Response)
 
 func NewRequest(method, URL string, timeout time.Duration, data, header map[string]string) (req *http.Request, cancel context.CancelFunc, err error) {

@@ -20,6 +20,7 @@ type BatchRequest struct {
 	pool             *gpool.GPool
 	respArr          []*Response
 	doFunc           func(idx int, req *http.Request) (*http.Response, error)
+	beforeDo         []BeforeDoFunc
 	afterDo          []AfterDoFunc
 	maxTry           int
 	checkErrorFunc   func(int, *http.Request, *http.Response) error
@@ -96,6 +97,29 @@ func (s *BatchRequest) CheckErrorFunc(checkErrorFunc func(idx int, req *http.Req
 	return s
 }
 
+// SetBeforeDo sets callback call before request sent.
+func (s *BatchRequest) SetBeforeDo(beforeDo BeforeDoFunc) *BatchRequest {
+	return s.setBeforeDo(beforeDo, true)
+}
+
+// AppendBeforeDo add a callback call before request sent.
+func (s *BatchRequest) AppendBeforeDo(beforeDo BeforeDoFunc) *BatchRequest {
+	return s.setBeforeDo(beforeDo, false)
+}
+
+func (s *BatchRequest) setBeforeDo(beforeDo BeforeDoFunc, isSet bool) *BatchRequest {
+	if isSet {
+		if beforeDo != nil {
+			s.beforeDo = []BeforeDoFunc{beforeDo}
+		} else {
+			s.beforeDo = []BeforeDoFunc{}
+		}
+	} else if beforeDo != nil {
+		s.beforeDo = append(s.beforeDo, beforeDo)
+	}
+	return s
+}
+
 // SetAfterDo sets callback call after request sent.
 func (s *BatchRequest) SetAfterDo(afterDo AfterDoFunc) *BatchRequest {
 	return s.setAfterDo(afterDo, true)
@@ -117,6 +141,12 @@ func (s *BatchRequest) setAfterDo(afterDo AfterDoFunc, isSet bool) *BatchRequest
 		s.afterDo = append(s.afterDo, afterDo)
 	}
 	return s
+}
+
+func (s *BatchRequest) callBeforeDo(idx int, req *http.Request) {
+	for _, f := range s.beforeDo {
+		f(idx, req)
+	}
 }
 
 func (s *BatchRequest) callAfterDo(resp *Response) {
@@ -278,6 +308,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			idx := i
 			worker := func() {
 				defer g.Done()
+				s.callBeforeDo(idx, req)
 				startTime := time.Now()
 				resp, err := s.do(idx, req)
 				endTime := time.Now()
@@ -316,6 +347,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 			idx := i
 			worker := func() {
 				defer g.Done()
+				s.callBeforeDo(idx, req)
 				startTime := time.Now()
 				resp, err := s.do(idx, req)
 				endTime := time.Now()

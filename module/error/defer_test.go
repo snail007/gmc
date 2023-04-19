@@ -9,15 +9,14 @@ import (
 	"fmt"
 	"testing"
 
-	gcore "github.com/snail007/gmc/core"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRecover(t *testing.T) {
 	str := ""
 	f1 := func() {
-		defer Recover(func(err gcore.Error) {
-			str = err.Error()
+		defer Recover(func(err interface{}) {
+			str = Wrap(err).Error()
 		})
 		panic("okay")
 	}
@@ -51,7 +50,7 @@ func TestRecoverNopFunc(t *testing.T) {
 func TestStack(t *testing.T) {
 	str := ""
 	f1 := func() {
-		defer Recover(func(err gcore.Error) {
+		defer Recover(func(err interface{}) {
 			str = Stack(err)
 		})
 		panic("okay")
@@ -64,7 +63,7 @@ func TestStack(t *testing.T) {
 func TestNew(t *testing.T) {
 	str := ""
 	f1 := func() {
-		defer Recover(func(err gcore.Error) {
+		defer Recover(func(err interface{}) {
 			str = New(err).ErrorStack()
 		})
 		panic("okay")
@@ -77,7 +76,7 @@ func TestNew(t *testing.T) {
 func TestWrap(t *testing.T) {
 	str := ""
 	f1 := func() {
-		defer Recover(func(err gcore.Error) {
+		defer Recover(func(err interface{}) {
 			str = Wrap(err).ErrorStack()
 		})
 		panic("okay")

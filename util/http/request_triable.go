@@ -18,6 +18,7 @@ type TriableRequest struct {
 	resp           *Response
 	errs           []error
 	doFunc         func(req *http.Request) (*http.Response, error)
+	beforeDo       []BeforeDoFunc
 	afterDo        []AfterDoFunc
 	checkErrorFunc func(int, *http.Request, *http.Response) error
 	body           []byte
@@ -65,10 +66,39 @@ func (s *TriableRequest) CheckErrorFunc(checkErrorFunc func(idx int, req *http.R
 	return s
 }
 
+// SetBeforeDo sets callback call before request sent.
+func (s *TriableRequest) SetBeforeDo(beforeDo BeforeDoFunc) *TriableRequest {
+	return s.setBeforeDo(beforeDo, true)
+}
+
+// AppendBeforeDo add a callback call before request sent.
+func (s *TriableRequest) AppendBeforeDo(beforeDo BeforeDoFunc) *TriableRequest {
+	return s.setBeforeDo(beforeDo, false)
+}
+
+func (s *TriableRequest) setBeforeDo(beforeDo BeforeDoFunc, isSet bool) *TriableRequest {
+	if isSet {
+		if beforeDo != nil {
+			s.beforeDo = []BeforeDoFunc{beforeDo}
+		} else {
+			s.beforeDo = []BeforeDoFunc{}
+		}
+	} else if beforeDo != nil {
+		s.beforeDo = append(s.beforeDo, beforeDo)
+	}
+	return s
+}
+
 // AfterDo add a callback call after request sent.
 func (s *TriableRequest) AfterDo(afterDo AfterDoFunc) *TriableRequest {
 	s.afterDo = append(s.afterDo, afterDo)
 	return s
+}
+
+func (s *TriableRequest) callBeforeDo(idx int, req *http.Request) {
+	for _, f := range s.beforeDo {
+		f(idx, req)
+	}
 }
 
 func (s *TriableRequest) callAfterDo(resp *Response) {
@@ -138,6 +168,7 @@ func (s *TriableRequest) Execute() *Response {
 	tryCount := 0
 	for tryCount <= maxTry {
 		req, cancel := s.forDo()
+		s.callBeforeDo(tryCount, req)
 		startTime := time.Now()
 		resp, err = s.do(tryCount, req)
 		endTime := time.Now()

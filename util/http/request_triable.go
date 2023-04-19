@@ -88,6 +88,14 @@ func (s *TriableRequest) ErrAll() []error {
 	return s.errs
 }
 
+// Err returns first error of fail requests.
+func (s *TriableRequest) Err() error {
+	if len(s.errs) > 0 {
+		return s.errs[0]
+	}
+	return nil
+}
+
 func (s *TriableRequest) do(tryCount int, req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error

@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -108,22 +109,17 @@ func initHTTPServer() {
 		time.Sleep(time.Second * 2)
 		w.Write([]byte("hello"))
 	})
-	cnt := new(int32)
+	cntMap := sync.Map{}
 	r.HandleFunc("/try1", func(w http.ResponseWriter, r *http.Request) {
+		ctx := gctx.NewCtxWithHTTP(w, r)
+		cntKey := ctx.GET("key")
+		v, _ := cntMap.LoadOrStore(cntKey, new(int32))
+		cnt := v.(*int32)
 		if atomic.AddInt32(cnt, 1) <= 3 {
 			time.Sleep(time.Second * 3)
 		}
-		ctx := gctx.NewCtxWithHTTP(w, r)
+
 		ctx.Write(ctx.GET("msg") + ctx.POST("msg") + ctx.Header("h1"))
-	})
-	cnt2 := new(int32)
-	r.HandleFunc("/try2", func(w http.ResponseWriter, r *http.Request) {
-		if atomic.AddInt32(cnt2, 1) <= 3 {
-			time.Sleep(time.Second * 3)
-		}
-		ctx := gctx.NewCtxWithHTTP(w, r)
-		s := ctx.GET("msg") + ctx.POST("msg") + ctx.Header("h1")
-		w.Write([]byte(s))
 	})
 	r.HandleFunc("/batch", func(w http.ResponseWriter, r *http.Request) {
 		ctx := gctx.NewCtxWithHTTP(w, r)

@@ -213,6 +213,9 @@ func TestBatchRequest_CheckErrorFunc(t *testing.T) {
 	assert2.Equal(t, 4, r.ErrorCount())
 	assert2.Nil(t, r.Resp())
 	assert2.Equal(t, "fail", r.RespAll()[3].Err().Error())
+	assert2.Contains(t, r.Err().Error(), "context")
+	assert2.Contains(t, r.ErrAll()[3].Error(), "fail")
+
 }
 
 func TestBatchRequest_CheckErrorFunc_1(t *testing.T) {

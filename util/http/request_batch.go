@@ -172,6 +172,26 @@ func (s *BatchRequest) ErrorCount() int {
 	return failCnt
 }
 
+// Err returns first error of fail requests.
+func (s *BatchRequest) Err() error {
+	for _, v := range s.respArr {
+		if v.Err() != nil {
+			return v.Err()
+		}
+	}
+	return nil
+}
+
+// ErrAll returns all errors of fail requests.
+func (s *BatchRequest) ErrAll() (errs []error) {
+	for _, v := range s.respArr {
+		if v.Err() != nil {
+			errs = append(errs, v.Err())
+		}
+	}
+	return
+}
+
 // Pool sets a *gpool.GPool to execute request. In default goroutine will be used.
 func (s *BatchRequest) Pool(pool *gpool.GPool) *BatchRequest {
 	s.pool = pool

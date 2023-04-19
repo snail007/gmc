@@ -20,6 +20,9 @@ func (s *URLBuilder) HTTP() *URLBuilder {
 }
 
 func (s *URLBuilder) String() string {
+	if s.URL.Scheme == "" {
+		s.HTTP()
+	}
 	return AppendQuery(s.URL.String(), s.query)
 }
 

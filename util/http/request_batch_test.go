@@ -6,8 +6,10 @@
 package ghttp
 
 import (
+	"context"
 	"fmt"
 	gcast "github.com/snail007/gmc/util/cast"
+	"github.com/snail007/gmc/util/gpool"
 	gmap "github.com/snail007/gmc/util/map"
 	assert2 "github.com/stretchr/testify/assert"
 	"net/http"
@@ -26,7 +28,7 @@ func TestBatchGet_1(t *testing.T) {
 	}
 	r, err := NewBatchGet(reqUrls, time.Second, nil, nil)
 	assert2.Nil(t, err)
-	resp := r.Execute()
+	resp := r.Pool(gpool.New(4)).Execute()
 	assert2.False(t, resp.Success())
 	assert2.Len(t, r.RespAll(), 4)
 	assert2.Nil(t, resp.Resp())
@@ -46,7 +48,7 @@ func TestBatchGet_2(t *testing.T) {
 	}
 	r, err := NewBatchGet(reqUrls, time.Second, nil, nil)
 	assert2.Nil(t, err)
-	resp := r.WaitFirstSuccess().Execute()
+	resp := r.WaitFirstSuccess().Pool(gpool.New(4)).Execute()
 	assert2.True(t, resp.Success())
 	assert2.Nil(t, resp.Resp().Err())
 	assert2.NotNil(t, resp.Resp().Response)
@@ -113,6 +115,48 @@ func TestBatchGet_5(t *testing.T) {
 	assert2.False(t, resp.Success())
 	assert2.Nil(t, resp.Resp())
 	assert2.Equal(t, resp.ErrorCount(), 4)
+}
+
+func TestBatchGet_6(t *testing.T) {
+	t.Parallel()
+	u := httpServerURL + "/batch?"
+	reqUrls := []string{
+		u + "idx=1&nosleep=1",
+		u + "idx=2&nosleep=1",
+		u + "idx=3&nosleep=1",
+		u + "idx=4&nosleep=1",
+	}
+	r, err := NewBatchURL(&http.Client{}, http.MethodGet, reqUrls, time.Second, nil, nil)
+	if err != nil {
+		return
+	}
+	assert2.Nil(t, err)
+	resp := r.Execute()
+	assert2.True(t, resp.Success())
+}
+
+func TestBatchGet_7(t *testing.T) {
+	t.Parallel()
+	u := httpServerURL + "/batch?"
+	reqUrls := []string{
+		u + "idx=1&nosleep=1",
+	}
+	var reqs []*http.Request
+	var cancels []context.CancelFunc
+	for _, v := range reqUrls {
+		r, cancel, _ := NewRequest(http.MethodGet, v, time.Second, nil, nil)
+		cancels = append(cancels, cancel)
+		reqs = append(reqs, r)
+	}
+	r := NewBatchRequest(reqs, nil).SetAfterDo(func(resp *Response) {
+		cancels[resp.Idx()]()
+	})
+	resp := r.Execute()
+	assert2.True(t, resp.Success())
+	r.client = &http.Client{}
+	resp = r.SetAfterDo(nil).Execute()
+	assert2.Empty(t, resp.RespAll()[0].Err())
+	assert2.True(t, resp.Success())
 }
 
 func TestBatchPost_1(t *testing.T) {

@@ -47,6 +47,13 @@ func TestHTTPClient_NewTriablePost(t *testing.T) {
 	assert2.NotNil(t, resp.Response)
 	assert2.True(t, string(resp.Body()) == "hello")
 	assert2.Equal(t, "example.com", req.req.Host)
+
+	resp = req.Execute()
+	assert2.Nil(t, resp.Err())
+	assert2.Len(t, req.ErrAll(), 0)
+	assert2.NotNil(t, resp.Response)
+	assert2.True(t, string(resp.Body()) == "hello")
+	assert2.Equal(t, "example.com", req.req.Host)
 }
 
 func TestHTTPClient_NewTriableGet2(t *testing.T) {
@@ -63,6 +70,9 @@ func TestHTTPClient_NewTriableGet3(t *testing.T) {
 	tr, err := NewTriableRequestByURL(nil, http.MethodGet, httpServerURL+"/try1", 3, 0, gmap.Mss{"msg": "he"}, gmap.Mss{"h1": "llo"})
 	assert2.Nil(t, err)
 	resp := tr.Execute()
+	assert2.Nil(t, resp.Err())
+	assert2.True(t, string(resp.Body()) == "hello")
+	resp = tr.Execute()
 	assert2.Nil(t, resp.Err())
 	assert2.True(t, string(resp.Body()) == "hello")
 }

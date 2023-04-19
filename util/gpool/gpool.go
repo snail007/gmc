@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
 	glist "github.com/snail007/gmc/util/list"
 	gmap "github.com/snail007/gmc/util/map"
 	"io"
@@ -32,12 +33,12 @@ type GPool struct {
 	initWorkCount int
 }
 
-//MaxTaskAwaitCount returns the max waiting task count.
+// MaxTaskAwaitCount returns the max waiting task count.
 func (s *GPool) MaxTaskAwaitCount() int {
 	return s.maxWaitCount
 }
 
-//SetMaxTaskAwaitCount sets the max waiting task count.
+// SetMaxTaskAwaitCount sets the max waiting task count.
 func (s *GPool) SetMaxTaskAwaitCount(maxWaitCount int) {
 	s.maxWaitCount = maxWaitCount
 }
@@ -54,7 +55,7 @@ func (s *GPool) SetDebug(debug bool) {
 
 // New create a gpool object to using
 func New(workerCount int) (p *GPool) {
-	return NewWithLogger(workerCount, gcore.ProviderLogger()(nil, ""))
+	return NewWithLogger(workerCount, nil)
 }
 
 func NewWithLogger(workerCount int, logger gcore.Logger) (p *GPool) {
@@ -137,15 +138,15 @@ func (s *GPool) newWorkerID() string {
 	return hex.EncodeToString(k)
 }
 
-//run a task function, using defer to catch task exception
+// run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gcore.ProviderError()().Recover(func(e interface{}) {
+	defer gerror.Recover(func(e interface{}) {
 		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.ProviderError()().StackError(e))
 	})
 	fn()
 }
 
-//Submit adds a function as a task ready to run
+// Submit adds a function as a task ready to run
 func (s *GPool) Submit(task func()) bool {
 	s.lazy.Do(func() {
 		s.addWorker(s.initWorkCount)
@@ -166,7 +167,7 @@ func (s *GPool) notifyAll() {
 	})
 }
 
-//shift an element from array head
+// shift an element from array head
 func (s *GPool) pop() (fn func()) {
 	f := s.tasks.Pop()
 	if f != nil {
@@ -212,9 +213,9 @@ func (s *GPool) log(fmt string, v ...interface{}) {
 	s.logger.Warnf(fmt, v...)
 }
 
-//SetLogger set the logger to logging, you can SetLogger(nil) to disable logging
+// SetLogger set the logger to logging, you can SetLogger(nil) to disable logging
 //
-//default is log.New(os.Stdout, "", log.LstdFlags),
+// default is log.New(os.Stdout, "", log.LstdFlags),
 func (s *GPool) SetLogger(l gcore.Logger) {
 	s.logger = l
 }
@@ -236,7 +237,7 @@ func (w *worker) SetStatus(status int) {
 }
 
 func (w *worker) Wakeup() bool {
-	defer gcore.ProviderError()().Recover()
+	defer gerror.RecoverNop()
 	select {
 	case w.wakeupSig <- true:
 	default:
@@ -255,7 +256,7 @@ func (w *worker) isBreak() bool {
 }
 
 func (w *worker) breakLoop() bool {
-	defer gcore.ProviderError()().Recover()
+	defer gerror.RecoverNop()
 	select {
 	case w.breakSig <- true:
 	default:
@@ -265,7 +266,7 @@ func (w *worker) breakLoop() bool {
 }
 
 func (w *worker) Stop() {
-	defer gcore.ProviderError()().Recover()
+	defer gerror.RecoverNop()
 	w.breakLoop()
 	close(w.wakeupSig)
 }

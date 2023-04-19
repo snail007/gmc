@@ -11,7 +11,7 @@ import (
 	"reflect"
 )
 
-func Recover(f func(err gcore.Error)) {
+func Recover(f func(err interface{})) {
 	e := recover()
 	if e != nil {
 		f(New().Wrap(e))

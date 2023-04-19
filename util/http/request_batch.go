@@ -12,21 +12,35 @@ import (
 )
 
 type BatchRequest struct {
-	reqArr            []*http.Request
-	client            *http.Client
-	waitFirstSuccess  bool
-	pool              *gpool.GPool
-	respArr           []*Response
-	firstSuccessIndex int
-	doFunc            func(idx int, req *http.Request) (*http.Response, error)
-	afterDo           []AfterDoFunc
-	maxTry            int
-	checkErrorFunc    func(int, *http.Request, *http.Response) error
+	reqArr           []*http.Request
+	reqBodyMap       *gmap.Map
+	reqTimeoutMap    *gmap.Map
+	client           *http.Client
+	waitFirstSuccess bool
+	pool             *gpool.GPool
+	respArr          []*Response
+	doFunc           func(idx int, req *http.Request) (*http.Response, error)
+	afterDo          []AfterDoFunc
+	maxTry           int
+	checkErrorFunc   func(int, *http.Request, *http.Response) error
+	once             sync.Once
 }
 
 // NewBatchRequest new a BatchRequest by []*http.Request.
 func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest {
-	return &BatchRequest{reqArr: reqArr, client: client}
+	s := &BatchRequest{
+		reqArr:        reqArr,
+		client:        client,
+		reqBodyMap:    gmap.New(),
+		reqTimeoutMap: gmap.New(),
+	}
+	//init timeout
+	for idx, r := range s.reqArr {
+		if deadline, ok := r.Context().Deadline(); ok {
+			s.reqTimeoutMap.Store(idx, deadline.Sub(time.Now()))
+		}
+	}
+	return s
 }
 
 // NewBatchURL new a BatchRequest by url slice []string.
@@ -42,20 +56,35 @@ func NewBatchURL(client *http.Client, method string, urlArr []string, timeout ti
 		reqs = append(reqs, r)
 	}
 	s := NewBatchRequest(reqs, client).
-		AfterDo(func(resp *Response) {
+		AppendAfterDo(func(resp *Response) {
 			cancels[resp.idx]()
 		})
 	return s, nil
 }
 
 func (s *BatchRequest) init() *BatchRequest {
+	s.respArr = nil
 	if s.client == nil && s.doFunc == nil {
 		s.client = defaultClient()
 	}
+	s.once.Do(func() {
+		//init body
+		if s.maxTry > 0 {
+			for idx, r := range s.reqArr {
+				if IsFormRequest(r) && r.Body != nil {
+					body, _ := ioutil.ReadAll(r.Body)
+					s.reqBodyMap.Store(idx, body)
+				}
+				if deadline, ok := r.Context().Deadline(); ok {
+					s.reqTimeoutMap.Store(idx, deadline.Sub(time.Now()))
+				}
+			}
+		}
+	})
 	return s
 }
 
-//MaxTry sets the max retry count when a request error occurred.
+// MaxTry sets the max retry count when a request error occurred.
 func (s *BatchRequest) MaxTry(maxTry int) *BatchRequest {
 	s.maxTry = maxTry
 	return s
@@ -67,9 +96,26 @@ func (s *BatchRequest) CheckErrorFunc(checkErrorFunc func(idx int, req *http.Req
 	return s
 }
 
-// AfterDo add a callback call after request sent.
-func (s *BatchRequest) AfterDo(afterDo AfterDoFunc) *BatchRequest {
-	s.afterDo = append(s.afterDo, afterDo)
+// SetAfterDo sets callback call after request sent.
+func (s *BatchRequest) SetAfterDo(afterDo AfterDoFunc) *BatchRequest {
+	return s.setAfterDo(afterDo, true)
+}
+
+// AppendAfterDo add a callback call after request sent.
+func (s *BatchRequest) AppendAfterDo(afterDo AfterDoFunc) *BatchRequest {
+	return s.setAfterDo(afterDo, false)
+}
+
+func (s *BatchRequest) setAfterDo(afterDo AfterDoFunc, isSet bool) *BatchRequest {
+	if isSet {
+		if afterDo != nil {
+			s.afterDo = []AfterDoFunc{afterDo}
+		} else {
+			s.afterDo = []AfterDoFunc{}
+		}
+	} else if afterDo != nil {
+		s.afterDo = append(s.afterDo, afterDo)
+	}
 	return s
 }
 
@@ -86,7 +132,7 @@ func (s *BatchRequest) DoFunc(doFunc func(idx int, req *http.Request) (*http.Res
 }
 
 // Success returns requests at least one is success in waitFirstSuccess mode.
-//returns all requests are success in non waitFirstSuccess mode.
+// returns all requests are success in non waitFirstSuccess mode.
 func (s *BatchRequest) Success() bool {
 	if s.waitFirstSuccess {
 		return s.respArr[0].Response != nil
@@ -126,9 +172,10 @@ func (s *BatchRequest) ErrorCount() int {
 	return failCnt
 }
 
-// SetPool sets a *gpool.GPool to execute request. In default goroutine will be used.
-func (s *BatchRequest) SetPool(pool *gpool.GPool) {
+// Pool sets a *gpool.GPool to execute request. In default goroutine will be used.
+func (s *BatchRequest) Pool(pool *gpool.GPool) *BatchRequest {
 	s.pool = pool
+	return s
 }
 
 // WaitFirstSuccess sets Execute() return immediately when get a success response.
@@ -138,13 +185,25 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 }
 
 func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
+	var setTimeout = func(req *http.Request) context.CancelFunc {
+		if v, ok := s.reqTimeoutMap.Load(idx); ok {
+			ctx, cancel := context.WithTimeout(context.Background(), v.(time.Duration))
+			*req = *req.WithContext(ctx)
+			return cancel
+		}
+		return nil
+	}
 	var call = func(idx int, req *http.Request) (*http.Response, error) {
 		var resp *http.Response
 		var err error
+		cancel := setTimeout(req)
 		if s.doFunc != nil {
 			resp, err = s.doFunc(idx, req)
 		} else {
 			resp, err = s.client.Do(req)
+		}
+		if cancel != nil {
+			cancel()
 		}
 		if err != nil {
 			return nil, err
@@ -158,36 +217,19 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 		}
 		return resp, nil
 	}
-	if s.maxTry == 0 {
+	if s.maxTry <= 0 {
 		return call(idx, req)
 	}
 	maxTry := s.maxTry
 	tryCount := 0
-	var body []byte
-	if IsFormRequest(req) {
-		body, _ = ioutil.ReadAll(req.Body)
-	}
 	var resp *http.Response
 	var err error
-	deadline, ok := req.Context().Deadline()
-	var timeout time.Duration
-	if ok {
-		timeout = deadline.Sub(time.Now())
-	}
+
 	for tryCount <= maxTry {
-		if len(body) > 0 {
-			req.Body = ioutil.NopCloser(bytes.NewReader(body))
-		}
-		var cancel context.CancelFunc
-		var ctx context.Context
-		if timeout > 0 {
-			ctx, cancel = context.WithTimeout(context.Background(), timeout)
-			req = req.WithContext(ctx)
+		if v, ok := s.reqBodyMap.Load(idx); ok && v != nil && len(v.([]byte)) > 0 {
+			req.Body = ioutil.NopCloser(bytes.NewReader(v.([]byte)))
 		}
 		resp, err = call(idx, req)
-		if cancel != nil {
-			cancel()
-		}
 		if err != nil {
 			tryCount++
 			continue
@@ -198,8 +240,11 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 }
 
 // Execute batch send requests,
+//
 //	In default Execute will wait all request done. If you want to get the first success response,
+//
 // using BatchRequest.WaitFirstSuccess().Execute(), Execute() will return immediately when get a success response.
+//
 //	If all requests are fail, Execute() return after all requests done.
 func (s *BatchRequest) Execute() *BatchRequest {
 	s.init()

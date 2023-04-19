@@ -22,12 +22,13 @@ type TriableRequest struct {
 	afterDo        []AfterDoFunc
 	checkErrorFunc func(int, *http.Request, *http.Response) error
 	body           []byte
+	keepalive      bool
 }
 
 // NewTriableRequest new a TriableRequest by *http.Request, maxTry is the max retry count when a request error occurred.
 // If client is nil, default client will be used.
 func NewTriableRequest(client *http.Client, req *http.Request, maxTry int, timeout time.Duration) *TriableRequest {
-	tr := &TriableRequest{req: req, timeout: timeout, client: client, maxTry: maxTry}
+	tr := &TriableRequest{req: req, timeout: timeout, client: client, maxTry: maxTry, keepalive: true}
 	return tr
 }
 
@@ -57,6 +58,12 @@ func (s *TriableRequest) init() *TriableRequest {
 	if s.client == nil && s.doFunc == nil {
 		s.client = defaultClient()
 	}
+	return s
+}
+
+// Keepalive sets enable or disable for request keepalive
+func (s *TriableRequest) Keepalive(keepalive bool) *TriableRequest {
+	s.keepalive = keepalive
 	return s
 }
 
@@ -127,6 +134,7 @@ func (s *TriableRequest) Err() error {
 }
 
 func (s *TriableRequest) do(tryCount int, req *http.Request) (*http.Response, error) {
+	req.Close = !s.keepalive
 	var resp *http.Response
 	var err error
 	if s.doFunc != nil {

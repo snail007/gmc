@@ -60,19 +60,23 @@ func TestHTTPClient_NewTriablePost(t *testing.T) {
 		v = 2
 	})
 	req.SetBeforeDo(nil)
+	req.Keepalive(false)
 	resp := req.Execute()
 	assert2.Equal(t, 1, v)
 	assert2.Nil(t, resp.Err())
 	assert2.Len(t, req.ErrAll(), 0)
 	assert2.NotNil(t, resp.Response)
+	assert2.True(t, resp.Request().Close)
 	assert2.True(t, string(resp.Body()) == "hello")
 	assert2.Equal(t, "example.com", req.req.Host)
 
+	req.Keepalive(false)
 	resp = req.Execute()
 	assert2.Nil(t, resp.Err())
 	assert2.Nil(t, req.Err())
 	assert2.Len(t, req.ErrAll(), 0)
 	assert2.NotNil(t, resp.Response)
+	assert2.True(t, resp.Request().Close)
 	assert2.True(t, string(resp.Body()) == "hello")
 	assert2.Equal(t, "example.com", req.req.Host)
 }

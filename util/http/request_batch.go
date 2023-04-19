@@ -25,6 +25,7 @@ type BatchRequest struct {
 	maxTry           int
 	checkErrorFunc   func(int, *http.Request, *http.Response) error
 	once             sync.Once
+	keepalive        bool
 }
 
 // NewBatchRequest new a BatchRequest by []*http.Request.
@@ -34,6 +35,7 @@ func NewBatchRequest(reqArr []*http.Request, client *http.Client) *BatchRequest 
 		client:        client,
 		reqBodyMap:    gmap.New(),
 		reqTimeoutMap: gmap.New(),
+		keepalive:     true,
 	}
 	//init timeout
 	for idx, r := range s.reqArr {
@@ -82,6 +84,12 @@ func (s *BatchRequest) init() *BatchRequest {
 			}
 		}
 	})
+	return s
+}
+
+// Keepalive sets enable or disable for request keepalive
+func (s *BatchRequest) Keepalive(keepalive bool) *BatchRequest {
+	s.keepalive = keepalive
 	return s
 }
 
@@ -235,6 +243,7 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 }
 
 func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
+	req.Close = !s.keepalive
 	var setTimeout = func(req *http.Request) context.CancelFunc {
 		if v, ok := s.reqTimeoutMap.Load(idx); ok {
 			ctx, cancel := context.WithTimeout(context.Background(), v.(time.Duration))

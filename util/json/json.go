@@ -22,6 +22,24 @@ func NewResultCtx(ctx gcore.Ctx, d ...interface{}) *JSONResult {
 
 //NewResult Optional args: code int, message string, data interface{}
 func NewResult(d ...interface{}) *JSONResult {
+	if len(d) == 1 {
+		var b []byte
+		switch d[0].(type) {
+		case string:
+			b = []byte(d[0].(string))
+		case []byte:
+			b = d[0].([]byte)
+		}
+		if len(b) > 0 {
+			s := &JSONResult{
+				data: map[string]interface{}{},
+			}
+			if e := json.Unmarshal(b, &s.data); e != nil {
+				return nil
+			}
+			return s
+		}
+	}
 	code := 0
 	message := ""
 	var data interface{}
@@ -53,16 +71,28 @@ func (s *JSONResult) ToJSON() []byte {
 	return j
 }
 
-func (s *JSONResult) Code(code int) *JSONResult {
+func (s *JSONResult) SetCode(code int) *JSONResult {
 	return s.Set("code", code)
 }
 
-func (s *JSONResult) Message(format string, msg ...interface{}) *JSONResult {
+func (s *JSONResult) SetMessage(format string, msg ...interface{}) *JSONResult {
 	return s.Set("message", fmt.Sprintf(format, msg...))
 }
 
-func (s *JSONResult) Data(d interface{}) *JSONResult {
+func (s *JSONResult) SetData(d interface{}) *JSONResult {
 	return s.Set("data", d)
+}
+
+func (s *JSONResult) Code() int {
+	return gcast.ToInt(s.data["code"])
+}
+
+func (s *JSONResult) Message() string {
+	return gcast.ToString(s.data["message"])
+}
+
+func (s *JSONResult) Data() interface{} {
+	return s.data["data"]
 }
 
 func (s *JSONResult) WriteTo(dst io.Writer) (err error) {
@@ -75,16 +105,16 @@ func (s *JSONResult) WriteToCtx(ctx gcore.Ctx) (err error) {
 	return
 }
 
-//Success worked with NewResultCtx()
+//Success only worked with NewResultCtx()
 func (s *JSONResult) Success(d ...interface{}) (err error) {
 	var data interface{}
 	if len(d) == 1 {
 		data = d[0]
 	}
-	return s.Data(data).WriteToCtx(s.ctx)
+	return s.SetData(data).WriteToCtx(s.ctx)
 }
 
-//Fail worked with NewResultCtx()
+//Fail only worked with NewResultCtx()
 func (s *JSONResult) Fail(format string, v ...interface{}) (err error) {
-	return s.Code(1).Message(format, v...).WriteToCtx(s.ctx)
+	return s.SetCode(1).SetMessage(format, v...).WriteToCtx(s.ctx)
 }

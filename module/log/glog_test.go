@@ -244,7 +244,7 @@ func TestGlog_Write(t *testing.T) {
 func TestGlog_Async(t *testing.T) {
 	assert := assert2.New(t)
 	if gtest.RunProcess(t, func() {
-		glog.SetTimeLayout(time.Layout)
+		glog.SetTimeLayout("2006/01/02 15:04:05.000")
 		glog.SetOutput(os.Stdout)
 		glog.EnableAsync()
 		assert.True(glog.Async())

@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -318,7 +317,7 @@ func (s *HTTPClient) call(req *http.Request, timeout time.Duration) (body []byte
 	if err != nil {
 		return
 	}
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = GetResponseBodyE(resp)
 	if err != nil {
 		return
 	}

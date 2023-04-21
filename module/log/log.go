@@ -23,8 +23,9 @@ import (
 )
 
 var (
-	logger = New("")
-	pool   = gpool.NewWithLogger(10, nil)
+	logger            = New("")
+	pool              = gpool.NewWithLogger(10, nil)
+	defaultTimeLayout = "2006/01/02 15:04:05.000000"
 )
 
 func init() {
@@ -128,6 +129,10 @@ func SetOutput(w io.Writer) {
 	logger.SetOutput(w)
 }
 
+func SetTimeLayout(layout string) {
+	logger.SetTimeLayout(layout)
+}
+
 func Async() bool {
 	return logger.Async()
 }
@@ -189,27 +194,29 @@ type Logger struct {
 	lim         *rate.Limiter
 	limCallback func(msg string)
 	// for testing purpose
-	skipCheckGMC bool
-	levelWriters []*levelWriter
+	skipCheckGMC   bool
+	levelWriters   []*levelWriter
+	datetimeLayout string
 }
 
 func (s *Logger) clone() *Logger {
 	return &Logger{
-		l:            s.l,
-		parent:       s.parent,
-		ns:           s.ns,
-		level:        s.level,
-		async:        s.async,
-		asyncOnce:    s.asyncOnce,
-		bufChn:       s.bufChn,
-		asyncWG:      s.asyncWG,
-		callerSkip:   s.callerSkip,
-		exitCode:     s.exitCode,
-		exitFunc:     s.exitFunc,
-		flag:         s.flag,
-		lim:          s.lim,
-		skipCheckGMC: s.skipCheckGMC,
-		levelWriters: s.levelWriters,
+		l:              s.l,
+		parent:         s.parent,
+		ns:             s.ns,
+		level:          s.level,
+		async:          s.async,
+		asyncOnce:      s.asyncOnce,
+		bufChn:         s.bufChn,
+		asyncWG:        s.asyncWG,
+		callerSkip:     s.callerSkip,
+		exitCode:       s.exitCode,
+		exitFunc:       s.exitFunc,
+		flag:           s.flag,
+		lim:            s.lim,
+		skipCheckGMC:   s.skipCheckGMC,
+		levelWriters:   s.levelWriters,
+		datetimeLayout: s.datetimeLayout,
 	}
 }
 
@@ -217,6 +224,10 @@ func (s *Logger) exit() {
 	if s.exitCode >= 0 {
 		s.exitFunc(s.exitCode)
 	}
+}
+
+func (s *Logger) SetTimeLayout(layout string) {
+	s.datetimeLayout = layout
 }
 
 func (s *Logger) ExitFunc() func(int) {
@@ -666,7 +677,7 @@ func (s *Logger) output(str string, writer *levelWriter) {
 		if len(str) == 0 || str[len(str)-1] != '\n' {
 			ln = "\n"
 		}
-		writer.Write([]byte(time.Now().Format("2006/01/02 15:04:05.000000") + " " + str + ln))
+		writer.Write([]byte(time.Now().Format(s.datetimeLayout) + " " + str + ln))
 	} else {
 		s.l.Print(str)
 	}

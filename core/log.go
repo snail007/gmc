@@ -79,4 +79,5 @@ type Logger interface {
 
 	WithRate(duration time.Duration) Logger
 	SetRateCallback(cb func(msg string)) Logger
+	SetTimeLayout(layout string)
 }

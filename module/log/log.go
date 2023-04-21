@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/snail007/gmc/util/gpool"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -179,7 +178,6 @@ type bufChnItem struct {
 	msg    string
 }
 type Logger struct {
-	l           *log.Logger
 	parent      *Logger
 	ns          string
 	level       gcore.LogLevel
@@ -197,11 +195,12 @@ type Logger struct {
 	skipCheckGMC   bool
 	levelWriters   []*levelWriter
 	datetimeLayout string
+	writer         io.Writer
+	prefix         string
 }
 
 func (s *Logger) clone() *Logger {
 	return &Logger{
-		l:              s.l,
 		parent:         s.parent,
 		ns:             s.ns,
 		level:          s.level,
@@ -217,6 +216,8 @@ func (s *Logger) clone() *Logger {
 		skipCheckGMC:   s.skipCheckGMC,
 		levelWriters:   s.levelWriters,
 		datetimeLayout: s.datetimeLayout,
+		writer:         s.writer,
+		prefix:         s.prefix,
 	}
 }
 
@@ -245,7 +246,7 @@ func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger 
 }
 
 func (s *Logger) AddWriter(w io.Writer) gcore.Logger {
-	s.l.SetOutput(newMultiWriter(s.l.Writer(), w))
+	s.writer = newMultiWriter(s.writer, w)
 	return s
 }
 
@@ -274,9 +275,7 @@ func New(prefix ...string) gcore.Logger {
 	if len(prefix) == 1 {
 		pre = prefix[0]
 	}
-	l := log.New(os.Stdout, pre, log.LstdFlags|log.Lmicroseconds)
 	return &Logger{
-		l:              l,
 		level:          gcore.LogLeveDebug,
 		asyncOnce:      &sync.Once{},
 		callerSkip:     2,
@@ -285,6 +284,8 @@ func New(prefix ...string) gcore.Logger {
 		flag:           gcore.LogFlagShort,
 		skipCheckGMC:   os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
 		datetimeLayout: defaultTimeLayout,
+		prefix:         pre,
+		writer:         os.Stdout,
 	}
 }
 
@@ -629,11 +630,11 @@ func (s *Logger) Trace(v ...interface{}) {
 }
 
 func (s *Logger) Writer() io.Writer {
-	return s.l.Writer()
+	return s.writer
 }
 
 func (s *Logger) SetOutput(w io.Writer) {
-	s.l.SetOutput(w)
+	s.writer = w
 }
 
 func (s *Logger) SetFlag(f gcore.LogFlag) {
@@ -671,16 +672,18 @@ func (s *Logger) output(str string, writer *levelWriter) {
 	if s.lim != nil && s.limCallback != nil {
 		go s.limCallback(str)
 	}
+	ln := ""
+	if len(str) == 0 || str[len(str)-1] != '\n' {
+		ln = "\n"
+	}
+	line := []byte(time.Now().Format(s.datetimeLayout) + " " + str + ln)
 	if writer != nil {
 		writer.lock.Lock()
 		defer writer.lock.Unlock()
-		ln := ""
-		if len(str) == 0 || str[len(str)-1] != '\n' {
-			ln = "\n"
-		}
-		writer.Write([]byte(time.Now().Format(s.datetimeLayout) + " " + str + ln))
+
+		writer.Write(line)
 	} else {
-		s.l.Print(str)
+		s.writer.Write(line)
 	}
 }
 

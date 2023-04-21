@@ -276,14 +276,15 @@ func New(prefix ...string) gcore.Logger {
 	}
 	l := log.New(os.Stdout, pre, log.LstdFlags|log.Lmicroseconds)
 	return &Logger{
-		l:            l,
-		level:        gcore.LogLeveDebug,
-		asyncOnce:    &sync.Once{},
-		callerSkip:   2,
-		exitCode:     1,
-		exitFunc:     os.Exit,
-		flag:         gcore.LogFlagShort,
-		skipCheckGMC: os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
+		l:              l,
+		level:          gcore.LogLeveDebug,
+		asyncOnce:      &sync.Once{},
+		callerSkip:     2,
+		exitCode:       1,
+		exitFunc:       os.Exit,
+		flag:           gcore.LogFlagShort,
+		skipCheckGMC:   os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
+		datetimeLayout: defaultTimeLayout,
 	}
 }
 

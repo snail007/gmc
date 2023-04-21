@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -124,4 +125,20 @@ func CloseResponse(resp *http.Response) {
 	if resp != nil && resp.Body != nil {
 		resp.Body.Close()
 	}
+}
+func GetResponseBodyE(resp *http.Response) ([]byte, error) {
+	if resp == nil || resp.Body == nil {
+		return nil, nil
+	}
+	b, e := ioutil.ReadAll(resp.Body)
+	if e != nil {
+		return nil, e
+	}
+	resp.Body.Close()
+	resp.Body = ioutil.NopCloser(bytes.NewReader(b))
+	return b, nil
+}
+func GetResponseBody(resp *http.Response) []byte {
+	b, _ := GetResponseBodyE(resp)
+	return b
 }

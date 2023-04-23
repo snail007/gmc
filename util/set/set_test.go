@@ -38,6 +38,31 @@ func TestSet_Clone(t *testing.T) {
 	}
 }
 
+func TestSet_CloneAndClear(t *testing.T) {
+	assert := assert.New(t)
+	s := New()
+	for i := 0; i < 10; i++ {
+		s.Add(i)
+	}
+	s1 := s.CloneAndClear()
+	assert.Equal(10, s1.Len())
+	for i := 0; i < 10; i++ {
+		assert.Equal(i, s1.Shift())
+	}
+	assert.Equal(0, s.Len())
+}
+
+func TestSet_Clear(t *testing.T) {
+	assert := assert.New(t)
+	s := New()
+	for i := 0; i < 10; i++ {
+		s.Add(i)
+	}
+	assert.Equal(10, s.Len())
+	s.Clear()
+	assert.Equal(0, s.Len())
+}
+
 func TestSet_Pop(t *testing.T) {
 	assert := assert.New(t)
 	s := New()

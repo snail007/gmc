@@ -128,6 +128,19 @@ func (s *Set) Clone() *Set {
 	return set
 }
 
+// CloneAndClear duplicates the set s.
+func (s *Set) CloneAndClear() *Set {
+	set := New()
+	set.MergeSlice(s.data.CloneAndClear().Keys())
+	return set
+}
+
+// Clear duplicates the set s.
+func (s *Set) Clear() *Set {
+	s.data.Clear()
+	return s
+}
+
 // IndexOf indicates the index of value in Map s, if not found returns -1.
 //
 // idx start with 0.

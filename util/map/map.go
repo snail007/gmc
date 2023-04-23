@@ -42,6 +42,19 @@ func (s *Map) Clone() *Map {
 	return m
 }
 
+// CloneAndClear duplicates the map s.
+func (s *Map) CloneAndClear() *Map {
+	s.RLock()
+	defer s.RUnlock()
+	m := New()
+	s.keys.Range(func(v interface{}) bool {
+		m.store(v, s.data[v])
+		return true
+	})
+	s.clear()
+	return m
+}
+
 // ToMap duplicates the map s.
 func (s *Map) ToMap() map[interface{}]interface{} {
 	s.RLock()

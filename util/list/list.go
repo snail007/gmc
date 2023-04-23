@@ -166,6 +166,16 @@ func (s *List) Clone() *List {
 	return newList
 }
 
+// CloneAndClear duplicates the list s and clear s.
+func (s *List) CloneAndClear() *List {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	newList := New()
+	newList.data = append(newList.data, s.data...)
+	s.data = []interface{}{}
+	return newList
+}
+
 // ToSlice returns the list as an array.
 func (s *List) ToSlice() []interface{} {
 	s.lock.RLock()

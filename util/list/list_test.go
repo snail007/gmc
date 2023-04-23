@@ -82,6 +82,19 @@ func TestList_Clone(t *testing.T) {
 	}
 }
 
+func TestList_CloneAndClear(t *testing.T) {
+	assert := assert.New(t)
+	l := New()
+	for i := 0; i <= 100; i++ {
+		l.Add(i)
+	}
+	l1 := l.CloneAndClear()
+	for i := 0; i < 100; i++ {
+		assert.Equal(i, l1.Get(i))
+	}
+	assert.Equal(0, l.Len())
+}
+
 func TestList_Contains(t *testing.T) {
 	assert := assert.New(t)
 	l := New()

@@ -216,6 +216,26 @@ func TestMap_Clone(t *testing.T) {
 	}
 }
 
+func TestMap_CloneAndClear(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	m := New()
+	for i := 0; i < 100; i++ {
+		m.Store(i, i)
+	}
+	m1 := m.CloneAndClear()
+	for i := 0; i < 101; i++ {
+		v, ok := m1.Load(i)
+		if i < 100 {
+			assert.True(ok)
+			assert.Equal(i, v)
+		} else {
+			assert.False(false)
+		}
+	}
+	assert.Equal(0, m.Len())
+}
+
 func TestMap_ToMap(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)

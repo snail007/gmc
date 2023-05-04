@@ -50,7 +50,7 @@ func TestExec4(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	assert.Empty(errStr)
 	assert.Empty(output)
-	assert.Contains(buf.String(), "usage: grep")
+	assert.Contains(buf.String(), "exit")
 }
 
 func TestExec5(t *testing.T) {

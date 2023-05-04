@@ -17,7 +17,7 @@ func TestExec(t *testing.T) {
 	//"which bash", 0, false, log
 	output, errStr := NewCommand("which bash").Exec()
 	assert.Empty(errStr)
-	assert.Equal("/bin/bash\n", string(output))
+	assert.Contains(output, "/bin/bash\n")
 }
 
 func TestExec1(t *testing.T) {

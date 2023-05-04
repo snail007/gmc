@@ -135,7 +135,9 @@ func (s *TriableRequest) Err() error {
 
 // Close close all response body can context cancel  func.
 func (s *TriableRequest) Close() *TriableRequest {
-	s.resp.Close()
+	if s.resp != nil {
+		s.resp.Close()
+	}
 	return s
 }
 

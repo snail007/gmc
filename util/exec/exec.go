@@ -1,6 +1,3 @@
-//go:build !windows
-// +build !windows
-
 package gexec
 
 import (
@@ -12,6 +9,7 @@ import (
 	grand "github.com/snail007/gmc/util/rand"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -28,6 +26,9 @@ type Command struct {
 }
 
 func NewCommand(cmd string) *Command {
+	if runtime.GOOS == "windows" {
+		panic("only worked in linux*")
+	}
 	return &Command{
 		cmd:     cmd,
 		env:     map[string]string{},

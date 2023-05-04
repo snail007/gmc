@@ -6,6 +6,7 @@
 package ghttp
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -21,6 +22,7 @@ type Response struct {
 	usedTime  time.Duration
 	startTime time.Time
 	endTime   time.Time
+	cancel    context.CancelFunc
 }
 
 func (s *Response) Request() *http.Request {
@@ -65,4 +67,13 @@ func (s *Response) BodyE() ([]byte, error) {
 	s.body, s.bodyErr = ioutil.ReadAll(s.Response.Body)
 	s.Response.Body.Close()
 	return s.body, s.bodyErr
+}
+
+func (s *Response) Close() {
+	if s.Response != nil && s.Response.Body != nil {
+		s.Response.Body.Close()
+	}
+	if s.cancel != nil {
+		s.cancel()
+	}
 }

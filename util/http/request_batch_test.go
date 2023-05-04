@@ -263,4 +263,5 @@ func TestBatchRequest_CheckErrorFunc_1(t *testing.T) {
 	assert2.Equal(t, 0, r.ErrorCount())
 	assert2.NotNil(t, r.Resp())
 	assert2.Greater(t, gcast.ToInt(string(r.Resp().Body())), 0)
+	r.Close()
 }

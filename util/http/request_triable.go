@@ -133,6 +133,12 @@ func (s *TriableRequest) Err() error {
 	return nil
 }
 
+// Close close all response body can context cancel  func.
+func (s *TriableRequest) Close() *TriableRequest {
+	s.resp.Close()
+	return s
+}
+
 func (s *TriableRequest) do(tryCount int, req *http.Request) (*http.Response, error) {
 	req.Close = !s.keepalive
 	var resp *http.Response
@@ -180,7 +186,9 @@ func (s *TriableRequest) Execute() *Response {
 		startTime := time.Now()
 		resp, err = s.do(tryCount, req)
 		endTime := time.Now()
-		cancel()
+		if err != nil {
+			cancel()
+		}
 		s.resp = &Response{
 			idx:       tryCount,
 			req:       req,
@@ -189,6 +197,7 @@ func (s *TriableRequest) Execute() *Response {
 			usedTime:  endTime.Sub(startTime),
 			startTime: startTime,
 			endTime:   endTime,
+			cancel:    cancel,
 		}
 		s.callAfterDo(s.resp)
 		if err != nil {

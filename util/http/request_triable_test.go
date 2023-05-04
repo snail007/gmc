@@ -110,4 +110,6 @@ func TestHTTPClient_NewTriableGet4(t *testing.T) {
 	assert2.NotNil(t, resp.Err())
 	assert2.NotNil(t, req.Err())
 	assert2.Len(t, req.ErrAll(), 3)
+	resp.Close()
+	req.Close()
 }

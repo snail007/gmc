@@ -242,7 +242,15 @@ func (s *BatchRequest) WaitFirstSuccess() *BatchRequest {
 	return s
 }
 
-func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
+// Close close all response body can context cancel  func.
+func (s *BatchRequest) Close() *BatchRequest {
+	for _, v := range s.respArr {
+		v.Close()
+	}
+	return s
+}
+
+func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, context.CancelFunc, error) {
 	req.Close = !s.keepalive
 	var setTimeout = func(req *http.Request) context.CancelFunc {
 		if v, ok := s.reqTimeoutMap.Load(idx); ok {
@@ -252,7 +260,7 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 		}
 		return nil
 	}
-	var call = func(idx int, req *http.Request) (*http.Response, error) {
+	var call = func(idx int, req *http.Request) (*http.Response, context.CancelFunc, error) {
 		var resp *http.Response
 		var err error
 		cancel := setTimeout(req)
@@ -261,20 +269,20 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 		} else {
 			resp, err = s.client.Do(req)
 		}
-		if cancel != nil {
+		if cancel != nil && err != nil {
 			cancel()
 		}
 		if err != nil {
-			return nil, err
+			return nil, cancel, err
 		}
 		if s.checkErrorFunc != nil {
 			err = s.checkErrorFunc(idx, req, resp)
 			if err != nil {
 				resp.Body.Close()
-				return nil, err
+				return nil, cancel, err
 			}
 		}
-		return resp, nil
+		return resp, cancel, nil
 	}
 	if s.maxTry <= 0 {
 		return call(idx, req)
@@ -283,19 +291,19 @@ func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, error) {
 	tryCount := 0
 	var resp *http.Response
 	var err error
-
+	var cancel context.CancelFunc
 	for tryCount <= maxTry {
 		if v, ok := s.reqBodyMap.Load(idx); ok && v != nil && len(v.([]byte)) > 0 {
 			req.Body = ioutil.NopCloser(bytes.NewReader(v.([]byte)))
 		}
-		resp, err = call(idx, req)
+		resp, cancel, err = call(idx, req)
 		if err != nil {
 			tryCount++
 			continue
 		}
 		break
 	}
-	return resp, err
+	return resp, cancel, err
 }
 
 // Execute batch send requests,
@@ -319,8 +327,11 @@ func (s *BatchRequest) Execute() *BatchRequest {
 				defer g.Done()
 				s.callBeforeDo(idx, req)
 				startTime := time.Now()
-				resp, err := s.do(idx, req)
+				resp, cancel, err := s.do(idx, req)
 				endTime := time.Now()
+				if err != nil && cancel != nil {
+					cancel()
+				}
 				response := &Response{
 					idx:       idx,
 					req:       req,
@@ -329,6 +340,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 					usedTime:  endTime.Sub(startTime),
 					startTime: startTime,
 					endTime:   endTime,
+					cancel:    cancel,
 				}
 				s.callAfterDo(response)
 				respMap.Store(idx, response)
@@ -358,8 +370,11 @@ func (s *BatchRequest) Execute() *BatchRequest {
 				defer g.Done()
 				s.callBeforeDo(idx, req)
 				startTime := time.Now()
-				resp, err := s.do(idx, req)
+				resp, cancel, err := s.do(idx, req)
 				endTime := time.Now()
+				if err != nil && cancel != nil {
+					cancel()
+				}
 				response := &Response{
 					idx:       idx,
 					req:       req,
@@ -368,6 +383,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 					usedTime:  endTime.Sub(startTime),
 					startTime: startTime,
 					endTime:   endTime,
+					cancel:    cancel,
 				}
 				s.callAfterDo(response)
 				respMap.Store(idx, response)

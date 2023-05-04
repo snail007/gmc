@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/proxy"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -41,6 +42,9 @@ func (s socks5Dialer) Dial(_, addr string) (net.Conn, error) {
 }
 
 func NewJumper(proxyURL string, timeout time.Duration) (j *Jumper, err error) {
+	if !strings.Contains(proxyURL, "://") {
+		proxyURL = "http://" + proxyURL
+	}
 	u, e := url.Parse(proxyURL)
 	if e != nil {
 		err = e

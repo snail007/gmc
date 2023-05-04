@@ -38,7 +38,7 @@ jobs:
           done
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setting Up DB
         run: |
@@ -96,7 +96,7 @@ jobs:
         id: go
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Init & Run
         run: |

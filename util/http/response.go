@@ -55,6 +55,7 @@ func (s *Response) Body() []byte {
 }
 
 func (s *Response) BodyE() ([]byte, error) {
+	defer s.Close()
 	if s.Response == nil || s.Response.Body == nil || s.respErr != nil {
 		return nil, nil
 	}
@@ -65,7 +66,6 @@ func (s *Response) BodyE() ([]byte, error) {
 		return s.body, nil
 	}
 	s.body, s.bodyErr = ioutil.ReadAll(s.Response.Body)
-	s.Response.Body.Close()
 	return s.body, s.bodyErr
 }
 

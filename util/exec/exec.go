@@ -8,6 +8,7 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
+	gfile "github.com/snail007/gmc/util/file"
 	grand "github.com/snail007/gmc/util/rand"
 	"os"
 	"os/exec"
@@ -85,7 +86,7 @@ func (s *Command) Exec() (output string, e error) {
 #!/bin/bash
 set -e
 ` + s.cmd
-	os.WriteFile(sid, []byte(s.finalCmd), 0755)
+	gfile.WriteString(sid, s.finalCmd, false)
 	var cmd *exec.Cmd
 	var cancel context.CancelFunc
 	var ctx context.Context

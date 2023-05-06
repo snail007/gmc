@@ -45,12 +45,17 @@ func SetBinString(files map[string]string) {
 }
 
 type Template struct {
-	rootDir string
-	tpl     *gotemplate.Template
-	parsed  bool
-	ext     string
-	ctx     gcore.Ctx
-	binData map[string][]byte
+	rootDir                   string
+	tpl                       *gotemplate.Template
+	parsed                    bool
+	ext                       string
+	ctx                       gcore.Ctx
+	binData                   map[string][]byte
+	disableLoadDefaultBinData bool
+}
+
+func (s *Template) DisableLoadDefaultBinData() {
+	s.disableLoadDefaultBinData = true
 }
 
 func (s *Template) BinData() map[string][]byte {
@@ -170,7 +175,7 @@ func (s *Template) Parse() (err error) {
 	}
 	s.parsed = true
 	s.Funcs(addFunc(s.ctx))
-	if len(defaultTpl.binData) > 0 {
+	if !s.disableLoadDefaultBinData && len(defaultTpl.binData) > 0 {
 		s.SetBinBytes(defaultTpl.binData)
 	}
 	if len(s.binData) > 0 {

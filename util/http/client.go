@@ -31,6 +31,10 @@ var (
 	Client = NewHTTPClient()
 )
 
+func Close() {
+	Client.Close()
+}
+
 func Get(u string, timeout time.Duration, queryData, header map[string]string) (body []byte, code int, resp *http.Response, err error) {
 	return Client.Get(u, timeout, queryData, header)
 }
@@ -97,6 +101,7 @@ type HTTPClient struct {
 	httpClientFactory func(r *http.Request) *http.Client
 	preHandler        func(r *http.Request)
 	keepalive         bool
+	proxyUsed         *url.URL
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
@@ -106,6 +111,11 @@ func NewHTTPClient() *HTTPClient {
 		keepalive: true,
 		jar:       NewCookieJar(),
 	}
+}
+
+// ProxyUsed returns the final proxy URL used by connect to target
+func (s *HTTPClient) ProxyUsed() *url.URL {
+	return s.proxyUsed
 }
 
 func (s *HTTPClient) SetKeepalive(keepalive bool) {
@@ -134,6 +144,7 @@ func (s *HTTPClient) SetConnWrap(fn func(c net.Conn) (conn net.Conn, err error))
 // SetProxyFromEnv sets if using http_proxy or all_proxy from system environment to send request.
 func (s *HTTPClient) SetProxyFromEnv(set bool) {
 	s.setProxyFromEnv = set
+	s.proxyUsed = s.getProxyURL()
 	return
 }
 
@@ -161,6 +172,7 @@ func (s *HTTPClient) SetProxy(proxyURL string) (err error) {
 	if err != nil {
 		return
 	}
+	s.proxyUsed = s.getProxyURL()
 	return
 }
 
@@ -239,7 +251,7 @@ func (s *HTTPClient) newTriableGetPost(method string, URL string, maxTry int, ti
 		return
 	}
 	tr.DoFunc(func(req *http.Request) (*http.Response, error) {
-		return s.callRaw(req, timeout)
+		return s.Do(req, timeout)
 	})
 	return tr, nil
 }
@@ -260,7 +272,7 @@ func (s *HTTPClient) batchGetPost(method string, urlArr []string, timeout time.D
 		return
 	}
 	br.DoFunc(func(idx int, req *http.Request) (*http.Response, error) {
-		return s.callRaw(req, timeout)
+		return s.Do(req, timeout)
 	})
 	return br, nil
 }
@@ -298,7 +310,7 @@ func (s *HTTPClient) PostOfReader(u string, r io.Reader, timeout time.Duration, 
 	return s.call(req, timeout)
 }
 
-func (s *HTTPClient) callRaw(req *http.Request, timeout time.Duration) (resp *http.Response, err error) {
+func (s *HTTPClient) Do(req *http.Request, timeout time.Duration) (resp *http.Response, err error) {
 	s.setBasicAuth(req)
 	client, err := s.newClient(req, timeout)
 	if err != nil {
@@ -311,9 +323,16 @@ func (s *HTTPClient) callRaw(req *http.Request, timeout time.Duration) (resp *ht
 	return
 }
 
+func (s *HTTPClient) Close() {
+	if v, ok := defaultClient().Transport.(*http.Transport); ok {
+		v.CloseIdleConnections()
+	}
+	return
+}
+
 func (s *HTTPClient) call(req *http.Request, timeout time.Duration) (body []byte, code int, resp *http.Response, err error) {
 	defer CloseResponse(resp)
-	resp, err = s.callRaw(req, timeout)
+	resp, err = s.Do(req, timeout)
 	if err != nil {
 		return
 	}
@@ -405,7 +424,7 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, queryData
 	if err != nil {
 		return
 	}
-	resp, err = s.callRaw(req, timeout)
+	resp, err = s.Do(req, timeout)
 	defer CloseResponse(resp)
 	if err != nil {
 		return
@@ -415,7 +434,6 @@ func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, queryData
 }
 
 func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, err error) {
-	proxyURL := s.getProxyURL()
 	resolver := s.newResolver(timeout)
 	tr = &http.Transport{
 		ResponseHeaderTimeout: timeout,
@@ -431,9 +449,9 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 		DialContext: func(c context.Context, network, addr string) (conn net.Conn, err error) {
 			ctx, cancel := context.WithTimeout(c, timeout)
 			defer cancel()
-			if proxyURL != nil {
+			if s.proxyUsed != nil {
 				var j *gproxy.Jumper
-				j, err = gproxy.NewJumper(proxyURL.String(), timeout)
+				j, err = gproxy.NewJumper(s.proxyUsed.String(), timeout)
 				if err != nil {
 					return
 				}
@@ -525,7 +543,7 @@ func (s *HTTPClient) getProxyURL() (proxyURL *url.URL) {
 	}
 	if s.setProxyFromEnv {
 		proxyENV := ""
-		for _, k := range []string{"http_proxy", "all_proxy"} {
+		for _, k := range []string{"http_proxy", "https_proxy", "all_proxy"} {
 			proxyENV = os.Getenv(k)
 			if proxyENV == "" {
 				proxyENV = os.Getenv(strings.ToUpper(k))

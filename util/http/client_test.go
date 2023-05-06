@@ -146,11 +146,14 @@ func TestHTTPClient_Get6(t *testing.T) {
 
 func TestHTTPClient_SetProxyFromEnv(t *testing.T) {
 	assert := assert2.New(t)
-	os.Setenv("HTTP_PROXY", "127.0.0.1:10000")
+	os.Setenv("HTTP_PROXY", "ftp://127.0.0.1:1000")
 	client := NewHTTPClient()
 	client.SetProxyFromEnv(true)
 	_, _, _, err := client.Get(httpServerURL+"/hello", time.Second, nil, nil)
 	assert.NotNil(err)
+	Close()
+	client.SetProxy("127.0.0.1:20000")
+	assert.Equal("http://127.0.0.1:20000", client.ProxyUsed().String())
 }
 
 func TestHTTPClient_SetProxy(t *testing.T) {

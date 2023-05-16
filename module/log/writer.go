@@ -7,7 +7,6 @@ package glog
 
 import (
 	"compress/gzip"
-	"fmt"
 	gfile "github.com/snail007/gmc/util/file"
 	gonce "github.com/snail007/gmc/util/sync/once"
 	"io"
@@ -93,14 +92,14 @@ func (s *FileWriter) Write(p []byte) (n int, err error) {
 			if s.opt.IsGzip {
 				flog, e := os.OpenFile(oldFilepath, os.O_RDONLY, 0700)
 				if e != nil {
-					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
+					Errorf("[FileWriter] open log file fail, file: %s error :%v", oldFilepath, e)
 					return
 				}
 				defer flog.Close()
 				gzFile := oldFilepath + ".gz"
 				fgz, e := os.OpenFile(gzFile, os.O_CREATE|os.O_WRONLY, 0700)
 				if e != nil {
-					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
+					Errorf("[FileWriter] create gzip log file fail, file: %s, error :%v", gzFile, e)
 					return
 				}
 				defer fgz.Close()
@@ -108,7 +107,7 @@ func (s *FileWriter) Write(p []byte) (n int, err error) {
 				defer zipWriter.Close()
 				_, e = io.Copy(zipWriter, flog)
 				if e != nil {
-					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
+					Errorf("[FileWriter] WARN: write gzip log file fail, error :%v\n", e)
 					return
 				}
 				os.Remove(oldFilepath)

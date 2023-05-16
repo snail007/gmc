@@ -30,6 +30,13 @@ func TestGlog(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	glog.SetOutput(&out)
+	glog.SetTimeLayout("")
+	assert.False(glog.Async())
+	assert.NotNil(glog.Writer())
+	assert.Equal(glog.ExitCode(), 1)
+	glog.SetExitCode(2)
+	assert.Equal(glog.ExitCode(), 2)
+	assert.NotNil(glog.ExitFunc())
 	tests := []struct {
 		name    string
 		prepare func(t *testing.T, assert *assert2.Assertions) (args []interface{}, stop bool)

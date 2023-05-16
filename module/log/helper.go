@@ -58,14 +58,8 @@ func existsDir(path string) bool {
 		return false
 	}
 	defer f.Close()
-	stat, err := f.Stat()
-	if err != nil {
-		return false
-	}
-	if !stat.IsDir() {
-		return false
-	}
-	return true
+	stat, _ := f.Stat()
+	return stat != nil && stat.IsDir()
 }
 
 func timeFormatText(t time.Time, text string) string {

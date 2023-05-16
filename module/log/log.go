@@ -245,6 +245,8 @@ func (s *Logger) SetRateCallback(cb func(msg string)) gcore.Logger {
 	return s
 }
 
+// AddLevelWriter add a writer logging "after and the level", info is after trace,
+// all ordered levels: trace->debug->info->warn->error->panic->fatal->none
 func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger {
 	s.levelWriters = append(s.levelWriters, newLogWriter(&levelWriterOption{
 		writer: w,
@@ -253,6 +255,7 @@ func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger 
 	return s
 }
 
+// AddLevelsWriter add a writer only logging these levels
 func (s *Logger) AddLevelsWriter(w io.Writer, levels ...gcore.LogLevel) gcore.Logger {
 	s.levelWriters = append(s.levelWriters, newLogWriter(&levelWriterOption{
 		writer: w,

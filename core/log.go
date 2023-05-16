@@ -60,6 +60,7 @@ type Logger interface {
 	Writer() io.Writer
 	AddWriter(io.Writer) Logger
 	AddLevelWriter(io.Writer, LogLevel) Logger
+	AddLevelsWriter(io.Writer, ...LogLevel) Logger
 	SetOutput(w io.Writer)
 	SetFlag(f LogFlag)
 

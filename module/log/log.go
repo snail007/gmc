@@ -111,6 +111,11 @@ func AddLevelWriter(writer io.Writer, level gcore.LogLevel) gcore.Logger {
 	return logger
 }
 
+func AddLevelsWriter(writer io.Writer, levels ...gcore.LogLevel) gcore.Logger {
+	logger.AddLevelsWriter(writer, levels...)
+	return logger
+}
+
 func SetRateCallback(cb func(msg string)) gcore.Logger {
 	logger.SetRateCallback(cb)
 	return logger
@@ -241,7 +246,18 @@ func (s *Logger) SetRateCallback(cb func(msg string)) gcore.Logger {
 }
 
 func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger {
-	s.levelWriters = append(s.levelWriters, newLogWriter(w, level))
+	s.levelWriters = append(s.levelWriters, newLogWriter(&levelWriterOption{
+		writer: w,
+		level:  level,
+	}))
+	return s
+}
+
+func (s *Logger) AddLevelsWriter(w io.Writer, levels ...gcore.LogLevel) gcore.Logger {
+	s.levelWriters = append(s.levelWriters, newLogWriter(&levelWriterOption{
+		writer: w,
+		levels: levels,
+	}))
 	return s
 }
 
@@ -365,10 +381,10 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 		return
 	}
 	g := sync.WaitGroup{}
-	g.Add(len(s.levelWriters))
 	for _, w := range s.levelWriters {
-		if w.level <= level {
+		if w.canWrite(level) {
 			w0 := w
+			g.Add(1)
 			pool.Submit(func() {
 				defer g.Done()
 				s.write(str, w0)
@@ -380,7 +396,7 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 
 func (s *Logger) canLevelWrite(level gcore.LogLevel) bool {
 	for _, w := range s.levelWriters {
-		if w.level <= level {
+		if w.canWrite(level) {
 			return true
 		}
 	}
@@ -720,12 +736,33 @@ func (s *Logger) caller(msg string, skip int) string {
 
 type levelWriter struct {
 	io.Writer
-	level gcore.LogLevel
-	lock  *sync.Mutex
+	lock *sync.Mutex
+	opt  *levelWriterOption
+}
+type levelWriterOption struct {
+	writer io.Writer
+	level  gcore.LogLevel   //after and the level mode
+	levels []gcore.LogLevel //only these levels mode
 }
 
-func newLogWriter(writer io.Writer, level gcore.LogLevel) *levelWriter {
-	return &levelWriter{Writer: writer, level: level, lock: &sync.Mutex{}}
+func newLogWriter(opt *levelWriterOption) *levelWriter {
+	return &levelWriter{
+		Writer: opt.writer,
+		opt:    opt,
+		lock:   &sync.Mutex{},
+	}
+}
+
+func (s *levelWriter) canWrite(level gcore.LogLevel) bool {
+	if len(s.opt.levels) == 0 {
+		return level >= s.opt.level
+	}
+	for _, l := range s.opt.levels {
+		if l == level {
+			return true
+		}
+	}
+	return false
 }
 
 type multiWriter struct {

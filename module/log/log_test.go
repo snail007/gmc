@@ -315,3 +315,45 @@ func TestLogger_Write5(t *testing.T) {
 	assert.Contains(out.String(), "foo3\n")
 	assert.Contains(out.String(), "foo4\n")
 }
+
+func TestLogger_Write6(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out bytes.Buffer
+	l := glog.New()
+	l.AddLevelsWriter(&out, gcore.LogLeveDebug, gcore.LogLeveWarn)
+	l.SetLevel(gcore.LogLeveNone)
+	l.Tracef("foo1")
+	l.Debugf("foo2")
+	l.Infof("foo3")
+	l.Warnf("foo4")
+	assert.NotContains(out.String(), "foo1")
+	assert.NotContains(out.String(), "foo3")
+	assert.Contains(out.String(), "foo2\n")
+	assert.Contains(out.String(), "foo4\n")
+}
+
+func TestLogger_Write7(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out1 = bytes.NewBuffer(nil)
+	var out2 = bytes.NewBuffer(nil)
+	l := glog.New()
+	l.SetOutput(ioutil.Discard)
+	l.AddWriter(out1)
+	l.AddWriter(out2)
+	l.SetLevel(gcore.LogLevelTrace)
+	l.Tracef("foo1")
+	l.Debugf("foo2")
+	l.Infof("foo3")
+	l.Warnf("foo4")
+	assert.Contains(out1.String(), "foo1")
+	assert.Contains(out1.String(), "foo2")
+	assert.Contains(out1.String(), "foo2\n")
+	assert.Contains(out1.String(), "foo4\n")
+
+	assert.Contains(out2.String(), "foo1")
+	assert.Contains(out2.String(), "foo2")
+	assert.Contains(out2.String(), "foo2\n")
+	assert.Contains(out2.String(), "foo4\n")
+}

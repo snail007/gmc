@@ -18,53 +18,79 @@ import (
 )
 
 type FileWriter struct {
-	filename   string
-	logsDir    string
-	filepath   string
-	file       *os.File
-	isGzip     bool
-	openLock   sync.Mutex
-	opened     *bool
-	archiveDir string
+	filepath string
+	file     *os.File
+	openLock sync.Mutex
+	opt      *FileWriterOption
+}
+type FileWriterOption struct {
+	Filename      string
+	LogsDir       string
+	ArchiveDir    string
+	IsGzip        bool
+	AliasFilename string
 }
 
-func NewFileWriter(filename string, logsDir string, archiveDir string, isGzip bool) (w *FileWriter) {
-	logsDir, _ = filepath.Abs(logsDir)
-	if !existsDir(logsDir) {
-		os.MkdirAll(logsDir, 0755)
-	}
-	logger := New()
-	filename0 := filepath.Join(logsDir, timeFormatText(time.Now(), filename))
-	w0, err := os.OpenFile(filename0, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
+func NewFileWriter(opt *FileWriterOption) (w *FileWriter) {
+	w, err := NewFileWriterE(opt)
 	if err != nil {
-		logger.Warnf("[FileWriter] WARN: new writer fail, error: %s", err)
-		return
-	}
-	w = &FileWriter{
-		filename:   filename,
-		filepath:   filename0,
-		logsDir:    logsDir,
-		file:       w0,
-		isGzip:     isGzip,
-		archiveDir: archiveDir,
+		Warnf("[FileWriter]: new writer fail, error: %s", err)
+		return nil
 	}
 	return
 }
 
-func (f *FileWriter) Write(p []byte) (n int, err error) {
-	filename0 := filepath.Join(f.logsDir, timeFormatText(time.Now(), f.filename))
-	if filename0 != f.filepath {
-		oldFilepath := f.filepath
+func NewFileWriterE(opt *FileWriterOption) (w *FileWriter, err error) {
+	w = &FileWriter{opt: opt}
+	err = w.init()
+	return
+}
+
+func (s *FileWriter) init() (err error) {
+	logsDir, _ := filepath.Abs(s.opt.LogsDir)
+	if !existsDir(logsDir) {
+		err = os.MkdirAll(logsDir, 0755)
+		if err != nil {
+			return
+		}
+	}
+	s.filepath = s.getRawFilepath()
+	s.file, err = os.OpenFile(s.getAltFilepath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
+	return
+}
+
+func (s *FileWriter) getAltFilepath() string {
+	filename := timeFormatText(time.Now(), s.opt.Filename)
+	if s.opt.AliasFilename != "" {
+		filename = s.opt.AliasFilename
+	}
+	return filepath.Join(s.opt.LogsDir, filename)
+}
+
+func (s *FileWriter) getRawFilepath() string {
+	return filepath.Join(s.opt.LogsDir, timeFormatText(time.Now(), s.opt.Filename))
+}
+
+func (s *FileWriter) Write(p []byte) (n int, err error) {
+	filename0 := s.getRawFilepath()
+	if filename0 != s.filepath {
+		oldFilepath := s.filepath
 		gonce.OnceDo(oldFilepath, func() {
-			f.filepath = filename0
-			f.file, err = os.OpenFile(filename0, os.O_CREATE|os.O_WRONLY, 0700)
+			s.filepath = filename0
+			if s.file != nil {
+				s.file.Close()
+			}
+			if s.opt.AliasFilename != "" {
+				os.Rename(s.getAltFilepath(), oldFilepath)
+			}
+			s.file, err = os.OpenFile(s.getAltFilepath(), os.O_CREATE|os.O_WRONLY, 0700)
 		})
 		if err != nil {
 			return
 		}
 		go func() {
 			toMoveFile := oldFilepath
-			if f.isGzip {
+			if s.opt.IsGzip {
 				flog, e := os.OpenFile(oldFilepath, os.O_RDONLY, 0700)
 				if e != nil {
 					fmt.Printf("[FileWriter] WARN: compress log file fail, error :%v\n", e)
@@ -88,26 +114,26 @@ func (f *FileWriter) Write(p []byte) (n int, err error) {
 				os.Remove(oldFilepath)
 				toMoveFile = gzFile
 			}
-			f.Move(toMoveFile)
+			s.Move(toMoveFile)
 		}()
 	}
-	n, err = f.file.Write(p)
+	n, err = s.file.Write(p)
 	return
 }
-func (f *FileWriter) Move(oldPath string) {
-	archiveDir := timeFormatText(time.Now(), f.archiveDir)
+func (s *FileWriter) Move(oldPath string) {
+	archiveDir := timeFormatText(time.Now(), s.opt.ArchiveDir)
 	if archiveDir != "" {
-		archiveDir = filepath.Join(f.logsDir, archiveDir)
+		archiveDir = filepath.Join(s.opt.LogsDir, archiveDir)
 		if !gfile.Exists(archiveDir) {
 			e := os.MkdirAll(archiveDir, 0755)
 			if e != nil {
-				fmt.Printf("[FileWriter] WARN: create archive dir fail, dir: %s, error :%v\n", archiveDir, e)
+				Warnf("[FileWriter] create archive dir fail, dir: %s, error :%v\n", archiveDir, e)
 				return
 			}
 		}
 		newFile := filepath.Join(archiveDir, filepath.Base(oldPath))
 		if e := os.Rename(oldPath, newFile); e != nil {
-			fmt.Printf("[FileWriter] WARN: move log file to archive dir fail, file: %s, dst: %s, error :%v\n", oldPath, newFile, e)
+			Warnf("[FileWriter] move log file to archive dir fail, file: %s, dst: %s, error :%v\n", oldPath, newFile, e)
 		}
 	}
 }

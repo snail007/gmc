@@ -22,7 +22,10 @@ func TestNewFileWriter(t *testing.T) {
 		os.RemoveAll(dir)
 	}()
 	assert := assert2.New(t)
-	w := NewFileWriter("logs-%h%i%s.log", dir, "", false)
+	w := NewFileWriter(&FileWriterOption{
+		Filename: "logs-%h%i%s.log",
+		LogsDir:  dir,
+	})
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
 	fs, err := filepath.Glob(dir + "/*.log")
@@ -43,10 +46,32 @@ func TestNewFileWriter1(t *testing.T) {
 	assert.Nil(err)
 	f.Close()
 	defer os.Remove(f.Name())
-	w := NewFileWriter("foo.log", dir, "", false)
+	w := NewFileWriter(&FileWriterOption{
+		Filename: "foo.log",
+		LogsDir:  dir,
+	})
 	assert.Nil(w)
 }
 
+func TestNewFileWriter2(t *testing.T) {
+	dir := "fw1logs"
+	defer os.RemoveAll(dir)
+	assert := assert2.New(t)
+	w := NewFileWriter(&FileWriterOption{
+		Filename:      "logs-%h%i%s.log",
+		LogsDir:       dir,
+		AliasFilename: "app.log",
+	})
+	assert.FileExists(filepath.Join(dir, "app.log"))
+	time.Sleep(time.Second)
+	w.Write([]byte("hello"))
+	time.Sleep(time.Second)
+	w.Write([]byte("hello"))
+	fs, err := filepath.Glob(dir + "/*.log")
+	assert.Nil(err)
+	t.Log(fs)
+	assert.Len(fs, 3)
+}
 func TestNewFileWriter_Gzip(t *testing.T) {
 	dir := "fwgzlogs"
 	os.RemoveAll(dir)
@@ -54,7 +79,11 @@ func TestNewFileWriter_Gzip(t *testing.T) {
 		os.RemoveAll(dir)
 	}()
 	assert := assert2.New(t)
-	w := NewFileWriter("logs-%h%i%s.log", dir, "", true)
+	w := NewFileWriter(&FileWriterOption{
+		Filename: "logs-%h%i%s.log",
+		LogsDir:  dir,
+		IsGzip:   true,
+	})
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
 	fs, err := filepath.Glob(dir + "/*.log")
@@ -78,7 +107,12 @@ func TestWrite(t *testing.T) {
 		os.RemoveAll(dir)
 	}()
 	assert := assert2.New(t)
-	w := NewFileWriter(fileName, dir, archiveDir, true)
+	w := NewFileWriter(&FileWriterOption{
+		Filename:   fileName,
+		LogsDir:    dir,
+		ArchiveDir: archiveDir,
+		IsGzip:     true,
+	})
 	assert.Implements((*io.Writer)(nil), w)
 	_, err := w.Write([]byte("abc"))
 	assert.Nil(err)

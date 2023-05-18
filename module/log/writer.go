@@ -17,10 +17,11 @@ import (
 )
 
 type FileWriter struct {
-	filepath string
-	file     *os.File
-	openLock sync.Mutex
-	opt      *FileWriterOption
+	filepath   string
+	file       *os.File
+	archiveDir string
+	openLock   sync.Mutex
+	opt        *FileWriterOption
 }
 type FileWriterOption struct {
 	Filename      string
@@ -53,7 +54,7 @@ func (s *FileWriter) init() (err error) {
 			return
 		}
 	}
-	s.filepath = s.getRawFilepath()
+	s.setFilepath(s.getRawFilepath())
 	s.file, err = os.OpenFile(s.getAltFilepath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
 	return
 }
@@ -70,12 +71,17 @@ func (s *FileWriter) getRawFilepath() string {
 	return filepath.Join(s.opt.LogsDir, timeFormatText(time.Now(), s.opt.Filename))
 }
 
+func (s *FileWriter) setFilepath(filepath string) {
+	s.filepath = filepath
+	s.archiveDir = s.getArchiveDir()
+}
+
 func (s *FileWriter) Write(p []byte) (n int, err error) {
 	filename0 := s.getRawFilepath()
 	if filename0 != s.filepath {
 		oldFilepath := s.filepath
 		gonce.OnceDo(oldFilepath, func() {
-			s.filepath = filename0
+			s.setFilepath(filename0)
 			if s.file != nil {
 				s.file.Close()
 			}
@@ -119,18 +125,23 @@ func (s *FileWriter) Write(p []byte) (n int, err error) {
 	n, err = s.file.Write(p)
 	return
 }
-func (s *FileWriter) Move(oldPath string) {
+func (s *FileWriter) getArchiveDir() string {
 	archiveDir := timeFormatText(time.Now(), s.opt.ArchiveDir)
-	if archiveDir != "" {
-		archiveDir = filepath.Join(s.opt.LogsDir, archiveDir)
-		if !gfile.Exists(archiveDir) {
-			e := os.MkdirAll(archiveDir, 0755)
+	if archiveDir == "" {
+		return ""
+	}
+	return filepath.Join(s.opt.LogsDir, archiveDir)
+}
+func (s *FileWriter) Move(oldPath string) {
+	if s.archiveDir != "" {
+		if !gfile.Exists(s.archiveDir) {
+			e := os.MkdirAll(s.archiveDir, 0755)
 			if e != nil {
-				Warnf("[FileWriter] create archive dir fail, dir: %s, error :%v\n", archiveDir, e)
+				Warnf("[FileWriter] create archive dir fail, dir: %s, error :%v\n", s.archiveDir, e)
 				return
 			}
 		}
-		newFile := filepath.Join(archiveDir, filepath.Base(oldPath))
+		newFile := filepath.Join(s.archiveDir, filepath.Base(oldPath))
 		if e := os.Rename(oldPath, newFile); e != nil {
 			Warnf("[FileWriter] move log file to archive dir fail, file: %s, dst: %s, error :%v\n", oldPath, newFile, e)
 		}

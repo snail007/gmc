@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+var timeNowFunc = time.Now
+
 type FileWriter struct {
 	filepath   string
 	file       *os.File
@@ -54,13 +56,14 @@ func (s *FileWriter) init() (err error) {
 			return
 		}
 	}
-	s.setFilepath(s.getRawFilepath())
+	s.filepath = s.getRawFilepath()
+	s.archiveDir = s.getArchiveDir()
 	s.file, err = os.OpenFile(s.getAltFilepath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
 	return
 }
 
 func (s *FileWriter) getAltFilepath() string {
-	filename := timeFormatText(time.Now(), s.opt.Filename)
+	filename := timeFormatText(timeNowFunc(), s.opt.Filename)
 	if s.opt.AliasFilename != "" {
 		filename = s.opt.AliasFilename
 	}
@@ -68,20 +71,17 @@ func (s *FileWriter) getAltFilepath() string {
 }
 
 func (s *FileWriter) getRawFilepath() string {
-	return filepath.Join(s.opt.LogsDir, timeFormatText(time.Now(), s.opt.Filename))
-}
-
-func (s *FileWriter) setFilepath(filepath string) {
-	s.filepath = filepath
-	s.archiveDir = s.getArchiveDir()
+	return filepath.Join(s.opt.LogsDir, timeFormatText(timeNowFunc(), s.opt.Filename))
 }
 
 func (s *FileWriter) Write(p []byte) (n int, err error) {
 	filename0 := s.getRawFilepath()
 	if filename0 != s.filepath {
 		oldFilepath := s.filepath
+		oldArchiveDir := s.archiveDir
 		gonce.OnceDo(oldFilepath, func() {
-			s.setFilepath(filename0)
+			s.filepath = s.getRawFilepath()
+			s.archiveDir = s.getArchiveDir()
 			if s.file != nil {
 				s.file.Close()
 			}
@@ -119,29 +119,29 @@ func (s *FileWriter) Write(p []byte) (n int, err error) {
 				os.Remove(oldFilepath)
 				toMoveFile = gzFile
 			}
-			s.Move(toMoveFile)
+			s.Move(toMoveFile, oldArchiveDir)
 		}()
 	}
 	n, err = s.file.Write(p)
 	return
 }
 func (s *FileWriter) getArchiveDir() string {
-	archiveDir := timeFormatText(time.Now(), s.opt.ArchiveDir)
+	archiveDir := timeFormatText(timeNowFunc(), s.opt.ArchiveDir)
 	if archiveDir == "" {
 		return ""
 	}
 	return filepath.Join(s.opt.LogsDir, archiveDir)
 }
-func (s *FileWriter) Move(oldPath string) {
-	if s.archiveDir != "" {
-		if !gfile.Exists(s.archiveDir) {
-			e := os.MkdirAll(s.archiveDir, 0755)
+func (s *FileWriter) Move(oldPath, oldArchiveDir string) {
+	if oldArchiveDir != "" {
+		if !gfile.Exists(oldArchiveDir) {
+			e := os.MkdirAll(oldArchiveDir, 0755)
 			if e != nil {
-				Warnf("[FileWriter] create archive dir fail, dir: %s, error :%v\n", s.archiveDir, e)
+				Warnf("[FileWriter] create archive dir fail, dir: %s, error :%v\n", oldArchiveDir, e)
 				return
 			}
 		}
-		newFile := filepath.Join(s.archiveDir, filepath.Base(oldPath))
+		newFile := filepath.Join(oldArchiveDir, filepath.Base(oldPath))
 		if e := os.Rename(oldPath, newFile); e != nil {
 			Warnf("[FileWriter] move log file to archive dir fail, file: %s, dst: %s, error :%v\n", oldPath, newFile, e)
 		}

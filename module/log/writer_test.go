@@ -128,3 +128,32 @@ func TestWrite(t *testing.T) {
 	t.Log(f)
 	assert.Contains(gfile.ReadAll(f), "abc")
 }
+
+func TestWrite1(t *testing.T) {
+	dir := "fwwlogs"
+	archiveDir := "%Y%m%d"
+	fileName := "a_%Y%m%d-%h%i%s.log"
+	os.RemoveAll(dir)
+	defer func() {
+		os.RemoveAll(dir)
+	}()
+	assert := assert2.New(t)
+	timeNowFunc = func() time.Time {
+		return time.Now().Add(-time.Hour * 24)
+	}
+	w := NewFileWriter(&FileWriterOption{
+		Filename:   fileName,
+		LogsDir:    dir,
+		ArchiveDir: archiveDir,
+		IsGzip:     true,
+	})
+	w.Write([]byte("abc"))
+	timeNowFunc = func() time.Time {
+		return time.Now()
+	}
+	time.Sleep(time.Second)
+	w.Write([]byte("abc"))
+	time.Sleep(time.Second * 3)
+	p := filepath.Join(dir, timeFormatText(time.Now().Add(-time.Hour*24), archiveDir))
+	assert.DirExists(p)
+}

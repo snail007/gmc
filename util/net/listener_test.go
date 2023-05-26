@@ -26,7 +26,7 @@ func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
-	timeout := gatomic.NewBool()
+	timeout := gatomic.NewBool(false)
 	el.SetFirstReadTimeout(time.Millisecond * 100).
 		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
 			timeout.SetTrue()
@@ -41,7 +41,7 @@ func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
-	timeout := gatomic.NewBool()
+	timeout := gatomic.NewBool(false)
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		c = NewBufferedConn(c)
 		return c, nil
@@ -60,8 +60,8 @@ func TestNewEventListener_Hijacked(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
-	called := gatomic.NewBool()
-	isHijacked := gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isHijacked := gatomic.NewBool(false)
 	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		// isHijacked the conn, do anything with c
 		isHijacked.SetTrue()
@@ -83,7 +83,7 @@ func TestNewEventListener_FilterError(t *testing.T) {
 	el, err := NewEventListenerAddr(":0")
 	assert.Nil(t, err)
 	p := NewAddr(el.Addr()).Port()
-	var hasErr = gatomic.NewBool()
+	var hasErr = gatomic.NewBool(false)
 	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return c, nil
 	})
@@ -115,7 +115,7 @@ func TestNewEventListener_ListenerFilterError(t *testing.T) {
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
-	hasErr := gatomic.NewBool()
+	hasErr := gatomic.NewBool(false)
 	el.AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return nil, fmt.Errorf("error")
 	})
@@ -234,7 +234,7 @@ func TestNewEventListener_OnAcceptError(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	el := NewEventListener(l)
-	hasErr := gatomic.NewBool()
+	hasErr := gatomic.NewBool(false)
 	el.OnAcceptError(func(ctx Context, err error) {
 		hasErr.SetTrue()
 	}).Start()
@@ -395,13 +395,13 @@ func TestNewEventListener_OnCodecError(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	hasErr := gatomic.NewBool()
+	hasErr := gatomic.NewBool(false)
 	el := NewEventListener(l)
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitErrorCodec(gatomic.NewBool())
+		return newInitErrorCodec(gatomic.NewBool(false))
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		_, e := Read(c, 5)
@@ -420,7 +420,7 @@ func TestNewEventListener(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	var conn = gatomic.NewValue()
+	var conn = gatomic.NewValue(nil)
 	ctx := NewContext()
 	ctx.SetData("cfg1", "abc")
 	el := NewContextEventListener(ctx, l)
@@ -442,7 +442,7 @@ func TestNewEventListener(t *testing.T) {
 	time.Sleep(time.Second)
 	c, err := net.Dial("tcp", "127.0.0.1:"+p)
 	assert.NoError(t, err)
-	hasData := gatomic.NewBool()
+	hasData := gatomic.NewBool(false)
 	ec := NewEventConn(c)
 	ec.AddCodec(NewAESCodec("abc"))
 	ec.OnData(func(ctx Context, data []byte) {
@@ -458,7 +458,7 @@ func TestNewEventListener(t *testing.T) {
 func TestEventListener_AutoCloseConn(t *testing.T) {
 	l, _ := ListenEvent(":")
 	l.SetAutoCloseConn(true)
-	var hasErr = gatomic.NewBool()
+	var hasErr = gatomic.NewBool(false)
 	l.OnAccept(func(ctx Context, c net.Conn) {
 		WriteTo(c, "hello")
 		time.AfterFunc(time.Millisecond*300, func() {
@@ -656,7 +656,7 @@ func TestProtocolListener_4(t *testing.T) {
 	n, err := io.ReadFull(resp.Body, buf)
 	assert.Nil(t, err)
 	assert.Equal(t, "okay", string(buf[:n]))
-	okay := gatomic.NewBool()
+	okay := gatomic.NewBool(false)
 	go func() {
 		jsonLister.Accept()
 		okay.SetTrue()

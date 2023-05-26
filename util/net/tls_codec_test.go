@@ -344,7 +344,7 @@ func TestTLSCodec_9(t *testing.T) {
 		c0.AddClientCa([]byte("aaa"))
 		return c0
 	})
-	var hasErr = gatomic.NewBool()
+	var hasErr = gatomic.NewBool(false)
 	l0.OnAccept(func(ctx Context, c net.Conn) {
 		_, e := Read(c, 5)
 		if e != nil {

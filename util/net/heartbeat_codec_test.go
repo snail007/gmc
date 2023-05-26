@@ -106,7 +106,7 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return NewHeartbeatCodec()
 	})
-	str := gatomic.NewString()
+	str := gatomic.NewString("")
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		buf := make([]byte, 1024)
 		_, err := c.Read(buf)

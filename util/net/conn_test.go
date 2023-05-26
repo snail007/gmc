@@ -171,17 +171,17 @@ func TestMultipleCodec3(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
+	called := gatomic.NewBool(false)
 	el := NewEventListener(l)
 	conn := &gatomic.Value{}
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitCodec2(called)
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
@@ -212,7 +212,7 @@ func TestEventConn(t *testing.T) {
 	conn.SetTimeout(time.Second)
 	assert.Equal(t, time.Second, conn.ReadTimeout())
 	assert.Equal(t, time.Second, conn.WriteTimeout())
-	closed := gatomic.NewBool()
+	closed := gatomic.NewBool(false)
 	conn.OnData(func(ctx Context, data []byte) {
 		s := ctx.EventConn()
 		assert.Equal(t, "hello", string(data))
@@ -251,9 +251,9 @@ func TestEventConn2(t *testing.T) {
 	conn.SetTimeout(time.Second)
 	assert.Equal(t, time.Second, conn.ReadTimeout())
 	assert.Equal(t, time.Second, conn.WriteTimeout())
-	closed := gatomic.NewBool()
-	readErr := gatomic.NewBool()
-	writeErr := gatomic.NewBool()
+	closed := gatomic.NewBool(false)
+	readErr := gatomic.NewBool(false)
+	writeErr := gatomic.NewBool(false)
 	conn.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		return c, nil
 	})
@@ -298,8 +298,8 @@ func TestEventConn3(t *testing.T) {
 	}()
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewEventConn(c)
-	conn.AddCodec(newInitPassThroughCodec(gatomic.NewBool()))
-	conn.AddCodec(newInitErrorCodec(gatomic.NewBool()))
+	conn.AddCodec(newInitPassThroughCodec(gatomic.NewBool(false)))
+	conn.AddCodec(newInitErrorCodec(gatomic.NewBool(false)))
 	conn.OnReadError(func(ctx Context, err error) {
 		ctx.SetData("test", "abc")
 	})
@@ -312,7 +312,7 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	t.Parallel()
 	l, p, err := RandomListen("")
 	assert.NoError(t, err)
-	var str = gatomic.NewString()
+	var str = gatomic.NewString("")
 	var n int
 	el := NewEventListener(l).AddListenerFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		bc := NewBufferedConn(NewBufferedConn(c))
@@ -342,10 +342,10 @@ func TestNewConnBinder(t *testing.T) {
 	assert.NoError(t, err)
 	l2, p2, err := RandomListen("")
 	assert.NoError(t, err)
-	closed := gatomic.NewBool()
-	srcClosed := gatomic.NewBool()
-	dstClosed := gatomic.NewBool()
-	str := gatomic.NewString()
+	closed := gatomic.NewBool(false)
+	srcClosed := gatomic.NewBool(false)
+	dstClosed := gatomic.NewBool(false)
+	str := gatomic.NewString("")
 	NewEventListener(l2).OnAccept(func(ctx Context, c net.Conn) {
 		s, _ := Read(c, 3)
 		str.SetVal(s)
@@ -377,8 +377,8 @@ func TestConn_FilterBreak(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isBreak := gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isBreak := gatomic.NewBool(false)
 	el := NewEventListener(l)
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		isBreak.SetTrue()
@@ -404,8 +404,8 @@ func TestConn_FilterContinue(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isContinue := gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isContinue := gatomic.NewBool(false)
 	el := NewEventListener(l)
 	el.AddConnFilter(func(ctx Context, c net.Conn) (net.Conn, error) {
 		isContinue.SetTrue()
@@ -503,12 +503,12 @@ func TestConn_CodecBreak(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isBreak := gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isBreak := gatomic.NewBool(false)
 	el := NewEventListener(l)
 	var conn net.Conn
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakCodec(isBreak)
@@ -516,7 +516,7 @@ func TestConn_CodecBreak(t *testing.T) {
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(called)
 	})
-	accepted := gatomic.NewBool()
+	accepted := gatomic.NewBool(false)
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
 		assert.False(t, ctx.IsTLS())
@@ -536,18 +536,18 @@ func TestConn_CodecContinue(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isContinue := gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isContinue := gatomic.NewBool(false)
 	el := NewEventListener(l)
-	var conn = gatomic.NewValue()
+	var conn = gatomic.NewValue("")
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		called.SetTrue()
 		return newContinueCodec(isContinue)
 	})
-	accepted := gatomic.NewBool()
+	accepted := gatomic.NewBool(false)
 	el.OnAccept(func(ctx Context, c net.Conn) {
 		c.(*Conn).doInitialize()
 		assert.False(t, ctx.IsTLS())
@@ -568,13 +568,13 @@ func TestConn_CodecBreakFail(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isBreak := gatomic.NewBool()
-	var hasError = gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isBreak := gatomic.NewBool(false)
+	var hasError = gatomic.NewBool(false)
 	el := NewEventListener(l)
 
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakFailCodec(isBreak, nil)
@@ -601,13 +601,13 @@ func TestConn_CodecBreakFail1(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isBreak := gatomic.NewBool()
-	var hasError = gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isBreak := gatomic.NewBool(false)
+	var hasError = gatomic.NewBool(false)
 	el := NewEventListener(l)
 
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakFailCodec(isBreak, nil)
@@ -635,13 +635,13 @@ func TestConn_CodecBreakFail2(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	isBreak := gatomic.NewBool()
-	var hasError = gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	isBreak := gatomic.NewBool(false)
+	var hasError = gatomic.NewBool(false)
 	el := NewEventListener(l)
 
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newBreakFailCodec(isBreak, func(ctx Context) {
@@ -670,11 +670,11 @@ func TestConn_CodecError(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	called := gatomic.NewBool()
-	hasErr := gatomic.NewBool()
+	called := gatomic.NewBool(false)
+	hasErr := gatomic.NewBool(false)
 	el := NewEventListener(l)
 	el.AddCodecFactory(func(ctx Context) Codec {
-		return newInitPassThroughCodec(gatomic.NewBool())
+		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitErrorCodec(hasErr)
@@ -694,7 +694,7 @@ func TestConn_CodecError1(t *testing.T) {
 	t.Parallel()
 	c, _ := net.Dial("tcp", ":")
 	c0 := NewConn(c)
-	c0.AddCodec(newInitErrorCodec(gatomic.NewBool()))
+	c0.AddCodec(newInitErrorCodec(gatomic.NewBool(false)))
 	_, err := c0.Write([]byte(""))
 	assert.Error(t, err)
 }

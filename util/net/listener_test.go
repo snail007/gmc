@@ -420,7 +420,7 @@ func TestNewEventListener(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	var conn = gatomic.NewValue(nil)
+	var conn = gatomic.NewAny(nil)
 	ctx := NewContext()
 	ctx.SetData("cfg1", "abc")
 	el := NewContextEventListener(ctx, l)

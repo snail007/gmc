@@ -539,7 +539,7 @@ func TestConn_CodecContinue(t *testing.T) {
 	called := gatomic.NewBool(false)
 	isContinue := gatomic.NewBool(false)
 	el := NewEventListener(l)
-	var conn = gatomic.NewValue("")
+	var conn = gatomic.NewAny("")
 	el.AddCodecFactory(func(ctx Context) Codec {
 		return newInitPassThroughCodec(gatomic.NewBool(false))
 	})

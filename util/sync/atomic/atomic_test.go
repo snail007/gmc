@@ -10,6 +10,7 @@ import (
 	"io"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestNewValue(t *testing.T) {
@@ -179,4 +180,29 @@ func TestAny_SetVal(t *testing.T) {
 		assert2.IsType(t, io.ReadCloser(nil), oldVal)
 		return oldVal
 	})
+}
+
+func TestNewInt(t *testing.T) {
+	cnt := NewInt(0)
+	for i := 0; i < 100; i++ {
+		go func() {
+			cnt.Increase(1)
+		}()
+	}
+	time.Sleep(time.Second)
+	assert2.Equal(t, int32(100), cnt.Val())
+	for i := 0; i < 10; i++ {
+		go func() {
+			cnt.Decrease(1)
+		}()
+	}
+	time.Sleep(time.Second)
+	assert2.Equal(t, int32(90), cnt.Val())
+	cnt.SetVal(10)
+	assert2.Equal(t, int32(10), cnt.Val())
+	cnt.GetAndSet(func(oldVal int32) (newVal int32) {
+		assert2.Equal(t, int32(10), oldVal)
+		return 100
+	})
+	assert2.Equal(t, int32(100), cnt.Val())
 }

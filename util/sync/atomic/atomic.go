@@ -54,7 +54,7 @@ func (s *Any) Val() (x interface{}) {
 
 func (s *Any) GetAndSet(f func(oldVal interface{}) (newVal interface{})) {
 	s.set(func() {
-		f(s.val)
+		s.SetVal(f(s.val))
 	})
 }
 
@@ -182,5 +182,38 @@ func (s *Bytes) SetBytes(data []byte) {
 func (s *Bytes) Append(bytes []byte) {
 	s.set(func() {
 		s.bytes = append(s.bytes, bytes...)
+	})
+}
+
+type Int struct {
+	baseValue
+	val *int32
+}
+
+func NewInt(defaultValue int32) *Int {
+	a := new(int32)
+	*a = defaultValue
+	return &Int{val: a}
+}
+
+func (s *Int) Increase(cnt int32) int32 {
+	return atomic.AddInt32(s.val, cnt)
+}
+
+func (s *Int) Decrease(cnt int32) int32 {
+	return atomic.AddInt32(s.val, -cnt)
+}
+
+func (s *Int) SetVal(cnt int32) {
+	atomic.StoreInt32(s.val, cnt)
+}
+
+func (s *Int) Val() int32 {
+	return atomic.LoadInt32(s.val)
+}
+
+func (s *Int) GetAndSet(f func(oldVal int32) (newVal int32)) {
+	s.set(func() {
+		s.SetVal(f(s.Val()))
 	})
 }

@@ -52,6 +52,7 @@ func initFromBinData(cfg gcore.Config) (err error) {
 	}
 	for lang, v := range bindata {
 		c := gcore.ProviderConfig()()
+		c.SetConfigType("toml")
 		err = c.ReadConfig(bytes.NewReader(v))
 		if err != nil {
 			return

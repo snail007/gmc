@@ -7,7 +7,10 @@ package gi18n
 
 import (
 	"bytes"
+	"encoding/base64"
+	"github.com/magiconair/properties/assert"
 	gcore "github.com/snail007/gmc/core"
+	gconfig "github.com/snail007/gmc/module/config"
 	assert2 "github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
@@ -78,4 +81,32 @@ func TestMatch(t *testing.T) {
 	v, err := I18N.MatchAcceptLanguageT(r)
 	assert.Nil(err)
 	assert.Equal("zh-CN", v.String())
+}
+
+func TestSetBinData(t *testing.T) {
+	data := map[string]string{
+		"en": "SGVsbG8gd29ybGQ=", // "Hello world" 的 base64 编码
+	}
+
+	SetBinData(data)
+
+	assert.Equal(t, "Hello world", string(bindata["en"]))
+}
+
+func TestInitFromBinData(t *testing.T) {
+	assert := assert2.New(t)
+	cfg := gconfig.New()
+	cfg.Set("i18n.default", "en")
+	cfg.Set("i18n.enable", true)
+	b := base64.StdEncoding.EncodeToString([]byte(`key="Hello world"`))
+	data := map[string]string{
+		"en": b,
+	}
+
+	SetBinData(data)
+
+	err := initFromBinData(cfg)
+	assert.NoError(err)
+
+	assert.Equal("Hello world", I18N.Tr("en", "key"))
 }

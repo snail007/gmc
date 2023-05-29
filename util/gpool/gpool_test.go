@@ -160,7 +160,7 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 
 	// trigger lazy start
 	assert.True(p.Submit(func() {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 2)
 	}))
 
 	p.ResetTo(2)
@@ -172,7 +172,7 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 		time.Sleep(time.Second)
 	}))
 	assert.True(p.Submit(func() {
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second)
 	}))
 	assert.False(p.Submit(func() {
 		time.Sleep(time.Second)

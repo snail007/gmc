@@ -172,7 +172,7 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 		time.Sleep(time.Second)
 	}))
 	assert.True(p.Submit(func() {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 2)
 	}))
 	assert.False(p.Submit(func() {
 		time.Sleep(time.Second)

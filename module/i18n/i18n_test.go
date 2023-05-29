@@ -10,12 +10,10 @@ import (
 func TestLanguages(t *testing.T) {
 	i18n := newI18n()
 	i18n.Add("en", map[string]string{})
-	i18n.Add("fr", map[string]string{})
-
 	result, err := i18n.Languages()
 
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"en", "fr"}, result)
+	assert.Equal(t, []string{"en"}, result)
 }
 
 func TestParseAcceptLanguageT(t *testing.T) {

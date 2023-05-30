@@ -7,6 +7,7 @@ package gcore
 
 import (
 	"database/sql"
+	"time"
 )
 
 // DBCache gmc abstract db cache layer, to cache db query.
@@ -71,7 +72,7 @@ type ResultSet interface {
 	Len() int
 	LastInsertID() int64
 	RowsAffected() int64
-	TimeUsed() int
+	TimeUsed() time.Duration
 	MapRows(keyColumn string) (rowsMap map[string]map[string]string)
 	MapStructs(keyColumn string, strucT interface{}, tagName ...string) (structsMap map[string]interface{}, err error)
 	Rows() (rows []map[string]string)

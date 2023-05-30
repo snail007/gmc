@@ -21,7 +21,7 @@ type ResultSet struct {
 	lastInsertID int64
 	rowsAffected int64
 	// TimeUsed milliseconds used by execute the SQL statement associated to the result set
-	timeUsed int
+	timeUsed time.Duration
 	// SQL statement associated to the result set
 	sql string
 }
@@ -52,7 +52,7 @@ func (rs *ResultSet) RowsAffected() int64 {
 	return rs.rowsAffected
 }
 
-func (rs *ResultSet) TimeUsed() int {
+func (rs *ResultSet) TimeUsed() time.Duration {
 	return rs.timeUsed
 }
 
@@ -157,7 +157,7 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}, 
 	}
 	rv := reflect.New(reflect.TypeOf(Struct)).Elem()
 	if reflect.TypeOf(Struct).Kind() != reflect.Struct {
-		return nil, gcore.ProviderError()().New("v must be struct")
+		return nil, errors.New("v must be struct")
 	}
 	structType := rv.Type()
 	var value interface{}

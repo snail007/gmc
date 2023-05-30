@@ -144,7 +144,7 @@ func (db *MySQLDB) ExecTx(ar0 gcore.ActiveRecord, tx *sql.Tx) (rs gcore.ResultSe
 	return db.ExecSQLTx(tx, ar.SQL(), ar.values...)
 }
 func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
-	start := time.Now().UnixNano()
+	start := time.Now()
 	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
@@ -163,7 +163,7 @@ func (db *MySQLDB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (
 	rsRaw := new(ResultSet)
 	rsRaw.rowsAffected, err = result.RowsAffected()
 	rsRaw.lastInsertID, err = result.LastInsertId()
-	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.timeUsed = time.Now().Sub(start)
 	rsRaw.sql = sqlStr
 	rs = rsRaw
 	return
@@ -172,7 +172,7 @@ func (db *MySQLDB) Exec(ar gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 	return db.ExecSQL(ar.SQL(), ar.(*MySQLActiveRecord).values...)
 }
 func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.ResultSet, err error) {
-	start := time.Now().UnixNano()
+	start := time.Now()
 	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
@@ -191,7 +191,7 @@ func (db *MySQLDB) ExecSQL(sqlStr string, values ...interface{}) (rs gcore.Resul
 	rsRaw := new(ResultSet)
 	rsRaw.rowsAffected, err = result.RowsAffected()
 	rsRaw.lastInsertID, err = result.LastInsertId()
-	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.timeUsed = time.Now().Sub(start)
 	rsRaw.sql = sqlStr
 	if err != nil {
 		return
@@ -203,7 +203,7 @@ func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.Resu
 	if db.Config.TablePrefix != "" && db.Config.TablePrefixSQLIdentifier != "" {
 		sqlStr = strings.Replace(sqlStr, db.Config.TablePrefixSQLIdentifier, db.Config.TablePrefix, -1)
 	}
-	start := time.Now().UnixNano()
+	start := time.Now()
 	var results []map[string][]byte
 	var stmt *sql.Stmt
 	stmt, err = db.ConnPool.Prepare(sqlStr)
@@ -251,14 +251,14 @@ func (db *MySQLDB) QuerySQL(sqlStr string, values ...interface{}) (rs gcore.Resu
 		results = append(results, row)
 	}
 	rsRaw := NewResultSet(&results)
-	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.timeUsed = time.Now().Sub(start)
 	rsRaw.sql = sqlStr
 	rs = rsRaw
 	return
 }
 func (db *MySQLDB) Query(ar0 gcore.ActiveRecord) (rs gcore.ResultSet, err error) {
 	ar := ar0.(*MySQLActiveRecord)
-	start := time.Now().UnixNano()
+	start := time.Now()
 	var results []map[string][]byte
 	if ar.cacheKey != "" {
 		var data []byte
@@ -332,7 +332,7 @@ func (db *MySQLDB) Query(ar0 gcore.ActiveRecord) (rs gcore.ResultSet, err error)
 		}
 	}
 	rsRaw := NewResultSet(&results)
-	rsRaw.timeUsed = int((start - time.Now().UnixNano()) / 1e6)
+	rsRaw.timeUsed = time.Now().Sub(start)
 	rsRaw.sql = ar.SQL()
 	rs = rsRaw
 	return
@@ -412,7 +412,7 @@ func (ar *MySQLActiveRecord) Cache(key string, seconds uint) gcore.ActiveRecord 
 	ar.cacheSeconds = seconds
 	return ar
 }
-func (ar *MySQLActiveRecord) getValues() []interface{} {
+func (ar *MySQLActiveRecord) GetValues() []interface{} {
 	return ar.values
 }
 func (ar *MySQLActiveRecord) Reset() {
@@ -505,7 +505,6 @@ func (ar *MySQLActiveRecord) OrderBy(column, typ string) gcore.ActiveRecord {
 func (ar *MySQLActiveRecord) Limit(limit ...int) gcore.ActiveRecord {
 	if len(limit) == 1 {
 		ar.arLimit = fmt.Sprintf("%d", limit[0])
-
 	} else if len(limit) == 2 {
 		ar.arLimit = fmt.Sprintf("%d,%d", limit[0], limit[1])
 	} else {

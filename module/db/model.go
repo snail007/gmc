@@ -7,6 +7,7 @@ package gdb
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/util/loop"
 	"sync"
 
 	"github.com/snail007/gmc/core"
@@ -50,7 +51,7 @@ func Table(table string, db ...interface{}) *Model {
 func (s *Model) QuerySQL(sql string, values ...interface{}) (ret []map[string]string, error error) {
 	db := s.db
 	ar := db.AR().Raw(sql, values...)
-	rs, err := db.Query(ar)
+	rs, err := db.QuerySQL(ar.SQL())
 	if err != nil {
 		return nil, err
 	}
@@ -110,15 +111,15 @@ func (s *Model) GetByWithFields(fields string, where map[string]interface{}) (re
 	return
 }
 
-func (s *Model) MGetByIDs(ids []string, orderBy ...interface{}) (ret []map[string]string, error error) {
+func (s *Model) MGetByIDs(ids []string, orderBy ...string) (ret []map[string]string, error error) {
 	return s.MGetByIDsWithFields("*", ids, orderBy...)
 }
 
-func (s *Model) MGetByIDsRs(ids []string, orderBy ...interface{}) (rs gcore.ResultSet, error error) {
+func (s *Model) MGetByIDsRs(ids []string, orderBy ...string) (rs gcore.ResultSet, error error) {
 	return s.MGetByIDsWithFieldsRs("*", ids, orderBy...)
 }
 
-func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...interface{}) (ret []map[string]string, err error) {
+func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...string) (ret []map[string]string, err error) {
 	rs, err := s.MGetByIDsWithFieldsRs(fields, ids, orderBy...)
 	if err != nil {
 		return nil, err
@@ -127,7 +128,7 @@ func (s *Model) MGetByIDsWithFields(fields string, ids []string, orderBy ...inte
 	return
 }
 
-func (s *Model) MGetByIDsWithFieldsRs(fields string, ids []string, orderBy ...interface{}) (rs gcore.ResultSet, err error) {
+func (s *Model) MGetByIDsWithFieldsRs(fields string, ids []string, orderBy ...string) (rs gcore.ResultSet, err error) {
 	db := s.db
 	ar := db.AR().Select(fields).From(s.table).Where(map[string]interface{}{
 		s.primaryKey: ids,
@@ -137,31 +138,31 @@ func (s *Model) MGetByIDsWithFieldsRs(fields string, ids []string, orderBy ...in
 	return
 }
 
-func (s *Model) GetAll(orderBy ...interface{}) (ret []map[string]string, error error) {
+func (s *Model) GetAll(orderBy ...string) (ret []map[string]string, error error) {
 	return s.GetAllWithFields("*", orderBy...)
 }
 
-func (s *Model) GetAllRs(orderBy ...interface{}) (rs gcore.ResultSet, error error) {
+func (s *Model) GetAllRs(orderBy ...string) (rs gcore.ResultSet, error error) {
 	return s.GetAllWithFieldsRs("*", orderBy...)
 }
 
-func (s *Model) GetAllWithFields(fields string, orderBy ...interface{}) (ret []map[string]string, error error) {
+func (s *Model) GetAllWithFields(fields string, orderBy ...string) (ret []map[string]string, error error) {
 	return s.MGetByWithFields(fields, nil, orderBy...)
 }
 
-func (s *Model) GetAllWithFieldsRs(fields string, orderBy ...interface{}) (rs gcore.ResultSet, error error) {
+func (s *Model) GetAllWithFieldsRs(fields string, orderBy ...string) (rs gcore.ResultSet, error error) {
 	return s.MGetByWithFieldsRs(fields, nil, orderBy...)
 }
 
-func (s *Model) MGetBy(where map[string]interface{}, orderBy ...interface{}) (ret []map[string]string, error error) {
+func (s *Model) MGetBy(where map[string]interface{}, orderBy ...string) (ret []map[string]string, error error) {
 	return s.MGetByWithFields("*", where, orderBy...)
 }
 
-func (s *Model) MGetByRs(where map[string]interface{}, orderBy ...interface{}) (rs gcore.ResultSet, error error) {
+func (s *Model) MGetByRs(where map[string]interface{}, orderBy ...string) (rs gcore.ResultSet, error error) {
 	return s.MGetByWithFieldsRs("*", where, orderBy...)
 }
 
-func (s *Model) MGetByWithFields(fields string, where map[string]interface{}, orderBy ...interface{}) (ret []map[string]string, err error) {
+func (s *Model) MGetByWithFields(fields string, where map[string]interface{}, orderBy ...string) (ret []map[string]string, err error) {
 	rs, err := s.MGetByWithFieldsRs(fields, where, orderBy...)
 	if err != nil {
 		return nil, err
@@ -170,7 +171,7 @@ func (s *Model) MGetByWithFields(fields string, where map[string]interface{}, or
 	return
 }
 
-func (s *Model) MGetByWithFieldsRs(fields string, where map[string]interface{}, orderBy ...interface{}) (rs gcore.ResultSet, err error) {
+func (s *Model) MGetByWithFieldsRs(fields string, where map[string]interface{}, orderBy ...string) (rs gcore.ResultSet, err error) {
 	db := s.db
 	ar := db.AR().Select(fields).From(s.table).Where(where)
 	s.OrderBy(ar, orderBy...)
@@ -243,11 +244,11 @@ func (s *Model) UpdateBy(where, data map[string]interface{}) (cnt int64, err err
 	return
 }
 
-func (s *Model) Page(where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, total int, err error) {
+func (s *Model) Page(where map[string]interface{}, offset, length int, orderBy ...string) (ret []map[string]string, total int, err error) {
 	return s.PageWithFields("*", where, offset, length, orderBy...)
 }
 
-func (s *Model) PageWithFields(fields string, where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, total int, err error) {
+func (s *Model) PageWithFields(fields string, where map[string]interface{}, offset, length int, orderBy ...string) (ret []map[string]string, total int, err error) {
 	db := s.db
 	ar := db.AR().Select("count(*) as total").From(s.table)
 	if len(where) > 0 {
@@ -272,11 +273,11 @@ func (s *Model) PageWithFields(fields string, where map[string]interface{}, offs
 	return
 }
 
-func (s *Model) List(where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, err error) {
+func (s *Model) List(where map[string]interface{}, offset, length int, orderBy ...string) (ret []map[string]string, err error) {
 	return s.ListWithFields("*", where, offset, length, orderBy...)
 }
 
-func (s *Model) ListWithFields(fields string, where map[string]interface{}, offset, length int, orderBy ...interface{}) (ret []map[string]string, err error) {
+func (s *Model) ListWithFields(fields string, where map[string]interface{}, offset, length int, orderBy ...string) (ret []map[string]string, err error) {
 	db := s.db
 	ar := db.AR().Select(fields).From(s.table).Where(where).Limit(offset, length)
 	if len(where) > 0 {
@@ -291,18 +292,12 @@ func (s *Model) ListWithFields(fields string, where map[string]interface{}, offs
 	return
 }
 
-func (s *Model) OrderBy(ar gcore.ActiveRecord, orderBy ...interface{}) (ret [][]string) {
-	if len(orderBy) > 0 {
-		switch val := orderBy[0].(type) {
-		case map[string]interface{}:
-			for k, v := range val {
-				ar.OrderBy(k, v.(string))
-			}
-		case map[string]string:
-			for k, v := range val {
-				ar.OrderBy(k, v)
-			}
-		}
+func (s *Model) OrderBy(ar gcore.ActiveRecord, orderBy ...string) (ret [][]string) {
+	if len(orderBy) == 0 || len(orderBy)%2 != 0 {
+		return nil
 	}
+	loop.ForBy(len(orderBy), 2, func(idx int) {
+		ar.OrderBy(orderBy[idx], orderBy[idx+1])
+	})
 	return
 }

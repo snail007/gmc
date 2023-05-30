@@ -45,6 +45,7 @@ func TestMain(m *testing.M) {
 	gcore.RegisterConfig(gcore.DefaultProviderKey, func() gcore.Config {
 		return gconfig.New()
 	})
-
-	os.Exit(m.Run())
+	code := m.Run()
+	os.Remove("test_ar.db")
+	os.Exit(code)
 }

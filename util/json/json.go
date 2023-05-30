@@ -49,8 +49,8 @@ func NewResult(d ...interface{}) *JSONResult {
 	if len(d) >= 2 {
 		message = gcast.ToString(d[1])
 	}
-	if len(d) >= 1 {
-		data = gcast.ToInt(d[2])
+	if len(d) >= 3 {
+		data = d[2]
 	}
 	return &JSONResult{
 		data: map[string]interface{}{
@@ -93,6 +93,10 @@ func (s *JSONResult) Message() string {
 
 func (s *JSONResult) Data() interface{} {
 	return s.data["data"]
+}
+
+func (s *JSONResult) DataMap() interface{} {
+	return s.data
 }
 
 func (s *JSONResult) WriteTo(dst io.Writer) (err error) {

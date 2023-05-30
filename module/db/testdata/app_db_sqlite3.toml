@@ -1,0 +1,15 @@
+[database]
+default = "sqlite3"
+[[database.sqlite3]]
+enable = true
+id = "default"
+database = "test.db"
+password = ""
+prefix = ""
+prefix_sql_holder = "__PREFIX__"
+# sync mode: 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+syncmode = 0
+# open mode: ro,rw,rwc,memory
+openmode = "rwc"
+# cache mode: shared,private
+cachemode = "shared"

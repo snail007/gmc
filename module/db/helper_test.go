@@ -46,13 +46,9 @@ func TestRegistMysql_1(t *testing.T) {
 
 func TestRegistMysql_2(t *testing.T) {
 	assert := assert.New(t)
-	cfg := gcore.ProviderConfig()()
-	cfg.SetConfigFile("../app/app.toml")
-	err := cfg.ReadInConfig()
+	err := InitFromFile("../app/app.toml")
 	assert.Nil(err)
-	err = Init(cfg)
-	assert.Nil(err)
-	db := DBMySQL()
+	db := DB().(*MySQLDB)
 	db.Config.TablePrefix = "gmc_"
 	db.Config.TablePrefixSQLIdentifier = "__PREFIX__"
 	assert.NotNil(db)
@@ -85,17 +81,17 @@ func TestRegistSQLite3(t *testing.T) {
 	assert.Nil(err)
 	_, err = db.Query(db.AR().Raw("select * from __PREFIX__test"))
 	assert.Nil(err)
+	_, err = db.QuerySQL(db.AR().Raw("select * from __PREFIX__test").SQL())
+	assert.Nil(err)
 	db.ConnPool.Close()
 	os.Remove("test.db")
 }
 func TestRegistSQLite3_1(t *testing.T) {
 	os.Remove("test.db")
 	assert := assert.New(t)
-	cfg := NewSQLite3DBConfig()
-	cfg.OpenMode = OpenModeReadWriteCreate
-	cfg.Database = "test.db"
-	db, err := NewSQLite3DB(cfg)
+	err := InitFromFile("testdata/app_db_sqlite3.toml")
 	assert.Nil(err)
+	db := DB().(*SQLite3DB)
 	_, err = db.ExecSQL("create table test(id int)")
 	assert.Nil(err)
 	db.ConnPool.Close()

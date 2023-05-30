@@ -17,42 +17,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ar() *MySQLActiveRecord {
-	ar := new(MySQLActiveRecord)
+func arSqlite3() *SQLite3ActiveRecord {
+	ar := new(SQLite3ActiveRecord)
 	ar.Reset()
 	return ar
 }
-func TestFrom(t *testing.T) {
+func TestFrom1(t *testing.T) {
 	want := "SELECT * \nFROM `test`"
-	got := strings.TrimSpace(ar().From("test").SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").SQL())
 	if want != got {
 		t.Errorf("TestFrom , except:%s , got:%s", want, got)
 	}
 }
-func TestFromAs(t *testing.T) {
+func TestFromAs1(t *testing.T) {
 	want := "SELECT * \nFROM `test` AS `asname`"
-	got := strings.TrimSpace(ar().FromAs("test", "asname").SQL())
+	got := strings.TrimSpace(arSqlite3().FromAs("test", "asname").SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
 
-func TestSelect(t *testing.T) {
+func TestSelect1(t *testing.T) {
 	want := "SELECT `a`,`b` \nFROM `test`"
-	got := strings.TrimSpace(ar().From("test").Select("a,b").SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").Select("a,b").SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestJoin(t *testing.T) {
+func TestJoin1(t *testing.T) {
 	want := "SELECT `u`.`a`,`test`.`b` \nFROM `test` LEFT JOIN `user` AS `u` ON `u`.`a`=`test`.`a`"
-	got := strings.TrimSpace(ar().From("test").Select("u.a,test.b").Join("user", "u", "u.a=test.a", "LEFT").SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").Select("u.a,test.b").Join("user", "u", "u.a=test.a", "LEFT").SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestWhere(t *testing.T) {
-	_ar := ar()
+func TestWhere2(t *testing.T) {
+	_ar := arSqlite3()
 	want := "SELECT * \nFROM `test` \nWHERE `addr` = ? AND `name` = ?"
 	got := strings.TrimSpace(_ar.From("test").Where(map[string]interface{}{
 		"2:name": "kitty",
@@ -63,8 +63,8 @@ func TestWhere(t *testing.T) {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestWhere1(t *testing.T) {
-	_ar := ar()
+func TestWhere11(t *testing.T) {
+	_ar := arSqlite3()
 	want := "SELECT * \nFROM `test` \nWHERE `name` >= `age`"
 	got := strings.TrimSpace(_ar.From("test").Where(map[string]interface{}{
 		":`name` >= `age`": "",
@@ -76,42 +76,42 @@ func TestWhere1(t *testing.T) {
 	}
 }
 
-func TestGroupBy(t *testing.T) {
+func TestGroupBy1(t *testing.T) {
 	want := "SELECT * \nFROM `test`  \nGROUP BY `name`,`uid`"
-	got := strings.TrimSpace(ar().From("test").GroupBy("name,uid").SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").GroupBy("name,uid").SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestHaving(t *testing.T) {
+func TestHaving1(t *testing.T) {
 	want := "SELECT * \nFROM `test`  \nGROUP BY `name`,`uid` \nHAVING count(uid)>3"
-	got := strings.TrimSpace(ar().From("test").GroupBy("name,uid").Having("count(uid)>3").SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").GroupBy("name,uid").Having("count(uid)>3").SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
 
-func TestOrderBy(t *testing.T) {
+func TestOrderBy1(t *testing.T) {
 	want := "SELECT * \nFROM `test`    \nORDER BY `id` DESC,`name` ASC"
-	got := strings.TrimSpace(ar().From("test").OrderBy("id", "desc").OrderBy("name", "asc").SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").OrderBy("id", "desc").OrderBy("name", "asc").SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestLimit(t *testing.T) {
+func TestLimit1(t *testing.T) {
 	want := "SELECT * \nFROM `test`     \nLIMIT 0,3"
-	got := strings.TrimSpace(ar().From("test").Limit(0, 3).SQL())
+	got := strings.TrimSpace(arSqlite3().From("test").Limit(0, 3).SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
 
-func TestInsert(t *testing.T) {
-	_ar := ar()
+func TestInsert1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "INSERT INTO  `test` (`name`,`gid`,`addr`,`is_delete`) \nVALUES (?,?,?,?)"
 	got := strings.TrimSpace(_ar.Insert("test", map[string]interface{}{
 		"1:name":      "admin",
-		"2:gid":       33,
+		"2:gid":       true,
 		"3:addr":      nil,
 		"4:is_delete": false,
 	}).Limit(3).SQL())
@@ -119,14 +119,14 @@ func TestInsert(t *testing.T) {
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
-	assert.Equal(t, []interface{}{"admin", 33, nil, false}, _ar.GetValues())
+	assert.Equal(t, []interface{}{"admin", true, nil, false}, _ar.GetValues())
 }
-func TestReplace(t *testing.T) {
-	_ar := ar()
+func TestReplace1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "REPLACE INTO  `test` (`name`,`gid`,`addr`,`is_delete`) \nVALUES (?,?,?,?)"
 	got := strings.TrimSpace(_ar.Replace("test", map[string]interface{}{
 		"1:name":      "admin",
-		"2:gid":       33,
+		"2:gid":       true,
 		"3:addr":      nil,
 		"4:is_delete": false,
 	}).Limit(0, 3).SQL())
@@ -136,8 +136,8 @@ func TestReplace(t *testing.T) {
 	}
 }
 
-func TestInsertBatch(t *testing.T) {
-	_ar := ar()
+func TestInsertBatch1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "INSERT INTO  `test` (`name`) \nVALUES (?),(?)"
 	got := strings.TrimSpace(_ar.InsertBatch("test", []map[string]interface{}{
 		{
@@ -152,8 +152,8 @@ func TestInsertBatch(t *testing.T) {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestReplaceBatch(t *testing.T) {
-	_ar := ar()
+func TestReplaceBatch1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "REPLACE INTO  `test` (`name`) \nVALUES (?),(?)"
 	got := strings.TrimSpace(_ar.ReplaceBatch("test", []map[string]interface{}{
 		{
@@ -168,15 +168,15 @@ func TestReplaceBatch(t *testing.T) {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestDelete(t *testing.T) {
+func TestDelete1(t *testing.T) {
 	want := "DELETE FROM  `test`"
-	got := strings.TrimSpace(ar().Delete("test", nil).SQL())
+	got := strings.TrimSpace(arSqlite3().Delete("test", nil).SQL())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func TestUpdate(t *testing.T) {
-	_ar := ar()
+func TestUpdate1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "UPDATE  `test` \nSET `addr` = NULL"
 	got := strings.TrimSpace(_ar.Update("test", map[string]interface{}{
 		"addr": nil,
@@ -187,13 +187,13 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-func TestUpdateBatch(t *testing.T) {
-	_ar := ar()
+func TestUpdateBatch1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "UPDATE  `test` \nSET `name` = CASE \nWHEN `gid` = ? THEN ? \nWHEN `gid` = ? THEN ? \nELSE `name` END \nWHERE `gid` IN (?,?)"
 	got := strings.TrimSpace(_ar.UpdateBatch("test", []map[string]interface{}{
 		{
 			"name": "admin11",
-			"gid":  22,
+			"gid":  true,
 		},
 		{
 			"name": "admin",
@@ -205,14 +205,14 @@ func TestUpdateBatch(t *testing.T) {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
-func Test(t *testing.T) {
+func Test1(t *testing.T) {
 	group := NewMySQLDBGroup("default")
 	group.Regist("default", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
 	group.Regist("blog", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
 	group.Regist("www", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
 	db := group.DB("www")
 	if db != nil {
-		rs, err := db.Query(db.AR().Cache("", 0).From("test"))
+		rs, err := db.Query(db.AR().From("test"))
 		if err != nil {
 			t.Errorf("ERR:%s", err)
 		} else {
@@ -223,12 +223,12 @@ func Test(t *testing.T) {
 	}
 }
 
-func TestCount(t *testing.T) {
-	db := db()
+func TestCount1(t *testing.T) {
+	db := db1()
 	db.ExecSQL("drop table count_test")
 	db.ExecSQL("create table count_test(id int)")
 	for i := 1; i <= 3; i++ {
-		db.Exec(db.AR().Insert("count_test", gmap.M{
+		db.Exec(db.AR().Cache("", 0).Insert("count_test", gmap.M{
 			"id": i,
 		}))
 	}
@@ -237,13 +237,15 @@ func TestCount(t *testing.T) {
 	assert.Equal(t, 3, int(count))
 	db.ExecSQL("delete table count_test")
 }
-func db() gcore.Database {
-	group := NewMySQLDBGroup("default")
-	group.Regist("default", NewMySQLDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-	return group.DB()
+func db1() gcore.Database {
+	group := NewSQLite3DBGroup("default")
+	cfg := NewSQLite3DBConfigWith("test_ar.db", OpenModeReadWriteCreate, CacheModeShared, SyncModeOff)
+	group.Regist("default", cfg)
+	db := group.DB()
+	return db
 }
 
-type User struct {
+type User1 struct {
 	Name       string    `column:"name"`
 	ID         int       `column:"id"`
 	Weight     uint      `column:"weight"`
@@ -253,7 +255,7 @@ type User struct {
 	Foo        string    `column:"foo"`
 }
 
-var rawRows = []map[string][]byte{
+var rawRows1 = []map[string][]byte{
 	{
 		"name":        []byte("jack"),
 		"id":          []byte("229"),
@@ -274,55 +276,55 @@ var rawRows = []map[string][]byte{
 	},
 }
 var (
-	timeTest, _ = gcast.StringToDateInDefaultLocation("2017-10-10 09:00:09", time.Local)
+	timeTest1, _ = gcast.StringToDateInDefaultLocation("2017-10-10 09:00:09", time.Local)
 )
 
-func TestStruct(t *testing.T) {
+func TestStruct1(t *testing.T) {
 	assert := assert.New(t)
-	rs := NewResultSet(&rawRows)
-	s, err := rs.Struct(User{})
+	rs := NewResultSet(&rawRows1)
+	s, err := rs.Struct(User1{})
 	assert.Nil(err)
-	assert.Equal("jack", s.(User).Name)
-	assert.Equal(int(229), s.(User).ID)
-	assert.Equal(uint(60), s.(User).Weight)
-	assert.Equal(float32(160.3), s.(User).Height)
-	assert.True(s.(User).Sex)
-	assert.Equal(timeTest.Unix(), s.(User).CreateTime.Unix())
+	assert.Equal("jack", s.(User1).Name)
+	assert.Equal(int(229), s.(User1).ID)
+	assert.Equal(uint(60), s.(User1).Weight)
+	assert.Equal(float32(160.3), s.(User1).Height)
+	assert.True(s.(User1).Sex)
+	assert.Equal(timeTest1.Unix(), s.(User1).CreateTime.Unix())
 }
-func TestStructs(t *testing.T) {
+func TestStructs1(t *testing.T) {
 	assert := assert.New(t)
-	rs := NewResultSet(&rawRows)
-	sts, err := rs.Structs(User{})
-	assert.Nil(err)
-	for _, s := range sts {
-		assert.Equal("jack", s.(User).Name)
-		assert.Equal(int(229), s.(User).ID)
-		assert.Equal(uint(60), s.(User).Weight)
-		assert.Equal(float32(160.3), s.(User).Height)
-		assert.True(s.(User).Sex)
-		assert.Equal(timeTest.Unix(), s.(User).CreateTime.Unix())
-	}
-}
-func TestMapStructs(t *testing.T) {
-	assert := assert.New(t)
-	rs := NewResultSet(&rawRows)
-	sts, err := rs.MapStructs("pid", User{})
+	rs := NewResultSet(&rawRows1)
+	sts, err := rs.Structs(User1{})
 	assert.Nil(err)
 	for _, s := range sts {
-		assert.Equal("jack", s.(User).Name)
-		assert.Equal(int(229), s.(User).ID)
-		assert.Equal(uint(60), s.(User).Weight)
-		assert.Equal(float32(160.3), s.(User).Height)
-		assert.True(s.(User).Sex)
-		assert.Equal(timeTest.Unix(), s.(User).CreateTime.Unix())
+		assert.Equal("jack", s.(User1).Name)
+		assert.Equal(int(229), s.(User1).ID)
+		assert.Equal(uint(60), s.(User1).Weight)
+		assert.Equal(float32(160.3), s.(User1).Height)
+		assert.True(s.(User1).Sex)
+		assert.Equal(timeTest1.Unix(), s.(User1).CreateTime.Unix())
 	}
 }
-func TestUpdateBatch0(t *testing.T) {
+func TestMapStructs1(t *testing.T) {
+	assert := assert.New(t)
+	rs := NewResultSet(&rawRows1)
+	sts, err := rs.MapStructs("pid", User1{})
+	assert.Nil(err)
+	for _, s := range sts {
+		assert.Equal("jack", s.(User1).Name)
+		assert.Equal(int(229), s.(User1).ID)
+		assert.Equal(uint(60), s.(User1).Weight)
+		assert.Equal(float32(160.3), s.(User1).Height)
+		assert.True(s.(User1).Sex)
+		assert.Equal(timeTest1.Unix(), s.(User1).CreateTime.Unix())
+	}
+}
+func TestUpdateBatch01(t *testing.T) {
 	// assert := assert.New(t)
-	ar := ar().UpdateBatch("test", []map[string]interface{}{
+	ar := arSqlite3().UpdateBatch("test", []map[string]interface{}{
 		{
 			"id":      "id1",
-			"gid":     22,
+			"gid":     true,
 			"name":    "test1",
 			"score +": 1,
 		}, {
@@ -336,8 +338,8 @@ func TestUpdateBatch0(t *testing.T) {
 	// assert.Fail("")
 }
 
-func TestMySQLActiveRecord_WhereRaw(t *testing.T) {
-	_ar := ar()
+func TestMySQLActiveRecord_WhereRaw1(t *testing.T) {
+	_ar := arSqlite3()
 	want := "SELECT * \nFROM `test` \nWHERE `name` >= `age`"
 	got := strings.TrimSpace(_ar.From("test").WhereRaw("`name` >= `age`").SQL())
 	assert.Len(t, _ar.values, 0)

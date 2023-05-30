@@ -6,7 +6,11 @@ import (
 )
 
 func For(count int, f func(idx int)) {
-	for idx := 0; idx < count; idx++ {
+	ForBy(count, 1, f)
+}
+
+func ForBy(count, step int, f func(idx int)) {
+	for idx := 0; idx < count; idx += step {
 		f(idx)
 	}
 }

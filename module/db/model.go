@@ -7,7 +7,7 @@ package gdb
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/util/loop"
+	gloop "github.com/snail007/gmc/util/loop"
 	"sync"
 
 	"github.com/snail007/gmc/core"
@@ -296,8 +296,8 @@ func (s *Model) OrderBy(ar gcore.ActiveRecord, orderBy ...string) (ret [][]strin
 	if len(orderBy) == 0 || len(orderBy)%2 != 0 {
 		return nil
 	}
-	loop.ForBy(len(orderBy), 2, func(idx int) {
-		ar.OrderBy(orderBy[idx], orderBy[idx+1])
+	gloop.ForBy(len(orderBy), 2, func(idx, value int) {
+		ar.OrderBy(orderBy[value], orderBy[value+1])
 	})
 	return
 }

@@ -1,10 +1,8 @@
-package loop
+package gloop
 
 import (
-	gatomic "github.com/snail007/gmc/util/sync/atomic"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 func TestFor(t *testing.T) {
@@ -16,40 +14,39 @@ func TestFor(t *testing.T) {
 	assert.Equal(t, 45, i)
 }
 
-func TestNewBatchExecutor(t *testing.T) {
+func TestFor1(t *testing.T) {
 	t.Parallel()
-	i := gatomic.NewInt(0)
-	be := NewBatchExecutor()
-	be.SetWorkers(10)
-	start := time.Now()
-	For(10, func(idx int) {
-		be.AppendTask(func() {
-			i.Increase(idx)
-			time.Sleep(time.Second)
-		})
+	i := 0
+	j := 0
+	k := 0
+	ForBy(9, -1, func(idx, value int) {
+		i += idx
+		j += value
+		k += value - idx
 	})
-	be.Exec()
-	diff := time.Now().Sub(start)
-	assert.Equal(t, 45, i.Val())
-	assert.True(t, diff >= time.Second)
-	assert.True(t, diff < time.Millisecond*1500)
+	assert.Equal(t, 45, i)
+	assert.Equal(t, 45, j)
+	assert.Equal(t, 0, k)
 }
 
-func TestNewBatchExecutor2(t *testing.T) {
+func TestDoWhile(t *testing.T) {
 	t.Parallel()
-	i := gatomic.NewInt(0)
-	be := NewBatchExecutor()
-	be.SetWorkers(5)
-	start := time.Now()
-	For(10, func(idx int) {
-		be.AppendTask(func() {
-			i.Increase(idx)
-			time.Sleep(time.Second)
-		})
+	i := 0
+	Do(func(idx int) {
+		i += idx
+	}).While(func(idx int) bool {
+		return idx < 10
 	})
-	be.Exec()
-	diff := time.Now().Sub(start)
-	assert.Equal(t, 45, i.Val())
-	assert.True(t, diff >= time.Second*2)
-	assert.True(t, diff < time.Millisecond*2500)
+	assert.Equal(t, 45, i)
+}
+
+func TestDoUntil(t *testing.T) {
+	t.Parallel()
+	i := 0
+	Do(func(idx int) {
+		i += idx
+	}).Until(func(idx int) bool {
+		return idx > 9
+	})
+	assert.Equal(t, 45, i)
 }

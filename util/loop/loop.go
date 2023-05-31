@@ -1,51 +1,53 @@
-package loop
+package gloop
 
-import (
-	"github.com/snail007/gmc/util/gpool"
-	"sync"
-)
+type StepHandler func(loopIndex, loopValue int)
+type Handler func(loopIndex int)
+type Condition func(loopIndex int) bool
 
-func For(count int, f func(idx int)) {
-	ForBy(count, 1, f)
+func For(count int, f Handler) {
+	ForBy(count, 1, func(_, loopValue int) {
+		f(loopValue)
+	})
 }
 
-func ForBy(count, step int, f func(idx int)) {
-	for idx := 0; idx < count; idx += step {
-		f(idx)
+func ForBy(max, step int, f StepHandler) {
+	if step > 0 {
+		idx := 0
+		for value := 0; value < max; value += step {
+			f(idx, value)
+			idx++
+		}
+	} else {
+		idx := 0
+		for value := max; value >= 0; value += step {
+			f(idx, value)
+			idx++
+		}
 	}
 }
 
-type BatchExecutor struct {
-	workers int
-	tasks   []func()
+type doWhileUntil struct {
+	do Handler
 }
 
-func NewBatchExecutor() *BatchExecutor {
-	return &BatchExecutor{}
+func Do(f Handler) *doWhileUntil {
+	return &doWhileUntil{do: f}
 }
 
-func (s *BatchExecutor) SetWorkers(workersCnt int) {
-	s.workers = workersCnt
-}
-func (s *BatchExecutor) AppendTask(tasks ...func()) {
-	s.tasks = append(s.tasks, tasks...)
-}
-
-func (s *BatchExecutor) Exec() {
-	workers := len(s.tasks)
-	if s.workers > 0 {
-		workers = s.workers
+func (s *doWhileUntil) While(f Condition) {
+	s.do(0)
+	idx := 1
+	for f(idx) {
+		s.do(idx)
+		idx++
 	}
-	p := gpool.New(workers)
-	defer p.Stop()
-	g := sync.WaitGroup{}
-	g.Add(len(s.tasks))
-	for _, t := range s.tasks {
-		task := t
-		p.Submit(func() {
-			defer g.Done()
-			task()
-		})
+}
+
+func (s *doWhileUntil) Until(f Condition) {
+	s.do(0)
+	idx := 1
+	for !f(idx) {
+		s.do(idx)
+		idx++
 	}
-	g.Wait()
 }

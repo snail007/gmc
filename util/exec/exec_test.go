@@ -32,7 +32,7 @@ func TestExec2(t *testing.T) {
 	assert := assert.New(t)
 	buf := &bytes.Buffer{}
 	log := glog.New()
-	log.SetOutput(buf)
+	log.SetOutput(glog.NewLoggerWriter(buf))
 	output, errStr := NewCommand("sleep 2").Log(log).Timeout(time.Second).Async(true).Exec()
 	time.Sleep(time.Second * 4)
 	assert.Empty(errStr)
@@ -45,7 +45,7 @@ func TestExec4(t *testing.T) {
 	assert := assert.New(t)
 	buf := &bytes.Buffer{}
 	log := glog.New()
-	log.SetOutput(buf)
+	log.SetOutput(glog.NewLoggerWriter(buf))
 	output, errStr := NewCommand("ps -ef|grep").Log(log).Async(true).Timeout(time.Second).Exec()
 	time.Sleep(time.Second * 2)
 	assert.Empty(errStr)
@@ -93,7 +93,7 @@ func TestExec8(t *testing.T) {
 	assert := assert.New(t)
 	buf := &bytes.Buffer{}
 	log := glog.New()
-	log.SetOutput(buf)
+	log.SetOutput(glog.NewLoggerWriter(buf))
 	output, errStr := NewCommand("ps aux").Log(log).Async(true).AsyncCallback(func(cmd *Command, output string, err error) {
 		panic("test crash")
 	}).Exec()

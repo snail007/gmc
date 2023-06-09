@@ -101,7 +101,7 @@ func WithRate(duration time.Duration) gcore.Logger {
 	return logger.WithRate(duration)
 }
 
-func AddWriter(writer io.Writer) gcore.Logger {
+func AddWriter(writer gcore.LoggerWriter) gcore.Logger {
 	logger.AddWriter(writer)
 	return logger
 }
@@ -125,11 +125,11 @@ func Namespace() string {
 	return logger.Namespace()
 }
 
-func Writer() io.Writer {
+func Writer() gcore.LoggerWriter {
 	return logger.Writer()
 }
 
-func SetOutput(w io.Writer) {
+func SetOutput(w gcore.LoggerWriter) {
 	logger.SetOutput(w)
 }
 
@@ -153,8 +153,8 @@ func SetFlag(f gcore.LogFlag) {
 	logger.SetFlag(f)
 }
 
-func Write(s string) {
-	logger.Write(s)
+func Write(s string, level gcore.LogLevel) {
+	logger.Write(s, level)
 }
 
 func Level() gcore.LogLevel {
@@ -200,8 +200,27 @@ type Logger struct {
 	skipCheckGMC   bool
 	levelWriters   []*levelWriter
 	datetimeLayout string
-	writer         io.Writer
+	writer         gcore.LoggerWriter
 	prefix         string
+}
+
+func New(prefix ...string) gcore.Logger {
+	pre := ""
+	if len(prefix) == 1 {
+		pre = prefix[0]
+	}
+	return &Logger{
+		level:          gcore.LogLeveDebug,
+		asyncOnce:      &sync.Once{},
+		callerSkip:     2,
+		exitCode:       1,
+		exitFunc:       os.Exit,
+		flag:           gcore.LogFlagShort,
+		skipCheckGMC:   os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
+		datetimeLayout: defaultTimeLayout,
+		prefix:         pre,
+		writer:         NewConsoleWriter(),
+	}
 }
 
 func (s *Logger) clone() *Logger {
@@ -248,7 +267,7 @@ func (s *Logger) SetRateCallback(cb func(msg string)) gcore.Logger {
 // AddLevelWriter add a writer logging "after and the level", info is after trace,
 // all ordered levels: trace->debug->info->warn->error->panic->fatal->none
 func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger {
-	s.levelWriters = append(s.levelWriters, newLogWriter(&levelWriterOption{
+	s.levelWriters = append(s.levelWriters, newLevelWriter(&levelWriterOption{
 		writer: w,
 		level:  level,
 	}))
@@ -257,14 +276,14 @@ func (s *Logger) AddLevelWriter(w io.Writer, level gcore.LogLevel) gcore.Logger 
 
 // AddLevelsWriter add a writer only logging these levels
 func (s *Logger) AddLevelsWriter(w io.Writer, levels ...gcore.LogLevel) gcore.Logger {
-	s.levelWriters = append(s.levelWriters, newLogWriter(&levelWriterOption{
+	s.levelWriters = append(s.levelWriters, newLevelWriter(&levelWriterOption{
 		writer: w,
 		levels: levels,
 	}))
 	return s
 }
 
-func (s *Logger) AddWriter(w io.Writer) gcore.Logger {
+func (s *Logger) AddWriter(w gcore.LoggerWriter) gcore.Logger {
 	s.writer = newMultiWriter(s.writer, w)
 	return s
 }
@@ -289,25 +308,6 @@ func (s *Logger) SetCallerSkip(callerSkip int) {
 	s.callerSkip = callerSkip
 }
 
-func New(prefix ...string) gcore.Logger {
-	pre := ""
-	if len(prefix) == 1 {
-		pre = prefix[0]
-	}
-	return &Logger{
-		level:          gcore.LogLeveDebug,
-		asyncOnce:      &sync.Once{},
-		callerSkip:     2,
-		exitCode:       1,
-		exitFunc:       os.Exit,
-		flag:           gcore.LogFlagShort,
-		skipCheckGMC:   os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
-		datetimeLayout: defaultTimeLayout,
-		prefix:         pre,
-		writer:         os.Stdout,
-	}
-}
-
 func (s *Logger) WaitAsyncDone() {
 	if s.async {
 		s.asyncWG.Wait()
@@ -324,7 +324,7 @@ func (s *Logger) asyncWriterInit() {
 	go func() {
 		for {
 			item := <-s.bufChn
-			s.output(item.msg, item.writer)
+			s.output(item.msg, item.writer, item.level)
 			func() {
 				defer func() {
 					_ = recover()
@@ -390,7 +390,7 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 			g.Add(1)
 			pool.Submit(func() {
 				defer g.Done()
-				s.write(str, w0)
+				s.write(str, w0, level)
 			})
 		}
 	}
@@ -418,7 +418,7 @@ func (s *Logger) Panicf(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLevePanic {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLevePanic)
 	}
 	s.WaitAsyncDone()
 	panic(str)
@@ -437,7 +437,7 @@ func (s *Logger) Panic(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLevePanic {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLevePanic)
 	}
 	s.WaitAsyncDone()
 	panic(str)
@@ -455,7 +455,7 @@ func (s *Logger) Fatalf(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveFatal {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveFatal)
 	}
 	s.WaitAsyncDone()
 	s.exit()
@@ -474,7 +474,7 @@ func (s *Logger) Fatal(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveFatal {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveFatal)
 	}
 	s.WaitAsyncDone()
 	s.exit()
@@ -493,7 +493,7 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveError {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveError)
 	}
 }
 
@@ -511,7 +511,7 @@ func (s *Logger) Error(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveError {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveError)
 	}
 }
 
@@ -527,7 +527,7 @@ func (s *Logger) Warnf(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveWarn {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveWarn)
 	}
 }
 
@@ -544,7 +544,7 @@ func (s *Logger) Warn(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveWarn {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveWarn)
 	}
 }
 
@@ -560,7 +560,7 @@ func (s *Logger) Infof(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveInfo {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveInfo)
 	}
 }
 
@@ -578,7 +578,7 @@ func (s *Logger) Info(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveInfo {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveInfo)
 	}
 }
 
@@ -594,7 +594,7 @@ func (s *Logger) Debugf(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveDebug {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveDebug)
 	}
 }
 
@@ -611,7 +611,7 @@ func (s *Logger) Debug(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLeveDebug {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLeveDebug)
 	}
 }
 
@@ -627,7 +627,7 @@ func (s *Logger) Tracef(format string, v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLevelTrace {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLevelTrace)
 	}
 }
 
@@ -644,15 +644,15 @@ func (s *Logger) Trace(v ...interface{}) {
 	}
 
 	if s.level <= gcore.LogLevelTrace {
-		s.write(str, nil)
+		s.write(str, nil, gcore.LogLevelTrace)
 	}
 }
 
-func (s *Logger) Writer() io.Writer {
+func (s *Logger) Writer() gcore.LoggerWriter {
 	return s.writer
 }
 
-func (s *Logger) SetOutput(w io.Writer) {
+func (s *Logger) SetOutput(w gcore.LoggerWriter) {
 	s.writer = w
 }
 
@@ -660,31 +660,32 @@ func (s *Logger) SetFlag(f gcore.LogFlag) {
 	s.flag = f
 }
 
-func (s *Logger) write(str string, writer *levelWriter) {
+func (s *Logger) write(str string, writer *levelWriter, level gcore.LogLevel) {
 	if s.async {
 		select {
 		case s.bufChn <- bufChnItem{
 			msg:    str,
 			writer: writer,
+			level:  level,
 		}:
 			s.asyncWG.Add(1)
 		default:
-			s.output("WARN gmclog buf chan overflow", writer)
+			s.output("WARN gmclog buf chan overflow", writer, level)
 		}
 		return
 	}
-	s.output(str, writer)
+	s.output(str, writer, level)
 }
 
-func (s *Logger) Write(msg string) {
-	s.write(s.caller(msg, s.skip()), nil)
+func (s *Logger) Write(msg string, level gcore.LogLevel) {
+	s.write(s.caller(msg, s.skip()), nil, level)
 }
 
-func (s *Logger) WriteRaw(msg string) {
-	s.write(msg, nil)
+func (s *Logger) WriteRaw(msg string, level gcore.LogLevel) {
+	s.write(msg, nil, level)
 }
 
-func (s *Logger) output(str string, writer *levelWriter) {
+func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
 	if s.lim != nil && !s.lim.Allow() {
 		return
 	}
@@ -699,10 +700,9 @@ func (s *Logger) output(str string, writer *levelWriter) {
 	if writer != nil {
 		writer.lock.Lock()
 		defer writer.lock.Unlock()
-
 		writer.Write(line)
 	} else {
-		s.writer.Write(line)
+		s.writer.Write(line, level)
 	}
 }
 
@@ -748,7 +748,7 @@ type levelWriterOption struct {
 	levels []gcore.LogLevel //only these levels mode
 }
 
-func newLogWriter(opt *levelWriterOption) *levelWriter {
+func newLevelWriter(opt *levelWriterOption) *levelWriter {
 	return &levelWriter{
 		Writer: opt.writer,
 		opt:    opt,
@@ -769,22 +769,23 @@ func (s *levelWriter) canWrite(level gcore.LogLevel) bool {
 }
 
 type multiWriter struct {
-	writers []io.Writer
+	writers []gcore.LoggerWriter
+	writer  io.Writer
 }
 
 var ErrShortWrite = errors.New("short write")
 
-func (t *multiWriter) Write(p []byte) (n int, err error) {
-	if len(t.writers) == 0 {
+func (s *multiWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
+	if len(s.writers) == 0 {
 		return
 	}
 	g := sync.WaitGroup{}
-	g.Add(len(t.writers))
-	for _, w := range t.writers {
+	g.Add(len(s.writers))
+	for _, w := range s.writers {
 		w0 := w
 		pool.Submit(func() {
 			defer g.Done()
-			n, e := w0.Write(p)
+			n, e := w0.Write(p, level)
 			if e != nil {
 				err = e
 				return
@@ -801,8 +802,12 @@ func (t *multiWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func newMultiWriter(writers ...io.Writer) io.Writer {
-	allWriters := make([]io.Writer, 0, len(writers))
+func (s *multiWriter) Writer() io.Writer {
+	return s.writer
+}
+
+func newMultiWriter(writers ...gcore.LoggerWriter) gcore.LoggerWriter {
+	allWriters := make([]gcore.LoggerWriter, 0, len(writers))
 	for _, w := range writers {
 		if mw, ok := w.(*multiWriter); ok {
 			allWriters = append(allWriters, mw.writers...)
@@ -810,5 +815,9 @@ func newMultiWriter(writers ...io.Writer) io.Writer {
 			allWriters = append(allWriters, w)
 		}
 	}
-	return &multiWriter{allWriters}
+	var ws []io.Writer
+	for _, v := range allWriters {
+		ws = append(ws, v.Writer())
+	}
+	return &multiWriter{writers: allWriters, writer: io.MultiWriter(ws...)}
 }

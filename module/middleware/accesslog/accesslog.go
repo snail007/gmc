@@ -24,13 +24,13 @@ func newFromConfig(c gcore.Config) *accesslog {
 	cfg := c.Sub("accesslog")
 	logger := glog.New().(*glog.Logger)
 	logger.SetFlag(gcore.LogFlagShort)
-	logger.SetOutput(glog.NewFileWriter(&glog.FileWriterOption{
+	logger.SetOutput(glog.NewLoggerWriter(glog.NewFileWriter(&glog.FileWriterOption{
 		Filename:      cfg.GetString("filename"),
 		LogsDir:       cfg.GetString("dir"),
 		ArchiveDir:    cfg.GetString("archive_dir"),
 		IsGzip:        cfg.GetBool("gzip"),
 		AliasFilename: cfg.GetString("filename_alias"),
-	}))
+	})))
 	logger.EnableAsync()
 	return &accesslog{
 		format: cfg.GetString("format"),
@@ -64,5 +64,5 @@ func log(ctx gcore.Ctx, logger *accesslog) {
 		str = strings.Replace(str, key, v[1], 1)
 		str = strings.Replace(str, v[0], v[1], 1)
 	}
-	logger.logger.WriteRaw(str + "\n")
+	logger.logger.WriteRaw(str+"\n", gcore.LogLeveInfo)
 }

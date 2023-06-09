@@ -7,6 +7,8 @@ package glog
 
 import (
 	"compress/gzip"
+	gcore "github.com/snail007/gmc/core"
+	gcast "github.com/snail007/gmc/util/cast"
 	gfile "github.com/snail007/gmc/util/file"
 	gonce "github.com/snail007/gmc/util/sync/once"
 	"io"
@@ -146,4 +148,55 @@ func (s *FileWriter) Move(oldPath, oldArchiveDir string) {
 			Warnf("[FileWriter] move log file to archive dir fail, file: %s, dst: %s, error :%v\n", oldPath, newFile, e)
 		}
 	}
+}
+
+type ConsoleWriter struct {
+	w            io.Writer
+	redirected   bool
+	disableColor bool
+}
+
+func (s *ConsoleWriter) isRedirected() bool {
+	if fileInfo, err := os.Stdout.Stat(); err == nil {
+		mode := fileInfo.Mode()
+		if mode&os.ModeCharDevice == 0 {
+			return true
+		}
+	}
+	if fileInfo, err := os.Stderr.Stat(); err == nil {
+		mode := fileInfo.Mode()
+		if mode&os.ModeCharDevice == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *ConsoleWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
+	if s.isRedirected() || s.disableColor {
+		return s.w.Write(p)
+	}
+	switch level {
+	case gcore.LogLeveInfo:
+		return s.w.Write([]byte(Green.Color(string(p))))
+	case gcore.LogLeveWarn:
+		return s.w.Write([]byte(Yellow.Color(string(p))))
+	case gcore.LogLeveError, gcore.LogLevePanic, gcore.LogLeveFatal:
+		return s.w.Write([]byte(Red.Color(string(p))))
+	default:
+		return s.w.Write(p)
+	}
+}
+
+func (s *ConsoleWriter) Writer() io.Writer {
+	return s.w
+}
+
+func NewConsoleWriter() *ConsoleWriter {
+	w := &ConsoleWriter{
+		w:            os.Stdout,
+		disableColor: gcast.ToBool(os.Getenv("DISABLE_CONSOLE_COLOR")),
+	}
+	w.redirected = w.isRedirected()
+	return w
 }

@@ -57,11 +57,11 @@ type Logger interface {
 	With(name string) Logger
 	Namespace() string
 
-	Writer() io.Writer
-	AddWriter(io.Writer) Logger
+	Writer() LoggerWriter
+	AddWriter(LoggerWriter) Logger
 	AddLevelWriter(io.Writer, LogLevel) Logger
 	AddLevelsWriter(io.Writer, ...LogLevel) Logger
-	SetOutput(w io.Writer)
+	SetOutput(LoggerWriter)
 	SetFlag(f LogFlag)
 
 	Async() bool
@@ -70,8 +70,8 @@ type Logger interface {
 
 	CallerSkip() int
 	SetCallerSkip(callerSkip int)
-	Write(string)
-	WriteRaw(string)
+	Write(string, LogLevel)
+	WriteRaw(string, LogLevel)
 
 	ExitCode() int
 	SetExitCode(exitCode int)
@@ -81,4 +81,9 @@ type Logger interface {
 	WithRate(duration time.Duration) Logger
 	SetRateCallback(cb func(msg string)) Logger
 	SetTimeLayout(layout string)
+}
+
+type LoggerWriter interface {
+	Write(p []byte, level LogLevel) (n int, err error)
+	Writer() io.Writer
 }

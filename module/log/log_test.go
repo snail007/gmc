@@ -30,7 +30,7 @@ func TestLogger_SetOutput(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Info("a")
 	assert.True(strings.HasSuffix(out.String(), "INFO a\n"))
 }
@@ -39,15 +39,15 @@ func TestLogger_Writer(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
-	assert.Equal(&out, l.Writer())
+	l.SetOutput(glog.NewLoggerWriter(&out))
+	assert.Equal(&out, l.Writer().Writer())
 }
 
 func TestLogger_SetLevel(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.SetLevel(gcore.LogLeveWarn)
 	l.Info("a")
 	assert.Empty(out.String())
@@ -57,7 +57,7 @@ func TestLogger_With_1(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := glog.New()
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l0 := l.With("api")
 	l0.Info("a", "b")
 	t.Log(out.String())
@@ -70,7 +70,7 @@ func TestLogger_With_2(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l0 := l.With("api").With("user").With("list")
 	l0.Info("a")
 	t.Log(out.String())
@@ -82,7 +82,7 @@ func TestLogger_Infof(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Infof("a%d", 10)
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "INFO a10\n"))
@@ -93,7 +93,7 @@ func TestLogger_Trace(t *testing.T) {
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
 	l.SetLevel(gcore.LogLevelTrace)
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Trace("a")
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "TRACE a\n"))
@@ -104,7 +104,7 @@ func TestLogger_Tracef(t *testing.T) {
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
 	l.SetLevel(gcore.LogLevelTrace)
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Tracef("a%d", 10)
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "TRACE a10\n"))
@@ -114,7 +114,7 @@ func TestLogger_Debug(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Debug("a")
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "DEBUG a\n"))
@@ -124,7 +124,7 @@ func TestLogger_Debugf(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Debugf("a%d", 10)
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "DEBUG a10\n"))
@@ -134,7 +134,7 @@ func TestLogger_Warn(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Warn("a")
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "WARN a\n"))
@@ -144,7 +144,7 @@ func TestLogger_Warnf(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Warnf("a%d", 10)
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "WARN a10\n"))
@@ -154,7 +154,7 @@ func TestLogger_Error(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Error("a")
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "ERROR a\n"))
@@ -164,22 +164,30 @@ func TestLogger_Errorf(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
+	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Errorf("a%d", 10)
 	t.Log(out.String(), len(out.String()))
 	assert.True(strings.HasSuffix(out.String(), "ERROR a10\n"))
 }
 
 func TestLogger_Panic(t *testing.T) {
+	os.Setenv("DISABLE_CONSOLE_COLOR", "true")
+	defer os.Unsetenv("DISABLE_CONSOLE_COLOR")
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
+	var err interface{}
+	defer func() {
+		assert.Contains(err, "PANIC a")
+	}()
 	defer gcore.ProviderError()().Recover(func(e interface{}) {
-		assert.Contains(e, "PANIC a")
+		err = e
 	})
 	l.Panic("a")
 }
 
 func TestLogger_Panicf(t *testing.T) {
+	os.Setenv("DISABLE_CONSOLE_COLOR", "true")
+	defer os.Unsetenv("DISABLE_CONSOLE_COLOR")
 	assert := assert2.New(t)
 	l := gcore.ProviderLogger()(nil, "")
 	defer gcore.ProviderError()().Recover(func(e interface{}) {
@@ -200,7 +208,7 @@ func TestLogger_Fatal(t *testing.T) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		assert.True(strings.HasSuffix(out.String(), "FATAL a\n"))
+		assert.True(strings.Contains(out.String(), "FATAL a\n"))
 		return
 	} else {
 		assert.Fail("expecting unsuccessful exit")
@@ -219,7 +227,7 @@ func TestLogger_Fatalf(t *testing.T) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		assert.True(strings.HasSuffix(out.String(), "FATAL a10\n"))
+		assert.True(strings.Contains(out.String(), "FATAL a10\n"))
 		return
 	} else {
 		assert.Fail("expecting unsuccessful exit")
@@ -231,12 +239,12 @@ func TestLogger_WithRate(t *testing.T) {
 	cnt := new(int32)
 	l := glog.New()
 	l0 := l.WithRate(time.Second)
-	l0.SetOutput(ioutil.Discard)
+	l0.SetOutput(glog.NewLoggerWriter(ioutil.Discard))
 	l0.SetRateCallback(func(msg string) {
 		atomic.AddInt32(cnt, 1)
 	})
 	for i := 0; i < 35; i++ {
-		l0.Write("hello")
+		l0.Write("hello", gcore.LogLeveInfo)
 		time.Sleep(time.Millisecond * 100)
 	}
 	assert2.True(t, atomic.LoadInt32(cnt) >= 3)
@@ -247,8 +255,8 @@ func TestLogger_Write1(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
-	l.Write("abc")
+	l.SetOutput(glog.NewLoggerWriter(&out))
+	l.Write("abc", gcore.LogLeveInfo)
 	assert.Equal(strings.Contains(out.String(), "log/log_test.go:"),
 		strings.HasSuffix(out.String(), "abc\n"))
 }
@@ -258,8 +266,8 @@ func TestLogger_Write2(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(&out)
-	l.WriteRaw("abc")
+	l.SetOutput(glog.NewLoggerWriter(&out))
+	l.WriteRaw("abc", gcore.LogLeveInfo)
 	assert.Equal(!strings.Contains(out.String(), "log/log_test.go:"),
 		strings.HasSuffix(out.String(), "abc\n"))
 }
@@ -339,9 +347,9 @@ func TestLogger_Write7(t *testing.T) {
 	var out1 = bytes.NewBuffer(nil)
 	var out2 = bytes.NewBuffer(nil)
 	l := glog.New()
-	l.SetOutput(ioutil.Discard)
-	l.AddWriter(out1)
-	l.AddWriter(out2)
+	l.SetOutput(glog.NewLoggerWriter(ioutil.Discard))
+	l.AddWriter(glog.NewLoggerWriter(out1))
+	l.AddWriter(glog.NewLoggerWriter(out2))
 	l.SetLevel(gcore.LogLevelTrace)
 	l.Tracef("foo1")
 	l.Debugf("foo2")

@@ -32,7 +32,7 @@ var (
 	defaultBinData = map[string][]byte{}
 )
 
-//SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
+// SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
 func SetBinBase64(data map[string]string) {
 	for k, v := range data {
 		b, err := base64.StdEncoding.DecodeString(v)
@@ -43,7 +43,7 @@ func SetBinBase64(data map[string]string) {
 	}
 }
 
-//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
+// SetBinBytes key is file path no slash prefix, value is file's bytes contents.
 func SetBinBytes(data map[string][]byte) {
 	for k, v := range data {
 		defaultBinData[k] = v
@@ -78,7 +78,7 @@ type HTTPServer struct {
 	binData              map[string][]byte
 }
 
-//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
+// SetBinBytes key is file path no slash prefix, value is file's bytes contents.
 func (s *HTTPServer) SetBinBytes(binData map[string][]byte) {
 	for k, v := range binData {
 		s.binData[k] = v
@@ -117,7 +117,7 @@ func (this *HTTPServer) SetListenerFactory(listenerFactory func(addr string) (ne
 	this.listenerFactory = listenerFactory
 }
 
-//Init implements service.Service Init
+// Init implements service.Service Init
 func (s *HTTPServer) Init(cfg gcore.Config) (err error) {
 	connCnt := int64(0)
 	s.config = cfg
@@ -297,12 +297,12 @@ func (s *HTTPServer) Listener() net.Listener {
 	return s.listener
 }
 
-//Listeners implements service.Service Listeners
+// Listeners implements service.Service Listeners
 func (s *HTTPServer) Listeners() []net.Listener {
 	return []net.Listener{s.listener}
 }
 
-//InjectListeners implements service.Service InjectListeners
+// InjectListeners implements service.Service InjectListeners
 func (s *HTTPServer) InjectListeners(l []net.Listener) {
 	s.listener = l[0]
 }
@@ -316,7 +316,7 @@ func (s *HTTPServer) SetLogger(l gcore.Logger) {
 		if ns != "" {
 			ns = "[" + ns + "]"
 		}
-		l := log.New(s.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
+		l := log.New(s.logger.Writer().Writer(), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
 }
@@ -354,7 +354,7 @@ func (s *HTTPServer) AddMiddleware3(m gcore.Middleware) {
 	s.middleware3 = append(s.middleware3, m)
 }
 
-//just for testing
+// just for testing
 func (s *HTTPServer) bind(addr string) {
 	s.addr = addr
 }
@@ -434,7 +434,7 @@ func (s *HTTPServer) ListenTLS() (err error) {
 	return
 }
 
-//ConnState count the active conntions
+// ConnState count the active conntions
 func (s *HTTPServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
@@ -535,11 +535,11 @@ func (s *HTTPServer) PrintRouteTable(w io.Writer) {
 	s.router.PrintRouteTable(w)
 }
 
-//Start implements service.Service Start
+// Start implements service.Service Start
 func (s *HTTPServer) Start() (err error) {
 	defer func() {
 		if err == nil && s.config.GetBool("httpserver.printroute") {
-			s.PrintRouteTable(s.logger.Writer())
+			s.PrintRouteTable(s.logger.Writer().Writer())
 		}
 	}()
 	// delay template Parse
@@ -553,13 +553,13 @@ func (s *HTTPServer) Start() (err error) {
 	return s.Listen()
 }
 
-//Stop implements service.Service Stop
+// Stop implements service.Service Stop
 func (s *HTTPServer) Stop() {
 	s.Close()
 	return
 }
 
-//GracefulStop implements service.Service GracefulStop
+// GracefulStop implements service.Service GracefulStop
 func (s *HTTPServer) GracefulStop() {
 	if s.isShutdown {
 		return
@@ -571,7 +571,7 @@ func (s *HTTPServer) GracefulStop() {
 	return
 }
 
-//SetLog implements service.Service SetLog
+// SetLog implements service.Service SetLog
 func (s *HTTPServer) SetLog(l gcore.Logger) {
 	s.logger = l
 	return

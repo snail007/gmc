@@ -78,7 +78,7 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 		if ns != "" {
 			ns = "[" + ns + "]"
 		}
-		l := log.New(api.logger.Writer(), ns, log.Lmicroseconds|log.LstdFlags)
+		l := log.New(api.logger.Writer().Writer(), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
 	api.server.ConnState = api.connState
@@ -299,7 +299,7 @@ func (s *APIServer) ActiveConnCount() int64 {
 	return atomic.LoadInt64(s.connCnt)
 }
 
-//ConnState count the active conntions
+// ConnState count the active conntions
 func (s *APIServer) connState(c net.Conn, st http.ConnState) {
 	switch st {
 	case http.StateNew:
@@ -362,24 +362,24 @@ func (s *APIServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware)
 	return
 }
 
-//Init implements gcore.Service Init
+// Init implements gcore.Service Init
 func (s *APIServer) Init(cfg gcore.Config) (err error) {
 
 	return
 }
 
-//Start implements gcore.Service Start
+// Start implements gcore.Service Start
 func (this *APIServer) Start() (err error) {
 	this.Run()
 	return
 }
 
-//Stop implements gcore.Service Stop
+// Stop implements gcore.Service Stop
 func (this *APIServer) Stop() {
 	this.server.Close()
 }
 
-//GracefulStop implements gcore.Service GracefulStop
+// GracefulStop implements gcore.Service GracefulStop
 func (this *APIServer) GracefulStop() {
 	if this.isShutdown {
 		return
@@ -391,17 +391,17 @@ func (this *APIServer) GracefulStop() {
 	return
 }
 
-//SetLog implements gcore.Service SetLog
+// SetLog implements gcore.Service SetLog
 func (this *APIServer) SetLog(l gcore.Logger) {
 	this.logger = l
 }
 
-//InjectListeners implements gcore.Service InjectListeners
+// InjectListeners implements gcore.Service InjectListeners
 func (this *APIServer) InjectListeners(l []net.Listener) {
 	this.listener = l[0]
 }
 
-//Listeners implements gcore.Service Listeners
+// Listeners implements gcore.Service Listeners
 func (this *APIServer) Listeners() []net.Listener {
 	return []net.Listener{this.listener}
 }

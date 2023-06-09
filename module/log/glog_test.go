@@ -11,7 +11,6 @@ import (
 	"github.com/snail007/gmc"
 	gctx "github.com/snail007/gmc/module/ctx"
 	ghttppprof "github.com/snail007/gmc/util/pprof"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -29,7 +28,7 @@ import (
 func TestGlog(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
-	glog.SetOutput(&out)
+	glog.SetOutput(glog.NewLoggerWriter(&out))
 	glog.SetTimeLayout("")
 	assert.False(glog.Async())
 	assert.NotNil(glog.Writer())
@@ -213,7 +212,7 @@ func testGlog_SetFlags(t *testing.T, assert *assert2.Assertions) {
 	glog.SetLevel(gcore.LogLevelTrace)
 	var out bytes.Buffer
 	glog.SetFlag(gcore.LogFlagShort)
-	glog.SetOutput(&out)
+	glog.SetOutput(glog.NewLoggerWriter(&out))
 	glog.Info("a")
 	assert.Contains(out.String(), "/module/log/glog_test.go:")
 	assert.Contains(out.String(), "INFO a")
@@ -233,12 +232,12 @@ func TestGlog_Namespace(t *testing.T) {
 
 func TestGlog_Writer(t *testing.T) {
 	assert := assert2.New(t)
-	assert.Implements((*io.Writer)(nil), glog.Writer())
+	assert.Implements((*gcore.LoggerWriter)(nil), glog.Writer())
 }
 
 func TestGlog_Write(t *testing.T) {
 	if gtest.RunProcess(t, func() {
-		glog.Write("abc")
+		glog.Write("abc", gcore.LogLeveInfo)
 	}) {
 		return
 	}
@@ -252,7 +251,7 @@ func TestGlog_Async(t *testing.T) {
 	assert := assert2.New(t)
 	if gtest.RunProcess(t, func() {
 		glog.SetTimeLayout("2006/01/02 15:04:05.000")
-		glog.SetOutput(os.Stdout)
+		glog.SetOutput(glog.NewLoggerWriter(os.Stdout))
 		glog.EnableAsync()
 		assert.True(glog.Async())
 		assert.Equal(1, glog.ExitCode())
@@ -270,7 +269,7 @@ func TestGlog_Normal(t *testing.T) {
 	assert := assert2.New(t)
 	log := glog.New()
 	var buf bytes.Buffer
-	log.SetOutput(&buf)
+	log.SetOutput(glog.NewLoggerWriter(&buf))
 	log.SetFlag(gcore.LogFlagNormal)
 	log.Info("abc")
 	assert.Contains(buf.String(), "abc")
@@ -282,7 +281,7 @@ func TestGlog_Short(t *testing.T) {
 	os.Setenv("LOG_SKIP_CHECK_GMC", "yes")
 	log := glog.New()
 	var buf bytes.Buffer
-	log.SetOutput(&buf)
+	log.SetOutput(glog.NewLoggerWriter(&buf))
 	log.SetFlag(gcore.LogFlagShort)
 	log.Info("abc")
 	assert.Contains(buf.String(), "abc")
@@ -294,7 +293,7 @@ func TestGlog_Long(t *testing.T) {
 	assert := assert2.New(t)
 	log := glog.New()
 	var buf bytes.Buffer
-	log.SetOutput(&buf)
+	log.SetOutput(glog.NewLoggerWriter(&buf))
 	log.SetFlag(gcore.LogFlagLong)
 	log.Info("abc")
 	assert.Contains(buf.String(), "abc")
@@ -305,13 +304,13 @@ func TestGlog_WithRate(t *testing.T) {
 	t.Parallel()
 	glog.SetRateCallback(func(msg string) {})
 	l0 := glog.WithRate(time.Second)
-	glog.AddWriter(ioutil.Discard)
+	glog.AddWriter(glog.NewLoggerWriter(ioutil.Discard))
 	cnt := new(int32)
 	l0.SetRateCallback(func(msg string) {
 		atomic.AddInt32(cnt, 1)
 	})
 	for i := 0; i < 35; i++ {
-		l0.Write("hello")
+		l0.Write("hello", gcore.LogLeveInfo)
 		time.Sleep(time.Millisecond * 100)
 	}
 	assert2.True(t, atomic.LoadInt32(cnt) >= 3)

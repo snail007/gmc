@@ -8,13 +8,14 @@ package gtemplate
 import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	glog "github.com/snail007/gmc/module/log"
 	"io/ioutil"
 )
 
 func Example() {
 	defaultTpl.binData = map[string][]byte{}
 	ctx := gcore.ProviderCtx()()
-	ctx.Logger().SetOutput(ioutil.Discard)
+	ctx.Logger().SetOutput(glog.NewLoggerWriter(ioutil.Discard))
 	ctx.SetConfig(gcore.ProviderConfig()())
 	tpl, err := NewTemplate(ctx, "tests/views")
 	if err != nil {

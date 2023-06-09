@@ -6,6 +6,9 @@
 package glog
 
 import (
+	"fmt"
+	"github.com/fatih/color"
+	gcore "github.com/snail007/gmc/core"
 	gfile "github.com/snail007/gmc/util/file"
 	assert2 "github.com/stretchr/testify/assert"
 	"io"
@@ -156,4 +159,19 @@ func TestWrite1(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	p := filepath.Join(dir, timeFormatText(time.Now().Add(-time.Hour*24), archiveDir))
 	assert.DirExists(p)
+}
+
+func TestColor(t *testing.T) {
+	l := New()
+	l.SetLevel(gcore.LogLevelTrace)
+	l.Trace("trace")
+	l.Debug("debug")
+	l.Info("info")
+	l.Warn("warn")
+	l.Error("error")
+	fmt.Println(color.BlueString("%s", "abc"))
+	fmt.Println(color.CyanString("%s", "abc"))
+	fmt.Println(color.MagentaString("%s", "abc"))
+	fmt.Println(color.WhiteString("%s", "abc"))
+	t.Log("done")
 }

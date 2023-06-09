@@ -7,6 +7,7 @@ package glog
 
 import (
 	"compress/gzip"
+	"github.com/fatih/color"
 	gcore "github.com/snail007/gmc/core"
 	gcast "github.com/snail007/gmc/util/cast"
 	gfile "github.com/snail007/gmc/util/file"
@@ -177,12 +178,14 @@ func (s *ConsoleWriter) Write(p []byte, level gcore.LogLevel) (n int, err error)
 		return s.w.Write(p)
 	}
 	switch level {
+	case gcore.LogLevelTrace, gcore.LogLeveDebug:
+		return s.w.Write([]byte(color.WhiteString("%s", string(p))))
 	case gcore.LogLeveInfo:
-		return s.w.Write([]byte(Green.Color(string(p))))
+		return s.w.Write([]byte(color.GreenString("%s", string(p))))
 	case gcore.LogLeveWarn:
-		return s.w.Write([]byte(Yellow.Color(string(p))))
+		return s.w.Write([]byte(color.YellowString("%s", string(p))))
 	case gcore.LogLeveError, gcore.LogLevePanic, gcore.LogLeveFatal:
-		return s.w.Write([]byte(Red.Color(string(p))))
+		return s.w.Write([]byte(color.RedString("%s", string(p))))
 	default:
 		return s.w.Write(p)
 	}

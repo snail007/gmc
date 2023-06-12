@@ -20,6 +20,7 @@ import (
 )
 
 var timeNowFunc = time.Now
+var _ gcore.LoggerWriter = &FileWriter{}
 
 type FileWriter struct {
 	filepath   string
@@ -28,12 +29,24 @@ type FileWriter struct {
 	openLock   sync.Mutex
 	opt        *FileWriterOption
 }
+type FileIOWriter struct {
+	*FileWriter
+}
+
+func (s *FileIOWriter) Write(p []byte) (n int, err error) {
+	return s.FileWriter.Write(p, gcore.LogLeveInfo)
+}
+
 type FileWriterOption struct {
 	Filename      string
 	LogsDir       string
 	ArchiveDir    string
 	IsGzip        bool
 	AliasFilename string
+}
+
+func NewFileIOWriter(opt *FileWriterOption) (w io.Writer) {
+	return &FileIOWriter{FileWriter: NewFileWriter(opt)}
 }
 
 func NewFileWriter(opt *FileWriterOption) (w *FileWriter) {
@@ -75,6 +88,10 @@ func (s *FileWriter) getAltFilepath() string {
 
 func (s *FileWriter) getRawFilepath() string {
 	return filepath.Join(s.opt.LogsDir, timeFormatText(timeNowFunc(), s.opt.Filename))
+}
+
+func (s *FileWriter) Writer() io.Writer {
+	return s.file
 }
 
 func (s *FileWriter) Write(p []byte, _ gcore.LogLevel) (n int, err error) {

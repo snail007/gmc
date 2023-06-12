@@ -77,7 +77,7 @@ func (s *FileWriter) getRawFilepath() string {
 	return filepath.Join(s.opt.LogsDir, timeFormatText(timeNowFunc(), s.opt.Filename))
 }
 
-func (s *FileWriter) Write(p []byte) (n int, err error) {
+func (s *FileWriter) Write(p []byte, _ gcore.LogLevel) (n int, err error) {
 	filename0 := s.getRawFilepath()
 	if filename0 != s.filepath {
 		oldFilepath := s.filepath

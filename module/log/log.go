@@ -770,7 +770,6 @@ func (s *levelWriter) canWrite(level gcore.LogLevel) bool {
 
 type multiWriter struct {
 	writers []gcore.LoggerWriter
-	writer  io.Writer
 }
 
 var ErrShortWrite = errors.New("short write")
@@ -802,10 +801,6 @@ func (s *multiWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
 	return len(p), nil
 }
 
-func (s *multiWriter) Writer() io.Writer {
-	return s.writer
-}
-
 func newMultiWriter(writers ...gcore.LoggerWriter) gcore.LoggerWriter {
 	allWriters := make([]gcore.LoggerWriter, 0, len(writers))
 	for _, w := range writers {
@@ -815,9 +810,5 @@ func newMultiWriter(writers ...gcore.LoggerWriter) gcore.LoggerWriter {
 			allWriters = append(allWriters, w)
 		}
 	}
-	var ws []io.Writer
-	for _, v := range allWriters {
-		ws = append(ws, v.Writer())
-	}
-	return &multiWriter{writers: allWriters, writer: io.MultiWriter(ws...)}
+	return &multiWriter{writers: allWriters}
 }

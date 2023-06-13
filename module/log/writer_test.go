@@ -28,7 +28,7 @@ func TestNewFileWriter(t *testing.T) {
 	w := NewFileWriter(&FileWriterOption{
 		Filename: "logs-%h%i%s.log",
 		LogsDir:  dir,
-	})
+	}).ToWriter()
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
 	fs, err := filepath.Glob(dir + "/*.log")
@@ -64,7 +64,7 @@ func TestNewFileWriter2(t *testing.T) {
 		Filename:      "logs-%h%i%s.log",
 		LogsDir:       dir,
 		AliasFilename: "app.log",
-	})
+	}).ToWriter()
 	assert.FileExists(filepath.Join(dir, "app.log"))
 	time.Sleep(time.Second)
 	w.Write([]byte("hello"))
@@ -86,7 +86,7 @@ func TestNewFileWriter_Gzip(t *testing.T) {
 		Filename: "logs-%h%i%s.log",
 		LogsDir:  dir,
 		IsGzip:   true,
-	})
+	}).ToWriter()
 	assert.Implements((*io.Writer)(nil), w)
 	assert.DirExists(dir)
 	fs, err := filepath.Glob(dir + "/*.log")
@@ -115,7 +115,7 @@ func TestWrite(t *testing.T) {
 		LogsDir:    dir,
 		ArchiveDir: archiveDir,
 		IsGzip:     true,
-	})
+	}).ToWriter()
 	assert.Implements((*io.Writer)(nil), w)
 	_, err := w.Write([]byte("abc"))
 	assert.Nil(err)
@@ -149,7 +149,7 @@ func TestWrite1(t *testing.T) {
 		LogsDir:    dir,
 		ArchiveDir: archiveDir,
 		IsGzip:     true,
-	})
+	}).ToWriter()
 	w.Write([]byte("abc"))
 	timeNowFunc = func() time.Time {
 		return time.Now()

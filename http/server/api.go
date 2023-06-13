@@ -11,6 +11,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
+	"github.com/snail007/gmc/module/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,8 +23,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	ghttputil "github.com/snail007/gmc/internal/util/http"
 )
 
 type APIServer struct {
@@ -78,7 +78,7 @@ func NewAPIServer(ctx gcore.Ctx, address string) *APIServer {
 		if ns != "" {
 			ns = "[" + ns + "]"
 		}
-		l := log.New(api.logger.Writer().Writer(), ns, log.Lmicroseconds|log.LstdFlags)
+		l := log.New(glog.NewIOWriter(api.logger.Writer()), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
 	api.server.ConnState = api.connState

@@ -32,7 +32,7 @@ func NewFromConfig(c gcore.Config, prefix ...string) (l gcore.Logger) {
 	for _, v := range output {
 		switch v {
 		case 0:
-			writers = append(writers, NewLoggerWriter(os.Stdout))
+			writers = append(writers, NewConsoleWriter())
 		case 1:
 			w0 := NewFileWriter(&FileWriterOption{
 				Filename:      cfg.GetString("filename"),
@@ -41,7 +41,7 @@ func NewFromConfig(c gcore.Config, prefix ...string) (l gcore.Logger) {
 				IsGzip:        cfg.GetBool("gzip"),
 				AliasFilename: cfg.GetString("filename_alias"),
 			})
-			writers = append(writers, NewLoggerWriter(w0))
+			writers = append(writers, w0)
 		}
 	}
 	if len(writers) == 1 {
@@ -83,28 +83,25 @@ func timeFormatText(t time.Time, text string) string {
 	return text
 }
 
-type LoggerWriterFunc func(p []byte, level gcore.LogLevel) (n int, err error)
-
 type LoggerWriter struct {
 	w io.Writer
-	f LoggerWriterFunc
 }
 
-func (s *LoggerWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
-	if s.w != nil {
-		return s.w.Write(p)
-	}
-	return s.f(p, level)
-}
-
-func (s *LoggerWriter) Writer() io.Writer {
-	return s.w
+func (s *LoggerWriter) Write(p []byte, _ gcore.LogLevel) (n int, err error) {
+	return s.w.Write(p)
 }
 
 func NewLoggerWriter(w io.Writer) gcore.LoggerWriter {
 	return &LoggerWriter{w: w}
 }
 
-func NewLoggerWriterFunc(f LoggerWriterFunc) gcore.LoggerWriter {
-	return &LoggerWriter{f: f}
+type IOWriter struct {
+	w gcore.LoggerWriter
+}
+
+func NewIOWriter(w gcore.LoggerWriter) io.Writer {
+	return &IOWriter{w: w}
+}
+func (s *IOWriter) Write(p []byte) (n int, err error) {
+	return s.w.Write(p, gcore.LogLeveInfo)
 }

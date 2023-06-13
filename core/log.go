@@ -85,5 +85,4 @@ type Logger interface {
 
 type LoggerWriter interface {
 	Write(p []byte, level LogLevel) (n int, err error)
-	Writer() io.Writer
 }

@@ -12,6 +12,9 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
+	"github.com/snail007/gmc/module/log"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,9 +26,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/internal/util/http"
 )
 
 var (
@@ -316,7 +316,7 @@ func (s *HTTPServer) SetLogger(l gcore.Logger) {
 		if ns != "" {
 			ns = "[" + ns + "]"
 		}
-		l := log.New(s.logger.Writer().Writer(), ns, log.Lmicroseconds|log.LstdFlags)
+		l := log.New(glog.NewIOWriter(s.logger.Writer()), ns, log.Lmicroseconds|log.LstdFlags)
 		return l
 	}()
 }
@@ -539,7 +539,7 @@ func (s *HTTPServer) PrintRouteTable(w io.Writer) {
 func (s *HTTPServer) Start() (err error) {
 	defer func() {
 		if err == nil && s.config.GetBool("httpserver.printroute") {
-			s.PrintRouteTable(s.logger.Writer().Writer())
+			s.PrintRouteTable(glog.NewIOWriter(s.logger.Writer()))
 		}
 	}()
 	// delay template Parse

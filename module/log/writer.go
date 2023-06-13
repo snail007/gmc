@@ -45,10 +45,6 @@ type FileWriterOption struct {
 	AliasFilename string
 }
 
-func NewFileIOWriter(opt *FileWriterOption) (w io.Writer) {
-	return &FileIOWriter{FileWriter: NewFileWriter(opt)}
-}
-
 func NewFileWriter(opt *FileWriterOption) (w *FileWriter) {
 	w, err := NewFileWriterE(opt)
 	if err != nil {
@@ -88,10 +84,6 @@ func (s *FileWriter) getAltFilepath() string {
 
 func (s *FileWriter) getRawFilepath() string {
 	return filepath.Join(s.opt.LogsDir, timeFormatText(timeNowFunc(), s.opt.Filename))
-}
-
-func (s *FileWriter) Writer() io.Writer {
-	return s.file
 }
 
 func (s *FileWriter) Write(p []byte, _ gcore.LogLevel) (n int, err error) {
@@ -139,7 +131,7 @@ func (s *FileWriter) Write(p []byte, _ gcore.LogLevel) (n int, err error) {
 				os.Remove(oldFilepath)
 				toMoveFile = gzFile
 			}
-			s.Move(toMoveFile, oldArchiveDir)
+			s.move(toMoveFile, oldArchiveDir)
 		}()
 	}
 	n, err = s.file.Write(p)
@@ -152,7 +144,7 @@ func (s *FileWriter) getArchiveDir() string {
 	}
 	return filepath.Join(s.opt.LogsDir, archiveDir)
 }
-func (s *FileWriter) Move(oldPath, oldArchiveDir string) {
+func (s *FileWriter) move(oldPath, oldArchiveDir string) {
 	if oldArchiveDir != "" {
 		if !gfile.Exists(oldArchiveDir) {
 			e := os.MkdirAll(oldArchiveDir, 0755)
@@ -166,6 +158,10 @@ func (s *FileWriter) Move(oldPath, oldArchiveDir string) {
 			Warnf("[FileWriter] move log file to archive dir fail, file: %s, dst: %s, error :%v\n", oldPath, newFile, e)
 		}
 	}
+}
+
+func (s *FileWriter) ToWriter() io.Writer {
+	return NewIOWriter(s)
 }
 
 type ConsoleWriter struct {
@@ -206,10 +202,6 @@ func (s *ConsoleWriter) Write(p []byte, level gcore.LogLevel) (n int, err error)
 	default:
 		return s.w.Write(p)
 	}
-}
-
-func (s *ConsoleWriter) Writer() io.Writer {
-	return s.w
 }
 
 func NewConsoleWriter() *ConsoleWriter {

@@ -37,10 +37,10 @@ func TestLogger_SetOutput(t *testing.T) {
 
 func TestLogger_Writer(t *testing.T) {
 	assert := assert2.New(t)
-	var out bytes.Buffer
+	out := glog.NewLoggerWriter(bytes.NewBuffer(nil))
 	l := gcore.ProviderLogger()(nil, "")
-	l.SetOutput(glog.NewLoggerWriter(&out))
-	assert.Equal(&out, l.Writer().Writer())
+	l.SetOutput(out)
+	assert.Equal(out, l.Writer())
 }
 
 func TestLogger_SetLevel(t *testing.T) {

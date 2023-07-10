@@ -44,8 +44,8 @@ func (s *Map) Clone() *Map {
 
 // GC rebuild the internal map to release memory used by the map.
 func (s *Map) GC() {
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 	m := New()
 	s.keys.Range(func(v interface{}) bool {
 		m.store(v, s.data[v])

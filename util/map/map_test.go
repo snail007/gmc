@@ -541,3 +541,25 @@ func TestMap_LoadAndStoreFuncErr(t *testing.T) {
 	assert.Equal(3, k)
 	assert.Equal("[0 1 2]", fmt.Sprintf("%v", l.StringKeys()))
 }
+
+func TestMap_LoadAndDelete(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	l := New()
+	l.Store("a", "123")
+	v, _ := l.LoadAndDelete("a")
+	assert.Equal("123", v)
+	_, ok := l.Load("a")
+	assert.False(ok)
+}
+
+func TestMap_GC(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	l := New()
+	l.Store("a", "123")
+	p1 := fmt.Sprintf("%p", l.data)
+	l.GC()
+	p2 := fmt.Sprintf("%p", l.data)
+	assert.NotEqual(p1, p2)
+}

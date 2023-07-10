@@ -42,6 +42,19 @@ func (s *Map) Clone() *Map {
 	return m
 }
 
+// GC rebuild the internal map to release memory used by the map.
+func (s *Map) GC() {
+	s.RLock()
+	defer s.RUnlock()
+	m := New()
+	s.keys.Range(func(v interface{}) bool {
+		m.store(v, s.data[v])
+		return true
+	})
+	s.clear()
+	s.merge(m)
+}
+
 // CloneAndClear duplicates the map s.
 func (s *Map) CloneAndClear() *Map {
 	s.RLock()
@@ -211,6 +224,18 @@ func (s *Map) loadOrStore(key, value interface{}) (actual interface{}, loaded bo
 		actual = value
 		s.keyElMap[key] = s.keys.PushBack(key)
 		s.store(key, actual)
+	}
+	return
+}
+
+// LoadAndDelete deletes the value for a key, returning the previous value if any.
+// The loaded result reports whether the key was present.
+func (s *Map) LoadAndDelete(key interface{}) (value interface{}, loaded bool) {
+	s.Lock()
+	defer s.Unlock()
+	value, loaded = s.load(key)
+	if loaded {
+		s.delete(key)
 	}
 	return
 }

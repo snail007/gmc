@@ -31,6 +31,10 @@ func init() {
 	logger.SetCallerSkip(logger.CallerSkip() + 1)
 }
 
+func DefaultLogger() gcore.Logger {
+	return logger
+}
+
 func Panic(v ...interface{}) {
 	logger.Panic(v...)
 }

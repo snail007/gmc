@@ -7,6 +7,7 @@ package glog_test
 
 import (
 	"bytes"
+	_ "github.com/snail007/gmc/using/basic"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/snail007/gmc/core"
 	glog "github.com/snail007/gmc/module/log"
-	_ "github.com/snail007/gmc/using/basic"
 	assert2 "github.com/stretchr/testify/assert"
 )
 
@@ -364,4 +364,16 @@ func TestLogger_Write7(t *testing.T) {
 	assert.Contains(out2.String(), "foo2")
 	assert.Contains(out2.String(), "foo2\n")
 	assert.Contains(out2.String(), "foo4\n")
+}
+
+func TestDefaultLogger(t *testing.T) {
+	t.Parallel()
+	assert := assert2.New(t)
+	var out1 = bytes.NewBuffer(nil)
+	glog.SetOutput(glog.NewLoggerWriter(ioutil.Discard))
+	l := glog.DefaultLogger()
+	l.SetOutput(glog.NewLoggerWriter(out1))
+	l.SetLevel(gcore.LogLevelTrace)
+	l.Tracef("foo1")
+	assert.Contains(out1.String(), "foo1")
 }

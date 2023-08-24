@@ -3,6 +3,7 @@ package ghttp
 import (
 	"bytes"
 	"context"
+	gcast "github.com/snail007/gmc/util/cast"
 	"github.com/snail007/gmc/util/gpool"
 	gmap "github.com/snail007/gmc/util/map"
 	"io/ioutil"
@@ -250,11 +251,11 @@ func (s *BatchRequest) Close() *BatchRequest {
 	return s
 }
 
-func (s *BatchRequest) do(idx int, req *http.Request) (*http.Response, context.CancelFunc, error) {
+func (s *BatchRequest) do(rootCtx context.Context, idx int, req *http.Request) (*http.Response, context.CancelFunc, error) {
 	req.Close = !s.keepalive
 	var setTimeout = func(req *http.Request) context.CancelFunc {
 		if v, ok := s.reqTimeoutMap.Load(idx); ok {
-			ctx, cancel := context.WithTimeout(context.Background(), v.(time.Duration))
+			ctx, cancel := context.WithTimeout(rootCtx, v.(time.Duration))
 			*req = *req.WithContext(ctx)
 			return cancel
 		}
@@ -327,7 +328,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 				defer g.Done()
 				s.callBeforeDo(idx, req)
 				startTime := time.Now()
-				resp, cancel, err := s.do(idx, req)
+				resp, cancel, err := s.do(context.Background(), idx, req)
 				endTime := time.Now()
 				if err != nil && cancel != nil {
 					cancel()
@@ -359,6 +360,7 @@ func (s *BatchRequest) Execute() *BatchRequest {
 		}
 	} else {
 		respMap := gmap.New()
+		cancelMap := gmap.New()
 		doneChn := make(chan bool, 1)
 		firstSuccessChn := make(chan *Response, 1)
 		g := sync.WaitGroup{}
@@ -370,7 +372,9 @@ func (s *BatchRequest) Execute() *BatchRequest {
 				defer g.Done()
 				s.callBeforeDo(idx, req)
 				startTime := time.Now()
-				resp, cancel, err := s.do(idx, req)
+				rootCtx, rootCancel := context.WithCancel(context.Background())
+				cancelMap.Store(idx, rootCancel)
+				resp, cancel, err := s.do(rootCtx, idx, req)
 				endTime := time.Now()
 				if err != nil && cancel != nil {
 					cancel()
@@ -416,6 +420,13 @@ func (s *BatchRequest) Execute() *BatchRequest {
 				s.respArr = append(s.respArr, v.(*Response))
 			}
 		case resp := <-firstSuccessChn:
+			//call fail cancels
+			cancelMap.RangeFast(func(key, value interface{}) bool {
+				if gcast.ToInt(key) != resp.idx {
+					value.(context.CancelFunc)()
+				}
+				return true
+			})
 			// at least one request success
 			s.respArr = append(s.respArr, resp)
 		}

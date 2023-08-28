@@ -52,8 +52,9 @@ func (s *Model) PrimaryKey() string {
 	return s.primaryKey
 }
 
-func (s *Model) SetPrimaryKey(primaryKey string) {
+func (s *Model) SetPrimaryKey(primaryKey string) *Model {
 	s.primaryKey = primaryKey
+	return s
 }
 
 func (s *Model) QuerySQL(sql string, values ...interface{}) (ret []map[string]string, error error) {

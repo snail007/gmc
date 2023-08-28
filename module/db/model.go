@@ -48,6 +48,14 @@ func Table(table string, db ...interface{}) *Model {
 	return m
 }
 
+func (s *Model) PrimaryKey() string {
+	return s.primaryKey
+}
+
+func (s *Model) SetPrimaryKey(primaryKey string) {
+	s.primaryKey = primaryKey
+}
+
 func (s *Model) QuerySQL(sql string, values ...interface{}) (ret []map[string]string, error error) {
 	db := s.db
 	ar := db.AR().Raw(sql, values...)

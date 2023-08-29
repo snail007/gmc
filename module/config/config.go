@@ -7,9 +7,11 @@ package gconfig
 
 import (
 	"bytes"
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 )
@@ -32,6 +34,31 @@ func New() *Config {
 	}
 	bindEnv(c)
 	return c
+}
+func NewFromSearch(paths []string, filename string, typ ...string) (c *Config, err error) {
+	filePath := ""
+	for _, path := range paths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+		filePath = filepath.Join(absPath, filename)
+		_, err = os.Stat(filePath)
+		if err == nil {
+			break
+		} else {
+			filePath = ""
+		}
+	}
+	if filePath == "" {
+		return nil, fmt.Errorf("file [%s] not found, in paths: %v", filename, paths) // 发生其他错误
+	}
+	b, err := os.ReadFile(filePath)
+	if err != nil {
+		return
+	}
+	c, err = NewConfigBytes(b, typ...)
+	return
 }
 
 func NewFromFile(file string, typ ...string) (c *Config, err error) {

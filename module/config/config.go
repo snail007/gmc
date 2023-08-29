@@ -84,8 +84,9 @@ func NewConfigBytes(b []byte, typ ...string) (c *Config, err error) {
 	}
 	if len(typ) == 1 {
 		c.SetConfigType(typ[0])
+	} else {
+		c.SetConfigType("toml")
 	}
-	c.SetConfigType("toml")
 	bindEnv(c)
 	err = c.ReadConfig(bytes.NewReader(b))
 	return

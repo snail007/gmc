@@ -34,9 +34,12 @@ func New() *Config {
 	return c
 }
 
-func NewFromFile(file string) (c *Config, err error) {
+func NewFromFile(file string, typ ...string) (c *Config, err error) {
 	cfg := viper.New()
 	cfg.SetConfigFile(file)
+	if len(typ) == 1 {
+		cfg.SetConfigType(typ[0])
+	}
 	err = cfg.ReadInConfig()
 	if err != nil {
 		return
@@ -48,9 +51,12 @@ func NewFromFile(file string) (c *Config, err error) {
 	return
 }
 
-func NewConfigBytes(b []byte) (c *Config, err error) {
+func NewConfigBytes(b []byte, typ ...string) (c *Config, err error) {
 	c = &Config{
 		Viper: viper.New(),
+	}
+	if len(typ) == 1 {
+		c.SetConfigType(typ[0])
 	}
 	c.SetConfigType("toml")
 	bindEnv(c)

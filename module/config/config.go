@@ -10,6 +10,7 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -53,7 +54,7 @@ func NewFromSearch(paths []string, filename string, typ ...string) (c *Config, e
 	if filePath == "" {
 		return nil, fmt.Errorf("file [%s] not found, in paths: %v", filename, paths) // 发生其他错误
 	}
-	b, err := os.ReadFile(filePath)
+	b, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return
 	}

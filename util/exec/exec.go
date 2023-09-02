@@ -16,6 +16,7 @@ import (
 
 type Command struct {
 	cmd           string
+	args          []string
 	env           map[string]string
 	async         bool
 	timeout       time.Duration
@@ -34,6 +35,11 @@ func NewCommand(cmd string) *Command {
 		env:     map[string]string{},
 		workDir: "./",
 	}
+}
+
+func (s *Command) Args(args ...string) *Command {
+	s.args = args
+	return s
 }
 
 func (s *Command) Log(log gcore.Logger) *Command {
@@ -96,9 +102,9 @@ set -e
 		if !s.async {
 			defer cancel()
 		}
-		cmd = exec.CommandContext(ctx, "bash", sid)
+		cmd = exec.CommandContext(ctx, "bash", append([]string{sid}, s.args...)...)
 	} else {
-		cmd = exec.Command("bash", sid)
+		cmd = exec.Command("bash", append([]string{sid}, s.args...)...)
 	}
 	cmd.Dir = s.workDir
 	env := map[string]string{}

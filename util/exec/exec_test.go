@@ -20,6 +20,14 @@ func TestExec(t *testing.T) {
 	assert.Contains(output, "/bin/bash\n")
 }
 
+func TestExec0(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	output, errStr := NewCommand("echo  $1").Args("arg1").Exec()
+	assert.Empty(errStr)
+	assert.Contains(output, "arg1")
+}
+
 func TestExec1(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)

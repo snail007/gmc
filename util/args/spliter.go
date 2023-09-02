@@ -15,12 +15,12 @@ limitations under the License.
 */
 
 /*
-Package shlex implements a simple lexer which splits input in to tokens using
+Package gargs implements a simple lexer which splits input in to tokens using
 shell-style rules for quoting and commenting.
 
 The basic use case uses the default ASCII lexer to split a string into sub-strings:
 
-	shlex.Split("one \"two three\" four") -> []string{"one", "two three", "four"}
+	gargs.Split("one \"two three\" four") -> []string{"one", "two three", "four"}
 
 To process a stream of strings:
 
@@ -36,7 +36,7 @@ To access the raw token stream (which includes tokens for comments):
 		// process token
 	  }
 */
-package gshlex
+package gargs
 
 import (
 	"bufio"

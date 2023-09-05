@@ -27,13 +27,13 @@ type Map struct {
 	keys     *glinklist.LinkList
 	data     map[interface{}]interface{}
 	keyElMap map[interface{}]interface{}
-	sync.RWMutex
+	l        sync.RWMutex
 }
 
 // Clone duplicates the map s.
 func (s *Map) Clone() *Map {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	m := New()
 	s.keys.Range(func(v interface{}) bool {
 		m.store(v, s.data[v])
@@ -44,8 +44,8 @@ func (s *Map) Clone() *Map {
 
 // GC rebuild the internal map to release memory used by the map.
 func (s *Map) GC() {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	m := New()
 	s.keys.Range(func(v interface{}) bool {
 		m.store(v, s.data[v])
@@ -57,8 +57,8 @@ func (s *Map) GC() {
 
 // CloneAndClear duplicates the map s.
 func (s *Map) CloneAndClear() *Map {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	m := New()
 	s.keys.Range(func(v interface{}) bool {
 		m.store(v, s.data[v])
@@ -70,8 +70,8 @@ func (s *Map) CloneAndClear() *Map {
 
 // ToMap duplicates the map s.
 func (s *Map) ToMap() map[interface{}]interface{} {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	return s.toMap()
 }
 func (s *Map) toMap() map[interface{}]interface{} {
@@ -84,8 +84,8 @@ func (s *Map) toMap() map[interface{}]interface{} {
 
 // ToStringMap duplicates the map s.
 func (s *Map) ToStringMap() map[string]interface{} {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	return s.toStringMap()
 }
 
@@ -99,8 +99,8 @@ func (s *Map) toStringMap() map[string]interface{} {
 
 // Merge merges a Map to Map s.
 func (s *Map) Merge(m *Map) *Map {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.merge(m)
 	return s
 }
@@ -113,8 +113,8 @@ func (s *Map) merge(m *Map) {
 
 // MergeMap merges a map to Map s.
 func (s *Map) MergeMap(m Mii) *Map {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.mergeMap(m)
 	return s
 }
@@ -127,8 +127,8 @@ func (s *Map) mergeMap(m Mii) {
 
 // MergeStrMap merges a map to Map s.
 func (s *Map) MergeStrMap(m M) *Map {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.mergeStrMap(m)
 	return s
 }
@@ -141,8 +141,8 @@ func (s *Map) mergeStrMap(m M) {
 
 // MergeStrStrMap merges a map to Map s.
 func (s *Map) MergeStrStrMap(m Mss) *Map {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.mergeStrStrMap(m)
 	return s
 }
@@ -155,8 +155,8 @@ func (s *Map) mergeStrStrMap(m Mss) {
 
 // MergeSyncMap merges a sync.Map to Map s.
 func (s *Map) MergeSyncMap(m *sync.Map) *Map {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.mergeSyncMap(m)
 	return s
 }
@@ -170,15 +170,15 @@ func (s *Map) mergeSyncMap(m *sync.Map) {
 
 // Pop returns the last element of map s or nil if the map is empty.
 func (s *Map) Pop() (k, v interface{}, ok bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.removeElement(s.keys.Back())
 }
 
 // Shift returns the first element of map s or nil if the map is empty.
 func (s *Map) Shift() (k, v interface{}, ok bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.removeElement(s.keys.Front())
 }
 
@@ -199,8 +199,8 @@ func (s *Map) removeElement(el *glinklist.Element) (k, v interface{}, ok bool) {
 // value is present.
 // The ok result indicates whether value was found in the map.
 func (s *Map) Load(key interface{}) (value interface{}, ok bool) {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	return s.load(key)
 }
 
@@ -213,8 +213,8 @@ func (s *Map) load(key interface{}) (value interface{}, ok bool) {
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
 func (s *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.loadOrStore(key, value)
 }
 
@@ -231,8 +231,8 @@ func (s *Map) loadOrStore(key, value interface{}) (actual interface{}, loaded bo
 // LoadAndDelete deletes the value for a key, returning the previous value if any.
 // The loaded result reports whether the key was present.
 func (s *Map) LoadAndDelete(key interface{}) (value interface{}, loaded bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	value, loaded = s.load(key)
 	if loaded {
 		s.delete(key)
@@ -244,8 +244,8 @@ func (s *Map) LoadAndDelete(key interface{}) (value interface{}, loaded bool) {
 // The loaded result is true if the keys was exists, false if not exists.
 // If loaded, the given func firstly parameter is the loaded value, otherwise is nil.
 func (s *Map) LoadAndStoreFunc(key interface{}, f func(oldValue interface{}, loaded bool) (newValue interface{})) (newValue interface{}, loaded bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.loadAndStoreFunc(key, f)
 }
 
@@ -261,8 +261,8 @@ func (s *Map) loadAndStoreFunc(key interface{}, f func(oldValue interface{}, loa
 // The loaded result is true if the keys was exists, false if not exists.
 // If loaded, the given func firstly parameter is the loaded value, otherwise is nil.
 func (s *Map) LoadAndStoreFuncErr(key interface{}, f func(oldValue interface{}, loaded bool) (newValue interface{}, err error)) (newValue interface{}, loaded bool, err error) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.loadAndStoreFuncErr(key, f)
 }
 
@@ -280,8 +280,8 @@ func (s *Map) loadAndStoreFuncErr(key interface{}, f func(oldValue interface{}, 
 // Otherwise, it call the given func and stores it returns value.
 // The loaded result is true if the value was loaded, false if stored.
 func (s *Map) LoadOrStoreFunc(key interface{}, f func() interface{}) (actual interface{}, loaded bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.loadOrStoreFunc(key, f)
 }
 
@@ -299,8 +299,8 @@ func (s *Map) loadOrStoreFunc(key interface{}, f func() interface{}) (actual int
 // returns an error, nothing will be stored, the function's error be returned.
 // The loaded result is true if the value was loaded, false if stored.
 func (s *Map) LoadOrStoreFuncErr(key interface{}, f func() (x interface{}, err error)) (actual interface{}, loaded bool, err error) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.loadOrStoreFuncErr(key, f)
 }
 
@@ -321,8 +321,8 @@ func (s *Map) loadOrStoreFuncErr(key interface{}, f func() (x interface{}, err e
 // The loaded result is true if the value was loaded, false if stored.
 // The key will be stored the first in keys queue if key not exists.
 func (s *Map) LoadOrStoreFront(key, value interface{}) (actual interface{}, loaded bool) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	return s.loadOrStoreFront(key, value)
 }
 
@@ -337,8 +337,8 @@ func (s *Map) loadOrStoreFront(key, value interface{}) (actual interface{}, load
 // StoreFront sets the value for a key.
 // The key will be stored the first in keys queue.
 func (s *Map) StoreFront(key, value interface{}) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.storeFront(key, value)
 }
 
@@ -352,8 +352,8 @@ func (s *Map) storeFront(key, value interface{}) {
 
 // Store sets the value for a key.
 func (s *Map) Store(key, value interface{}) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.store(key, value)
 }
 
@@ -367,8 +367,8 @@ func (s *Map) store(key, value interface{}) {
 
 // Delete deletes the value for a key.
 func (s *Map) Delete(key interface{}) {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.delete(key)
 }
 
@@ -387,8 +387,8 @@ func (s *Map) Len() int {
 
 // Clear deletes all data in the map s.
 func (s *Map) Clear() {
-	s.Lock()
-	defer s.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	s.clear()
 }
 
@@ -403,9 +403,9 @@ func (s *Map) clear() {
 //
 // Range keep the sequence of store sequence.
 func (s *Map) Range(f func(key, value interface{}) bool) {
-	s.RLock()
+	s.l.RLock()
 	keys := s.keysArr()
-	s.RUnlock()
+	s.l.RUnlock()
 	for _, k := range keys {
 		v, ok := s.Load(k)
 		if ok && !f(k, v) {
@@ -422,8 +422,8 @@ func (s *Map) Range(f func(key, value interface{}) bool) {
 // RangeFast do not create a snapshot for range, so you can not
 // modify map s in range loop, indicate do not call Delete(), Store(), LoadOrStore(), Merge(), etc.
 func (s *Map) RangeFast(f func(key, value interface{}) bool) {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	s.keys.Range(func(k interface{}) bool {
 		if v, ok := s.Load(k); ok {
 			return f(k, v)
@@ -434,8 +434,8 @@ func (s *Map) RangeFast(f func(key, value interface{}) bool) {
 
 // Keys returns all keys in map s and keep the sequence of store sequence.
 func (s *Map) Keys() (keys []interface{}) {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	return s.keysArr()
 }
 
@@ -449,8 +449,8 @@ func (s *Map) keysArr() (keyArr []interface{}) {
 
 // StringKeys returns all keys in map s and keep the sequence of store sequence.
 func (s *Map) StringKeys() (keys []string) {
-	s.RLock()
-	defer s.RUnlock()
+	s.l.RLock()
+	defer s.l.RUnlock()
 	return s.stringKeys()
 }
 

@@ -425,7 +425,7 @@ func (s *Map) RangeFast(f func(key, value interface{}) bool) {
 	s.l.RLock()
 	defer s.l.RUnlock()
 	s.keys.Range(func(k interface{}) bool {
-		if v, ok := s.Load(k); ok {
+		if v, ok := s.load(k); ok {
 			return f(k, v)
 		}
 		return true

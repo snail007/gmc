@@ -21,7 +21,7 @@ var (
 	defaultTpl = New()
 )
 
-//SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
+// SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
 func SetBinBase64(data map[string]string) {
 	binData := map[string][]byte{}
 	for k, v := range data {
@@ -34,12 +34,12 @@ func SetBinBase64(data map[string]string) {
 	defaultTpl.SetBinBase64(data)
 }
 
-//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
+// SetBinBytes key is file path no slash prefix, value is file's bytes contents.
 func SetBinBytes(files map[string][]byte) {
 	defaultTpl.SetBinBytes(files)
 }
 
-//SetBinString key is file path no slash prefix, value is file's string contents.
+// SetBinString key is file path no slash prefix, value is file's string contents.
 func SetBinString(files map[string]string) {
 	defaultTpl.SetBinString(files)
 }
@@ -52,31 +52,36 @@ type Template struct {
 	ctx                       gcore.Ctx
 	binData                   map[string][]byte
 	disableLoadDefaultBinData bool
+	disableLogging            bool
 }
 
 func (s *Template) DisableLoadDefaultBinData() {
 	s.disableLoadDefaultBinData = true
 }
 
+func (s *Template) DdisableLogging() {
+	s.disableLogging = true
+}
+
 func (s *Template) BinData() map[string][]byte {
 	return s.binData
 }
 
-//SetBinBytes key is file path no slash prefix, value is file's bytes contents.
+// SetBinBytes key is file path no slash prefix, value is file's bytes contents.
 func (s *Template) SetBinBytes(binData map[string][]byte) {
 	for k, v := range binData {
 		s.binData[k] = v
 	}
 }
 
-//SetBinString key is file path no slash prefix, value is file's string contents.
+// SetBinString key is file path no slash prefix, value is file's string contents.
 func (s *Template) SetBinString(binData map[string]string) {
 	for k, v := range binData {
 		s.binData[k] = []byte(v)
 	}
 }
 
-//SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
+// SetBinBase64 key is file path no slash prefix, value is file base64 encoded bytes contents.
 func (s *Template) SetBinBase64(binData map[string]string) {
 	for k, v := range binData {
 		b, err := base64.StdEncoding.DecodeString(v)
@@ -143,8 +148,8 @@ func (s *Template) String() string {
 	return s.tpl.DefinedTemplates()
 }
 
-//Extension sets template file extension, default is : .html
-//only files have the extension will be parsed.
+// Extension sets template file extension, default is : .html
+// only files have the extension will be parsed.
 func (s *Template) Extension(ext string) {
 	s.ext = ext
 }
@@ -179,10 +184,14 @@ func (s *Template) Parse() (err error) {
 		s.SetBinBytes(defaultTpl.binData)
 	}
 	if len(s.binData) > 0 {
-		s.ctx.Logger().Infof("parse views from binary data")
+		if !s.disableLogging {
+			s.ctx.Logger().Infof("parse views from binary data")
+		}
 		err = s.parseFromBinData()
 	} else {
-		s.ctx.Logger().Infof("parse views from disk")
+		if !s.disableLogging {
+			s.ctx.Logger().Infof("parse views from disk")
+		}
 		err = s.parseFromDisk()
 	}
 	if err != nil {

@@ -98,7 +98,7 @@ RETRY:
 	if !buffer.isOpen {
 		return 0, io.ErrClosedPipe
 	}
-	if len(buffer.data) == 0 {
+	if len(buffer.data) == 0 || r.start >= len(r.buffer.data)-1 {
 		<-r.wait()
 		goto RETRY
 	}
@@ -109,6 +109,7 @@ RETRY:
 		end = bufLen
 	}
 	n = copy(p, buffer.data[start:end])
+	r.start += n
 	return
 }
 

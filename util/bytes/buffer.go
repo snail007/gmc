@@ -3,6 +3,7 @@ package gbytes
 import (
 	"fmt"
 	gerror "github.com/snail007/gmc/module/error"
+	gcond "github.com/snail007/gmc/util/cond"
 	gmap "github.com/snail007/gmc/util/map"
 	grand "github.com/snail007/gmc/util/rand"
 	"io"
@@ -90,7 +91,16 @@ func (b *CircularBuffer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (b *CircularBuffer) NewHistoryReader() io.ReadCloser {
+	return b.newReader(false)
+}
+
 func (b *CircularBuffer) NewReader() io.ReadCloser {
+	return b.newReader(true)
+}
+
+func (b *CircularBuffer) newReader(isCurrent bool) io.ReadCloser {
+
 	b.readersMu.Lock()
 	defer b.readersMu.Unlock()
 
@@ -104,8 +114,8 @@ func (b *CircularBuffer) NewReader() io.ReadCloser {
 		_ = r.Close()
 	}
 	b.readers = nil
-
-	r := &CircularReader{buffer: b, start: len(b.data) - 1}
+	start := gcond.Cond(isCurrent, len(b.data)-1, 0).(int)
+	r := &CircularReader{buffer: b, start: start}
 	if r.start < 0 {
 		r.start = 0
 	}

@@ -16,6 +16,16 @@ func TestCircularBuffer_Write(t *testing.T) {
 		t.Errorf("Expected n=5 and err=nil, got n=%d, err=%v", n, err)
 	}
 
+	r1 := buf.NewHistoryReader()
+	readData := make([]byte, 3)
+	n, err = r1.Read(readData)
+	if n != 3 || err != nil {
+		t.Errorf("Expected n=3 and err=nil, got n=%d, err=%v", n, err)
+	}
+	if string(readData) != "123" {
+		t.Errorf("Expected '123', got '%s'", string(readData))
+	}
+
 	// Write more data to trigger overflow
 	n, err = buf.Write([]byte("67890"))
 	if n != 5 || err != nil {
@@ -24,7 +34,7 @@ func TestCircularBuffer_Write(t *testing.T) {
 
 	// Read from a reader
 	reader := buf.NewReader()
-	readData := make([]byte, 3)
+	readData = make([]byte, 3)
 	time.AfterFunc(time.Second, func() {
 		buf.Write([]byte("000"))
 	})

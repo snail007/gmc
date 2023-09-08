@@ -25,17 +25,22 @@ func TestCircularBuffer_Write(t *testing.T) {
 	// Read from a reader
 	reader := buf.NewReader()
 	readData := make([]byte, 3)
+	time.AfterFunc(time.Second, func() {
+		buf.Write([]byte("000"))
+	})
 	n, err = reader.Read(readData)
 	if n != 3 || err != nil {
 		t.Errorf("Expected n=3 and err=nil, got n=%d, err=%v", n, err)
 	}
-	if string(readData) != "678" {
-		t.Errorf("Expected '678', got '%s'", string(readData))
+	if string(readData) != "000" {
+		t.Errorf("Expected '000', got '%s'", string(readData))
 	}
 
-	buf.Write([]byte("12345"))
 	reader = buf.NewReader()
 	readData = make([]byte, 6)
+	time.AfterFunc(time.Second, func() {
+		buf.Write([]byte("12345"))
+	})
 	n, err = reader.Read(readData)
 	if n != 5 || err != nil {
 		t.Errorf("Expected n=5 and err=nil, got n=%d, err=%v", n, err)
@@ -92,8 +97,9 @@ func TestCircularReader_Read(t *testing.T) {
 	reader = buf.NewReader()
 
 	// Write data to the buffer
-	buf.Write([]byte("12345"))
-
+	time.AfterFunc(time.Second, func() {
+		buf.Write([]byte("12345"))
+	})
 	// Read from the reader
 	n, err = reader.Read(readData)
 	if n != 3 || err != nil {
@@ -238,4 +244,38 @@ func TestCircularBuffer(t *testing.T) {
 			t.Errorf("Error closing CircularBuffer: %v", err)
 		}
 	})
+}
+
+func TestCircularBuffer_Reset(t *testing.T) {
+	// 创建一个CircularBuffer
+	buffer := NewCircularBuffer(10)
+
+	// 写入一些数据
+	data := []byte("123456789")
+	_, err := buffer.Write(data)
+	if err != nil {
+		t.Fatalf("Write error: %v", err)
+	}
+	reader := buffer.NewReader()
+	readData := make([]byte, 3)
+	buffer.ResetReader(reader)
+	n, err := reader.Read(readData)
+	if n != 3 || err != nil {
+		t.Errorf("Expected n=3 and err=nil, got n=%d, err=%v", n, err)
+	}
+	if string(readData) != "123" {
+		t.Errorf("Expected '123', got '%s'", string(readData))
+	}
+	buffer.Reset()
+	// 重置后应该可以写入新数据
+	_, err = buffer.Write([]byte("New Data"))
+	if err != nil {
+		t.Fatalf("Write error after reset: %v", err)
+	}
+
+	// 关闭CircularBuffer
+	_ = buffer.Close()
+
+	// 尝试在已关闭的情况下重置
+	buffer.Reset()
 }

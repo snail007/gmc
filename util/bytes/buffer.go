@@ -34,17 +34,38 @@ func NewCircularBuffer(size int) *CircularBuffer {
 	}
 	return b
 }
+
 func (b *CircularBuffer) notify() {
 	b.waitQueue.CloneAndClear().RangeFast(func(_, v interface{}) bool {
 		b.closeCh(v.(chan bool))
 		return true
 	})
 }
+
 func (b *CircularBuffer) closeCh(ch chan bool) {
 	gerror.Try(func() {
 		close(ch)
 	})
 }
+
+func (b *CircularBuffer) Reset() {
+	b.readersMu.Lock()
+	defer b.readersMu.Unlock()
+	for _, r := range b.readers {
+		_ = r.Close()
+	}
+	b.readers = []*CircularReader{}
+	b.data = make([]byte, b.size)
+}
+
+func (b *CircularBuffer) ResetReader(r io.ReadCloser) {
+	if v, ok := r.(*CircularReader); !ok {
+		return
+	} else {
+		v.start = 0
+	}
+}
+
 func (b *CircularBuffer) Write(p []byte) (n int, err error) {
 	if !b.isOpen {
 		return 0, io.ErrClosedPipe
@@ -84,7 +105,10 @@ func (b *CircularBuffer) NewReader() io.ReadCloser {
 	}
 	b.readers = nil
 
-	r := &CircularReader{buffer: b, start: 0}
+	r := &CircularReader{buffer: b, start: len(b.data) - 1}
+	if r.start < 0 {
+		r.start = 0
+	}
 	b.readers = append(b.readers, r)
 	return r
 }

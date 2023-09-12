@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -78,6 +79,9 @@ func (s *Command) WorkDir(workDir string) *Command {
 }
 
 func (s *Command) Output(w io.Writer) *Command {
+	if reflect.ValueOf(w).IsNil() {
+		w = nil
+	}
 	s.outputWriter = w
 	return s
 }

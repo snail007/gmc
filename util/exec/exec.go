@@ -1,12 +1,14 @@
 package gexec
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	gfile "github.com/snail007/gmc/util/file"
 	grand "github.com/snail007/gmc/util/rand"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -21,6 +23,7 @@ type Command struct {
 	async         bool
 	timeout       time.Duration
 	log           gcore.Logger
+	outputWriter  io.Writer
 	workDir       string
 	finalCmd      string
 	asyncCallback func(cmd *Command, output string, err error)
@@ -74,11 +77,31 @@ func (s *Command) WorkDir(workDir string) *Command {
 	return s
 }
 
+func (s *Command) Output(w io.Writer) *Command {
+	s.outputWriter = w
+	return s
+}
+
 func (s *Command) errorLog(msg string) {
 	if s.log == nil {
 		return
 	}
 	s.log.Error(msg)
+}
+
+func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
+	if s.outputWriter == nil {
+		buf := &bytes.Buffer{}
+		cmd.Stdout = buf
+		cmd.Stderr = buf
+		err := cmd.Run()
+		return buf.Bytes(), err
+	} else {
+		cmd.Stdout = s.outputWriter
+		cmd.Stderr = s.outputWriter
+		err := cmd.Run()
+		return nil, err
+	}
 }
 
 // Exec execute command on linux system.
@@ -124,7 +147,7 @@ set -e
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 	if !s.async {
-		b, err := cmd.CombinedOutput()
+		b, err := s.combinedOutput(cmd)
 		if err != nil {
 			e = fmt.Errorf("exec fail, exit code: %d, command: %s, error: %v, output: %s",
 				cmd.ProcessState.ExitCode(), s.finalCmd, err, string(b))
@@ -143,7 +166,7 @@ set -e
 			defer gerror.Recover(func(e interface{}) {
 				s.errorLog(fmt.Sprintf("async exec crashed, command: %s, error: %v", s.finalCmd, e))
 			})
-			out, err := cmd.CombinedOutput()
+			out, err := s.combinedOutput(cmd)
 			if err != nil && s.log != nil {
 				s.errorLog(fmt.Sprintf("async exec fail, exit code: %d, command: %s, error: %v, output: %s",
 					cmd.ProcessState.ExitCode(), s.finalCmd, err, string(out)))

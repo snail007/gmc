@@ -28,6 +28,16 @@ func TestExec0(t *testing.T) {
 	assert.Contains(output, "arg1")
 }
 
+func TestExec00(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	buf := bytes.Buffer{}
+	output, errStr := NewCommand("echo  $1").Args("arg1").Output(&buf).Exec()
+	assert.Empty(errStr)
+	assert.Empty(output)
+	assert.Contains(buf.String(), "arg1")
+}
+
 func TestExec1(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)

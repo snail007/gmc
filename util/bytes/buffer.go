@@ -22,7 +22,7 @@ type CircularBuffer struct {
 
 func NewCircularBuffer(size int) *CircularBuffer {
 	b := &CircularBuffer{
-		data:      make([]byte, 0, size),
+		data:      []byte{},
 		size:      size,
 		isOpen:    true,
 		waitQueue: gmap.New(),
@@ -50,7 +50,7 @@ func (b *CircularBuffer) Reset() {
 		_ = r.Close()
 	}
 	b.readers = []*CircularReader{}
-	b.data = make([]byte, b.size)
+	b.data = []byte{}
 }
 
 func (b *CircularBuffer) ResetReader(r io.ReadCloser) {

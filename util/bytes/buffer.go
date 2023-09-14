@@ -8,6 +8,7 @@ import (
 	grand "github.com/snail007/gmc/util/rand"
 	"io"
 	"sync"
+	"time"
 )
 
 type CircularBuffer struct {
@@ -17,13 +18,6 @@ type CircularBuffer struct {
 	readers   []*CircularReader
 	readersMu sync.Mutex
 	waitQueue *gmap.Map
-}
-
-type CircularReader struct {
-	buffer *CircularBuffer
-	start  int
-	closed bool
-	waitCh chan bool
 }
 
 func NewCircularBuffer(size int) *CircularBuffer {
@@ -67,6 +61,23 @@ func (b *CircularBuffer) ResetReader(r io.ReadCloser) {
 	}
 }
 
+func (b *CircularBuffer) SetReaderDeadline(r io.ReadCloser, deadline time.Time) {
+	if v, ok := r.(*CircularReader); ok {
+		v.deadline = deadline
+	}
+}
+
+func (b *CircularBuffer) Bytes() []byte {
+	b.readersMu.Lock()
+	defer b.readersMu.Unlock()
+	if len(b.data) == 0 {
+		return nil
+	}
+	bs := make([]byte, len(b.data))
+	copy(bs, b.data)
+	return bs
+}
+
 func (b *CircularBuffer) Write(p []byte) (n int, err error) {
 	if !b.isOpen {
 		return 0, io.ErrClosedPipe
@@ -100,7 +111,6 @@ func (b *CircularBuffer) NewReader() io.ReadCloser {
 }
 
 func (b *CircularBuffer) newReader(isCurrent bool) io.ReadCloser {
-
 	b.readersMu.Lock()
 	defer b.readersMu.Unlock()
 
@@ -123,6 +133,24 @@ func (b *CircularBuffer) newReader(isCurrent bool) io.ReadCloser {
 	return r
 }
 
+func (b *CircularBuffer) Close() error {
+	b.isOpen = false
+	b.readersMu.Lock()
+	defer b.readersMu.Unlock()
+	for _, r := range b.readers {
+		_ = r.Close()
+	}
+	return nil
+}
+
+type CircularReader struct {
+	buffer   *CircularBuffer
+	start    int
+	closed   bool
+	waitCh   chan bool
+	deadline time.Time
+}
+
 func (r *CircularReader) Read(p []byte) (n int, err error) {
 RETRY:
 	if r.closed {
@@ -133,7 +161,9 @@ RETRY:
 		return 0, io.ErrClosedPipe
 	}
 	if len(buffer.data) == 0 || r.start >= len(r.buffer.data)-1 {
-		<-r.wait()
+		if e := r.wait(); e != nil {
+			return 0, e
+		}
 		goto RETRY
 	}
 	bufLen := len(buffer.data)
@@ -147,13 +177,26 @@ RETRY:
 	return
 }
 
-func (r *CircularReader) wait() chan bool {
+func (r *CircularReader) wait() error {
 	ch := make(chan bool)
 	k := grand.String(8) + fmt.Sprintf("%p", ch)
 	r.buffer.waitQueue.Store(k, ch)
 	r.closeCh()
 	r.waitCh = ch
-	return ch
+	if r.deadline.IsZero() {
+		<-r.waitCh
+	} else {
+		err := fmt.Errorf("deadline exceeded")
+		if time.Now().After(r.deadline) {
+			return err
+		}
+		select {
+		case <-r.waitCh:
+		case <-time.After(r.deadline.Sub(time.Now())):
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *CircularReader) closeCh() {
@@ -166,15 +209,5 @@ func (r *CircularReader) Close() error {
 	}
 	r.closed = true
 	r.closeCh()
-	return nil
-}
-
-func (b *CircularBuffer) Close() error {
-	b.isOpen = false
-	b.readersMu.Lock()
-	defer b.readersMu.Unlock()
-	for _, r := range b.readers {
-		_ = r.Close()
-	}
 	return nil
 }

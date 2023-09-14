@@ -2,6 +2,7 @@ package gbytes
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ func TestCircularBuffer_Write(t *testing.T) {
 	if n != 5 || err != nil {
 		t.Errorf("Expected n=5 and err=nil, got n=%d, err=%v", n, err)
 	}
+	assert.Equal(t, "12345", string(buf.Bytes()))
 
 	r1 := buf.NewHistoryReader()
 	readData := make([]byte, 3)
@@ -288,4 +290,22 @@ func TestCircularBuffer_Reset(t *testing.T) {
 
 	// 尝试在已关闭的情况下重置
 	buffer.Reset()
+}
+
+func TestCircularReader_0(t *testing.T) {
+	buf := NewCircularBuffer(5)
+	reader := buf.NewReader()
+	// Try to read from empty buffer
+	buf.SetReaderDeadline(reader, time.Now().Add(time.Second))
+	readData := make([]byte, 3)
+	n, err := reader.Read(readData)
+	assert.Equal(t, 0, n)
+	assert.Contains(t, err.Error(), "exceeded")
+	reader.Read(readData)
+	buf.Write([]byte("123"))
+	buf.SetReaderDeadline(reader, time.Time{})
+	n, err = reader.Read(readData)
+	assert.Equal(t, 3, n)
+	assert.Equal(t, "123", string(readData))
+	assert.Nil(t, err)
 }

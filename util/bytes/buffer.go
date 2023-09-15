@@ -22,7 +22,7 @@ type CircularBuffer struct {
 
 func NewCircularBuffer(size int) *CircularBuffer {
 	b := &CircularBuffer{
-		data:      make([]byte, 0, size),
+		data:      []byte{},
 		size:      size,
 		isOpen:    true,
 		waitQueue: gmap.New(),
@@ -49,8 +49,14 @@ func (b *CircularBuffer) Reset() {
 	for _, r := range b.readers {
 		_ = r.Close()
 	}
+	b.waitQueue.RangeFast(func(_, v interface{}) bool {
+		b.closeCh(v.(chan bool))
+		return true
+	})
 	b.readers = []*CircularReader{}
-	b.data = make([]byte, b.size)
+	b.data = []byte{}
+	b.waitQueue.Clear()
+	b.waitQueue.GC()
 }
 
 func (b *CircularBuffer) ResetReader(r io.ReadCloser) {
@@ -119,11 +125,12 @@ func (b *CircularBuffer) newReader(isCurrent bool) io.ReadCloser {
 			closed: true,
 		}
 	}
-
+	var readers []*CircularReader
 	for _, r := range b.readers {
-		_ = r.Close()
+		if !r.closed {
+			readers = append(readers, r)
+		}
 	}
-	b.readers = nil
 	start := gcond.Cond(isCurrent, len(b.data)-1, 0).(int)
 	r := &CircularReader{buffer: b, start: start}
 	if r.start < 0 {
@@ -140,6 +147,10 @@ func (b *CircularBuffer) Close() error {
 	for _, r := range b.readers {
 		_ = r.Close()
 	}
+	b.waitQueue.RangeFast(func(_, v interface{}) bool {
+		b.closeCh(v.(chan bool))
+		return true
+	})
 	return nil
 }
 

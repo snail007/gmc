@@ -18,6 +18,8 @@ type CircularBuffer struct {
 	readers   []*CircularReader
 	readersMu sync.Mutex
 	waitQueue *gmap.Map
+	touchTime time.Time
+	touchLock sync.RWMutex
 }
 
 func NewCircularBuffer(size int) *CircularBuffer {
@@ -41,6 +43,18 @@ func (b *CircularBuffer) closeCh(ch chan bool) {
 	gerror.Try(func() {
 		close(ch)
 	})
+}
+
+func (b *CircularBuffer) TouchTime() time.Time {
+	b.touchLock.RLock()
+	defer b.touchLock.RUnlock()
+	return b.touchTime
+}
+
+func (b *CircularBuffer) touch() {
+	b.touchLock.Lock()
+	defer b.touchLock.Unlock()
+	b.touchTime = time.Now()
 }
 
 func (b *CircularBuffer) Reset() {
@@ -68,6 +82,7 @@ func (b *CircularBuffer) SetReaderDeadline(r io.ReadCloser, deadline time.Time) 
 }
 
 func (b *CircularBuffer) Bytes() []byte {
+	b.touch()
 	b.readersMu.Lock()
 	defer b.readersMu.Unlock()
 	if len(b.data) == 0 {
@@ -82,7 +97,7 @@ func (b *CircularBuffer) Write(p []byte) (n int, err error) {
 	if !b.isOpen {
 		return 0, io.ErrClosedPipe
 	}
-
+	b.touch()
 	b.data = append(b.data, p...)
 	overflowCnt := 0
 	if len(b.data) > b.size {
@@ -152,11 +167,13 @@ type CircularReader struct {
 }
 
 func (r *CircularReader) Read(p []byte) (n int, err error) {
+
 RETRY:
 	if r.closed {
 		return 0, io.ErrClosedPipe
 	}
 	buffer := r.buffer
+	buffer.touch()
 	if !buffer.isOpen {
 		return 0, io.ErrClosedPipe
 	}

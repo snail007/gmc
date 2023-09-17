@@ -39,6 +39,9 @@ func TestCircularBuffer_Write(t *testing.T) {
 	readData = make([]byte, 3)
 	time.AfterFunc(time.Second, func() {
 		buf.Write([]byte("000"))
+		assert.True(t, buf.TouchTime().Before(time.Now()))
+		assert.True(t, buf.TouchTime().After(time.Now().Add(-time.Second*2)))
+
 	})
 	n, err = reader.Read(readData)
 	if n != 3 || err != nil {

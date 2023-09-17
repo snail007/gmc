@@ -2,8 +2,12 @@ package gbytes
 
 import (
 	"bytes"
+	gcast "github.com/snail007/gmc/util/cast"
+	gloop "github.com/snail007/gmc/util/loop"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"io/ioutil"
+	"sync"
 	"testing"
 	"time"
 )
@@ -247,13 +251,52 @@ func TestCircularBuffer(t *testing.T) {
 	t.Run("Close", func(t *testing.T) {
 		bufferSize := 10
 		cb := NewCircularBuffer(bufferSize)
-
 		reader := cb.NewReader()
 		err := reader.Close()
 		if err != nil {
 			t.Errorf("Error closing reader: %v", err)
 		}
+		go func() {
+			time.Sleep(time.Second)
+			cb.Close()
+		}()
+		reader = cb.NewReader()
+		cb.SetReaderDeadline(reader, time.Now().Add(time.Minute))
+		p := make([]byte, 1)
+		_, err = reader.Read(p)
+		assert.NotNil(t, err)
+		err = cb.Close()
+		if err != nil {
+			t.Errorf("Error closing CircularBuffer: %v", err)
+		}
+	})
 
+	t.Run("Close1", func(t *testing.T) {
+		bufferSize := 10
+		cb := NewCircularBuffer(bufferSize)
+		time.Sleep(time.Second)
+		cb.Write([]byte("123"))
+		cb.Reset()
+		cb.Write([]byte("456"))
+		assert.Equal(t, "456", string(cb.Bytes()))
+	})
+	t.Run("Close2", func(t *testing.T) {
+		bufferSize := 10
+		cb := NewCircularBuffer(bufferSize)
+		reader := cb.NewReader()
+		err := reader.Close()
+		if err != nil {
+			t.Errorf("Error closing reader: %v", err)
+		}
+		go func() {
+			time.Sleep(time.Second)
+			cb.Reset()
+		}()
+		reader = cb.NewReader()
+		cb.SetReaderDeadline(reader, time.Now().Add(time.Minute))
+		p := make([]byte, 1)
+		_, err = reader.Read(p)
+		assert.NotNil(t, err)
 		err = cb.Close()
 		if err != nil {
 			t.Errorf("Error closing CircularBuffer: %v", err)
@@ -311,4 +354,33 @@ func TestCircularReader_0(t *testing.T) {
 	assert.Equal(t, 3, n)
 	assert.Equal(t, "123", string(readData))
 	assert.Nil(t, err)
+}
+
+func TestCircularReader_1(t *testing.T) {
+	buf := NewCircularBuffer(10)
+	buf.Reset()
+	go func() {
+		gloop.For(20, func(loopIndex int) {
+			time.Sleep(time.Millisecond)
+			buf.Write([]byte(gcast.ToString(loopIndex + 1)))
+		})
+	}()
+	g := sync.WaitGroup{}
+	g.Add(1)
+	go func() {
+		defer g.Done()
+		time.Sleep(time.Millisecond * 10)
+		reader2 := buf.NewReader()
+		buf.SetReaderDeadline(reader2, time.Now().Add(time.Second))
+		b, err := ioutil.ReadAll(reader2)
+		assert.NotNil(t, err)
+		assert.Less(t, len(b), 31)
+		assert.Greater(t, len(b), 10)
+	}()
+	reader := buf.NewHistoryReader()
+	buf.SetReaderDeadline(reader, time.Now().Add(time.Second))
+	b, err := ioutil.ReadAll(reader)
+	assert.NotNil(t, err)
+	assert.Equal(t, "1234567891011121314151617181920", string(b))
+	g.Wait()
 }

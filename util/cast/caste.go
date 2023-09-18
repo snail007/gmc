@@ -957,10 +957,10 @@ func ToStringE(i interface{}) (string, error) {
 		return "", nil
 	case time.Duration:
 		return durationString(s), nil
-	case fmt.Stringer:
-		return s.String(), nil
 	case error:
 		return s.Error(), nil
+	case fmt.Stringer:
+		return s.String(), nil
 	default:
 		return "", fmt.Errorf("unable to cast %#v of type %T to string", i, i)
 	}

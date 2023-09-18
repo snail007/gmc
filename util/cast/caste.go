@@ -955,10 +955,10 @@ func ToStringE(i interface{}) (string, error) {
 		return string(s), nil
 	case nil:
 		return "", nil
-	case fmt.Stringer:
-		return s.String(), nil
 	case time.Duration:
 		return durationString(s), nil
+	case fmt.Stringer:
+		return s.String(), nil
 	case error:
 		return s.Error(), nil
 	default:

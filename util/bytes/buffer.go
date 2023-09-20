@@ -22,7 +22,7 @@ type CircularBuffer struct {
 	waitQueue *gmap.Map
 	touchTime time.Time
 	touchLock sync.RWMutex
-	writer    *CircularWriter
+	writer    *IOWriter
 }
 
 func NewCircularBuffer(size int) *CircularBuffer {
@@ -32,7 +32,7 @@ func NewCircularBuffer(size int) *CircularBuffer {
 		isOpen:    true,
 		waitQueue: gmap.New(),
 	}
-	b.writer = NewCircularWriter(b)
+	b.writer = NewIOWriter(b)
 	return b
 }
 
@@ -55,7 +55,7 @@ func (b *CircularBuffer) TouchTime() time.Time {
 	return b.touchTime
 }
 
-func (b *CircularBuffer) Writer() *CircularWriter {
+func (b *CircularBuffer) Writer() *IOWriter {
 	return b.writer
 }
 
@@ -248,27 +248,27 @@ func (r *CircularReader) Close() error {
 	return nil
 }
 
-type CircularWriter struct {
+type IOWriter struct {
 	writer io.Writer
 }
 
-func NewCircularWriter(w io.Writer) *CircularWriter {
-	return &CircularWriter{
+func NewIOWriter(w io.Writer) *IOWriter {
+	return &IOWriter{
 		writer: w,
 	}
 }
 
-func (s *CircularWriter) Write(data []byte) (err error) {
+func (s *IOWriter) Write(data []byte) (err error) {
 	_, err = s.writer.Write(data)
 	return
 }
 
-func (s *CircularWriter) WriteLn(data []byte) (err error) {
+func (s *IOWriter) WriteLn(data []byte) (err error) {
 	_, err = s.writer.Write(append(bytes.TrimSuffix(data, []byte("\n")), '\n'))
 	return
 }
 
-func (s *CircularWriter) WriteStr(format string, values ...interface{}) (err error) {
+func (s *IOWriter) WriteStr(format string, values ...interface{}) (err error) {
 	if len(values) == 0 {
 		_, err = s.writer.Write([]byte(format))
 		return
@@ -277,7 +277,7 @@ func (s *CircularWriter) WriteStr(format string, values ...interface{}) (err err
 	return
 }
 
-func (s *CircularWriter) WriteStrLn(format string, values ...interface{}) (err error) {
+func (s *IOWriter) WriteStrLn(format string, values ...interface{}) (err error) {
 	if len(values) == 0 {
 		_, err = s.writer.Write([]byte(strings.TrimSuffix(format, "\n") + "\n"))
 		return
@@ -288,14 +288,14 @@ func (s *CircularWriter) WriteStrLn(format string, values ...interface{}) (err e
 
 type BytesBuilder struct {
 	buffer *bytes.Buffer
-	writer *CircularWriter
+	writer *IOWriter
 }
 
 func NewBytesBuilder() *BytesBuilder {
 	buf := bytes.NewBuffer(nil)
 	return &BytesBuilder{
 		buffer: buf,
-		writer: NewCircularWriter(buf),
+		writer: NewIOWriter(buf),
 	}
 }
 func (s *BytesBuilder) Write(data []byte) (err error) {

@@ -385,12 +385,12 @@ func TestCircularReader_1(t *testing.T) {
 	g.Wait()
 }
 
-func TestCircularWriter_Write(t *testing.T) {
-	// Create a CircularWriter with a buffer
+func TestIOWriter_Write(t *testing.T) {
+	// Create a IOWriter with a buffer
 	buffer := bytes.NewBuffer(nil)
-	writer := NewCircularWriter(buffer)
+	writer := NewIOWriter(buffer)
 
-	// Write data to the CircularWriter
+	// Write data to the IOWriter
 	data := []byte("Hello, World!")
 	err := writer.Write(data)
 	if err != nil {
@@ -405,12 +405,12 @@ func TestCircularWriter_Write(t *testing.T) {
 	}
 }
 
-func TestCircularWriter_WriteLn(t *testing.T) {
-	// Create a CircularWriter with a buffer
+func TestIOWriter_WriteLn(t *testing.T) {
+	// Create a IOWriter with a buffer
 	buffer := bytes.NewBuffer(nil)
-	writer := NewCircularWriter(buffer)
+	writer := NewIOWriter(buffer)
 
-	// Write data with a newline to the CircularWriter
+	// Write data with a newline to the IOWriter
 	data := []byte("Hello, World!")
 	err := writer.WriteLn(data)
 	if err != nil {
@@ -425,12 +425,12 @@ func TestCircularWriter_WriteLn(t *testing.T) {
 	}
 }
 
-func TestCircularWriter_WriteStr(t *testing.T) {
-	// Create a CircularWriter with a buffer
+func TestIOWriter_WriteStr(t *testing.T) {
+	// Create a IOWriter with a buffer
 	buffer := bytes.NewBuffer(nil)
-	writer := NewCircularWriter(buffer)
+	writer := NewIOWriter(buffer)
 
-	// Write a formatted string to the CircularWriter
+	// Write a formatted string to the IOWriter
 	format := "Hello, %s!"
 	name := "Alice"
 	err := writer.WriteStr(format, name)
@@ -446,12 +446,12 @@ func TestCircularWriter_WriteStr(t *testing.T) {
 	}
 }
 
-func TestCircularWriter_WriteStrLn(t *testing.T) {
-	// Create a CircularWriter with a buffer
+func TestIOWriter_WriteStrLn(t *testing.T) {
+	// Create a IOWriter with a buffer
 	buffer := bytes.NewBuffer(nil)
-	writer := NewCircularWriter(buffer)
+	writer := NewIOWriter(buffer)
 
-	// Write a formatted string with a newline to the CircularWriter
+	// Write a formatted string with a newline to the IOWriter
 	format := "Hello, %s"
 	name := "Bob"
 	err := writer.WriteStrLn(format, name)
@@ -549,12 +549,12 @@ func TestBytesBuilder_WriteStrLn(t *testing.T) {
 	}
 }
 
-func TestCircularWriter_WriteStr_EmptyValues(t *testing.T) {
-	// Create a CircularWriter with a buffer
+func TestIOWriter_WriteStr_EmptyValues(t *testing.T) {
+	// Create a IOWriter with a buffer
 	buffer := bytes.NewBuffer(nil)
-	writer := NewCircularWriter(buffer)
+	writer := NewIOWriter(buffer)
 
-	// Write a formatted string with no values to the CircularWriter
+	// Write a formatted string with no values to the IOWriter
 	format := "Hello, %s!"
 	err := writer.WriteStr(format)
 	if err != nil {
@@ -569,12 +569,12 @@ func TestCircularWriter_WriteStr_EmptyValues(t *testing.T) {
 	}
 }
 
-func TestCircularWriter_WriteStrLn_EmptyValues(t *testing.T) {
-	// Create a CircularWriter with a buffer
+func TestIOWriter_WriteStrLn_EmptyValues(t *testing.T) {
+	// Create a IOWriter with a buffer
 	buffer := bytes.NewBuffer(nil)
-	writer := NewCircularWriter(buffer)
+	writer := NewIOWriter(buffer)
 
-	// Write a formatted string with no values and a newline to the CircularWriter
+	// Write a formatted string with no values and a newline to the IOWriter
 	format := "Hello, %s"
 	err := writer.WriteStrLn(format)
 	if err != nil {

@@ -415,7 +415,7 @@ func (s *Logger) Panicf(format string, v ...interface{}) {
 	if s.level > gcore.LogLevePanic && !levelWrite {
 		return
 	}
-	str := s.caller(fmt.Sprintf(s.namespace()+"PANIC "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"PANIC "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLevePanic)
@@ -452,7 +452,7 @@ func (s *Logger) Fatalf(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveFatal && !levelWrite {
 		return
 	}
-	str := s.caller(fmt.Sprintf(s.namespace()+"FATAL "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"FATAL "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLeveFatal)
@@ -490,7 +490,7 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 		return
 	}
 
-	str := s.caller(fmt.Sprintf(s.namespace()+"ERROR "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"ERROR "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLeveError)
@@ -524,7 +524,7 @@ func (s *Logger) Warnf(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveWarn && !levelWrite {
 		return
 	}
-	str := s.caller(fmt.Sprintf(s.namespace()+"WARN "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"WARN "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLeveWarn)
@@ -557,7 +557,7 @@ func (s *Logger) Infof(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveInfo && !levelWrite {
 		return
 	}
-	str := s.caller(fmt.Sprintf(s.namespace()+"INFO "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"INFO "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLeveInfo)
@@ -591,7 +591,7 @@ func (s *Logger) Debugf(format string, v ...interface{}) {
 	if s.level > gcore.LogLeveDebug && !levelWrite {
 		return
 	}
-	str := s.caller(fmt.Sprintf(s.namespace()+"DEBUG "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"DEBUG "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLeveDebug)
@@ -624,7 +624,7 @@ func (s *Logger) Tracef(format string, v ...interface{}) {
 	if s.level > gcore.LogLevelTrace && !levelWrite {
 		return
 	}
-	str := s.caller(fmt.Sprintf(s.namespace()+"TRACE "+format, v...), s.skip())
+	str := s.caller(logSprintf(s.namespace()+"TRACE "+format, v...), s.skip())
 
 	if levelWrite {
 		s.levelWrite(str, gcore.LogLevelTrace)
@@ -815,4 +815,11 @@ func newMultiWriter(writers ...gcore.LoggerWriter) gcore.LoggerWriter {
 		}
 	}
 	return &multiWriter{writers: allWriters}
+}
+
+func logSprintf(format string, v ...interface{}) string {
+	if len(v) == 0 {
+		return format
+	}
+	return fmt.Sprintf(format, v...)
 }

@@ -348,7 +348,7 @@ func TestCircularReader_0(t *testing.T) {
 	assert.Equal(t, 0, n)
 	assert.Contains(t, err.Error(), "exceeded")
 	reader.Read(readData)
-	buf.Write([]byte("123"))
+	buf.Writer().WriteStr("123")
 	buf.SetReaderDeadline(reader, time.Time{})
 	n, err = reader.Read(readData)
 	assert.Equal(t, 3, n)
@@ -383,4 +383,208 @@ func TestCircularReader_1(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "1234567891011121314151617181920", string(b))
 	g.Wait()
+}
+
+func TestCircularWriter_Write(t *testing.T) {
+	// Create a CircularWriter with a buffer
+	buffer := bytes.NewBuffer(nil)
+	writer := NewCircularWriter(buffer)
+
+	// Write data to the CircularWriter
+	data := []byte("Hello, World!")
+	err := writer.Write(data)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// Check if the data was written correctly
+	result := buffer.String()
+	expected := "Hello, World!"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestCircularWriter_WriteLn(t *testing.T) {
+	// Create a CircularWriter with a buffer
+	buffer := bytes.NewBuffer(nil)
+	writer := NewCircularWriter(buffer)
+
+	// Write data with a newline to the CircularWriter
+	data := []byte("Hello, World!")
+	err := writer.WriteLn(data)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// Check if the data with a newline was written correctly
+	result := buffer.String()
+	expected := "Hello, World!\n"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestCircularWriter_WriteStr(t *testing.T) {
+	// Create a CircularWriter with a buffer
+	buffer := bytes.NewBuffer(nil)
+	writer := NewCircularWriter(buffer)
+
+	// Write a formatted string to the CircularWriter
+	format := "Hello, %s!"
+	name := "Alice"
+	err := writer.WriteStr(format, name)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// Check if the formatted string was written correctly
+	result := buffer.String()
+	expected := "Hello, Alice!"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestCircularWriter_WriteStrLn(t *testing.T) {
+	// Create a CircularWriter with a buffer
+	buffer := bytes.NewBuffer(nil)
+	writer := NewCircularWriter(buffer)
+
+	// Write a formatted string with a newline to the CircularWriter
+	format := "Hello, %s"
+	name := "Bob"
+	err := writer.WriteStrLn(format, name)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// Check if the formatted string with a newline was written correctly
+	result := buffer.String()
+	expected := "Hello, Bob\n"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestBytesBuilder_String(t *testing.T) {
+	// Create a BytesBuilder
+	builder := NewBytesBuilder()
+
+	// Write data to the builder
+	data := []byte("Hello, World!")
+	builder.Write(data)
+
+	// Check if String() returns the expected result
+	result := builder.String()
+	expected := "Hello, World!"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestBytesBuilder_Bytes(t *testing.T) {
+	// Create a BytesBuilder
+	builder := NewBytesBuilder()
+
+	// Write data to the builder
+	data := []byte("Hello, World!")
+	builder.Write(data)
+
+	// Check if Bytes() returns the expected result
+	result := builder.Bytes()
+	expected := []byte("Hello, World!")
+	if !bytes.Equal(result, expected) {
+		t.Errorf("Expected %v, but got %v", expected, result)
+	}
+}
+
+func TestBytesBuilder_WriteLn(t *testing.T) {
+	// Create a BytesBuilder
+	builder := NewBytesBuilder()
+
+	// Write data with a newline to the builder
+	data := []byte("Hello, World!")
+	builder.WriteLn(data)
+
+	// Check if String() returns the expected result with a newline
+	result := builder.String()
+	expected := "Hello, World!\n"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestBytesBuilder_WriteStr(t *testing.T) {
+	// Create a BytesBuilder
+	builder := NewBytesBuilder()
+
+	// Write a formatted string to the builder
+	format := "Hello, %s!"
+	name := "Charlie"
+	builder.WriteStr(format, name)
+
+	// Check if String() returns the expected result with the formatted string
+	result := builder.String()
+	expected := "Hello, Charlie!"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestBytesBuilder_WriteStrLn(t *testing.T) {
+	// Create a BytesBuilder
+	builder := NewBytesBuilder()
+
+	// Write a formatted string with a newline to the builder
+	format := "Hello, %s"
+	name := "David"
+	builder.WriteStrLn(format, name)
+
+	// Check if String() returns the expected result with the formatted string and newline
+	result := builder.String()
+	expected := "Hello, David\n"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestCircularWriter_WriteStr_EmptyValues(t *testing.T) {
+	// Create a CircularWriter with a buffer
+	buffer := bytes.NewBuffer(nil)
+	writer := NewCircularWriter(buffer)
+
+	// Write a formatted string with no values to the CircularWriter
+	format := "Hello, %s!"
+	err := writer.WriteStr(format)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// Check if the formatted string was written correctly
+	result := buffer.String()
+	expected := "Hello, %s!"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
+}
+
+func TestCircularWriter_WriteStrLn_EmptyValues(t *testing.T) {
+	// Create a CircularWriter with a buffer
+	buffer := bytes.NewBuffer(nil)
+	writer := NewCircularWriter(buffer)
+
+	// Write a formatted string with no values and a newline to the CircularWriter
+	format := "Hello, %s"
+	err := writer.WriteStrLn(format)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// Check if the formatted string with a newline was written correctly
+	result := buffer.String()
+	expected := "Hello, %s\n"
+	if result != expected {
+		t.Errorf("Expected %s, but got %s", expected, result)
+	}
 }

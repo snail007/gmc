@@ -1,12 +1,14 @@
 package gbytes
 
 import (
+	"bytes"
 	"fmt"
 	gerror "github.com/snail007/gmc/module/error"
 	gcond "github.com/snail007/gmc/util/cond"
 	gmap "github.com/snail007/gmc/util/map"
 	grand "github.com/snail007/gmc/util/rand"
 	"io"
+	"strings"
 	"sync"
 	"time"
 )
@@ -20,6 +22,7 @@ type CircularBuffer struct {
 	waitQueue *gmap.Map
 	touchTime time.Time
 	touchLock sync.RWMutex
+	writer    *CircularWriter
 }
 
 func NewCircularBuffer(size int) *CircularBuffer {
@@ -29,6 +32,7 @@ func NewCircularBuffer(size int) *CircularBuffer {
 		isOpen:    true,
 		waitQueue: gmap.New(),
 	}
+	b.writer = NewCircularWriter(b)
 	return b
 }
 
@@ -49,6 +53,10 @@ func (b *CircularBuffer) TouchTime() time.Time {
 	b.touchLock.RLock()
 	defer b.touchLock.RUnlock()
 	return b.touchTime
+}
+
+func (b *CircularBuffer) Writer() *CircularWriter {
+	return b.writer
 }
 
 func (b *CircularBuffer) touch() {
@@ -238,4 +246,78 @@ func (r *CircularReader) Close() error {
 	r.closed = true
 	r.closeCh()
 	return nil
+}
+
+type CircularWriter struct {
+	writer io.Writer
+}
+
+func NewCircularWriter(w io.Writer) *CircularWriter {
+	return &CircularWriter{
+		writer: w,
+	}
+}
+
+func (s *CircularWriter) Write(data []byte) (err error) {
+	_, err = s.writer.Write(data)
+	return
+}
+
+func (s *CircularWriter) WriteLn(data []byte) (err error) {
+	_, err = s.writer.Write(append(bytes.TrimSuffix(data, []byte("\n")), '\n'))
+	return
+}
+
+func (s *CircularWriter) WriteStr(format string, values ...interface{}) (err error) {
+	if len(values) == 0 {
+		_, err = s.writer.Write([]byte(format))
+		return
+	}
+	_, err = s.writer.Write([]byte(fmt.Sprintf(format, values...)))
+	return
+}
+
+func (s *CircularWriter) WriteStrLn(format string, values ...interface{}) (err error) {
+	if len(values) == 0 {
+		_, err = s.writer.Write([]byte(strings.TrimSuffix(format, "\n") + "\n"))
+		return
+	}
+	_, err = s.writer.Write([]byte(strings.TrimSuffix(fmt.Sprintf(format, values...), "\n") + "\n"))
+	return
+}
+
+type BytesBuilder struct {
+	buffer *bytes.Buffer
+	writer *CircularWriter
+}
+
+func NewBytesBuilder() *BytesBuilder {
+	buf := bytes.NewBuffer(nil)
+	return &BytesBuilder{
+		buffer: buf,
+		writer: NewCircularWriter(buf),
+	}
+}
+func (s *BytesBuilder) Write(data []byte) (err error) {
+	return s.writer.Write(data)
+}
+
+func (s *BytesBuilder) WriteLn(data []byte) (err error) {
+	return s.writer.WriteLn(data)
+}
+
+func (s *BytesBuilder) WriteStr(format string, values ...interface{}) (err error) {
+	return s.writer.WriteStr(format, values...)
+}
+
+func (s *BytesBuilder) WriteStrLn(format string, values ...interface{}) (err error) {
+	return s.writer.WriteStrLn(format, values...)
+}
+
+func (s *BytesBuilder) String() string {
+	return s.buffer.String()
+}
+
+func (s *BytesBuilder) Bytes() []byte {
+	return s.buffer.Bytes()
 }

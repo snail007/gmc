@@ -82,6 +82,7 @@ func TestWaitDone(t *testing.T) {
 	assert2.Greater(t, time.Since(start), time.Millisecond*100)
 	assert2.Less(t, time.Since(start), time.Millisecond*150)
 }
+
 func TestRunning(t *testing.T) {
 	p := gpool.New(3)
 	p.Submit(func() {

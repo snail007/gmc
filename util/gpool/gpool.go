@@ -31,6 +31,7 @@ type GPool struct {
 	maxWaitCount  int
 	lazy          sync.Once
 	initWorkCount int
+	g             *sync.WaitGroup
 }
 
 // MaxTaskAwaitCount returns the max waiting task count.
@@ -64,6 +65,7 @@ func NewWithLogger(workerCount int, logger gcore.Logger) (p *GPool) {
 		logger:        logger,
 		workers:       gmap.New(),
 		initWorkCount: workerCount,
+		g:             &sync.WaitGroup{},
 	}
 	return
 }
@@ -123,6 +125,11 @@ func (s *GPool) WorkerCount() int {
 	return s.workers.Len()
 }
 
+// WaitDone wait all the tasks submit task is executed done, if no task, return immediately.
+func (s *GPool) WaitDone() {
+	s.g.Wait()
+}
+
 func (s *GPool) addWorker(cnt int) {
 	for i := 0; i < cnt; i++ {
 		w := newWorker(s)
@@ -140,9 +147,12 @@ func (s *GPool) newWorkerID() string {
 
 // run a task function, using defer to catch task exception
 func (s *GPool) run(fn func()) {
-	defer gerror.Recover(func(e interface{}) {
-		s.log("GPool: a task stopped unexpectedly, err: %s", gcore.ProviderError()().StackError(e))
-	})
+	defer func() {
+		s.g.Done()
+		if e := recover(); e != nil {
+			s.log("GPool: a task stopped unexpectedly, err: %s", gcore.ProviderError()().StackError(e))
+		}
+	}()
 	fn()
 }
 
@@ -154,6 +164,7 @@ func (s *GPool) Submit(task func()) bool {
 	if s.maxWaitCount > 0 && s.tasks.Len() > s.maxWaitCount {
 		return false
 	}
+	s.g.Add(1)
 	s.tasks.Add(task)
 	s.notifyAll()
 	return true

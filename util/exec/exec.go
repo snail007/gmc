@@ -79,7 +79,8 @@ func (s *Command) WorkDir(workDir string) *Command {
 }
 
 func (s *Command) Output(w io.Writer) *Command {
-	if reflect.TypeOf(w).Kind() == reflect.Pointer &&
+	if (strings.Contains(reflect.TypeOf(w).Kind().String(), "Pointer") ||
+		strings.Contains(reflect.TypeOf(w).Kind().String(), "ptr")) &&
 		reflect.ValueOf(w).IsNil() {
 		w = nil
 	}

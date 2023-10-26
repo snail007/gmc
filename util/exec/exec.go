@@ -43,8 +43,9 @@ func NewCommand(cmd string) *Command {
 	}
 }
 
-func (s *Command) BeforeExec(f func(command *Command, cmd *exec.Cmd)) {
+func (s *Command) BeforeExec(f func(command *Command, cmd *exec.Cmd)) *Command {
 	s.beforeExec = f
+	return s
 }
 
 func (s *Command) Args(args ...string) *Command {

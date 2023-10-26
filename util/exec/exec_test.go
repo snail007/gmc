@@ -7,6 +7,7 @@ import (
 	gmap "github.com/snail007/gmc/util/map"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 )
@@ -130,9 +131,14 @@ func TestCommand_Cmd(t *testing.T) {
 
 func TestCommand_Kill_1(t *testing.T) {
 	c := NewCommand("sleep 100").Async(true)
+	a := ""
+	c.BeforeExec(func(command *Command, cmd *exec.Cmd) {
+		a = "abc"
+	})
 	c.Kill()
 	c.Exec()
 	time.Sleep(time.Millisecond * 100)
+	assert.Equal(t, "abc", a)
 	assert.False(t, c.Cmd().ProcessState != nil)
 	c.Kill()
 	time.Sleep(time.Millisecond * 100)

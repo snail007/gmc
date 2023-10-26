@@ -29,6 +29,7 @@ type Command struct {
 	finalCmd      string
 	asyncCallback func(cmd *Command, output string, err error)
 	cmd           *exec.Cmd
+	beforeExec    func(command *Command, cmd *exec.Cmd)
 }
 
 func NewCommand(cmd string) *Command {
@@ -40,6 +41,10 @@ func NewCommand(cmd string) *Command {
 		env:     map[string]string{},
 		workDir: "./",
 	}
+}
+
+func (s *Command) BeforeExec(f func(command *Command, cmd *exec.Cmd)) {
+	s.beforeExec = f
 }
 
 func (s *Command) Args(args ...string) *Command {
@@ -114,6 +119,9 @@ func (s *Command) errorLog(msg string) {
 }
 
 func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
+	if s.beforeExec != nil {
+		s.beforeExec(s, cmd)
+	}
 	if s.outputWriter == nil {
 		buf := &bytes.Buffer{}
 		cmd.Stdout = buf

@@ -132,15 +132,15 @@ func (s *Command) errorLog(msg string) {
 }
 
 func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
-	if s.beforeExec != nil {
-		s.beforeExec(s, cmd)
-	}
 	var run = func() (err error) {
 		defer func() {
 			if s.afterExited != nil {
 				s.afterExited(s, cmd, err)
 			}
 		}()
+		if s.beforeExec != nil {
+			s.beforeExec(s, cmd)
+		}
 		err = cmd.Start()
 		if s.afterExec != nil {
 			s.afterExec(s, cmd, err)

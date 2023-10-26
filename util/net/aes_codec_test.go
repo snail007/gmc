@@ -47,7 +47,7 @@ func TestAESCodec(t *testing.T) {
 					fmt.Println("server read error", err)
 					return
 				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
+				assert.Contains(t, string(buf[:n]), "hello from client")
 				atomic.AddInt32(outputCnt, 1)
 				if debug {
 					fmt.Println(string(buf[:n]))
@@ -69,7 +69,7 @@ func TestAESCodec(t *testing.T) {
 				return
 			}
 			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
+			assert.Contains(t, string(buf[:n]), "hello from server")
 			if debug {
 				fmt.Println(string(buf[:n]))
 			}

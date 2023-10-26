@@ -97,7 +97,9 @@ func (s *Command) WorkDir(workDir string) *Command {
 }
 
 func (s *Command) Output(w io.Writer) *Command {
-	if reflect.ValueOf(w).IsNil() {
+	if (strings.Contains(reflect.TypeOf(w).Kind().String(), "Pointer") ||
+		strings.Contains(reflect.TypeOf(w).Kind().String(), "ptr")) &&
+		reflect.ValueOf(w).IsNil() {
 		w = nil
 	}
 	s.outputWriter = w

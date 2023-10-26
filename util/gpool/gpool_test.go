@@ -11,6 +11,7 @@ import (
 	gerror "github.com/snail007/gmc/module/error"
 	glog "github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util/gpool"
+	gloop "github.com/snail007/gmc/util/loop"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -69,6 +70,19 @@ func TestSetLogger(t *testing.T) {
 	p.SetLogger(nil)
 	p.Stop()
 }
+func TestWaitDone(t *testing.T) {
+	start := time.Now()
+	p := gpool.New(10)
+	gloop.For(10, func(loopIndex int) {
+		p.Submit(func() {
+			time.Sleep(time.Millisecond * 100)
+		})
+	})
+	p.WaitDone()
+	assert2.Greater(t, time.Since(start), time.Millisecond*100)
+	assert2.Less(t, time.Since(start), time.Millisecond*150)
+}
+
 func TestRunning(t *testing.T) {
 	p := gpool.New(3)
 	p.Submit(func() {

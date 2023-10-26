@@ -120,3 +120,22 @@ func TestExec8(t *testing.T) {
 	assert.Empty(output)
 	assert.Contains(buf.String(), "test crash")
 }
+
+func TestCommand_Cmd(t *testing.T) {
+	c := NewCommand("echo a")
+	_, err := c.Exec()
+	assert.Nil(t, err)
+	assert.NotNil(t, c.Cmd())
+}
+
+func TestCommand_Kill_1(t *testing.T) {
+	c := NewCommand("sleep 100").Async(true)
+	c.Kill()
+	c.Exec()
+	time.Sleep(time.Millisecond * 100)
+	assert.False(t, c.Cmd().ProcessState != nil)
+	c.Kill()
+	time.Sleep(time.Millisecond * 100)
+	assert.True(t, c.Cmd().ProcessState != nil)
+	c.Kill()
+}

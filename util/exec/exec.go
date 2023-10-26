@@ -18,7 +18,7 @@ import (
 )
 
 type Command struct {
-	cmd           string
+	cmdStr        string
 	args          []string
 	env           map[string]string
 	async         bool
@@ -28,6 +28,7 @@ type Command struct {
 	workDir       string
 	finalCmd      string
 	asyncCallback func(cmd *Command, output string, err error)
+	cmd           *exec.Cmd
 }
 
 func NewCommand(cmd string) *Command {
@@ -35,7 +36,7 @@ func NewCommand(cmd string) *Command {
 		panic("only worked in linux*")
 	}
 	return &Command{
-		cmd:     cmd,
+		cmdStr:  cmd,
 		env:     map[string]string{},
 		workDir: "./",
 	}
@@ -44,6 +45,23 @@ func NewCommand(cmd string) *Command {
 func (s *Command) Args(args ...string) *Command {
 	s.args = args
 	return s
+}
+
+func (s *Command) Cmd() *exec.Cmd {
+	return s.cmd
+}
+
+func (s *Command) Kill() {
+	if s.cmd == nil {
+		return
+	}
+	if s.cmd.ProcessState != nil {
+		return
+	}
+	if s.cmd.Process != nil {
+		s.cmd.Process.Kill()
+	}
+	return
 }
 
 func (s *Command) Log(log gcore.Logger) *Command {
@@ -119,9 +137,8 @@ func (s *Command) Exec() (output string, e error) {
 	s.finalCmd = `
 #!/bin/bash
 set -e
-` + s.cmd
+` + s.cmdStr
 	gfile.WriteString(sid, s.finalCmd, false)
-	var cmd *exec.Cmd
 	var cancel context.CancelFunc
 	var ctx context.Context
 	if s.timeout > 0 {
@@ -129,11 +146,11 @@ set -e
 		if !s.async {
 			defer cancel()
 		}
-		cmd = exec.CommandContext(ctx, "bash", append([]string{sid}, s.args...)...)
+		s.cmd = exec.CommandContext(ctx, "bash", append([]string{sid}, s.args...)...)
 	} else {
-		cmd = exec.Command("bash", append([]string{sid}, s.args...)...)
+		s.cmd = exec.Command("bash", append([]string{sid}, s.args...)...)
 	}
-	cmd.Dir = s.workDir
+	s.cmd.Dir = s.workDir
 	env := map[string]string{}
 	for _, v := range os.Environ() {
 		kv := strings.SplitN(v, "=", 2)
@@ -148,13 +165,13 @@ set -e
 		}
 	}
 	for k, v := range env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		s.cmd.Env = append(s.cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 	if !s.async {
-		b, err := s.combinedOutput(cmd)
+		b, err := s.combinedOutput(s.cmd)
 		if err != nil {
 			e = fmt.Errorf("exec fail, exit code: %d, command: %s, error: %v, output: %s",
-				cmd.ProcessState.ExitCode(), s.finalCmd, err, string(b))
+				s.cmd.ProcessState.ExitCode(), s.finalCmd, err, string(b))
 			s.errorLog(e.Error())
 			return
 		}
@@ -170,10 +187,10 @@ set -e
 			defer gerror.Recover(func(e interface{}) {
 				s.errorLog(fmt.Sprintf("async exec crashed, command: %s, error: %v", s.finalCmd, e))
 			})
-			out, err := s.combinedOutput(cmd)
+			out, err := s.combinedOutput(s.cmd)
 			if err != nil && s.log != nil {
 				s.errorLog(fmt.Sprintf("async exec fail, exit code: %d, command: %s, error: %v, output: %s",
-					cmd.ProcessState.ExitCode(), s.finalCmd, err, string(out)))
+					s.cmd.ProcessState.ExitCode(), s.finalCmd, err, string(out)))
 			}
 			if s.asyncCallback != nil {
 				s.asyncCallback(s, string(out), err)

@@ -132,16 +132,46 @@ func TestCommand_Cmd(t *testing.T) {
 func TestCommand_Kill_1(t *testing.T) {
 	c := NewCommand("sleep 100").Async(true)
 	a := ""
+	b := ""
+	d := ""
 	c.BeforeExec(func(command *Command, cmd *exec.Cmd) {
-		a = "abc"
+		a = "111"
+	})
+	c.AfterExec(func(command *Command, cmd *exec.Cmd, err error) {
+		b = "222"
+	})
+	c.AfterExited(func(command *Command, cmd *exec.Cmd, err error) {
+		d = "333"
 	})
 	c.Kill()
 	c.Exec()
 	time.Sleep(time.Millisecond * 100)
-	assert.Equal(t, "abc", a)
+	assert.Equal(t, "111", a)
+	assert.Equal(t, "222", b)
+	assert.Equal(t, "", d)
 	assert.False(t, c.Cmd().ProcessState != nil)
 	c.Kill()
 	time.Sleep(time.Millisecond * 100)
 	assert.True(t, c.Cmd().ProcessState != nil)
 	c.Kill()
+}
+
+func TestCommand_Hook(t *testing.T) {
+	c := NewCommand("sleep 1")
+	a := ""
+	b := ""
+	d := ""
+	c.BeforeExec(func(command *Command, cmd *exec.Cmd) {
+		a = "111"
+	})
+	c.AfterExec(func(command *Command, cmd *exec.Cmd, err error) {
+		b = "222"
+	})
+	c.AfterExited(func(command *Command, cmd *exec.Cmd, err error) {
+		d = "333"
+	})
+	c.Exec()
+	assert.Equal(t, "111", a)
+	assert.Equal(t, "222", b)
+	assert.Equal(t, "333", d)
 }

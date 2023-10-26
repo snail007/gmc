@@ -30,6 +30,8 @@ type Command struct {
 	asyncCallback func(cmd *Command, output string, err error)
 	cmd           *exec.Cmd
 	beforeExec    func(command *Command, cmd *exec.Cmd)
+	afterExec     func(command *Command, cmd *exec.Cmd, err error)
+	afterExited   func(command *Command, cmd *exec.Cmd, err error)
 }
 
 func NewCommand(cmd string) *Command {
@@ -45,6 +47,16 @@ func NewCommand(cmd string) *Command {
 
 func (s *Command) BeforeExec(f func(command *Command, cmd *exec.Cmd)) *Command {
 	s.beforeExec = f
+	return s
+}
+
+func (s *Command) AfterExec(f func(command *Command, cmd *exec.Cmd, err error)) *Command {
+	s.afterExec = f
+	return s
+}
+
+func (s *Command) AfterExited(f func(command *Command, cmd *exec.Cmd, err error)) *Command {
+	s.afterExited = f
 	return s
 }
 
@@ -123,16 +135,35 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 	if s.beforeExec != nil {
 		s.beforeExec(s, cmd)
 	}
+	var run = func() (err error) {
+		defer func() {
+			if s.afterExited != nil {
+				s.afterExited(s, cmd, err)
+			}
+		}()
+		err = cmd.Start()
+		if s.afterExec != nil {
+			s.afterExec(s, cmd, err)
+		}
+		if err != nil {
+			return err
+		}
+		err = cmd.Wait()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	if s.outputWriter == nil {
 		buf := &bytes.Buffer{}
 		cmd.Stdout = buf
 		cmd.Stderr = buf
-		err := cmd.Run()
+		err := run()
 		return buf.Bytes(), err
 	} else {
 		cmd.Stdout = s.outputWriter
 		cmd.Stderr = s.outputWriter
-		err := cmd.Run()
+		err := run()
 		return nil, err
 	}
 }

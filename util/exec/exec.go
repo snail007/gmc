@@ -197,14 +197,13 @@ func (s *Command) ExecAsync() (e error) {
 // Exec execute command on linux system.
 func (s *Command) Exec() (output string, e error) {
 	sid := fmt.Sprintf("/tmp/tmp_%d", grand.New().Int31()) + ".sh"
-	defer func() {
-		if !s.async && !s.execAsync {
-			os.Remove(sid)
-		}
-	}()
 	s.finalCmd = `
 #!/bin/bash
 set -e
+cleanup_punaelc() {
+     rm -rf ` + sid + `
+}
+trap cleanup_punaelc EXIT
 ` + s.cmdStr
 	gfile.WriteString(sid, s.finalCmd, false)
 	var cancel context.CancelFunc

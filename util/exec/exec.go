@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -22,6 +23,8 @@ type Command struct {
 	args          []string
 	env           map[string]string
 	async         bool
+	execAsync     bool
+	detach        bool
 	timeout       time.Duration
 	log           gcore.Logger
 	outputWriter  io.Writer
@@ -69,6 +72,12 @@ func (s *Command) Cmd() *exec.Cmd {
 	return s.cmd
 }
 
+// Detach make subprocess detach form current process. If current process exited, the child process will not be exited
+func (s *Command) Detach(detach bool) *Command {
+	s.detach = detach
+	return s
+}
+
 func (s *Command) Kill() {
 	if s.cmd == nil {
 		return
@@ -92,6 +101,8 @@ func (s *Command) Timeout(timeout time.Duration) *Command {
 	return s
 }
 
+// Async create a goroutine to wait the command exited, the command be synchronized executed
+// if current process exited, the child process will be exited
 func (s *Command) Async(async bool) *Command {
 	s.async = async
 	return s
@@ -138,6 +149,9 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 				s.afterExited(s, cmd, err)
 			}
 		}()
+		if s.detach {
+			s.cmd.SysProcAttr.Setsid = true
+		}
 		if s.beforeExec != nil {
 			s.beforeExec(s, cmd)
 		}
@@ -148,9 +162,11 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 		if err != nil {
 			return err
 		}
-		err = cmd.Wait()
-		if err != nil {
-			return err
+		if !s.execAsync {
+			err = cmd.Wait()
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -168,11 +184,21 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 	}
 }
 
+// ExecAsync async execute command on linux system.
+func (s *Command) ExecAsync() (e error) {
+	if s.async {
+		panic("ExecAsync can not run with Async is enabled")
+	}
+	s.execAsync = true
+	_, e = s.Exec()
+	return e
+}
+
 // Exec execute command on linux system.
 func (s *Command) Exec() (output string, e error) {
 	sid := fmt.Sprintf("/tmp/tmp_%d", grand.New().Int31()) + ".sh"
 	defer func() {
-		if !s.async {
+		if !s.async && !s.execAsync {
 			os.Remove(sid)
 		}
 	}()
@@ -192,6 +218,7 @@ set -e
 	} else {
 		s.cmd = exec.Command("bash", append([]string{sid}, s.args...)...)
 	}
+	s.cmd.SysProcAttr = &syscall.SysProcAttr{}
 	s.cmd.Dir = s.workDir
 	env := map[string]string{}
 	for _, v := range os.Environ() {

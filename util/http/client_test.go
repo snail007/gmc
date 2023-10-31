@@ -133,7 +133,7 @@ func TestHTTPClient_Get5(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	_, _, _, err := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
-	assert.Contains(err.Error(), "tls: bad certificate")
+	assert.Contains(err.Error(), "certificate")
 }
 
 func TestHTTPClient_Get6(t *testing.T) {

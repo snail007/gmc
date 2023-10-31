@@ -110,7 +110,7 @@ jobs:
            wget -q -t 1 "https://github.com/snail007/gmct/releases/download/${LAST_VERSION}/$F"
            tar zxf $F && chmod +x gmct && rm -rf $F
            cd ../ && cp -R gmc $SNAIL007PATH/
-           cd $SNAIL007PATH/gmc/ && go get -v -t -d ./... && ./gmct cover -s -k -o
+           cd $SNAIL007PATH/gmc/ && go get -v -t -d ./... && ./gmct cover -s -k
            mv coverage.txt $WORKPATH/
 
       - name: Upload coverage report

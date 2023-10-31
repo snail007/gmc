@@ -153,7 +153,7 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 			}
 		}()
 		if s.detach {
-			s.cmd.SysProcAttr.Setsid = true
+			setSid(s.cmd.SysProcAttr)
 		} else {
 			s.cmd.SysProcAttr.Setpgid = true
 		}

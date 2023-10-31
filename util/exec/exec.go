@@ -72,7 +72,10 @@ func (s *Command) Cmd() *exec.Cmd {
 	return s.cmd
 }
 
-// Detach make subprocess detach form current process. If current process exited, the child process will not be exited
+// Detach make subprocess detach form current process.
+// If current process exited, the child process will not be exited.
+//
+//	Note: this feature only working in go version >=1.20
 func (s *Command) Detach(detach bool) *Command {
 	s.detach = detach
 	return s
@@ -151,6 +154,8 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 		}()
 		if s.detach {
 			s.cmd.SysProcAttr.Setsid = true
+		} else {
+			s.cmd.SysProcAttr.Setpgid = true
 		}
 		if s.beforeExec != nil {
 			s.beforeExec(s, cmd)

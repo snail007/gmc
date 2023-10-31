@@ -155,7 +155,7 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 		if s.detach {
 			setSid(s.cmd.SysProcAttr)
 		} else {
-			s.cmd.SysProcAttr.Setpgid = true
+			setPgid(s.cmd.SysProcAttr)
 		}
 		if s.beforeExec != nil {
 			s.beforeExec(s, cmd)

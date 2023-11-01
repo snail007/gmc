@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -207,7 +208,7 @@ func (s *ConsoleWriter) Write(p []byte, level gcore.LogLevel) (n int, err error)
 func NewConsoleWriter() *ConsoleWriter {
 	w := &ConsoleWriter{
 		w:            os.Stdout,
-		disableColor: gcast.ToBool(os.Getenv("DISABLE_CONSOLE_COLOR")),
+		disableColor: runtime.GOOS == "windows" || gcast.ToBool(os.Getenv("DISABLE_CONSOLE_COLOR")),
 	}
 	w.redirected = w.isRedirected()
 	return w

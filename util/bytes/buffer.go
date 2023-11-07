@@ -154,7 +154,7 @@ func (b *CircularBuffer) newReader(isCurrent bool) io.ReadCloser {
 			readers = append(readers, r)
 		}
 	}
-	start := gcond.Cond(isCurrent, len(b.data)-1, 0).(int)
+	start := gcond.Cond(isCurrent, len(b.data)-1, 0).Int()
 	r := &CircularReader{buffer: b, start: start}
 	if r.start < 0 {
 		r.start = 0

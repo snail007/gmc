@@ -55,3 +55,25 @@ func Less(v1, v2 interface{}) bool {
 	sort.Strings(a)
 	return a[0] == s1
 }
+
+func SortMap(m map[string]interface{}, aes bool) *Map {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if aes {
+			return Less(keys[i], keys[j])
+		}
+		return !Less(keys[i], keys[j])
+	})
+	newMap := New()
+	for _, k := range keys {
+		newMap.Store(k, m[k])
+	}
+	return newMap
+}
+
+func SortMapStr(m map[string]string, aes bool) *Map {
+	return SortMap(ToAny(m), aes)
+}

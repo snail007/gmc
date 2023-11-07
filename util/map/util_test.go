@@ -109,3 +109,23 @@ func TestSortStr(t *testing.T) {
 	assert.Equal(t, "b", s[1]["name"])
 	assert.Equal(t, "a", s[2]["name"])
 }
+
+func TestSortMap(t *testing.T) {
+	m := map[string]string{
+		"2": "6",
+		"3": "7",
+		"1": "5",
+	}
+	v := []string{}
+	SortMapStr(m, true).RangeFast(func(key, value interface{}) bool {
+		v = append(v, value.(string))
+		return true
+	})
+	assert.Equal(t, []string{"5", "6", "7"}, v)
+	v = []string{}
+	SortMapStr(m, false).RangeFast(func(key, value interface{}) bool {
+		v = append(v, value.(string))
+		return true
+	})
+	assert.Equal(t, []string{"7", "6", "5"}, v)
+}

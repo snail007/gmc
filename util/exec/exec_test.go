@@ -21,6 +21,19 @@ func TestExec(t *testing.T) {
 	assert.Contains(output, "/bin/bash\n")
 }
 
+func TestStrictMode(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+
+	output, errStr := NewCommand("xxxdef;echo abc").StrictMode(false).Exec()
+	assert.Empty(errStr)
+	assert.Contains(output, "abc")
+
+	output, errStr = NewCommand("xxxdef;echo abc").StrictMode(true).Exec()
+	assert.NotEmpty(errStr)
+	assert.Empty(output, output)
+}
+
 func TestExec0(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)

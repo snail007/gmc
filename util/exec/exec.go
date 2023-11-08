@@ -6,6 +6,7 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
+	gcond "github.com/snail007/gmc/util/cond"
 	gfile "github.com/snail007/gmc/util/file"
 	grand "github.com/snail007/gmc/util/rand"
 	"io"
@@ -19,6 +20,7 @@ import (
 )
 
 type Command struct {
+	strictMode    bool
 	cmdStr        string
 	args          []string
 	env           map[string]string
@@ -42,10 +44,16 @@ func NewCommand(cmd string) *Command {
 		panic("only worked in linux*")
 	}
 	return &Command{
-		cmdStr:  cmd,
-		env:     map[string]string{},
-		workDir: "./",
+		strictMode: true,
+		cmdStr:     cmd,
+		env:        map[string]string{},
+		workDir:    "./",
 	}
+}
+
+func (s *Command) StrictMode(strictMode bool) *Command {
+	s.strictMode = strictMode
+	return s
 }
 
 func (s *Command) BeforeExec(f func(command *Command, cmd *exec.Cmd)) *Command {
@@ -202,9 +210,10 @@ func (s *Command) ExecAsync() (e error) {
 // Exec execute command on linux system.
 func (s *Command) Exec() (output string, e error) {
 	sid := fmt.Sprintf("/tmp/tmp_%d", grand.New().Int31()) + ".sh"
+	strictCmd := gcond.Cond(s.strictMode, "set -e", "").String()
 	s.finalCmd = `
 #!/bin/bash
-set -e
+` + strictCmd + `
 cleanup_punaelc() {
      rm -rf ` + sid + `
 }

@@ -137,7 +137,20 @@ func TestExec8(t *testing.T) {
 
 func TestCommand_Cmd(t *testing.T) {
 	c := NewCommand("echo a")
+	c.TermType(TermVt100)
 	_, err := c.Exec()
+	assert.Contains(t, c.cmd.Env, "TERM=vt100")
+	assert.Nil(t, err)
+	assert.NotNil(t, c.Cmd())
+}
+
+func TestCommand_Cmd2(t *testing.T) {
+	os.Setenv("TERM", "")
+	c := NewCommand("echo a")
+	c.Detach(false)
+	c.TermType(TermNull)
+	err := c.ExecAsync()
+	assert.Contains(t, c.cmd.Env, "TERM=xterm")
 	assert.Nil(t, err)
 	assert.NotNil(t, c.Cmd())
 }

@@ -6,5 +6,5 @@ package gexec
 import "syscall"
 
 func setPgid(attr *syscall.SysProcAttr) {
-	attr.Setsid = true
+	attr.Setpgid = true
 }

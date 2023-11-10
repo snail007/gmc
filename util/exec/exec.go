@@ -19,7 +19,23 @@ import (
 	"time"
 )
 
+type TermType string
+
+const (
+	TermXterm         TermType = "xterm"
+	TermXterm256Color TermType = "xterm-256color"
+	TermVt100         TermType = "vt100"
+	TermRxvt          TermType = "rxvt"
+	TermGnome         TermType = "gnome-terminal"
+	TermKonsole       TermType = "konsole"
+	TermTmux          TermType = "tmux"
+	TermScreen        TermType = "screen"
+	TermAnsi          TermType = "ansi"
+	TermNull          TermType = ""
+)
+
 type Command struct {
+	termType      TermType
 	strictMode    bool
 	cmdStr        string
 	args          []string
@@ -44,11 +60,17 @@ func NewCommand(cmd string) *Command {
 		panic("only worked in linux*")
 	}
 	return &Command{
+		termType:   TermXterm,
 		strictMode: true,
 		cmdStr:     cmd,
 		env:        map[string]string{},
 		workDir:    "./",
 	}
+}
+
+func (s *Command) TermType(termType TermType) *Command {
+	s.termType = termType
+	return s
 }
 
 func (s *Command) StrictMode(strictMode bool) *Command {
@@ -97,7 +119,7 @@ func (s *Command) Kill() {
 		return
 	}
 	if s.cmd.Process != nil {
-		s.cmd.Process.Kill()
+		s.killCmd(s.cmd)
 	}
 	return
 }
@@ -245,6 +267,12 @@ trap cleanup_punaelc EXIT
 		for k, v := range s.env {
 			env[k] = v
 		}
+	}
+	if s.termType != "" {
+		env["TERM"] = string(s.termType)
+	}
+	if env["TERM"] == "" {
+		env["TERM"] = string(TermXterm)
 	}
 	for k, v := range env {
 		s.cmd.Env = append(s.cmd.Env, fmt.Sprintf("%s=%s", k, v))

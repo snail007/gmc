@@ -204,3 +204,13 @@ func TestAnyValue(t *testing.T) {
 	val = NewAny(nil)
 	assert.Nil(t, val.Val())
 }
+
+func TestMustAny(t *testing.T) {
+	assert.Equal(t, 123, MustAny(gcast.ToUint64E("123")).Int())
+	val := NewAny(nil)
+	assert.Nil(t, val.Val())
+	a, e := gcast.ToIntE("123abc")
+	assert.Equal(t, 0, a)
+	assert.NotNil(t, e)
+	assert.Nil(t, MustAny(a, e))
+}

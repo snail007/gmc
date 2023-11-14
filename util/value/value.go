@@ -13,6 +13,13 @@ func Must(v interface{}, err error) (value *Value) {
 	return New(v)
 }
 
+func MustAny(v interface{}, err error) (value *AnyValue) {
+	if err != nil || IsNil(v) {
+		return nil
+	}
+	return NewAny(v)
+}
+
 func IsNil(object interface{}) bool {
 	if object == nil {
 		return true

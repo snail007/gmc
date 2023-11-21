@@ -40,6 +40,16 @@ func IsNil(object interface{}) bool {
 	return false
 }
 
+func IsEmpty(object interface{}) bool {
+	if IsNil(object) {
+		return true
+	}
+	if v, ok := object.(string); ok && v == "" {
+		return true
+	}
+	return false
+}
+
 func containsKind(kinds []reflect.Kind, kind reflect.Kind) bool {
 	for i := 0; i < len(kinds); i++ {
 		if kind == kinds[i] {

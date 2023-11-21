@@ -214,3 +214,12 @@ func TestMustAny(t *testing.T) {
 	assert.NotNil(t, e)
 	assert.Nil(t, MustAny(a, e))
 }
+
+func TestIsEmpty(t *testing.T) {
+	var a *http.Client
+	assert.True(t, IsEmpty(nil))
+	assert.True(t, IsEmpty(""))
+	assert.True(t, IsEmpty(a))
+	assert.False(t, IsEmpty(false))
+	assert.False(t, IsEmpty(0))
+}

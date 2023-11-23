@@ -6,7 +6,6 @@ import (
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
-	gcond "github.com/snail007/gmc/util/cond"
 	gfile "github.com/snail007/gmc/util/file"
 	grand "github.com/snail007/gmc/util/rand"
 	"io"
@@ -232,7 +231,10 @@ func (s *Command) ExecAsync() (e error) {
 // Exec execute command on linux system.
 func (s *Command) Exec() (output string, e error) {
 	sid := fmt.Sprintf("/tmp/tmp_%d", grand.New().Int31()) + ".sh"
-	strictCmd := gcond.Cond(s.strictMode, "set -e", "").String()
+	strictCmd := ""
+	if s.strictMode {
+		strictCmd = "set -e"
+	}
 	s.finalCmd = `
 #!/bin/bash
 ` + strictCmd + `

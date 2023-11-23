@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	gerror "github.com/snail007/gmc/module/error"
-	gcond "github.com/snail007/gmc/util/cond"
 	gmap "github.com/snail007/gmc/util/map"
 	grand "github.com/snail007/gmc/util/rand"
 	"io"
@@ -154,7 +153,10 @@ func (b *CircularBuffer) newReader(isCurrent bool) io.ReadCloser {
 			readers = append(readers, r)
 		}
 	}
-	start := gcond.Cond(isCurrent, len(b.data)-1, 0).Int()
+	start := 0
+	if isCurrent {
+		start = len(b.data) - 1
+	}
 	r := &CircularReader{buffer: b, start: start}
 	if r.start < 0 {
 		r.start = 0

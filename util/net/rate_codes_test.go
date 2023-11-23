@@ -62,7 +62,7 @@ func TestRateCodec3(t *testing.T) {
 			c.Write(data)
 		}
 	}).Start()
-	time.Sleep(time.Millisecond * 300)
+	time.Sleep(time.Millisecond * 400)
 	c, err := Dial("127.0.0.1:"+p, time.Second)
 	assert.NoError(t, err)
 	c.AddCodec(NewRateCodec(1024 * 1024 * 1024))

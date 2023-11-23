@@ -79,34 +79,34 @@ func (b ByteSize) EBytes() float64 {
 }
 
 func (b ByteSize) HumanReadable() (s string) {
-	uint := "B"
+	unit := "B"
 	defer func() {
 		if strings.Contains(s, ".") {
 			s = strings.TrimRight(s, "0")
 			s = strings.TrimSuffix(s, ".")
 		}
-		s += " " + uint
+		s += " " + unit
 	}()
 	switch {
 	case b == 0:
 		return fmt.Sprint("0")
 	case b/EB >= 1:
-		uint = "EB"
+		unit = "EB"
 		return fmt.Sprintf("%.2f", float64(b)/float64(EB))
 	case b/PB >= 1:
-		uint = "PB"
+		unit = "PB"
 		return fmt.Sprintf("%.2f", float64(b)/float64(PB))
 	case b/TB >= 1:
-		uint = "TB"
+		unit = "TB"
 		return fmt.Sprintf("%.2f", float64(b)/float64(TB))
 	case b/GB >= 1:
-		uint = "GB"
+		unit = "GB"
 		return fmt.Sprintf("%.2f", float64(b)/float64(GB))
 	case b/MB >= 1:
-		uint = "MB"
+		unit = "MB"
 		return fmt.Sprintf("%.2f", float64(b)/float64(MB))
 	case b/KB >= 1:
-		uint = "KB"
+		unit = "KB"
 		return fmt.Sprintf("%.2f", float64(b)/float64(KB))
 	default:
 		return fmt.Sprintf("%d", b)

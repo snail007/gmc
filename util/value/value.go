@@ -99,22 +99,23 @@ func containsKind(kinds []reflect.Kind, kind reflect.Kind) bool {
 }
 
 type Value struct {
-	val           interface{}
-	cacheInt      *int
-	cacheInt8     *int8
-	cacheInt32    *int32
-	cacheInt64    *int64
-	cacheUint     *uint
-	cacheUint8    *uint8
-	cacheUint32   *uint32
-	cacheUint64   *uint64
-	cacheFloat32  *float32
-	cacheFloat64  *float64
-	cacheString   *string
-	cacheBool     *bool
-	cacheBytes    []byte
-	cacheDuration *time.Duration
-	cacheTime     *time.Time
+	val              interface{}
+	cacheInt         *int
+	cacheInt8        *int8
+	cacheInt32       *int32
+	cacheInt64       *int64
+	cacheUint        *uint
+	cacheUint8       *uint8
+	cacheUint32      *uint32
+	cacheUint64      *uint64
+	cacheFloat32     *float32
+	cacheFloat64     *float64
+	cacheString      *string
+	cacheStringSlice []string
+	cacheBool        *bool
+	cacheBytes       []byte
+	cacheDuration    *time.Duration
+	cacheTime        *time.Time
 
 	cacheMap            map[string]interface{}
 	cacheMapSlice       map[string][]interface{}
@@ -258,6 +259,18 @@ func (s *Value) String() string {
 	}
 	v := s.val.(string)
 	s.cacheString = &v
+	return v
+}
+
+func (s *Value) StringSlice() []string {
+	if s.cacheStringSlice != nil {
+		return s.cacheStringSlice
+	}
+	if s.val == nil {
+		return nil
+	}
+	v := s.val.([]string)
+	s.cacheStringSlice = v
 	return v
 }
 

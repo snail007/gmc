@@ -119,6 +119,12 @@ func TestValue_xxx(t *testing.T) {
 	assert.NotNil(t, t1.cacheString)
 	assert.Equal(t, t0, t1.String())
 
+	t0 = []string{"123"}
+	t1 = New(t0)
+	assert.Equal(t, t0, t1.StringSlice())
+	assert.NotNil(t, t1.cacheStringSlice)
+	assert.Equal(t, t0, t1.StringSlice())
+
 	t0 = []byte("123")
 	t1 = New(t0)
 	assert.Equal(t, t0, t1.Bytes())

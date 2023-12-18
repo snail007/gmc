@@ -1,29 +1,29 @@
-package ghttp
+package gurl
 
 import (
 	"net/url"
 	"strings"
 )
 
-type URLBuilder struct {
+type Builder struct {
 	*url.URL
 	query   map[string]string
 	holders []string
 }
 
-func NewURLBuilder() *URLBuilder {
-	return &URLBuilder{
+func NewBuilder() *Builder {
+	return &Builder{
 		URL:   &url.URL{},
 		query: map[string]string{},
 	}
 }
 
-func (s *URLBuilder) HTTP() *URLBuilder {
+func (s *Builder) HTTP() *Builder {
 	s.URL.Scheme = "http"
 	return s
 }
 
-func (s *URLBuilder) String() string {
+func (s *Builder) String() string {
 	if s.URL.Scheme == "" {
 		s.HTTP()
 	}
@@ -33,34 +33,34 @@ func (s *URLBuilder) String() string {
 	return AppendQuery(s.URL.String(), s.query)
 }
 
-func (s *URLBuilder) HTTPS() *URLBuilder {
+func (s *Builder) HTTPS() *Builder {
 	s.URL.Scheme = "https"
 	return s
 }
 
-func (s *URLBuilder) Scheme(scheme string) *URLBuilder {
+func (s *Builder) Scheme(scheme string) *Builder {
 	s.URL.Scheme = scheme
 	return s
 }
 
-func (s *URLBuilder) Host(host string) *URLBuilder {
+func (s *Builder) Host(host string) *Builder {
 	s.URL.Host = host
 	return s
 }
 
-func (s *URLBuilder) Path(path string) *URLBuilder {
+func (s *Builder) Path(path string) *Builder {
 	s.URL.Path = path
 	return s
 }
 
-func (s *URLBuilder) Query(data map[string]string) *URLBuilder {
+func (s *Builder) Query(data map[string]string) *Builder {
 	for k, v := range data {
 		s.query[k] = v
 	}
 	return s
 }
 
-func (s *URLBuilder) HostsURL(hosts []string) (urlArr []string) {
+func (s *Builder) HostsURL(hosts []string) (urlArr []string) {
 	h0 := s.URL.Host
 	for _, h := range hosts {
 		s.URL.Host = h
@@ -70,7 +70,7 @@ func (s *URLBuilder) HostsURL(hosts []string) (urlArr []string) {
 	return
 }
 
-func (s *URLBuilder) PathsURL(paths []string) (urlArr []string) {
+func (s *Builder) PathsURL(paths []string) (urlArr []string) {
 	p0 := s.URL.Path
 	for _, p := range paths {
 		s.URL.Path = p
@@ -80,7 +80,7 @@ func (s *URLBuilder) PathsURL(paths []string) (urlArr []string) {
 	return
 }
 
-func (s *URLBuilder) QueriesURL(queries []map[string]string) (urlArr []string) {
+func (s *Builder) QueriesURL(queries []map[string]string) (urlArr []string) {
 	q1 := s.query
 	for _, q := range queries {
 		s.Query(q)
@@ -90,12 +90,12 @@ func (s *URLBuilder) QueriesURL(queries []map[string]string) (urlArr []string) {
 	return
 }
 
-func (s *URLBuilder) Holders(holders ...string) *URLBuilder {
+func (s *Builder) Holders(holders ...string) *Builder {
 	s.holders = append(s.holders, holders...)
 	return s
 }
 
-func (s *URLBuilder) HolderValuesURL(holderValues ...[]string) (urlArr []string) {
+func (s *Builder) HolderValuesURL(holderValues ...[]string) (urlArr []string) {
 	tpl := s.String()
 	for i := range holderValues[0] {
 		var oldNew []string
@@ -105,4 +105,28 @@ func (s *URLBuilder) HolderValuesURL(holderValues ...[]string) (urlArr []string)
 		urlArr = append(urlArr, strings.NewReplacer(oldNew...).Replace(tpl))
 	}
 	return
+}
+
+func GetConcatChar(URL string) string {
+	if strings.Contains(URL, "?") {
+		return "&"
+	}
+	return "?"
+}
+
+func AppendQuery(URL string, queryData map[string]string) string {
+	if len(queryData) == 0 {
+		return URL
+	}
+	return URL + GetConcatChar(URL) + EncodeData(queryData)
+}
+
+func EncodeData(data map[string]string) string {
+	values := url.Values{}
+	if data != nil {
+		for k, v := range data {
+			values.Set(k, v)
+		}
+	}
+	return values.Encode()
 }

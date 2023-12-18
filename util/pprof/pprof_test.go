@@ -2,10 +2,13 @@ package ghttppprof
 
 import (
 	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
+	gctx "github.com/snail007/gmc/module/ctx"
 	ghttp "github.com/snail007/gmc/util/http"
 	gtest "github.com/snail007/gmc/util/testing"
 	"github.com/stretchr/testify/assert"
 	"net"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -16,7 +19,15 @@ func TestBindRouter(t *testing.T) {
 	if gtest.RunProcess(t, func() {
 		api, err := gmc.New.APIServer(gmc.New.Ctx(), "127.0.0.1:"+os.Getenv("API_PORT"))
 		assert.NoError(t, err)
-		BindRouter(api.Router(), "debug/")
+		a := []string{}
+		BindRouter(api.Router(), "debug/", func(ctx gcore.Ctx) bool {
+			a = append(a, ctx.Request().URL.Path)
+			return true
+		})
+		api.Router().HandleAny("/lena", func(w http.ResponseWriter, r *http.Request, ps gcore.Params) {
+			ctx := gctx.NewCtxWithHTTP(w, r)
+			ctx.Write(len(a))
+		})
 		assert.NoError(t, api.Run())
 		select {}
 	}) {
@@ -49,6 +60,9 @@ func TestBindRouter(t *testing.T) {
 	assert.NoError(t, err)
 	_, _, err = ghttp.Download("http://127.0.0.1:"+port+"/debug/trace?seconds=1", time.Second*2, nil, nil)
 	assert.NoError(t, err)
+	b, _, err := ghttp.Download("http://127.0.0.1:"+port+"/lena", time.Second*2, nil, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, string(b), "10")
 }
 
 func getFreeTCPPort() (p string) {

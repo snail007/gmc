@@ -7,35 +7,59 @@ package ghttppprof
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	gctx "github.com/snail007/gmc/module/ctx"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 )
 
-func BindRouter(r gcore.HTTPRouter, prefix string) {
+type checkerFunc func(ctx gcore.Ctx) bool
+
+func BindRouter(r gcore.HTTPRouter, prefix string, checker ...checkerFunc) {
 	if prefix == "" {
 		prefix = "/debug/pprof/"
 	}
 	if prefix[0] != '/' {
 		prefix = "/" + prefix
 	}
+	var c checkerFunc
+	if len(checker) == 1 {
+		c = checker[0]
+	}
 	root := strings.TrimSuffix(prefix, "/")
-	r.HandlerAny(root+"/allocs", pprof.Handler("allocs"))
-	r.HandlerAny(root+"/block", pprof.Handler("block"))
-	r.HandlerAny(root+"/goroutine", pprof.Handler("goroutine"))
-	r.HandlerAny(root+"/mutex", pprof.Handler("mutex"))
-	r.HandlerAny(root+"/heap", pprof.Handler("heap"))
-	r.HandlerAny(root+"/threadcreate", pprof.Handler("threadcreate"))
-	r.HandlerAny(root+"/profile", pprofHandler(pprof.Profile))
-	r.HandlerAny(root+"/cmdline", pprofHandler(pprof.Cmdline))
-	r.HandlerAny(root+"/symbol", pprofHandler(pprof.Symbol))
-	r.HandlerAny(root+"/trace", pprofHandler(pprof.Trace))
-	r.HandlerAny(root+"/", pprofHandler(pprof.Index))
-	r.HandlerAny(root, http.RedirectHandler(root+"/", 302))
+	r.HandlerAny(root+"/allocs", newCheckerHandler(pprof.Handler("allocs"), c))
+	r.HandlerAny(root+"/block", newCheckerHandler(pprof.Handler("block"), c))
+	r.HandlerAny(root+"/goroutine", newCheckerHandler(pprof.Handler("goroutine"), c))
+	r.HandlerAny(root+"/mutex", newCheckerHandler(pprof.Handler("mutex"), c))
+	r.HandlerAny(root+"/heap", newCheckerHandler(pprof.Handler("heap"), c))
+	r.HandlerAny(root+"/threadcreate", newCheckerHandler(pprof.Handler("threadcreate"), c))
+	r.HandlerAny(root+"/profile", newCheckerHandler(pprofHandler(pprof.Profile), c))
+	r.HandlerAny(root+"/cmdline", newCheckerHandler(pprofHandler(pprof.Cmdline), c))
+	r.HandlerAny(root+"/symbol", newCheckerHandler(pprofHandler(pprof.Symbol), c))
+	r.HandlerAny(root+"/trace", newCheckerHandler(pprofHandler(pprof.Trace), c))
+	r.HandlerAny(root+"/", newCheckerHandler(pprofHandler(pprof.Index), c))
+	r.HandlerAny(root, newCheckerHandler(http.RedirectHandler(root+"/", 302), c))
 }
 
 func pprofHandler(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		f(w, r)
 	}
+}
+
+type checkerHandler struct {
+	h       http.Handler
+	checker func(ctx gcore.Ctx) bool
+}
+
+func (c checkerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := gctx.NewCtxWithHTTP(w, r)
+	if !c.checker(ctx) {
+		return
+	}
+	c.h.ServeHTTP(w, r)
+}
+
+func newCheckerHandler(h http.Handler, checker func(ctx gcore.Ctx) bool) *checkerHandler {
+	return &checkerHandler{h: h, checker: checker}
 }

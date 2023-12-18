@@ -3,10 +3,10 @@ package ghttp
 import (
 	"bytes"
 	"context"
+	gurl "github.com/snail007/gmc/util/url"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -34,7 +34,7 @@ func NewGet(URL string, timeout time.Duration, queryData, header map[string]stri
 }
 
 func NewGetWithContext(ctx context.Context, URL string, queryData, header map[string]string) (req *http.Request, err error) {
-	req, err = http.NewRequestWithContext(ctx, "GET", AppendQuery(URL, queryData), nil)
+	req, err = http.NewRequestWithContext(ctx, "GET", gurl.AppendQuery(URL, queryData), nil)
 	if err != nil {
 		return
 	}
@@ -49,7 +49,7 @@ func NewPost(URL string, timeout time.Duration, data, header map[string]string) 
 }
 
 func NewPostWithContext(ctx context.Context, URL string, data, header map[string]string) (req *http.Request, err error) {
-	return NewPostReaderWithContext(ctx, URL, bytes.NewReader([]byte(EncodeData(data))), header)
+	return NewPostReaderWithContext(ctx, URL, bytes.NewReader([]byte(gurl.EncodeData(data))), header)
 }
 
 func NewPostReaderWithContext(ctx context.Context, URL string, r io.Reader, header map[string]string) (req *http.Request, err error) {
@@ -69,30 +69,6 @@ func getTimeoutContext(timeout time.Duration) (ctx context.Context, cancel conte
 		cancel = func() {}
 	}
 	return
-}
-
-func AppendQuery(URL string, queryData map[string]string) string {
-	if len(queryData) == 0 {
-		return URL
-	}
-	return URL + GetConcatChar(URL) + EncodeData(queryData)
-}
-
-func GetConcatChar(URL string) string {
-	if strings.Contains(URL, "?") {
-		return "&"
-	}
-	return "?"
-}
-
-func EncodeData(data map[string]string) string {
-	values := url.Values{}
-	if data != nil {
-		for k, v := range data {
-			values.Set(k, v)
-		}
-	}
-	return values.Encode()
 }
 
 func IsFormRequest(req *http.Request) bool {

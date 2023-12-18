@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/snail007/gmc/util/gpool"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -22,13 +23,16 @@ import (
 )
 
 var (
-	logger            = New("")
+	logger            = New()
 	pool              = gpool.NewWithLogger(10, nil)
 	defaultTimeLayout = "2006/01/02 15:04:05.000000"
+	DiscardLogger     = New()
 )
 
 func init() {
 	logger.SetCallerSkip(logger.CallerSkip() + 1)
+	DiscardLogger.SetLevel(gcore.LogLeveNone)
+	DiscardLogger.SetOutput(NewLoggerWriter(ioutil.Discard))
 }
 
 func DefaultLogger() gcore.Logger {

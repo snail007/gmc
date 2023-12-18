@@ -12,7 +12,7 @@ import (
 	grouter "github.com/snail007/gmc/http/router"
 	ghttpserver "github.com/snail007/gmc/http/server"
 	gsession "github.com/snail007/gmc/http/session"
-	gtemplate "github.com/snail007/gmc/http/template"
+	//gtemplate "github.com/snail007/gmc/http/template"
 	gview "github.com/snail007/gmc/http/view"
 	gcache "github.com/snail007/gmc/module/cache"
 	gconfig "github.com/snail007/gmc/module/config"
@@ -40,12 +40,12 @@ func TestMain(m *testing.M) {
 		return gview.New(w, tpl)
 	})
 
-	gcore.RegisterTemplate(gcore.DefaultProviderKey, func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
-		if ctx.Config().Sub("template") != nil {
-			return gtemplate.Init(ctx)
-		}
-		return gtemplate.NewTemplate(ctx, rootDir)
-	})
+	//gcore.RegisterTemplate(gcore.DefaultProviderKey, func(ctx gcore.Ctx, rootDir string) (gcore.Template, error) {
+	//	if ctx.Config().Sub("template") != nil {
+	//		return gtemplate.Init(ctx)
+	//	}
+	//	return gtemplate.NewTemplate(ctx, rootDir)
+	//})
 
 	gcore.RegisterHTTPRouter(gcore.DefaultProviderKey, func(ctx gcore.Ctx) gcore.HTTPRouter {
 		return grouter.NewHTTPRouter(ctx)

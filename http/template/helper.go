@@ -55,9 +55,6 @@ func RenderString(tpl string, data map[string]interface{}) (result string, err e
 }
 
 func RenderStringWithFunc(tpl string, data map[string]interface{}, funcMap map[string]interface{}) (result string, err error) {
-	r, err := RenderBytesWithFunc([]byte(tpl), data, funcMap)
-	if err != nil {
-		return
-	}
-	return string(r), nil
+	r, e := RenderBytesWithFunc([]byte(tpl), data, funcMap)
+	return string(r), e
 }

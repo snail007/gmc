@@ -30,11 +30,18 @@ func init() {
 }
 
 func RenderBytes(tpl []byte, data map[string]interface{}) (result []byte, err error) {
+	return RenderBytesWithFunc(tpl, data, nil)
+}
+
+func RenderBytesWithFunc(tpl []byte, data map[string]interface{}, funcMap map[string]interface{}) (result []byte, err error) {
 	t := New()
 	t.SetCtx(ctx)
 	t.DdisableLogging()
 	t.DisableLoadDefaultBinData()
 	t.SetBinBytes(map[string][]byte{"tpl": tpl})
+	if len(funcMap) > 0 {
+		t.Funcs(funcMap)
+	}
 	err = t.Parse()
 	if err != nil {
 		return
@@ -43,7 +50,12 @@ func RenderBytes(tpl []byte, data map[string]interface{}) (result []byte, err er
 }
 
 func RenderString(tpl string, data map[string]interface{}) (result string, err error) {
-	r, err := RenderBytes([]byte(tpl), data)
+	v, e := RenderBytes([]byte(tpl), data)
+	return string(v), e
+}
+
+func RenderStringWithFunc(tpl string, data map[string]interface{}, funcMap map[string]interface{}) (result string, err error) {
+	r, err := RenderBytesWithFunc([]byte(tpl), data, funcMap)
 	if err != nil {
 		return
 	}

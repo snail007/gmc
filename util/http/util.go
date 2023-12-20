@@ -118,3 +118,13 @@ func GetResponseBody(resp *http.Response) []byte {
 	b, _ := GetResponseBodyE(resp)
 	return b
 }
+
+func GetContent(_url string, timeout time.Duration) []byte {
+	d, _ := GetContentE(_url, timeout)
+	return d
+}
+
+func GetContentE(_url string, timeout time.Duration) ([]byte, error) {
+	d, _, e := Download(_url, timeout, nil, nil)
+	return d, e
+}

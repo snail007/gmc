@@ -140,8 +140,9 @@ func TestHTTPClient_Get6(t *testing.T) {
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetClientCert(cert, key)
-	body, _, _, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
+	body, _, resp, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(string(body), "hello")
+	assert.Contains(string(GetResponseBody(resp)), "hello")
 }
 
 func TestHTTPClient_SetProxyFromEnv(t *testing.T) {

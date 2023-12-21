@@ -34,3 +34,17 @@ func HasSuffixAny(str string, suffix ...string) bool {
 func HasHTTPPrefix(str string) bool {
 	return HasPrefixAny(strings.ToLower(str), "http://", "https://")
 }
+
+// Replace str from a list of old, new string
+// pairs. Replacements are performed in the order they appear in the
+// target string, without overlapping matches. The old string
+// comparisons are done in argument order.
+//
+// Replace panics if given an odd number of oldNew arguments.
+func Replace(str string, oldNew ...string) string {
+	if len(oldNew) == 0 {
+		return str
+	}
+	r := strings.NewReplacer(oldNew...)
+	return r.Replace(str)
+}

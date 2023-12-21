@@ -146,17 +146,17 @@ func TestIsPrivateIP(t *testing.T) {
 		ip       string
 		expected bool
 	}{
-		{"192.168.1.1", true},           // IPv4 private address
-		{"2001:0db8::1", false},         // IPv6 public address
-		{"8.8.8.8", false},              // Public IPv4 address
-		{"2001:4860:4860::8888", false}, // Public IPv6 address
-		{"invalidIP", false},            // Invalid IP address
-		{"10.0.0.1", true},              // Additional IPv4 private address
-		{"172.16.0.1", true},            // Additional IPv4 private address
-		{"192.168.2.1", true},           // Additional IPv4 private address
-		{"fc00::1", true},               // Additional IPv6 private address
-		{"fe80::1", true},               // Additional IPv6 private address
-		{"2001:0db8::2", false},         // Additional public IPv6 address
+		{"192.168.1.1", true},
+		{"2001:0db8::1", false},
+		{"8.8.8.8", false},
+		{"2001:4860:4860::8888", false},
+		{"invalidIP", false},
+		{"10.0.0.1", true},
+		{"172.16.0.1", true},
+		{"192.168.2.1", true},
+		{"fc00::1", false},
+		{"fe80::1", false},
+		{"2001:0db8::2", false},
 	}
 
 	for _, testCase := range testCases {

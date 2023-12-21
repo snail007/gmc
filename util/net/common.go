@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"time"
 
 	gbytes "github.com/snail007/gmc/util/bytes"
@@ -269,18 +270,14 @@ func IsPrivateIP(ip string) bool {
 	if parsedIP == nil {
 		return false
 	}
-	if ip4 := parsedIP.To4(); ip4 != nil {
-		// Following RFC 1918, Section 3. Private Address Space which says:
-		//   The Internet Assigned Numbers Authority (IANA) has reserved the
-		//   following three blocks of the IP address space for private internets:
-		//     10.0.0.0        -   10.255.255.255  (10/8 prefix)
-		//     172.16.0.0      -   172.31.255.255  (172.16/12 prefix)
-		//     192.168.0.0     -   192.168.255.255 (192.168/16 prefix)
-		return ip4[0] == 10 ||
-			(ip4[0] == 172 && ip4[1]&0xf0 == 16) ||
-			(ip4[0] == 192 && ip4[1] == 168)
+	if ipv4 := parsedIP.To4(); ipv4 != nil {
+		// 10.0.0.0/8
+		// 172.16.0.0/12
+		// 192.168.0.0/16
+		return ipv4[0] == 10 || (ipv4[0] == 172 && ipv4[1] >= 16 && ipv4[1] <= 31) || (ipv4[0] == 192 && ipv4[1] == 168)
 	}
-	// Following RFC 4193, Section 8. IANA Considerations which says:
-	//   The IANA has assigned the FC00::/7 prefix to "Unique Local Unicast".
-	return len(ip) == 16 && ip[0]&0xfe == 0xfc
+	if strings.HasPrefix(ip, "fc00:") || strings.HasPrefix(ip, "fd00:") || strings.HasPrefix(ip, "fe80:") {
+		return true
+	}
+	return false
 }

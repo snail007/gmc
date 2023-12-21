@@ -146,17 +146,20 @@ func TestIsPrivateIP(t *testing.T) {
 		ip       string
 		expected bool
 	}{
+		//private ip
 		{"192.168.1.1", true},
-		{"2001:0db8::1", false},
-		{"8.8.8.8", false},
-		{"2001:4860:4860::8888", false},
-		{"invalidIP", false},
 		{"10.0.0.1", true},
 		{"172.16.0.1", true},
 		{"192.168.2.1", true},
-		{"fc00::1", false},
-		{"fe80::1", false},
+		{"fc00::1", true},
+		{"fe80::1", true},
+		//public ip
+		{"2001:0db8::1", false},
 		{"2001:0db8::2", false},
+		{"8.8.8.8", false},
+		{"2001:4860:4860::8888", false},
+		//invalid ip
+		{"invalidIP", false},
 	}
 
 	for _, testCase := range testCases {

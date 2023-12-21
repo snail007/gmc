@@ -1,6 +1,6 @@
 module github.com/snail007/gmc
 
-go 1.13
+go 1.16
 
 require (
 	github.com/dsnet/compress v0.0.1

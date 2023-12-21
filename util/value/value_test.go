@@ -384,3 +384,43 @@ func TestParseByteSize(t *testing.T) {
 func TestParseNumber(t *testing.T) {
 	assert.Equal(t, int64(123000), ParseNumber("123,000"))
 }
+
+func TestGetValueAt(t *testing.T) {
+	var a interface{}
+	a = 123
+	assert.Equal(t, 456, GetValueAt(a, 1, 456).Int())
+	a = []int{1, 2, 3}
+	assert.Equal(t, 2, GetValueAt(a, 1, 3).Int())
+	assert.Equal(t, 3, GetValueAt(a, 100, 3).Int())
+	assert.Equal(t, 3, GetValueAt(a, -1, 3).Int())
+
+	a = []int{1, 2, 3}
+	assert.Equal(t, 2, GetValueAt(a, 1, 3).Val())
+}
+
+func TestKeys(t *testing.T) {
+	assert.Equal(t, nil, Keys(nil).Val())
+	assert.Equal(t, []string(nil), Keys(nil).StringSlice())
+	var a interface{}
+	a = 123
+	assert.Equal(t, nil, Keys(a).Val())
+	assert.Equal(t, []string(nil), Keys(a).StringSlice())
+	a = map[string]string{"a": "1"}
+	assert.Equal(t, []string{"a"}, Keys(a).StringSlice())
+	a = map[string]string{}
+	assert.Equal(t, []string(nil), Keys(a).StringSlice())
+}
+
+func TestContains(t *testing.T) {
+	assert.Equal(t, false, Contains(nil, 1))
+	var a interface{}
+	a = 123
+	assert.Equal(t, false, Contains(a, 1))
+	a = []int{1, 2, 3}
+	assert.Equal(t, true, Contains(a, 1))
+	assert.Equal(t, 2, IndexOf(a, 3))
+	a = []interface{}{1, 2, 3, nil}
+	assert.Equal(t, 3, IndexOf(a, nil))
+	assert.Equal(t, -1, IndexOf(a, 0))
+
+}

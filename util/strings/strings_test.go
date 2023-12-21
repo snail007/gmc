@@ -7,13 +7,13 @@ import (
 
 func TestBytesRef(t *testing.T) {
 	a := "abc"
-	b := BytesRef(a)
+	b := StringToBytes(a)
 	assert.Equal(t, []byte("abc"), b)
 }
 
 func TestStringRef(t *testing.T) {
 	a := []byte("abc")
-	b := StringRef(a)
+	b := BytesToString(a)
 	assert.Equal(t, "abc", b)
 }
 
@@ -25,4 +25,9 @@ func TestHasPrefixAny(t *testing.T) {
 func TestHasHTTPPrefix(t *testing.T) {
 	assert.True(t, HasHTTPPrefix("http://"))
 	assert.False(t, HasHTTPPrefix("ftp://"))
+}
+
+func TestHasSuffix(t *testing.T) {
+	assert.True(t, HasSuffixAny("a.txt", ".log", ".txt"))
+	assert.False(t, HasSuffixAny("a.log", ".log1", ".txt1"))
 }

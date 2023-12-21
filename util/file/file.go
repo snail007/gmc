@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Exists checks whether a file or directory exists.
@@ -79,6 +80,15 @@ func FileSize(file string) (int64, error) {
 		return 0, e
 	}
 	return f.Size(), nil
+}
+
+// FileMTime get file modified time
+func FileMTime(file string) (time.Time, error) {
+	f, e := os.Stat(file)
+	if e != nil {
+		return time.Time{}, e
+	}
+	return f.ModTime(), nil
 }
 
 // HomeDir returns the home directory.

@@ -242,3 +242,45 @@ func NewTCPAddr(address string) *Addr {
 		err:     err,
 	}
 }
+
+func LocalOutgoingIP() (string, error) {
+	addr, err := net.ResolveUDPAddr("udp", "1.2.3.4:1")
+	if err != nil {
+		return "", err
+	}
+
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		return "", err
+	}
+
+	defer conn.Close()
+
+	host, _, err := net.SplitHostPort(conn.LocalAddr().String())
+	if err != nil {
+		return "", err
+	}
+
+	return host, nil
+}
+
+func IsPrivateIP(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return false
+	}
+	if ip4 := parsedIP.To4(); ip4 != nil {
+		// Following RFC 1918, Section 3. Private Address Space which says:
+		//   The Internet Assigned Numbers Authority (IANA) has reserved the
+		//   following three blocks of the IP address space for private internets:
+		//     10.0.0.0        -   10.255.255.255  (10/8 prefix)
+		//     172.16.0.0      -   172.31.255.255  (172.16/12 prefix)
+		//     192.168.0.0     -   192.168.255.255 (192.168/16 prefix)
+		return ip4[0] == 10 ||
+			(ip4[0] == 172 && ip4[1]&0xf0 == 16) ||
+			(ip4[0] == 192 && ip4[1] == 168)
+	}
+	// Following RFC 4193, Section 8. IANA Considerations which says:
+	//   The IANA has assigned the FC00::/7 prefix to "Unique Local Unicast".
+	return len(ip) == 16 && ip[0]&0xfe == 0xfc
+}

@@ -890,3 +890,60 @@ func walkSlice(val interface{}, f func(v interface{})) {
 		}
 	}
 }
+
+// GetValueAt sliceOrArray is slice or array, idx is the element to get, if idx invalid or sliceOrArray is not slice or array, the
+// default value will be used
+func GetValueAt(sliceOrArray interface{}, idx int, defaultValue interface{}) *Value {
+	value := reflect.ValueOf(sliceOrArray)
+
+	if value.Kind() != reflect.Slice && value.Kind() != reflect.Array {
+		return New(defaultValue)
+	}
+
+	if idx < 0 || idx >= value.Len() {
+		return New(defaultValue)
+	}
+
+	return New(value.Index(idx).Interface())
+}
+
+// Keys input _map is a map, returns its keys as slice, AnyValue.xxxSlice to get the typed slice.
+func Keys(_map interface{}) *AnyValue {
+	value := reflect.ValueOf(_map)
+
+	if value.Kind() != reflect.Map {
+		return NewAny(nil)
+	}
+
+	keys := value.MapKeys()
+	result := make([]interface{}, len(keys))
+
+	for i, key := range keys {
+		result[i] = key.Interface()
+	}
+
+	return NewAny(result)
+}
+
+// Contains check the input slice if contains the value
+func Contains(sliceInterface interface{}, value interface{}) bool {
+	return IndexOf(sliceInterface, value) >= 0
+}
+
+// IndexOf returns the index of value in slice, if not found -1 returned
+func IndexOf(sliceInterface interface{}, value interface{}) int {
+	sliceValue := reflect.ValueOf(sliceInterface)
+
+	if sliceValue.Kind() != reflect.Slice {
+		return -1
+	}
+
+	for i := 0; i < sliceValue.Len(); i++ {
+		element := sliceValue.Index(i).Interface()
+		if reflect.DeepEqual(element, value) {
+			return i
+		}
+	}
+
+	return -1
+}

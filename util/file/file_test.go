@@ -2,9 +2,11 @@ package gfile
 
 import (
 	"github.com/magiconair/properties/assert"
+	gvalue "github.com/snail007/gmc/util/value"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestAbs(t *testing.T) {
@@ -44,7 +46,9 @@ func TestFileName(t *testing.T) {
 func TestFileSize(t *testing.T) {
 	f := "foo.txt"
 	defer os.Remove(f)
+	_t := time.Now()
 	assert2.Nil(t, WriteString(f, "a", false))
+	assert.Equal(t, _t.Unix(), gvalue.Must(FileMTime(f)).Time().Unix())
 	size, err := FileSize(f)
 	assert2.Nil(t, err)
 	assert.Equal(t, size, int64(1))

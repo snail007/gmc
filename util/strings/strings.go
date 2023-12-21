@@ -1,28 +1,30 @@
 package gstrings
 
 import (
-	"reflect"
 	"strings"
 	"unsafe"
 )
 
-func BytesRef(s string) []byte {
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-		Cap:  sh.Len,
-	}
-	return *(*[]byte)(unsafe.Pointer(&bh))
+func StringToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s))
 }
 
-func StringRef(b []byte) string {
+func BytesToString(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
 func HasPrefixAny(str string, prefix ...string) bool {
 	for _, v := range prefix {
 		if strings.HasPrefix(str, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func HasSuffixAny(str string, suffix ...string) bool {
+	for _, v := range suffix {
+		if strings.HasSuffix(str, v) {
 			return true
 		}
 	}

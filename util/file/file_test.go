@@ -4,6 +4,7 @@ import (
 	"github.com/magiconair/properties/assert"
 	gvalue "github.com/snail007/gmc/util/value"
 	assert2 "github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -117,4 +118,63 @@ func TestReadAll(t *testing.T) {
 	assert.Nil(WriteString(file, "abc", true))
 	s := ReadAll(file)
 	assert.Equal(s, "abc")
+}
+
+func TestCopyFile(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "copy_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	sourceFilePath := tempDir + "/source.txt"
+	destinationFilePath := tempDir + "/destination.txt"
+
+	err = ioutil.WriteFile(sourceFilePath, []byte("Hello, world!"), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = Copy(sourceFilePath, destinationFilePath, true)
+	if err != nil {
+		t.Fatalf("Error copying file: %v", err)
+	}
+
+	destinationContent, err := ioutil.ReadFile(destinationFilePath)
+	if err != nil {
+		t.Fatalf("Error reading destination file: %v", err)
+	}
+
+	expectedContent := []byte("Hello, world!")
+	if string(destinationContent) != string(expectedContent) {
+		t.Fatalf("Copied file content does not match. Expected %q, got %q", expectedContent, destinationContent)
+	}
+
+	nonExistentDirPath := tempDir + "/nonexistent"
+	nonExistentDestinationPath := nonExistentDirPath + "/destination.txt"
+
+	err = Copy(sourceFilePath, nonExistentDestinationPath, false)
+	if err == nil {
+		t.Fatal("Expected error when destination directory does not exist, but got none")
+	} else {
+		t.Logf("Expected error: %v", err)
+	}
+
+	unwritableDirPath := "/unwritable"
+	unwritableDestinationPath := unwritableDirPath + "/destination.txt"
+
+	err = Copy(sourceFilePath, unwritableDestinationPath, true)
+	if err == nil {
+		t.Fatal("Expected error when destination directory is unwritable, but got none")
+	} else {
+		t.Logf("Expected error: %v", err)
+	}
+
+	nonExistentSourcePath := tempDir + "/nonexistent/source.txt"
+	err = Copy(nonExistentSourcePath, destinationFilePath, true)
+	if err == nil {
+		t.Fatal("Expected error when source file does not exist, but got none")
+	} else {
+		t.Logf("Expected error: %v", err)
+	}
 }

@@ -175,3 +175,29 @@ func Write(file string, data []byte, append bool) (err error) {
 func WriteString(file string, data string, append bool) (err error) {
 	return Write(file, []byte(data), append)
 }
+
+// Copy source path file to destination file path, when mkdir is true and destination path not exists,
+// the destination dir will be created
+func Copy(srcFile, dstFile string, mkdir bool) error {
+	sourceFile, err := os.Open(srcFile)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+	dstPath := filepath.Dir(dstFile)
+	if !IsDir(dstPath) {
+		if mkdir {
+			err = os.MkdirAll(dstPath, 0755)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	destinationFile, err := os.Create(dstFile)
+	if err != nil {
+		return err
+	}
+	defer destinationFile.Close()
+	_, err = io.Copy(destinationFile, sourceFile)
+	return err
+}

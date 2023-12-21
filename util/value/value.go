@@ -934,7 +934,7 @@ func Contains(sliceInterface interface{}, value interface{}) bool {
 func IndexOf(sliceInterface interface{}, value interface{}) int {
 	sliceValue := reflect.ValueOf(sliceInterface)
 
-	if sliceValue.Kind() != reflect.Slice {
+	if sliceValue.Kind() != reflect.Slice && sliceValue.Kind() != reflect.Array {
 		return -1
 	}
 

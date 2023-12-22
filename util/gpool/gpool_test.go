@@ -22,7 +22,7 @@ import (
 )
 
 func TestDebugLogging(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(1)
 	p.SetDebug(true)
 	buf := bytes.NewBuffer(nil)
@@ -31,13 +31,12 @@ func TestDebugLogging(t *testing.T) {
 	p.SetLogger(l)
 	p.Submit(func() { panic("hello_gmc") })
 	time.Sleep(time.Second)
-	assert2.Contains(t, buf.String(), "hello_gmc")
 	p.Stop()
-	time.Sleep(time.Second)
+	assert2.Contains(t, buf.String(), "hello_gmc")
 }
 
 func TestPanicLogging(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(1)
 	buf := bytes.NewBuffer(nil)
 	l := glog.New()
@@ -61,7 +60,7 @@ func TestPanicLogging(t *testing.T) {
 }
 
 func TestPanicHandler(t *testing.T) {
-	t.Parallel()
+
 	i := 0
 	p := gpool.NewWithOption(1, &gpool.Option{PanicHandler: func(e interface{}) {
 		i = 1
@@ -72,14 +71,14 @@ func TestPanicHandler(t *testing.T) {
 }
 
 func TestPreAlloc(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.NewWithPreAlloc(3)
 	time.Sleep(time.Millisecond * 50)
 	assert2.Equal(t, 3, p.IdleWorkerCount())
 }
 
 func TestBlocking(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(1)
 	p.SetMaxJobCount(1)
 	p.SetBlocking(true)
@@ -105,7 +104,6 @@ func TestBlocking(t *testing.T) {
 }
 
 func TestIdle(t *testing.T) {
-	t.Parallel()
 	p := gpool.New(3)
 	p.SetDebug(true)
 	p.SetIdleDuration(time.Second)
@@ -125,7 +123,6 @@ func TestIdle(t *testing.T) {
 }
 
 func TestIdleNoIdle(t *testing.T) {
-	t.Parallel()
 	p := gpool.New(3)
 	p.SetDebug(true)
 	p.SetIdleDuration(time.Second * 10)
@@ -143,7 +140,7 @@ func TestIdleNoIdle(t *testing.T) {
 }
 
 func TestNewGPool(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(3)
 	if p != nil {
 		t.Log("New is okay")
@@ -154,7 +151,7 @@ func TestNewGPool(t *testing.T) {
 }
 
 func TestSubmit(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(3)
 	a := make(chan bool)
 	p.Submit(func() {
@@ -174,7 +171,7 @@ func TestSubmit(t *testing.T) {
 	time.Sleep(time.Second)
 }
 func TestStop(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(3)
 	a := make(chan bool)
 	p.Submit(func() {
@@ -191,13 +188,13 @@ func TestStop(t *testing.T) {
 	p.Stop()
 }
 func TestSetLogger(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.New(3)
 	p.SetLogger(nil)
 	p.Stop()
 }
 func TestWaitDone(t *testing.T) {
-	t.Parallel()
+
 	start := time.Now()
 	p := gpool.NewWithPreAlloc(10)
 	gloop.For(10, func(loopIndex int) {
@@ -211,7 +208,7 @@ func TestWaitDone(t *testing.T) {
 }
 
 func TestRunning(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.NewWithPreAlloc(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
@@ -235,7 +232,7 @@ func TestRunning(t *testing.T) {
 }
 
 func TestIncrease(t *testing.T) {
-	t.Parallel()
+
 	assert := assert2.New(t)
 	p := gpool.NewWithPreAlloc(3)
 	for i := 0; i < 3; i++ {
@@ -255,7 +252,7 @@ func TestIncrease(t *testing.T) {
 }
 
 func TestDecrease(t *testing.T) {
-	t.Parallel()
+
 	assert := assert2.New(t)
 	p := gpool.NewWithPreAlloc(2)
 	for i := 0; i < 6; i++ {
@@ -272,7 +269,7 @@ func TestDecrease(t *testing.T) {
 }
 
 func TestQueuedJobCount(t *testing.T) {
-	t.Parallel()
+
 	p := gpool.NewWithPreAlloc(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
@@ -296,7 +293,7 @@ func TestQueuedJobCount(t *testing.T) {
 }
 
 func TestGPool_MaxWaitCount(t *testing.T) {
-	t.Parallel()
+
 	assert := assert2.New(t)
 	p := gpool.New(1)
 	//p.SetLogger(glog.New())

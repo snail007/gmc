@@ -15,6 +15,7 @@ import (
 	gmap "github.com/snail007/gmc/util/map"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,13 +31,15 @@ var (
 
 // Pool is a goroutine pool, you can increase or decrease pool size in runtime.
 type Pool struct {
-	maxWorkCount        int
-	jobs                *glist.List
-	workers             *gmap.Map
-	g                   *sync.WaitGroup
-	submitBlockChanList *glist.List
-	submitLock          *sync.Mutex
-	opt                 *Option
+	maxWorkCount         int
+	jobs                 *glist.List
+	workers              *gmap.Map
+	g                    *sync.WaitGroup
+	submitBlockChanList  *glist.List
+	submitLock           *sync.Mutex
+	opt                  *Option
+	idleWorkerCounter    *int64
+	runningWorkerCounter *int64
 }
 
 // Option sets the pool
@@ -114,23 +117,32 @@ func NewWithPreAlloc(workerCount int) (p *Pool) {
 
 func NewWithOption(workerCount int, opt *Option) (p *Pool) {
 	p = &Pool{
-		submitBlockChanList: glist.New(),
-		jobs:                glist.New(),
-		workers:             gmap.New(),
-		maxWorkCount:        workerCount,
-		g:                   &sync.WaitGroup{},
-		submitLock:          &sync.Mutex{},
-		opt:                 opt,
+		submitBlockChanList:  glist.New(),
+		jobs:                 glist.New(),
+		workers:              gmap.New(),
+		maxWorkCount:         workerCount,
+		g:                    &sync.WaitGroup{},
+		submitLock:           &sync.Mutex{},
+		opt:                  opt,
+		idleWorkerCounter:    new(int64),
+		runningWorkerCounter: new(int64),
 	}
 	if opt.PreAlloc {
-		p.ResetTo(workerCount)
+		p.maxWorkCount = 0
+		p.Increase(workerCount)
 	}
 	return p
 }
 
 // Increase add the count of `workerCount` workers
 func (s *Pool) Increase(workerCount int) {
-	s.maxWorkCount += workerCount
+	s.increase(workerCount, true)
+}
+
+func (s *Pool) increase(workerCount int, modifyCounter bool) {
+	if modifyCounter {
+		s.maxWorkCount += workerCount
+	}
 	s.addWorker(workerCount)
 }
 
@@ -138,13 +150,19 @@ func (s *Pool) removeWorker(w *worker) {
 	w.Stop()
 	s.workers.Delete(w.id)
 }
+func (s *Pool) Decrease(workerCount int) {
+	s.decrease(workerCount, true)
+}
 
 // Decrease stop the count of `workerCount` workers
-func (s *Pool) Decrease(workerCount int) {
-	s.maxWorkCount -= workerCount
-	if s.maxWorkCount < 0 {
-		s.maxWorkCount = 0
+func (s *Pool) decrease(workerCount int, modifyCounter bool) {
+	if modifyCounter {
+		s.maxWorkCount -= workerCount
+		if s.maxWorkCount < 0 {
+			s.maxWorkCount = 0
+		}
 	}
+
 	// find idle workers
 	s.workers.Range(func(_, v interface{}) bool {
 		w := v.(*worker)
@@ -181,9 +199,9 @@ func (s *Pool) ResetTo(workerCount int) {
 	}
 	s.maxWorkCount = workerCount
 	if workerCount > length {
-		s.Increase(workerCount - length)
+		s.increase(workerCount-length, false)
 	} else {
-		s.Decrease(length - workerCount)
+		s.decrease(length-workerCount, false)
 	}
 }
 
@@ -278,35 +296,16 @@ func (s *Pool) Stop() {
 
 // RunningWorkCount returns the count of running workers
 func (s *Pool) RunningWorkCount() (workerCount int) {
-	s.workers.RangeFast(func(_, v interface{}) bool {
-		if v.(*worker).Status() == statusRunning {
-			workerCount++
-		}
-		return true
-	})
-	return
+	return int(atomic.LoadInt64(s.runningWorkerCounter))
 }
 
 // IdleWorkerCount returns the count of idle workers
 func (s *Pool) IdleWorkerCount() (workerCount int) {
-	s.workers.RangeFast(func(_, v interface{}) bool {
-		if v.(*worker).Status() == statusIdle {
-			workerCount++
-		}
-		return true
-	})
-	return
+	return int(atomic.LoadInt64(s.idleWorkerCounter))
 }
 
 func (s *Pool) hasIdleWorker() (has bool) {
-	s.workers.RangeFast(func(_, v interface{}) bool {
-		if v.(*worker).Status() == statusIdle {
-			has = true
-			return false
-		}
-		return true
-	})
-	return
+	return atomic.LoadInt64(s.idleWorkerCounter) > 0
 }
 
 // QueuedJobCount returns the count of queued job
@@ -354,6 +353,26 @@ func (w *worker) SetStatus(status int) {
 			ch.(chan bool) <- true
 		}
 	}
+}
+
+func (w *worker) addWorkerCounter(cnt *int64, val int64) {
+	if val < 0 {
+		if atomic.LoadInt64(cnt)-val >= 0 {
+			atomic.AddInt64(cnt, val)
+		} else {
+			atomic.AddInt64(cnt, 0)
+		}
+	} else {
+		atomic.AddInt64(cnt, val)
+	}
+}
+
+func (w *worker) addIdleWorkerCounter(val int64) {
+	w.addWorkerCounter(w.pool.idleWorkerCounter, val)
+}
+
+func (w *worker) addRunningWorkerCounter(val int64) {
+	w.addWorkerCounter(w.pool.runningWorkerCounter, val)
 }
 
 func (w *worker) Wakeup() bool {
@@ -407,6 +426,8 @@ func (w *worker) start() {
 		var fn func()
 		var doJob = func() (isReturn bool) {
 			w.SetStatus(statusRunning)
+			w.addRunningWorkerCounter(1)
+			defer w.addRunningWorkerCounter(-1)
 			w.pool.debugLog("Pool: worker[%s] running ...", w.id)
 			for {
 				//w.pool.debugLog("Pool: worker[%s] read break", w.id)
@@ -426,6 +447,7 @@ func (w *worker) start() {
 		}
 		for {
 			w.SetStatus(statusIdle)
+			w.addIdleWorkerCounter(1)
 			w.pool.debugLog("Pool: worker[%s] waiting ...", w.id)
 			if w.pool.opt.IdleDuration > 0 {
 				if t == nil {
@@ -436,11 +458,14 @@ func (w *worker) start() {
 				select {
 				case <-t.C:
 					w.pool.debugLog("Pool: worker[%s] idle timeout, exited", w.id)
+					w.addIdleWorkerCounter(-1)
 					return
 				case _, ok := <-w.wakeupSig:
 					if !ok {
+						w.addIdleWorkerCounter(-1)
 						return
 					}
+					w.addIdleWorkerCounter(-1)
 					if doJob() {
 						return
 					}
@@ -449,8 +474,10 @@ func (w *worker) start() {
 				select {
 				case _, ok := <-w.wakeupSig:
 					if !ok {
+						w.addIdleWorkerCounter(-1)
 						return
 					}
+					w.addIdleWorkerCounter(-1)
 					if doJob() {
 						return
 					}

@@ -6,6 +6,8 @@
 package gpool
 
 import (
+	gcast "github.com/snail007/gmc/util/cast"
+	gloop "github.com/snail007/gmc/util/loop"
 	"sync"
 	"testing"
 )
@@ -13,27 +15,48 @@ import (
 var pSubmit, pWorker *Pool
 
 func BenchmarkSubmit(b *testing.B) {
-	pSubmit = New(1)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		pSubmit.Submit(func() {
+	var do = func(max, step int) {
+		gloop.ForBy(max, step, func(loopIndex, loopValue int) {
+			size := loopValue + step
+			b.Run("pool size:"+gcast.ToString(size), func(b *testing.B) {
+				pSubmit = New(size)
+				b.StartTimer()
+				for i := 0; i < b.N; i++ {
+					pSubmit.Submit(func() {
+					})
+				}
+				b.StopTimer()
+				pSubmit.Stop()
+			})
 		})
 	}
-	b.StopTimer()
-	pSubmit.Stop()
+	do(100, 20)
+	do(1000, 200)
+	do(50000, 10000)
+
 }
-func BenchmarkWorker(b *testing.B) {
-	pWorker = New(1)
-	b.StopTimer()
-	g := sync.WaitGroup{}
-	g.Add(b.N)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		pWorker.Submit(func() {
-			g.Done()
+func BenchmarkJob(b *testing.B) {
+	var do = func(max, step int) {
+		gloop.ForBy(max, step, func(loopIndex, loopValue int) {
+			size := loopValue + step
+			b.Run("pool size:"+gcast.ToString(size), func(b *testing.B) {
+				pWorker = New(size)
+				b.StopTimer()
+				g := sync.WaitGroup{}
+				g.Add(b.N)
+				b.StartTimer()
+				for i := 0; i < b.N; i++ {
+					pWorker.Submit(func() {
+						g.Done()
+					})
+				}
+				g.Wait()
+				b.StopTimer()
+				pWorker.Stop()
+			})
 		})
 	}
-	g.Wait()
-	b.StopTimer()
-	pWorker.Stop()
+	do(100, 20)
+	do(1000, 200)
+	do(50000, 10000)
 }

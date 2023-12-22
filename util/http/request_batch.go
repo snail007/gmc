@@ -18,7 +18,7 @@ type BatchRequest struct {
 	reqTimeoutMap    *gmap.Map
 	client           *http.Client
 	waitFirstSuccess bool
-	pool             *gpool.GPool
+	pool             *gpool.Pool
 	respArr          []*Response
 	doFunc           func(idx int, req *http.Request) (*http.Response, error)
 	beforeDo         []BeforeDoFunc
@@ -231,8 +231,8 @@ func (s *BatchRequest) ErrAll() (errs []error) {
 	return
 }
 
-// Pool sets a *gpool.GPool to execute request. In default goroutine will be used.
-func (s *BatchRequest) Pool(pool *gpool.GPool) *BatchRequest {
+// Pool sets a *gpool.Pool to execute request. In default goroutine will be used.
+func (s *BatchRequest) Pool(pool *gpool.Pool) *BatchRequest {
 	s.pool = pool
 	return s
 }

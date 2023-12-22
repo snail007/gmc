@@ -53,12 +53,12 @@ func (s *Executor) WaitAll() (allResults []taskResult) {
 	})
 	return
 }
-func (s *Executor) getPool() *gpool.GPool {
+func (s *Executor) getPool() *gpool.Pool {
 	workers := len(s.tasks)
 	if s.workers > 0 {
 		workers = s.workers
 	}
-	return gpool.New(workers)
+	return gpool.NewWithPreAlloc(workers)
 }
 
 type taskResult struct {

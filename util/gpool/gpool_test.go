@@ -19,11 +19,17 @@ import (
 	"time"
 )
 
+func TestPreAlloc(t *testing.T) {
+	p := gpool.NewWithPreAlloc(3)
+	time.Sleep(time.Millisecond * 50)
+	assert2.Equal(t, 3, p.IdleWorkerCount())
+}
+
 func TestBlocking(t *testing.T) {
 	p := gpool.New(1)
-	p.SetMaxTaskAwaitCount(1)
-	p.SetBlockingOnMaxWait(true)
-	assert2.True(t, p.BlockingOnMaxWait())
+	p.SetMaxJobCount(1)
+	p.SetBlocking(true)
+	assert2.True(t, p.Blocking())
 	p.SetDebug(true)
 	// this task will be run
 	p.Submit(func() {
@@ -114,7 +120,7 @@ func TestSetLogger(t *testing.T) {
 }
 func TestWaitDone(t *testing.T) {
 	start := time.Now()
-	p := gpool.New(10)
+	p := gpool.NewWithPreAlloc(10)
 	gloop.For(10, func(loopIndex int) {
 		p.Submit(func() {
 			time.Sleep(time.Millisecond * 100)
@@ -126,7 +132,7 @@ func TestWaitDone(t *testing.T) {
 }
 
 func TestRunning(t *testing.T) {
-	p := gpool.New(3)
+	p := gpool.NewWithPreAlloc(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})
@@ -140,7 +146,7 @@ func TestRunning(t *testing.T) {
 		time.Sleep(time.Second)
 	})
 	time.Sleep(time.Millisecond * 40)
-	if p.RunningWork() == 3 {
+	if p.RunningWorkCount() == 3 {
 		t.Log("Running is okay")
 	} else {
 		t.Fatalf("Running is failed")
@@ -150,7 +156,7 @@ func TestRunning(t *testing.T) {
 
 func TestIncrease(t *testing.T) {
 	assert := assert2.New(t)
-	p := gpool.New(3)
+	p := gpool.NewWithPreAlloc(3)
 	for i := 0; i < 3; i++ {
 		p.Submit(func() {
 			time.Sleep(time.Second * 5)
@@ -163,28 +169,28 @@ func TestIncrease(t *testing.T) {
 		})
 	}
 	time.Sleep(time.Second)
-	assert.Equal(6, p.RunningWork())
+	assert.Equal(6, p.RunningWorkCount())
 	p.Stop()
 }
 
 func TestDecrease(t *testing.T) {
 	assert := assert2.New(t)
-	p := gpool.New(2)
+	p := gpool.NewWithPreAlloc(2)
 	for i := 0; i < 6; i++ {
 		p.Submit(func() {
 			time.Sleep(time.Second)
 		})
 	}
 	time.Sleep(time.Millisecond * 30)
-	assert.Equal(2, p.RunningWork())
+	assert.Equal(2, p.RunningWorkCount())
 	p.Decrease(1)
 	time.Sleep(time.Second)
-	assert.Equal(1, p.RunningWork())
+	assert.Equal(1, p.RunningWorkCount())
 	p.Stop()
 }
 
-func TestAwaiting(t *testing.T) {
-	p := gpool.New(3)
+func TestQueuedJobCount(t *testing.T) {
+	p := gpool.NewWithPreAlloc(3)
 	p.Submit(func() {
 		time.Sleep(time.Second)
 	})
@@ -198,10 +204,10 @@ func TestAwaiting(t *testing.T) {
 		time.Sleep(time.Second)
 	})
 	time.Sleep(time.Millisecond * 40)
-	if p.Awaiting() == 1 {
-		t.Log("Awaiting is okay")
+	if p.QueuedJobCount() == 1 {
+		t.Log("QueuedJobCount is okay")
 	} else {
-		t.Fatalf("Awaiting is failed")
+		t.Fatalf("QueuedJobCount is failed")
 	}
 	p.Stop()
 }
@@ -213,21 +219,21 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 	p.SetDebug(true)
 	assert.True(p.IsDebug())
 
-	p.SetMaxTaskAwaitCount(1)
-	assert.Equal(1, p.MaxTaskAwaitCount())
+	p.SetMaxJobCount(1)
+	assert.Equal(1, p.MaxJobCount())
 
 	//check reset
 	p.ResetTo(2)
 	assert.Equal(2, p.WorkerCount())
 	//wait worker
 	time.Sleep(time.Millisecond * 500)
-	assert2.Equal(t, 2, p.AwaitingWorker())
+	assert2.Equal(t, 2, p.IdleWorkerCount())
 
 	p.ResetTo(1)
 	assert.Equal(1, p.WorkerCount())
 	//wait worker
 	time.Sleep(time.Millisecond * 500)
-	assert2.Equal(t, 1, p.AwaitingWorker())
+	assert2.Equal(t, 1, p.IdleWorkerCount())
 
 	assert.Nil(p.Submit(func() {
 		time.Sleep(time.Second)
@@ -245,8 +251,8 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 	}))
 
 	time.Sleep(time.Millisecond * 40)
-	assert.Equal(0, p.AwaitingWorker())
-	assert.Equal(1, p.RunningWork())
+	assert.Equal(0, p.IdleWorkerCount())
+	assert.Equal(1, p.RunningWorkCount())
 	p.Stop()
 }
 

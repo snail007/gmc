@@ -10,9 +10,10 @@ import (
 	"testing"
 )
 
-var pSubmit, pWorker *GPool
+var pSubmit, pWorker *Pool
 
 func BenchmarkSubmit(b *testing.B) {
+	pSubmit = New(1)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		pSubmit.Submit(func() {

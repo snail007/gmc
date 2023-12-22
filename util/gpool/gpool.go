@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	glist "github.com/snail007/gmc/util/list"
@@ -56,6 +57,8 @@ type Option struct {
 	IdleDuration time.Duration
 	// start the worker when the pool created
 	PreAlloc bool
+	// PanicHandler is used to handle panics from each job function.
+	PanicHandler func(e interface{})
 }
 
 // Blocking  the count of queued job to run reach the max, if blocking Submit call
@@ -238,7 +241,15 @@ func (s *Pool) run(fn func()) {
 	defer func() {
 		s.g.Done()
 		if e := recover(); e != nil {
-			s.log("Pool: a job stopped unexpectedly, err: %s", gcore.ProviderError()().StackError(e))
+			msg := fmt.Sprintf("Pool: a job stopped unexpectedly, err: %s", gcore.ProviderError()().StackError(e))
+			if s.opt.Logger != nil {
+				s.opt.Logger.Error(msg)
+			} else {
+				fmt.Println(msg)
+			}
+			if s.opt.PanicHandler != nil {
+				s.opt.PanicHandler(e)
+			}
 		}
 	}()
 	fn()

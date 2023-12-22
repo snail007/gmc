@@ -112,7 +112,7 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 		//a task returned, call rootCancel to cancel others task.
 		go s.rootCancel()
 		return v.value, v.err
-	case <-gsync.Wait(&g):
+	case <-gsync.WaitGroupToChan(&g):
 		// all task done, return the last err
 		return nil, allResult.Pop().(taskResult).err
 	}

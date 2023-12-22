@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/snail007/gmc"
+	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/demos/website/router"
 	"net"
 	"strings"
@@ -55,6 +56,6 @@ func Initialize(s *gmc.HTTPServer) (err error) {
 		}
 		buf.WriteString("http://127.0.0.1:" + port + path + "\n")
 	}
-	s.Logger().Writer().Write(buf.Bytes())
+	s.Logger().Writer().Write(buf.Bytes(), gcore.LogLeveInfo)
 	return
 }

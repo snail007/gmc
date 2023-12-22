@@ -3,6 +3,7 @@ package gexec
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
@@ -221,7 +222,7 @@ func (s *Command) combinedOutput(cmd *exec.Cmd) ([]byte, error) {
 // ExecAsync async execute command on linux system.
 func (s *Command) ExecAsync() (e error) {
 	if s.async {
-		panic("ExecAsync can not run with Async is enabled")
+		return errors.New("ExecAsync can not run with Async is enabled")
 	}
 	s.execAsync = true
 	_, e = s.Exec()

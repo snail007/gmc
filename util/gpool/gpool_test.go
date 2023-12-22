@@ -12,13 +12,55 @@ import (
 	glog "github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util/gpool"
 	gloop "github.com/snail007/gmc/util/loop"
+	gatomic "github.com/snail007/gmc/util/sync/atomic"
 	assert2 "github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
 )
 
-//testing here
+func TestBlocking(t *testing.T) {
+	p := gpool.New(1)
+	p.SetMaxTaskAwaitCount(1)
+	p.SetBlockingOnMaxWait(true)
+	assert2.True(t, p.BlockingOnMaxWait())
+	p.SetDebug(true)
+	// this task will be run
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
+	// this task will be queued
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
+	// this submit will be blocking because of queue size is 1
+	start := time.Now()
+	p.Submit(func() {
+		time.Sleep(time.Second)
+	})
+	dur := time.Since(start)
+	t.Log(dur)
+	assert2.Greater(t, dur, time.Second)
+	p.Stop()
+}
+
+func TestIdle(t *testing.T) {
+	p := gpool.New(3)
+	p.SetDebug(true)
+	p.SetIdleDuration(time.Second)
+	assert2.Equal(t, time.Second, p.IdleDuration())
+	cnt := gatomic.NewInt(0)
+	gloop.For(3, func(loopIndex int) {
+		p.Submit(func() {
+			cnt.Increase(loopIndex)
+		})
+	})
+	time.Sleep(time.Millisecond * 500)
+	assert2.Equal(t, 3, cnt.Val())
+	time.Sleep(time.Second * 2)
+	assert2.Equal(t, 0, p.WorkerCount())
+	p.Stop()
+}
 
 func TestNewGPool(t *testing.T) {
 	p := gpool.New(3)
@@ -98,7 +140,7 @@ func TestRunning(t *testing.T) {
 		time.Sleep(time.Second)
 	})
 	time.Sleep(time.Millisecond * 40)
-	if p.Running() == 3 {
+	if p.RunningWork() == 3 {
 		t.Log("Running is okay")
 	} else {
 		t.Fatalf("Running is failed")
@@ -121,7 +163,7 @@ func TestIncrease(t *testing.T) {
 		})
 	}
 	time.Sleep(time.Second)
-	assert.Equal(6, p.Running())
+	assert.Equal(6, p.RunningWork())
 	p.Stop()
 }
 
@@ -134,10 +176,10 @@ func TestDecrease(t *testing.T) {
 		})
 	}
 	time.Sleep(time.Millisecond * 30)
-	assert.Equal(2, p.Running())
+	assert.Equal(2, p.RunningWork())
 	p.Decrease(1)
 	time.Sleep(time.Second)
-	assert.Equal(1, p.Running())
+	assert.Equal(1, p.RunningWork())
 	p.Stop()
 }
 
@@ -167,32 +209,44 @@ func TestAwaiting(t *testing.T) {
 func TestGPool_MaxWaitCount(t *testing.T) {
 	assert := assert2.New(t)
 	p := gpool.New(1)
+	//p.SetLogger(glog.New())
 	p.SetDebug(true)
 	assert.True(p.IsDebug())
-	p.SetMaxTaskAwaitCount(2)
-	assert.Equal(2, p.MaxTaskAwaitCount())
-	// trigger lazy start
-	assert.True(p.Submit(func() {
-		time.Sleep(time.Second * 2)
-	}))
+
+	p.SetMaxTaskAwaitCount(1)
+	assert.Equal(1, p.MaxTaskAwaitCount())
+
+	//check reset
 	p.ResetTo(2)
 	assert.Equal(2, p.WorkerCount())
+	//wait worker
+	time.Sleep(time.Millisecond * 500)
+	assert2.Equal(t, 2, p.AwaitingWorker())
+
 	p.ResetTo(1)
 	assert.Equal(1, p.WorkerCount())
-	assert.True(p.Submit(func() {
+	//wait worker
+	time.Sleep(time.Millisecond * 500)
+	assert2.Equal(t, 1, p.AwaitingWorker())
+
+	assert.Nil(p.Submit(func() {
 		time.Sleep(time.Second)
 	}))
-	assert.True(p.Submit(func() {
+
+	//wait worker to fetch task
+	time.Sleep(time.Millisecond * 100)
+
+	assert.Nil(p.Submit(func() {
 		time.Sleep(time.Second)
 	}))
-	p.Submit(func() {
-		time.Sleep(time.Second)
-	})
-	assert.False(p.Submit(func() {
+
+	assert.NotNil(p.Submit(func() {
 		time.Sleep(time.Second)
 	}))
+
 	time.Sleep(time.Millisecond * 40)
-	assert.Equal(1, p.Running())
+	assert.Equal(0, p.AwaitingWorker())
+	assert.Equal(1, p.RunningWork())
 	p.Stop()
 }
 

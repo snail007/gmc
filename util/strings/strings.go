@@ -31,6 +31,30 @@ func HasSuffixAny(str string, suffix ...string) bool {
 	return false
 }
 
+func ContainsAny(str string, sub ...string) bool {
+	if len(sub) == 0 {
+		return true
+	}
+	for _, v := range sub {
+		if strings.Contains(str, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func ContainsAll(str string, sub ...string) bool {
+	if len(sub) == 0 {
+		return true
+	}
+	for _, v := range sub {
+		if !strings.Contains(str, v) {
+			return false
+		}
+	}
+	return true
+}
+
 func HasHTTPPrefix(str string) bool {
 	return HasPrefixAny(strings.ToLower(str), "http://", "https://")
 }

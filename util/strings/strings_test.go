@@ -51,3 +51,15 @@ func TestReplace(t *testing.T) {
 		}
 	}
 }
+
+func TestContainsAny(t *testing.T) {
+	assert.False(t, ContainsAny("abcd", "aa", "aaa", "aaa"))
+	assert.True(t, ContainsAny("abcd", "ab", "bc", "cde"))
+	assert.True(t, ContainsAny("abcd"))
+}
+
+func TestContainsAll(t *testing.T) {
+	assert.False(t, ContainsAll("abcd", "a", "aaa", "aaa"))
+	assert.True(t, ContainsAll("abcd", "ab", "bc", "cd"))
+	assert.True(t, ContainsAll("abcd"))
+}

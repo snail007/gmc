@@ -12,7 +12,12 @@ import (
 )
 
 type BeforeDoFunc func(idx int, req *http.Request)
+
 type AfterDoFunc func(resp *Response)
+
+type BeforeDoClientFunc func(req *http.Request)
+
+type AfterDoClientFunc func(req *http.Request, resp *http.Response, err error)
 
 func NewRequest(method, URL string, timeout time.Duration, data, header map[string]string) (req *http.Request, cancel context.CancelFunc, err error) {
 	ctx, cancel := getTimeoutContext(timeout)

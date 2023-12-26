@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	assert2 "github.com/stretchr/testify/assert"
+	"net/http"
 	"os"
 	"reflect"
 	"strings"
@@ -143,6 +144,65 @@ func TestHTTPClient_Get6(t *testing.T) {
 	body, _, resp, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
 	assert.Contains(string(body), "hello")
 	assert.Contains(string(GetResponseBody(resp)), "hello")
+}
+
+func TestHTTPClient_Before(t *testing.T) {
+	assert := assert2.New(t)
+	client := NewHTTPClient()
+	client.SetClientCert(cert, key)
+	var r *http.Request
+	client.AppendBeforeDo(func(req *http.Request) {
+		r = req
+		req.Header.Set("test", "abc")
+	})
+	client.AppendAfterDo(func(req *http.Request, resp *http.Response, err error) {
+		resp.Header.Set("test", "def")
+	})
+	body, _, resp, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
+	assert.Contains(string(body), "hello")
+	assert.Contains(string(GetResponseBody(resp)), "hello")
+	assert.Equal(r.Header.Get("test"), "abc")
+	assert.Equal(resp.Header.Get("test"), "def")
+}
+
+func TestHTTPClient_BeforeSet(t *testing.T) {
+	assert := assert2.New(t)
+	client := NewHTTPClient()
+	client.SetClientCert(cert, key)
+	var r *http.Request
+	client.SetBeforeDo(func(req *http.Request) {
+		r = req
+		req.Header.Set("test", "abc")
+	})
+	client.SetAfterDo(func(req *http.Request, resp *http.Response, err error) {
+		resp.Header.Set("test", "def")
+	})
+	body, _, resp, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
+	assert.Contains(string(body), "hello")
+	assert.Contains(string(GetResponseBody(resp)), "hello")
+	assert.Equal(r.Header.Get("test"), "abc")
+	assert.Equal(resp.Header.Get("test"), "def")
+}
+
+func TestHTTPClient_BeforeSetNil(t *testing.T) {
+	assert := assert2.New(t)
+	client := NewHTTPClient()
+	client.SetClientCert(cert, key)
+	var r *http.Request
+	client.SetBeforeDo(func(req *http.Request) {
+		r = req
+		req.Header.Set("test", "abc")
+	})
+	client.SetBeforeDo(nil)
+	client.SetAfterDo(func(req *http.Request, resp *http.Response, err error) {
+		resp.Header.Set("test", "def")
+	})
+	client.SetAfterDo(nil)
+	body, _, resp, _ := client.Get(httpsServerURL2+"/hello", time.Second, nil, map[string]string{"token": "200"})
+	assert.Contains(string(body), "hello")
+	assert.Contains(string(GetResponseBody(resp)), "hello")
+	assert.Nil(r)
+	assert.NotEqual(resp.Header.Get("test"), "def")
 }
 
 func TestHTTPClient_SetProxyFromEnv(t *testing.T) {

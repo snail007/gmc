@@ -102,6 +102,8 @@ type HTTPClient struct {
 	preHandler        func(r *http.Request)
 	keepalive         bool
 	proxyUsed         *url.URL
+	beforeDo          []BeforeDoClientFunc
+	afterDo           []AfterDoClientFunc
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
@@ -110,6 +112,64 @@ func NewHTTPClient() *HTTPClient {
 	return &HTTPClient{
 		keepalive: true,
 		jar:       NewCookieJar(),
+	}
+}
+
+// SetBeforeDo sets callback call before request sent.
+func (s *HTTPClient) SetBeforeDo(beforeDo BeforeDoClientFunc) *HTTPClient {
+	return s.setBeforeDo(beforeDo, true)
+}
+
+// AppendBeforeDo add a callback call before request sent.
+func (s *HTTPClient) AppendBeforeDo(beforeDo BeforeDoClientFunc) *HTTPClient {
+	return s.setBeforeDo(beforeDo, false)
+}
+
+func (s *HTTPClient) setBeforeDo(beforeDo BeforeDoClientFunc, isSet bool) *HTTPClient {
+	if isSet {
+		if beforeDo != nil {
+			s.beforeDo = []BeforeDoClientFunc{beforeDo}
+		} else {
+			s.beforeDo = []BeforeDoClientFunc{}
+		}
+	} else if beforeDo != nil {
+		s.beforeDo = append(s.beforeDo, beforeDo)
+	}
+	return s
+}
+
+// SetAfterDo sets callback call after request sent.
+func (s *HTTPClient) SetAfterDo(afterDo AfterDoClientFunc) *HTTPClient {
+	return s.setAfterDo(afterDo, true)
+}
+
+// AppendAfterDo add a callback call after request sent.
+func (s *HTTPClient) AppendAfterDo(afterDo AfterDoClientFunc) *HTTPClient {
+	return s.setAfterDo(afterDo, false)
+}
+
+func (s *HTTPClient) setAfterDo(afterDo AfterDoClientFunc, isSet bool) *HTTPClient {
+	if isSet {
+		if afterDo != nil {
+			s.afterDo = []AfterDoClientFunc{afterDo}
+		} else {
+			s.afterDo = []AfterDoClientFunc{}
+		}
+	} else if afterDo != nil {
+		s.afterDo = append(s.afterDo, afterDo)
+	}
+	return s
+}
+
+func (s *HTTPClient) callBeforeDo(req *http.Request) {
+	for _, f := range s.beforeDo {
+		f(req)
+	}
+}
+
+func (s *HTTPClient) callAfterDo(req *http.Request, resp *http.Response, err error) {
+	for _, f := range s.afterDo {
+		f(req, resp, err)
 	}
 }
 
@@ -319,7 +379,9 @@ func (s *HTTPClient) Do(req *http.Request, timeout time.Duration) (resp *http.Re
 	if s.preHandler != nil {
 		s.preHandler(req)
 	}
+	s.callBeforeDo(req)
 	resp, err = client.Do(req)
+	s.callAfterDo(req, resp, err)
 	return
 }
 
@@ -401,13 +463,13 @@ func (s *HTTPClient) UploadOfReader(u, fieldName string, filename string, reader
 	return
 }
 
-//Download gets url bytes contents.
+// Download gets url bytes contents.
 func (s *HTTPClient) Download(u string, timeout time.Duration, queryData, header map[string]string) (data []byte, resp *http.Response, err error) {
 	data, _, resp, err = s.Get(u, timeout, queryData, header)
 	return
 }
 
-//DownloadToFile gets url bytes contents and save to the file.
+// DownloadToFile gets url bytes contents and save to the file.
 func (s *HTTPClient) DownloadToFile(u string, timeout time.Duration, queryData, header map[string]string, file string) (resp *http.Response, err error) {
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
@@ -417,7 +479,7 @@ func (s *HTTPClient) DownloadToFile(u string, timeout time.Duration, queryData, 
 	return s.DownloadToWriter(u, timeout, queryData, header, f)
 }
 
-//DownloadToWriter gets url bytes contents and copy to the writer at realtime.
+// DownloadToWriter gets url bytes contents and copy to the writer at realtime.
 func (s *HTTPClient) DownloadToWriter(u string, timeout time.Duration, queryData, header map[string]string, writer io.Writer) (resp *http.Response, err error) {
 	req, cancel, err := NewGet(u, timeout, queryData, header)
 	defer cancel()

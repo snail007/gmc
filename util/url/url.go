@@ -1,6 +1,7 @@
 package gurl
 
 import (
+	"net"
 	"net/url"
 	"strings"
 )
@@ -9,6 +10,7 @@ type Builder struct {
 	*url.URL
 	query   map[string]string
 	holders []string
+	port    string
 }
 
 func NewBuilder() *Builder {
@@ -48,6 +50,25 @@ func (s *Builder) Host(host string) *Builder {
 	return s
 }
 
+func (s *Builder) addPort(host string) string {
+	if s.port == "" {
+		return host
+	}
+	h, _, _ := net.SplitHostPort(host)
+	if h == "" {
+		host = net.JoinHostPort(host, s.port)
+	} else {
+		host = net.JoinHostPort(h, s.port)
+	}
+	return host
+}
+
+func (s *Builder) Port(port string) *Builder {
+	s.port = port
+	s.URL.Host = s.addPort(s.URL.Host)
+	return s
+}
+
 func (s *Builder) Path(path string) *Builder {
 	s.URL.Path = path
 	return s
@@ -63,7 +84,7 @@ func (s *Builder) Query(data map[string]string) *Builder {
 func (s *Builder) HostsURL(hosts []string) (urlArr []string) {
 	h0 := s.URL.Host
 	for _, h := range hosts {
-		s.URL.Host = h
+		s.URL.Host = s.addPort(h)
 		urlArr = append(urlArr, s.String())
 	}
 	s.URL.Host = h0

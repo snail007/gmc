@@ -28,4 +28,27 @@ func TestURLBuilder_Query(t *testing.T) {
 		Holders("-key-", "-id-").HolderValuesURL([]string{"a", "b"}, []string{"d", "e"})
 	assert.Len(t, links, 2)
 	assert.Equal(t, links, []string{"http://www.a.com/a/d", "http://www.a.com/b/e"})
+	link = NewBuilder().Host("a.com:81").Port("88")
+	assert.Equal(t, "http://a.com:88/", link.String())
+	link = NewBuilder().Host("a.com").Port("88")
+	assert.Equal(t, "http://a.com:88/", link.String())
+}
+
+func TestGetConcatChar(t *testing.T) {
+	type args struct {
+		URL string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "contains ?", args: args{URL: "a.com/?a=c"}, want: "&"},
+		{name: "not contains ?", args: args{URL: "a.com"}, want: "?"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, GetConcatChar(tt.args.URL), "GetConcatChar(%v)", tt.args.URL)
+		})
+	}
 }

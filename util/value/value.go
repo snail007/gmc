@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var zeroTime = time.Time{}
+
 // Must ignore err, return *Must of v
 func Must(v interface{}, err error) (value *Value) {
 	if err != nil || IsNil(v) {
@@ -148,6 +150,9 @@ func (s *Value) Val() interface{} {
 }
 
 func (s *Value) Int() int {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt != nil {
 		return *s.cacheInt
 	}
@@ -157,6 +162,9 @@ func (s *Value) Int() int {
 }
 
 func (s *Value) Int8() int8 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt8 != nil {
 		return *s.cacheInt8
 	}
@@ -166,6 +174,9 @@ func (s *Value) Int8() int8 {
 }
 
 func (s *Value) Int32() int32 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt32 != nil {
 		return *s.cacheInt32
 	}
@@ -175,6 +186,9 @@ func (s *Value) Int32() int32 {
 }
 
 func (s *Value) Int64() int64 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt64 != nil {
 		return *s.cacheInt64
 	}
@@ -184,6 +198,9 @@ func (s *Value) Int64() int64 {
 }
 
 func (s *Value) Uint() uint {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint != nil {
 		return *s.cacheUint
 	}
@@ -192,6 +209,9 @@ func (s *Value) Uint() uint {
 	return v
 }
 func (s *Value) Uint8() uint8 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint8 != nil {
 		return *s.cacheUint8
 	}
@@ -201,6 +221,9 @@ func (s *Value) Uint8() uint8 {
 }
 
 func (s *Value) Uint32() uint32 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint32 != nil {
 		return *s.cacheUint32
 	}
@@ -210,6 +233,9 @@ func (s *Value) Uint32() uint32 {
 }
 
 func (s *Value) Uint64() uint64 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint64 != nil {
 		return *s.cacheUint64
 	}
@@ -219,6 +245,9 @@ func (s *Value) Uint64() uint64 {
 }
 
 func (s *Value) Float32() float32 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheFloat32 != nil {
 		return *s.cacheFloat32
 	}
@@ -228,6 +257,9 @@ func (s *Value) Float32() float32 {
 }
 
 func (s *Value) Float64() float64 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheFloat64 != nil {
 		return *s.cacheFloat64
 	}
@@ -237,6 +269,9 @@ func (s *Value) Float64() float64 {
 }
 
 func (s *Value) Bool() bool {
+	if s.val == nil {
+		return false
+	}
 	if s.cacheBool != nil {
 		return *s.cacheBool
 	}
@@ -246,6 +281,9 @@ func (s *Value) Bool() bool {
 }
 
 func (s *Value) Bytes() []byte {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheBytes != nil {
 		return s.cacheBytes
 	}
@@ -254,6 +292,9 @@ func (s *Value) Bytes() []byte {
 }
 
 func (s *Value) String() string {
+	if s.val == nil {
+		return ""
+	}
 	if s.cacheString != nil {
 		return *s.cacheString
 	}
@@ -263,11 +304,11 @@ func (s *Value) String() string {
 }
 
 func (s *Value) StringSlice() []string {
-	if s.cacheStringSlice != nil {
-		return s.cacheStringSlice
-	}
 	if s.val == nil {
 		return nil
+	}
+	if s.cacheStringSlice != nil {
+		return s.cacheStringSlice
 	}
 	v := s.val.([]string)
 	s.cacheStringSlice = v
@@ -275,6 +316,9 @@ func (s *Value) StringSlice() []string {
 }
 
 func (s *Value) Duration() time.Duration {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheDuration != nil {
 		return *s.cacheDuration
 	}
@@ -284,6 +328,9 @@ func (s *Value) Duration() time.Duration {
 }
 
 func (s *Value) Time() time.Time {
+	if s.val == nil {
+		return zeroTime
+	}
 	if s.cacheTime != nil {
 		return *s.cacheTime
 	}
@@ -293,6 +340,9 @@ func (s *Value) Time() time.Time {
 }
 
 func (s *Value) Map() map[string]interface{} {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMap != nil {
 		return s.cacheMap
 	}
@@ -301,6 +351,9 @@ func (s *Value) Map() map[string]interface{} {
 }
 
 func (s *Value) MapString() map[string]string {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapString != nil {
 		return s.cacheMapString
 	}
@@ -309,6 +362,9 @@ func (s *Value) MapString() map[string]string {
 }
 
 func (s *Value) MapBool() map[string]bool {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapBool != nil {
 		return s.cacheMapBool
 	}
@@ -317,6 +373,9 @@ func (s *Value) MapBool() map[string]bool {
 }
 
 func (s *Value) MapSlice() map[string][]interface{} {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapSlice != nil {
 		return s.cacheMapSlice
 	}
@@ -325,6 +384,9 @@ func (s *Value) MapSlice() map[string][]interface{} {
 }
 
 func (s *Value) MapStringSlice() map[string][]string {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapStringSlice != nil {
 		return s.cacheMapStringSlice
 	}
@@ -333,6 +395,9 @@ func (s *Value) MapStringSlice() map[string][]string {
 }
 
 func (s *Value) MapInt() map[string]int {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt != nil {
 		return s.cacheMapInt
 	}
@@ -341,6 +406,9 @@ func (s *Value) MapInt() map[string]int {
 }
 
 func (s *Value) MapInt8() map[string]int8 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt8 != nil {
 		return s.cacheMapInt8
 	}
@@ -349,6 +417,9 @@ func (s *Value) MapInt8() map[string]int8 {
 }
 
 func (s *Value) MapInt32() map[string]int32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt32 != nil {
 		return s.cacheMapInt32
 	}
@@ -357,6 +428,9 @@ func (s *Value) MapInt32() map[string]int32 {
 }
 
 func (s *Value) MapInt64() map[string]int64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt64 != nil {
 		return s.cacheMapInt64
 	}
@@ -365,6 +439,9 @@ func (s *Value) MapInt64() map[string]int64 {
 }
 
 func (s *Value) MapUint() map[string]uint {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint != nil {
 		return s.cacheMapUint
 	}
@@ -373,6 +450,9 @@ func (s *Value) MapUint() map[string]uint {
 }
 
 func (s *Value) MapUint8() map[string]uint8 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint8 != nil {
 		return s.cacheMapUint8
 	}
@@ -381,6 +461,9 @@ func (s *Value) MapUint8() map[string]uint8 {
 }
 
 func (s *Value) MapUint32() map[string]uint32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint32 != nil {
 		return s.cacheMapUint32
 	}
@@ -389,6 +472,9 @@ func (s *Value) MapUint32() map[string]uint32 {
 }
 
 func (s *Value) MapUint64() map[string]uint64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint64 != nil {
 		return s.cacheMapUint64
 	}
@@ -397,6 +483,9 @@ func (s *Value) MapUint64() map[string]uint64 {
 }
 
 func (s *Value) MapFloat32() map[string]float32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapFloat32 != nil {
 		return s.cacheMapFloat32
 	}
@@ -405,6 +494,9 @@ func (s *Value) MapFloat32() map[string]float32 {
 }
 
 func (s *Value) MapFloat64() map[string]float64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapFloat64 != nil {
 		return s.cacheMapFloat64
 	}
@@ -413,7 +505,8 @@ func (s *Value) MapFloat64() map[string]float64 {
 }
 
 type AnyValue struct {
-	val          interface{}
+	val interface{}
+
 	cacheInt     *int
 	cacheInt8    *int8
 	cacheInt32   *int32
@@ -440,6 +533,7 @@ type AnyValue struct {
 	cacheDuration *time.Duration
 	cacheTime     *time.Time
 	cacheString   *string
+	cacheBytes    []byte
 
 	cacheBoolSlice     []bool
 	cacheDurationSlice []time.Duration
@@ -474,7 +568,22 @@ func (s *AnyValue) Val() interface{} {
 	return s.val
 }
 
+func (s *AnyValue) Bytes() []byte {
+	if s.val == nil {
+		return nil
+	}
+	if s.cacheBytes != nil {
+		return s.cacheBytes
+	}
+	v := gcast.ToString(s.val)
+	s.cacheBytes = []byte(v)
+	return s.cacheBytes
+}
+
 func (s *AnyValue) Int() int {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt != nil {
 		return *s.cacheInt
 	}
@@ -484,6 +593,9 @@ func (s *AnyValue) Int() int {
 }
 
 func (s *AnyValue) IntSlice() []int {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheIntSlice != nil {
 		return s.cacheIntSlice
 	}
@@ -493,6 +605,9 @@ func (s *AnyValue) IntSlice() []int {
 }
 
 func (s *AnyValue) Int8() int8 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt8 != nil {
 		return *s.cacheInt8
 	}
@@ -502,6 +617,9 @@ func (s *AnyValue) Int8() int8 {
 }
 
 func (s *AnyValue) Int8Slice() []int8 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheInt8Slice != nil {
 		return s.cacheInt8Slice
 	}
@@ -512,6 +630,9 @@ func (s *AnyValue) Int8Slice() []int8 {
 }
 
 func (s *AnyValue) Int32() int32 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt32 != nil {
 		return *s.cacheInt32
 	}
@@ -521,6 +642,9 @@ func (s *AnyValue) Int32() int32 {
 }
 
 func (s *AnyValue) Int32Slice() []int32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheInt32Slice != nil {
 		return s.cacheInt32Slice
 	}
@@ -531,6 +655,9 @@ func (s *AnyValue) Int32Slice() []int32 {
 }
 
 func (s *AnyValue) Int64() int64 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheInt64 != nil {
 		return *s.cacheInt64
 	}
@@ -540,6 +667,9 @@ func (s *AnyValue) Int64() int64 {
 }
 
 func (s *AnyValue) Int64Slice() []int64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheInt64Slice != nil {
 		return s.cacheInt64Slice
 	}
@@ -550,6 +680,9 @@ func (s *AnyValue) Int64Slice() []int64 {
 }
 
 func (s *AnyValue) Uint() uint {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint != nil {
 		return *s.cacheUint
 	}
@@ -559,6 +692,9 @@ func (s *AnyValue) Uint() uint {
 }
 
 func (s *AnyValue) UintSlice() []uint {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheUintSlice != nil {
 		return s.cacheUintSlice
 	}
@@ -569,6 +705,9 @@ func (s *AnyValue) UintSlice() []uint {
 }
 
 func (s *AnyValue) Uint8() uint8 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint8 != nil {
 		return *s.cacheUint8
 	}
@@ -578,6 +717,9 @@ func (s *AnyValue) Uint8() uint8 {
 }
 
 func (s *AnyValue) Uint8Slice() []uint8 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheUint8Slice != nil {
 		return s.cacheUint8Slice
 	}
@@ -588,6 +730,9 @@ func (s *AnyValue) Uint8Slice() []uint8 {
 }
 
 func (s *AnyValue) Uint32() uint32 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint32 != nil {
 		return *s.cacheUint32
 	}
@@ -597,6 +742,9 @@ func (s *AnyValue) Uint32() uint32 {
 }
 
 func (s *AnyValue) Uint32Slice() []uint32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheUint32Slice != nil {
 		return s.cacheUint32Slice
 	}
@@ -607,6 +755,9 @@ func (s *AnyValue) Uint32Slice() []uint32 {
 }
 
 func (s *AnyValue) Uint64() uint64 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheUint64 != nil {
 		return *s.cacheUint64
 	}
@@ -616,6 +767,9 @@ func (s *AnyValue) Uint64() uint64 {
 }
 
 func (s *AnyValue) Uint64Slice() []uint64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheUint64Slice != nil {
 		return s.cacheUint64Slice
 	}
@@ -626,6 +780,9 @@ func (s *AnyValue) Uint64Slice() []uint64 {
 }
 
 func (s *AnyValue) Float32() float32 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheFloat32 != nil {
 		return *s.cacheFloat32
 	}
@@ -635,6 +792,9 @@ func (s *AnyValue) Float32() float32 {
 }
 
 func (s *AnyValue) Float32Slice() []float32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheFloat32Slice != nil {
 		return s.cacheFloat32Slice
 	}
@@ -645,6 +805,9 @@ func (s *AnyValue) Float32Slice() []float32 {
 }
 
 func (s *AnyValue) Float64() float64 {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheFloat64 != nil {
 		return *s.cacheFloat64
 	}
@@ -654,6 +817,9 @@ func (s *AnyValue) Float64() float64 {
 }
 
 func (s *AnyValue) Float64Slice() []float64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheFloat64Slice != nil {
 		return s.cacheFloat64Slice
 	}
@@ -664,6 +830,9 @@ func (s *AnyValue) Float64Slice() []float64 {
 }
 
 func (s *AnyValue) Bool() bool {
+	if s.val == nil {
+		return false
+	}
 	if s.cacheBool != nil {
 		return *s.cacheBool
 	}
@@ -673,6 +842,9 @@ func (s *AnyValue) Bool() bool {
 }
 
 func (s *AnyValue) BoolSlice() []bool {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheBoolSlice != nil {
 		return s.cacheBoolSlice
 	}
@@ -683,6 +855,9 @@ func (s *AnyValue) BoolSlice() []bool {
 }
 
 func (s *AnyValue) String() string {
+	if s.val == nil {
+		return ""
+	}
 	if s.cacheString != nil {
 		return *s.cacheString
 	}
@@ -692,6 +867,9 @@ func (s *AnyValue) String() string {
 }
 
 func (s *AnyValue) StringSlice() []string {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheStringSlice != nil {
 		return s.cacheStringSlice
 	}
@@ -700,6 +878,9 @@ func (s *AnyValue) StringSlice() []string {
 }
 
 func (s *AnyValue) Duration() time.Duration {
+	if s.val == nil {
+		return 0
+	}
 	if s.cacheDuration != nil {
 		return *s.cacheDuration
 	}
@@ -709,6 +890,9 @@ func (s *AnyValue) Duration() time.Duration {
 }
 
 func (s *AnyValue) DurationSlice() []time.Duration {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheDurationSlice != nil {
 		return s.cacheDurationSlice
 	}
@@ -717,6 +901,9 @@ func (s *AnyValue) DurationSlice() []time.Duration {
 }
 
 func (s *AnyValue) Time() time.Time {
+	if s.val == nil {
+		return zeroTime
+	}
 	if s.cacheTime != nil {
 		return *s.cacheTime
 	}
@@ -726,6 +913,9 @@ func (s *AnyValue) Time() time.Time {
 }
 
 func (s *AnyValue) Map() map[string]interface{} {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMap != nil {
 		return s.cacheMap
 	}
@@ -738,6 +928,9 @@ func (s *AnyValue) Map() map[string]interface{} {
 }
 
 func (s *AnyValue) MapString() map[string]string {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapString != nil {
 		return s.cacheMapString
 	}
@@ -746,6 +939,9 @@ func (s *AnyValue) MapString() map[string]string {
 }
 
 func (s *AnyValue) MapBool() map[string]bool {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapBool != nil {
 		return s.cacheMapBool
 	}
@@ -754,6 +950,9 @@ func (s *AnyValue) MapBool() map[string]bool {
 }
 
 func (s *AnyValue) MapInt() map[string]int {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt != nil {
 		return s.cacheMapInt
 	}
@@ -762,6 +961,9 @@ func (s *AnyValue) MapInt() map[string]int {
 }
 
 func (s *AnyValue) MapInt8() map[string]int8 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt8 != nil {
 		return s.cacheMapInt8
 	}
@@ -774,6 +976,9 @@ func (s *AnyValue) MapInt8() map[string]int8 {
 }
 
 func (s *AnyValue) MapInt32() map[string]int32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt32 != nil {
 		return s.cacheMapInt32
 	}
@@ -786,6 +991,9 @@ func (s *AnyValue) MapInt32() map[string]int32 {
 }
 
 func (s *AnyValue) MapInt64() map[string]int64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapInt64 != nil {
 		return s.cacheMapInt64
 	}
@@ -794,6 +1002,9 @@ func (s *AnyValue) MapInt64() map[string]int64 {
 }
 
 func (s *AnyValue) MapUint() map[string]uint {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint != nil {
 		return s.cacheMapUint
 	}
@@ -806,6 +1017,9 @@ func (s *AnyValue) MapUint() map[string]uint {
 }
 
 func (s *AnyValue) MapUint8() map[string]uint8 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint8 != nil {
 		return s.cacheMapUint8
 	}
@@ -818,6 +1032,9 @@ func (s *AnyValue) MapUint8() map[string]uint8 {
 }
 
 func (s *AnyValue) MapUint32() map[string]uint32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint32 != nil {
 		return s.cacheMapUint32
 	}
@@ -830,6 +1047,9 @@ func (s *AnyValue) MapUint32() map[string]uint32 {
 }
 
 func (s *AnyValue) MapUint64() map[string]uint64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapUint64 != nil {
 		return s.cacheMapUint64
 	}
@@ -842,6 +1062,9 @@ func (s *AnyValue) MapUint64() map[string]uint64 {
 }
 
 func (s *AnyValue) MapFloat32() map[string]float32 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapFloat32 != nil {
 		return s.cacheMapFloat32
 	}
@@ -854,6 +1077,9 @@ func (s *AnyValue) MapFloat32() map[string]float32 {
 }
 
 func (s *AnyValue) MapFloat64() map[string]float64 {
+	if s.val == nil {
+		return nil
+	}
 	if s.cacheMapFloat64 != nil {
 		return s.cacheMapFloat64
 	}

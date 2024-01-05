@@ -223,7 +223,7 @@ func TestRunning(t *testing.T) {
 		time.Sleep(time.Second)
 	})
 	time.Sleep(time.Millisecond * 40)
-	if p.RunningWorkCount() == 3 {
+	if p.RunningWorkerCount() == 3 {
 		t.Log("Running is okay")
 	} else {
 		t.Fatalf("Running is failed")
@@ -247,7 +247,7 @@ func TestIncrease(t *testing.T) {
 		})
 	}
 	time.Sleep(time.Second)
-	assert.Equal(6, p.RunningWorkCount())
+	assert.Equal(6, p.RunningWorkerCount())
 	p.Stop()
 }
 
@@ -261,10 +261,10 @@ func TestDecrease(t *testing.T) {
 		})
 	}
 	time.Sleep(time.Millisecond * 30)
-	assert.Equal(2, p.RunningWorkCount())
+	assert.Equal(2, p.RunningWorkerCount())
 	p.Decrease(1)
 	time.Sleep(time.Second)
-	assert.Equal(1, p.RunningWorkCount())
+	assert.Equal(1, p.RunningWorkerCount())
 	p.Stop()
 }
 
@@ -333,7 +333,7 @@ func TestGPool_MaxWaitCount(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 40)
 	assert.Equal(0, p.IdleWorkerCount())
-	assert.Equal(1, p.RunningWorkCount())
+	assert.Equal(1, p.RunningWorkerCount())
 	p.Stop()
 }
 

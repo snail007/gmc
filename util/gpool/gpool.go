@@ -305,8 +305,8 @@ func (s *Pool) Stop() {
 	s.workers.Clear()
 }
 
-// RunningWorkCount returns the count of running workers
-func (s *Pool) RunningWorkCount() (workerCount int) {
+// RunningWorkerCount returns the count of running workers
+func (s *Pool) RunningWorkerCount() (workerCount int) {
 	return int(atomic.LoadInt64(s.runningWorkerCounter))
 }
 

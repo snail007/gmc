@@ -419,8 +419,10 @@ func TestContains(t *testing.T) {
 	a = []int{1, 2, 3}
 	assert.Equal(t, true, Contains(a, 1))
 	assert.Equal(t, 2, IndexOf(a, 3))
+	a = [3]int{1, 2, 3}
+	assert.Equal(t, true, Contains(a, 1))
+	assert.Equal(t, 2, IndexOf(a, 3))
 	a = []interface{}{1, 2, 3, nil}
 	assert.Equal(t, 3, IndexOf(a, nil))
 	assert.Equal(t, -1, IndexOf(a, 0))
-
 }

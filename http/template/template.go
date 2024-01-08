@@ -8,7 +8,6 @@ package gtemplate
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	"io/ioutil"
 	"os"
@@ -53,6 +52,7 @@ type Template struct {
 	binData                   map[string][]byte
 	disableLoadDefaultBinData bool
 	disableLogging            bool
+	left, right               string
 }
 
 func (s *Template) DisableLoadDefaultBinData() {
@@ -98,6 +98,8 @@ func New() (t *Template) {
 		tpl:     tpl,
 		ext:     ".html",
 		binData: map[string][]byte{},
+		left:    "{{",
+		right:   "}}",
 	}
 	return
 }
@@ -120,6 +122,8 @@ func NewTemplate(ctx gcore.Ctx, rootDir string) (t *Template, err error) {
 		ext:     ".html",
 		ctx:     ctx,
 		binData: map[string][]byte{},
+		left:    "{{",
+		right:   "}}",
 	}
 	ctx.SetTemplate(t)
 	return
@@ -131,6 +135,7 @@ func NewTemplate(ctx gcore.Ctx, rootDir string) (t *Template, err error) {
 // corresponding default: {{ or }}.
 // The return value is the template, so calls can be chained.
 func (s *Template) Delims(left, right string) {
+	s.left, s.right = left, right
 	s.tpl.Delims(left, right)
 }
 
@@ -199,16 +204,21 @@ func (s *Template) Parse() (err error) {
 	}
 	return
 }
+
+func (s *Template) wrapDelims(str string) string {
+	return s.left + str + s.right
+}
+
 func (s *Template) parseFromBinData() (err error) {
 	for k, v := range s.binData {
 		// template without extension
-		html := fmt.Sprintf("{{define \"%s\"}}%s{{end}}", k, string(v))
+		html := s.wrapDelims(`define "`+k+`"`) + string(v) + s.wrapDelims("end")
 		_, err = s.tpl.Parse(html)
 		if err != nil {
 			return
 		}
 		// template with extension
-		html = fmt.Sprintf("{{define \"%s\"}}%s{{end}}", k+s.ext, string(v))
+		html = s.wrapDelims(`define "`+k+s.ext+`"`) + string(v) + s.wrapDelims("end")
 		_, err = s.tpl.Parse(html)
 		if err != nil {
 			return
@@ -216,6 +226,7 @@ func (s *Template) parseFromBinData() (err error) {
 	}
 	return
 }
+
 func (s *Template) parseFromDisk() (err error) {
 	names := []string{}
 	err = s.tree(s.rootDir, &names)
@@ -230,11 +241,11 @@ func (s *Template) parseFromDisk() (err error) {
 		}
 
 		// template without extension
-		html := fmt.Sprintf("{{define \"%s\"}}%s{{end}}", v, string(b))
+		html := s.wrapDelims(`define "`+v+`"`) + string(b) + s.wrapDelims("end")
 		_, err = s.tpl.Parse(html)
 
 		// template with extension
-		html = fmt.Sprintf("{{define \"%s\"}}%s{{end}}", v+s.ext, string(b))
+		html = s.wrapDelims(`define "`+v+s.ext+`"`) + string(b) + s.wrapDelims("end")
 		_, err = s.tpl.Parse(html)
 		if err != nil {
 			return

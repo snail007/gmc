@@ -1,6 +1,7 @@
 package gstrings
 
 import (
+	"os"
 	"strings"
 	"unsafe"
 )
@@ -71,4 +72,12 @@ func Replace(str string, oldNew ...string) string {
 	}
 	r := strings.NewReplacer(oldNew...)
 	return r.Replace(str)
+}
+
+// Render replaces ${var} or $var in the string based on the mapping data,
+// 'var' is key in data map.
+func Render(str string, data map[string]string) string {
+	return os.Expand(str, func(key string) string {
+		return data[key]
+	})
 }

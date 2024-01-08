@@ -63,3 +63,36 @@ func TestContainsAll(t *testing.T) {
 	assert.True(t, ContainsAll("abcd", "ab", "bc", "cd"))
 	assert.True(t, ContainsAll("abcd"))
 }
+
+func TestRender(t *testing.T) {
+	// Define test cases
+	tests := []struct {
+		input    string
+		data     map[string]string
+		expected string
+	}{
+		{
+			input:    "Hello, ${NAME}!",
+			data:     map[string]string{"NAME": "John"},
+			expected: "Hello, John!",
+		},
+		{
+			input:    "This is $CITY, ${COUNTRY}.",
+			data:     map[string]string{"CITY": "New York", "COUNTRY": "USA"},
+			expected: "This is New York, USA.",
+		},
+		{
+			input:    "No placeholders here!",
+			data:     map[string]string{"KEY": "VALUE"},
+			expected: "No placeholders here!",
+		},
+	}
+
+	// Run test cases
+	for _, test := range tests {
+		result := Render(test.input, test.data)
+		if result != test.expected {
+			t.Errorf("Render(%s, %v) = %s, want %s", test.input, test.data, result, test.expected)
+		}
+	}
+}

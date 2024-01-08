@@ -178,3 +178,37 @@ func TestCopyFile(t *testing.T) {
 		t.Logf("Expected error: %v", err)
 	}
 }
+
+func TestContent(t *testing.T) {
+	// Create a temporary file for testing
+	content := "This is a test file content."
+	tmpFile, err := ioutil.TempFile("", "testfile.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Write content to the temporary file
+	_, err = tmpFile.WriteString(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpFile.Close()
+
+	// Run the Content function with the temporary file
+	result := Content(tmpFile.Name())
+
+	// Check if the result matches the expected content
+	if result != content {
+		t.Errorf("Content(%s) = %s, want %s", tmpFile.Name(), result, content)
+	}
+
+	// Test case for a non-existing file
+	nonExistentFile := "nonexistentfile.txt"
+	result = Content(nonExistentFile)
+
+	// Check if the result is an empty string for a non-existing file
+	if result != "" {
+		t.Errorf("Content(%s) = %s, want %s", nonExistentFile, result, "")
+	}
+}

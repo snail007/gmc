@@ -156,11 +156,19 @@ func Bytes(file string) (d []byte) {
 	return
 }
 
+// Content returns the contents of file,
+// if read fail, returns "".
+func Content(file string) (d string) {
+	return string(Bytes(file))
+}
+
 // Write writes []byte to file.
 func Write(file string, data []byte, append bool) (err error) {
 	mode := os.O_CREATE | os.O_WRONLY
 	if append {
 		mode |= os.O_APPEND
+	} else {
+		mode |= os.O_TRUNC
 	}
 	f, err := os.OpenFile(file, mode, 0755)
 	if err != nil {

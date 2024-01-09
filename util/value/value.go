@@ -1180,31 +1180,24 @@ func IndexOf(sliceInterface interface{}, value interface{}) int {
 
 var typeOfBytes = reflect.TypeOf([]byte(nil))
 
-// MapToStruct convert map to struct, _value is a struct, or it's pointer, by default struct tag 'mkey' will be used,
-// if 'mkey' not exists the filed name will used as map key,  for example: User{} or new(User).
+// MapToStruct same with MapToStructWithTag, but `json` is used as tag name by default
+func MapToStruct(mapData map[string]interface{}, _value interface{}) (newStruct interface{}, err error) {
+	return MapToStructWithTag(mapData, _value, "json")
+}
+
+// MapToStructWithTag convert map to struct, _value is a pointer to strut,
+// if key 'tag' not exists in the map, the filed name will used as map key.
 // Returned newStruct is a struct, for example: newStruct.(User) to assert it type.
 // Details refer to TestMapToStruct.
-// Ignore filed, set tag mkey:"-", for example:
+// Ignore filed, set tag tagName:"-", for example:
 // User{
-// Age int `mkey:"-"`
+// Age int `tagName:"-"`
 // }
-func MapToStruct(mapData map[string]interface{}, _value interface{}, tagName ...string) (newStruct interface{}, err error) {
-	if IsNil(_value) || (reflect.TypeOf(_value).Kind() != reflect.Struct &&
-		reflect.TypeOf(_value).Kind() != reflect.Ptr) {
-		return nil, errors.New("v must be struct or pointer")
+func MapToStructWithTag(mapData map[string]interface{}, _value interface{}, tag string) (newStruct interface{}, err error) {
+	if IsNil(_value) || reflect.TypeOf(_value).Kind() != reflect.Ptr {
+		return nil, errors.New("value must be a pointer to strut")
 	}
-	tag := "mkey"
-	if len(tagName) == 1 {
-		tag = tagName[0]
-	}
-	var rv reflect.Value
-
-	if reflect.TypeOf(_value).Kind() == reflect.Ptr {
-		rv = reflect.ValueOf(_value).Elem()
-	} else {
-		rv = reflect.New(reflect.TypeOf(_value)).Elem()
-	}
-
+	rv := reflect.ValueOf(_value).Elem()
 	structType := rv.Type()
 	var value interface{}
 	found := false
@@ -1297,8 +1290,8 @@ func MapToStruct(mapData map[string]interface{}, _value interface{}, tagName ...
 					ivIsPtr = true
 					iv = reflect.New(field.Type).Interface()
 				}
-				e := json.Unmarshal(d, &iv)
-				if e != nil {
+				json.Unmarshal(d, &iv)
+				if IsNil(iv) {
 					err = fmt.Errorf("unspported json to map or struct field fail, field: %s, type: %s", field.Name, fieldKind.String())
 					break BREAK
 				}
@@ -1312,9 +1305,7 @@ func MapToStruct(mapData map[string]interface{}, _value interface{}, tagName ...
 			err = fmt.Errorf("unspported struct field type, field: %s, type: %s", field.Name, fieldKind.String())
 			break BREAK
 		}
-		if err != nil {
-			return nil, err
-		}
+
 		rValue := reflect.ValueOf(value)
 		if !rValue.IsValid() {
 			e := fmt.Errorf("unspported field: %s, type: %s", field.Name, fieldKind.String())
@@ -1323,8 +1314,19 @@ func MapToStruct(mapData map[string]interface{}, _value interface{}, tagName ...
 			}
 			return nil, e
 		}
+
 		found = true
-		fieldVal.Set(rValue)
+		func() {
+			defer func() {
+				if e := recover(); e != nil {
+					err = fmt.Errorf("%s", e)
+				}
+			}()
+			fieldVal.Set(rValue)
+		}()
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !found {
 		return nil, errors.New("any filed be mapped")

@@ -282,7 +282,7 @@ var (
 func TestStruct1(t *testing.T) {
 	assert := assert.New(t)
 	rs := NewResultSet(&rawRows1)
-	s, err := rs.Struct(User1{})
+	s, err := rs.Struct(&User1{})
 	assert.Nil(err)
 	assert.Equal("jack", s.(User1).Name)
 	assert.Equal(int(229), s.(User1).ID)
@@ -294,7 +294,7 @@ func TestStruct1(t *testing.T) {
 func TestStructs1(t *testing.T) {
 	assert := assert.New(t)
 	rs := NewResultSet(&rawRows1)
-	sts, err := rs.Structs(User1{})
+	sts, err := rs.Structs(&User1{})
 	assert.Nil(err)
 	for _, s := range sts {
 		assert.Equal("jack", s.(User1).Name)
@@ -308,7 +308,7 @@ func TestStructs1(t *testing.T) {
 func TestMapStructs1(t *testing.T) {
 	assert := assert.New(t)
 	rs := NewResultSet(&rawRows1)
-	sts, err := rs.MapStructs("pid", User1{})
+	sts, err := rs.MapStructs("pid", &User1{})
 	assert.Nil(err)
 	for _, s := range sts {
 		assert.Equal("jack", s.(User1).Name)

@@ -30,7 +30,7 @@ type cc struct {
 func TestResultSet_mapToStruct(t *testing.T) {
 	m := map[string]string{"B": `{"C":{"1":"1"}}`}
 	rs := ResultSet{}
-	r, e := rs.mapToStruct(m, a{})
+	r, e := rs.mapToStruct(m, &a{})
 	assert.Nil(t, e)
 	assert.Equal(t, "1", r.(a).B["C"].(map[string]interface{})["1"])
 }
@@ -38,7 +38,7 @@ func TestResultSet_mapToStruct(t *testing.T) {
 func TestResultSet_mapToStruct1(t *testing.T) {
 	m := map[string]string{"B": `{"C":"1"}`}
 	rs := ResultSet{}
-	r, e := rs.mapToStruct(m, c{})
+	r, e := rs.mapToStruct(m, &c{})
 	assert.Nil(t, e)
 	assert.Equal(t, "1", r.(c).B.C)
 }
@@ -46,7 +46,7 @@ func TestResultSet_mapToStruct1(t *testing.T) {
 func TestResultSet_mapToStruct2(t *testing.T) {
 	m := map[string]string{"B": `{"C":"1"}`}
 	rs := ResultSet{}
-	r, e := rs.mapToStruct(m, cc{})
+	r, e := rs.mapToStruct(m, &cc{})
 	assert.Nil(t, e)
 	assert.Equal(t, "1", r.(cc).B.C)
 }
@@ -152,7 +152,7 @@ func TestResultSet_MapStructs(t *testing.T) {
 		Name string `column:"name"`
 	}
 
-	structsMap, err := rs.MapStructs("id", Person{})
+	structsMap, err := rs.MapStructs("id", &Person{})
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -223,7 +223,7 @@ func TestResultSet_Structs(t *testing.T) {
 		Name string `column:"name"`
 	}
 
-	structs, err := rs.Structs(Person{})
+	structs, err := rs.Structs(&Person{})
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -288,7 +288,7 @@ func TestResultSet_Struct(t *testing.T) {
 		Name string `column:"name"`
 	}
 
-	person, err := rs.Struct(Person{})
+	person, err := rs.Struct(&Person{})
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -388,7 +388,7 @@ func TestMapToStruct(t *testing.T) {
 		"bytes":       "SGVsbG8gd29ybGQ=", //base64： Hello world
 	}
 	rs := &ResultSet{}
-	result, err := rs.mapToStruct(mapData, TestStruct0{})
+	result, err := rs.mapToStruct(mapData, &TestStruct0{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

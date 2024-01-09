@@ -149,5 +149,5 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, structValue interfac
 	if len(tagName) == 1 {
 		tag = tagName[0]
 	}
-	return gvalue.MapToStruct(gmap.ToAny(mapData), structValue, tag)
+	return gvalue.MapToStructWithTag(gmap.ToAny(mapData), structValue, tag)
 }

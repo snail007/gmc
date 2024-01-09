@@ -538,7 +538,9 @@ type YourStruct struct {
 	ErrStructField YourInnerStruct
 	MapKey         int8 `mkey:"key1"`
 	privateField   int
-	MapField       map[string]interface{} //map field only  map[string]interface{} supported
+	//map field only  map[string]interface{} supported
+	MapField    map[string]interface{}
+	IgnoreField int `mkey:"-"`
 }
 
 type YourInnerStruct struct {
@@ -587,6 +589,7 @@ func TestMapToStruct(t *testing.T) {
 		"key1":         int8(8),
 		"privateField": 1,
 		"MapField":     map[string]string{"abc": "123"},
+		"IgnoreField":  1,
 	}
 
 	for _, v := range []interface{}{YourStruct{}, new(YourStruct)} {
@@ -618,6 +621,7 @@ func TestMapToStruct(t *testing.T) {
 		assert.Equal(t, "nested", yourStruct.PtrStructField.InnerStrField)
 		assert.Equal(t, 0, yourStruct.privateField)
 		assert.Equal(t, "123", yourStruct.MapField["abc"])
+		assert.Equal(t, 0, yourStruct.IgnoreField)
 	}
 	// 测试第二个参数是不同的结构体的情况
 	result, err := MapToStruct(mapData, YourSecondStruct{})

@@ -1184,6 +1184,10 @@ var typeOfBytes = reflect.TypeOf([]byte(nil))
 // if 'mkey' not exists the filed name will used as map key,  for example: User{} or new(User).
 // Returned newStruct is a struct, for example: newStruct.(User) to assert it type.
 // Details refer to TestMapToStruct.
+// Ignore filed, set tag mkey:"-", for example:
+// User{
+// Age int `mkey:"-"`
+// }
 func MapToStruct(mapData map[string]interface{}, _value interface{}, tagName ...string) (newStruct interface{}, err error) {
 	if IsNil(_value) || (reflect.TypeOf(_value).Kind() != reflect.Struct &&
 		reflect.TypeOf(_value).Kind() != reflect.Ptr) {
@@ -1218,6 +1222,9 @@ func MapToStruct(mapData map[string]interface{}, _value interface{}, tagName ...
 			fieldKind = fieldType.Kind()
 		}
 		col := strings.Split(field.Tag.Get(tag), ",")[0]
+		if col == "-" {
+			continue
+		}
 		val, ok := mapData[col]
 		if !ok {
 			val, ok = mapData[field.Name]

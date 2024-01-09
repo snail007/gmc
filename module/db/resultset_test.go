@@ -385,7 +385,7 @@ func TestMapToStruct(t *testing.T) {
 		"is_passed":   "true",
 		"created_at":  "2023-05-29T10:00:00Z",
 		"description": "Lorem ipsum",
-		"bytes":       "SGVsbG8gd29ybGQ=",
+		"bytes":       "SGVsbG8gd29ybGQ=", //base64： Hello world
 	}
 	rs := &ResultSet{}
 	result, err := rs.mapToStruct(mapData, TestStruct0{})
@@ -401,7 +401,7 @@ func TestMapToStruct(t *testing.T) {
 		IsPassed:    true,
 		CreatedAt:   time.Date(2023, 5, 29, 10, 0, 0, 0, time.UTC),
 		Description: "Lorem ipsum",
-		Bytes:       []byte("SGVsbG8gd29ybGQ="),
+		Bytes:       []byte("Hello world"),
 	}
 
 	if !reflect.DeepEqual(result, expected) {

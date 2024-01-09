@@ -1,7 +1,9 @@
 package gvalue
 
 import (
+	"encoding/base64"
 	"github.com/snail007/gmc/util/cast"
+	gmap "github.com/snail007/gmc/util/map"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
@@ -509,4 +511,128 @@ func TestContains(t *testing.T) {
 	a = []interface{}{1, 2, 3, nil}
 	assert.Equal(t, 3, IndexOf(a, nil))
 	assert.Equal(t, -1, IndexOf(a, 0))
+}
+
+type YourStruct struct {
+	Uint8Field     uint8
+	Uint16Field    uint16
+	Uint32Field    uint32
+	Uint64Field    uint64
+	UintField      uint
+	Int8Field      int8
+	Int16Field     int16
+	Int32Field     int32
+	Int64Field     int64
+	IntField       int
+	StringField    string
+	BytesField     []byte
+	RawBytesField  []byte
+	BoolField      bool
+	Float32Field   float32
+	Float64Field   float64
+	TimeField      time.Time
+	Int64TimeField time.Time
+	ErrTimeField   time.Time
+	StructField    YourInnerStruct
+	PtrStructField *YourInnerPtrStruct
+	ErrStructField YourInnerStruct
+	MapKey         int8 `mkey:"key1"`
+	privateField   int
+	MapField       map[string]interface{} //map field only  map[string]interface{} supported
+}
+
+type YourInnerStruct struct {
+	InnerIntField int
+	InnerStrField string
+}
+
+type YourInnerPtrStruct struct {
+	InnerIntField int
+	InnerStrField string
+}
+
+type YourSecondStruct struct {
+	AnotherIntField int
+	AnotherStrField string
+}
+
+func TestMapToStruct(t *testing.T) {
+	mapData := map[string]interface{}{
+		"Uint8Field":     uint8(8),
+		"Uint16Field":    uint16(16),
+		"Uint32Field":    uint32(32),
+		"Uint64Field":    uint64(64),
+		"UintField":      uint(128),
+		"Int8Field":      int8(-8),
+		"Int16Field":     int16(-16),
+		"Int32Field":     int32(-32),
+		"Int64Field":     int64(-64),
+		"IntField":       int(-128),
+		"StringField":    "test",
+		"BytesField":     base64.StdEncoding.EncodeToString([]byte("base64")),
+		"RawBytesField":  "base64",
+		"BoolField":      true,
+		"Float32Field":   float32(3.14),
+		"Float64Field":   float64(6.28),
+		"TimeField":      time.Now().Format(time.RFC3339),
+		"Int64TimeField": 123,
+		"StructField": map[string]interface{}{
+			"InnerIntField": 42,
+			"InnerStrField": "nested",
+		},
+		"PtrStructField": map[string]interface{}{
+			"InnerIntField": 42,
+			"InnerStrField": "nested",
+		},
+		"key1":         int8(8),
+		"privateField": 1,
+		"MapField":     map[string]string{"abc": "123"},
+	}
+
+	for _, v := range []interface{}{YourStruct{}, new(YourStruct)} {
+		result, err := MapToStruct(mapData, v, "mkey")
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		yourStruct := result.(YourStruct)
+		// 现在，您可以断言各个字段
+		assert.Equal(t, uint8(8), yourStruct.Uint8Field)
+		assert.Equal(t, uint16(16), yourStruct.Uint16Field)
+		assert.Equal(t, uint32(32), yourStruct.Uint32Field)
+		assert.Equal(t, uint64(64), yourStruct.Uint64Field)
+		assert.Equal(t, uint(128), yourStruct.UintField)
+		assert.Equal(t, int8(-8), yourStruct.Int8Field)
+		assert.Equal(t, int16(-16), yourStruct.Int16Field)
+		assert.Equal(t, int32(-32), yourStruct.Int32Field)
+		assert.Equal(t, int64(-64), yourStruct.Int64Field)
+		assert.Equal(t, int(-128), yourStruct.IntField)
+		assert.Equal(t, "test", yourStruct.StringField)
+		assert.Equal(t, []byte("base64"), yourStruct.BytesField)
+		assert.Equal(t, []byte("base64"), yourStruct.RawBytesField)
+		assert.Equal(t, true, yourStruct.BoolField)
+		assert.Equal(t, float32(3.14), yourStruct.Float32Field)
+		assert.Equal(t, float64(6.28), yourStruct.Float64Field)
+		assert.Equal(t, int64(123), yourStruct.Int64TimeField.Unix())
+		assert.Equal(t, 42, yourStruct.StructField.InnerIntField)
+		assert.Equal(t, "nested", yourStruct.StructField.InnerStrField)
+		assert.Equal(t, 42, yourStruct.PtrStructField.InnerIntField)
+		assert.Equal(t, "nested", yourStruct.PtrStructField.InnerStrField)
+		assert.Equal(t, 0, yourStruct.privateField)
+		assert.Equal(t, "123", yourStruct.MapField["abc"])
+	}
+	// 测试第二个参数是不同的结构体的情况
+	result, err := MapToStruct(mapData, YourSecondStruct{})
+	assert.Error(t, err)
+	assert.Nil(t, result)
+
+	result, err = MapToStruct(mapData, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+
+	result, err = MapToStruct(gmap.M{"ErrTimeField": "abc"}, new(YourStruct))
+	assert.Error(t, err)
+	assert.Nil(t, result)
+
+	result, err = MapToStruct(gmap.M{"ErrStructField": new(chan bool)}, new(YourStruct))
+	assert.Error(t, err)
+	assert.Nil(t, result)
 }

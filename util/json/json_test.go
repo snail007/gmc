@@ -174,3 +174,152 @@ func TestJSONResult_Fail(t *testing.T) {
 	expected := `{"code":1,"data":null,"message":"fail"}`
 	assert.Equal(t, expected, recorder.Body.String())
 }
+
+func TestBuilderOperations(t *testing.T) {
+	// 创建一个新的 Builder 实例
+	builder := NewBuilder(`{"name": "John", "age": 30, "city": "New York"}`)
+
+	// 测试 Set 方法
+	err := builder.Set("name", "Doe")
+	if err != nil {
+		t.Errorf("Set method failed: %v", err)
+	}
+
+	// 测试 Delete 方法
+	err = builder.Delete("age")
+	if err != nil {
+		t.Errorf("Delete method failed: %v", err)
+	}
+
+	// 测试 SetRaw 方法
+	err = builder.SetRaw("country", `"USA"`)
+	if err != nil {
+		t.Errorf("SetRaw method failed: %v", err)
+	}
+
+	// 测试 Get 方法
+	result := builder.Get("name")
+	if result.String() != "Doe" {
+		t.Errorf("Get method failed, expected 'Doe', got '%s'", result.String())
+	}
+	assert.Equal(t, result.Path(), "name")
+
+	// 测试 GetMany 方法
+	results := builder.GetMany("name", "country")
+	if len(results) != 2 {
+		t.Errorf("GetMany method failed, expected 2 results, got %d", len(results))
+	}
+	if results[1].String() != "USA" {
+		t.Errorf("GetMany method failed, expected 'USA', got '%s'", results[1].String())
+	}
+	assert.Nil(t, result.Paths())
+}
+
+func TestBuilderAdditionalOperations(t *testing.T) {
+	// 创建一个新的 Builder 实例
+	builder := NewBuilder(`{"name": "John", "age": 30, "city": "New York"}`)
+
+	// 测试 SetOptions 方法
+	opts := &Options{Optimistic: false}
+	err := builder.SetOptions("address", "123 Main St", opts)
+	if err != nil {
+		t.Errorf("SetOptions method failed: %v", err)
+	}
+
+	// 测试 SetRawOptions 方法
+	rawOpts := &Options{Optimistic: false}
+	err = builder.SetRawOptions("info", `{"key": "value"}`, rawOpts)
+	if err != nil {
+		t.Errorf("SetRawOptions method failed: %v", err)
+	}
+}
+
+func TestJSONArray_Append(t *testing.T) {
+	arr := NewJSONArray("[123]")
+	assert.Equal(t, "123", arr.Get("0").String())
+
+	obj := NewJSONObject(map[string]string{"name": "456"})
+	arr.Append(obj)
+	assert.Equal(t, "456", arr.Get("1.name").String())
+	assert.Equal(t, "456", arr.Get("1").AsJSONObject().Get("name").String())
+
+	obj = NewJSONObject(nil)
+	obj.Set("name", "789")
+	arr.Append(*obj)
+	assert.Equal(t, "789", arr.Get("2.name").String())
+
+	obja := NewJSONArray(nil)
+	obja.Append("000", "111")
+	arr.Append(obja)
+	assert.Equal(t, "000", arr.Get("3.0").String())
+	assert.Equal(t, "111", arr.Get("3.1").String())
+	assert.Equal(t, "000", arr.Get("3").AsJSONArray().Get("0").String())
+
+	assert.Equal(t, int64(4), arr.Len())
+
+	obja = NewJSONArray([]string{"0000", "1111"})
+	arr.Append(*obja)
+	assert.Equal(t, "0000", arr.Get("4.0").String())
+	assert.Equal(t, "1111", arr.Get("4.1").String())
+	assert.Equal(t, "0000", arr.Get("4").AsJSONArray().Get("0").String())
+
+	obj = NewJSONObject(`{"name":"111"}`)
+	arr.Append(obj)
+	assert.Equal(t, "111", arr.Get("5.name").String())
+
+	obj = NewJSONObject([]byte(`{"name":"222"}`))
+	arr.Append(obj)
+	assert.Equal(t, "222", arr.Get("6.name").String())
+
+	assert.Nil(t, NewJSONObject("{,abc"))
+	assert.Nil(t, NewJSONArray("{,abc"))
+	assert.Nil(t, NewBuilder("{,abc"))
+}
+
+func TestJSONArray_Merge(t *testing.T) {
+	a := NewJSONArray([]int{123})
+	arr := NewJSONArray(nil)
+	assert.Nil(t, arr.Merge(a))
+	assert.Nil(t, arr.Merge(*a))
+	assert.Nil(t, arr.Merge([]string{"abc", "111"}))
+	assert.Equal(t, int64(123), arr.Get("0").Int())
+	assert.Equal(t, int64(123), arr.Get("1").Int())
+	assert.Equal(t, "abc", arr.Get("2").String())
+	assert.Equal(t, "111", arr.Get("3").String())
+}
+
+func TestBuilder_AsJSONObject(t *testing.T) {
+	a := NewBuilder(`[]`)
+	assert.Nil(t, a.AsJSONObject())
+	assert.NotNil(t, a.AsJSONArray())
+	assert.Equal(t, "[]", a.String())
+	assert.Error(t, a.AsJSONArray().Append(http.Client{}))
+	a = NewBuilder(`{}`)
+	assert.Nil(t, a.AsJSONArray())
+	assert.NotNil(t, a.AsJSONObject())
+	assert.Equal(t, "{}", a.String())
+}
+
+func TestJSONArray_Last(t *testing.T) {
+	a := NewJSONArray(nil)
+	assert.False(t, a.First().Exists())
+	assert.False(t, a.Last().Exists())
+	assert.Empty(t, a.First().String())
+	assert.Empty(t, a.Last().String())
+
+	a.Append("123")
+	assert.Equal(t, "123", a.First().String())
+	assert.Equal(t, "123", a.Last().String())
+
+	a.Append("456")
+	assert.Equal(t, "123", a.First().String())
+	assert.Equal(t, "456", a.Last().String())
+
+}
+
+func TestNewJSONObjectE(t *testing.T) {
+	_, err := NewJSONObjectE([]string{})
+	assert.Error(t, err)
+	_, err = NewJSONArrayE(map[string]string{})
+	assert.Error(t, err)
+}

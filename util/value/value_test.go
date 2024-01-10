@@ -127,6 +127,12 @@ func TestValue_xxx(t *testing.T) {
 	assert.NotNil(t, t1.cacheStringSlice)
 	assert.Equal(t, t0, t1.StringSlice())
 
+	t0 = []interface{}{"123"}
+	t1 = New(t0)
+	assert.Equal(t, t0, t1.Slice())
+	assert.NotNil(t, t1.cacheSlice)
+	assert.Equal(t, t0, t1.Slice())
+
 	t0 = []byte("123")
 	t1 = New(t0)
 	assert.Equal(t, t0, t1.Bytes())
@@ -253,6 +259,7 @@ func TestValue_xxx2(t *testing.T) {
 	assert.Nil(t, val.MapSlice())
 	assert.Nil(t, val.MapStringSlice())
 	assert.Nil(t, val.StringSlice())
+	assert.Nil(t, val.Slice())
 	assert.Nil(t, val.MapUint64())
 	assert.Nil(t, val.MapUint32())
 	assert.Nil(t, val.MapUint8())
@@ -300,6 +307,7 @@ func TestAnyValue_xxx(t *testing.T) {
 	assert.Nil(t, val.Map())
 	assert.Nil(t, val.MapFloat64())
 	assert.Nil(t, val.MapFloat32())
+	assert.Nil(t, val.Slice())
 	assert.Nil(t, val.IntSlice())
 	assert.Nil(t, val.Int8Slice())
 	assert.Nil(t, val.Int32Slice())
@@ -360,6 +368,7 @@ func TestAnyValue(t *testing.T) {
 	assert.Equal(t, val.Bytes(), []byte("10"))
 
 	val = NewAny([]int{10})
+	assert.Equal(t, val.Slice(), []interface{}{10})
 	assert.Equal(t, val.IntSlice(), []int{10})
 	assert.Equal(t, val.Int8Slice(), []int8{10})
 	assert.Equal(t, val.Int32Slice(), []int32{10})
@@ -374,6 +383,7 @@ func TestAnyValue(t *testing.T) {
 	assert.Equal(t, val.StringSlice(), []string{"10"})
 	assert.Equal(t, val.DurationSlice(), []time.Duration{time.Duration(10)})
 
+	assert.Equal(t, val.Slice(), []interface{}{10})
 	assert.Equal(t, val.IntSlice(), []int{10})
 	assert.Equal(t, val.Int8Slice(), []int8{10})
 	assert.Equal(t, val.Int32Slice(), []int32{10})

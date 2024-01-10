@@ -118,6 +118,7 @@ type Value struct {
 	cacheFloat64     *float64
 	cacheString      *string
 	cacheStringSlice []string
+	cacheSlice       []interface{}
 	cacheBool        *bool
 	cacheBytes       []byte
 	cacheDuration    *time.Duration
@@ -316,6 +317,18 @@ func (s *Value) StringSlice() []string {
 	}
 	v := s.val.([]string)
 	s.cacheStringSlice = v
+	return v
+}
+
+func (s *Value) Slice() []interface{} {
+	if s.val == nil {
+		return nil
+	}
+	if s.cacheSlice != nil {
+		return s.cacheSlice
+	}
+	v := s.val.([]interface{})
+	s.cacheSlice = v
 	return v
 }
 
@@ -522,6 +535,7 @@ type AnyValue struct {
 	cacheFloat32 *float32
 	cacheFloat64 *float64
 
+	cacheSlice        []interface{}
 	cacheIntSlice     []int
 	cacheInt8Slice    []int8
 	cacheInt32Slice   []int32
@@ -582,6 +596,19 @@ func (s *AnyValue) Bytes() []byte {
 	v := gcast.ToString(s.val)
 	s.cacheBytes = []byte(v)
 	return s.cacheBytes
+}
+
+func (s *AnyValue) Slice() []interface{} {
+	if s.val == nil {
+		return nil
+	}
+	if s.cacheSlice != nil {
+		return s.cacheSlice
+	}
+	walkSlice(s.val, func(v interface{}) {
+		s.cacheSlice = append(s.cacheSlice, v)
+	})
+	return s.cacheSlice
 }
 
 func (s *AnyValue) Int() int {

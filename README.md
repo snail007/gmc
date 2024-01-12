@@ -35,3 +35,7 @@ A package must be include the fllowing files:
 | README.md | testing and benchmarkresult must be include |
 
 You can reference the package sync/gpool to get more information about code specification.
+
+# Thanks
+
+<a target="_blank" href="https://www.jetbrains.com/?from=gmc"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" height="120" alt="JetBrains"/></a>

@@ -13,6 +13,7 @@ import (
 	"github.com/snail007/gmc/core"
 	gcontroller "github.com/snail007/gmc/http/controller"
 	gsession "github.com/snail007/gmc/http/session"
+	"github.com/snail007/gmc/http/template/testdata"
 	gctx "github.com/snail007/gmc/module/ctx"
 	ghttppprof "github.com/snail007/gmc/util/pprof"
 	"io/ioutil"
@@ -659,4 +660,29 @@ func TestSetBinBytes(t *testing.T) {
 		"test/a": []byte("aa"),
 	})
 	assert.Equal(t, defaultBinData["test/a"], []byte("aa"))
+}
+
+func TestHTTPServer_ServeEmbedFS(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.ServeEmbedFS(testdata.TplFS, "/tpls/")
+	s.ServeFiles("tests", "/files/")
+
+	w, r := mockRequest("/tpls/f/f.txt")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("f", str)
+
+	w, r = mockRequest("/files/d.txt")
+	s.ServeHTTP(w, r)
+	str, _ = result(w)
+	assert.Equal("d", str)
+
+	w, r = mockRequest("/tpls/none.txt")
+	s.ServeHTTP(w, r)
+	assert.Equal(404, w.Result().StatusCode)
+
+	w, r = mockRequest("/files/none.txt")
+	s.ServeHTTP(w, r)
+	assert.Equal(404, w.Result().StatusCode)
 }

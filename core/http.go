@@ -8,6 +8,7 @@ package gcore
 import (
 	"bufio"
 	"context"
+	"embed"
 	"io"
 	"net"
 	"net/http"
@@ -173,6 +174,8 @@ type APIServer interface {
 	Ctx() Ctx
 	ListenerFactory() func(addr string) (net.Listener, error)
 	SetListenerFactory(listenerFactory func(addr string) (net.Listener, error))
+	ServeEmbedFS(fs embed.FS, urlPath string)
+	ServeFiles(rootPath, urlPath string)
 }
 
 type HTTPServer interface {
@@ -206,6 +209,8 @@ type HTTPServer interface {
 	Listen() (err error)
 	ListenTLS() (err error)
 	SetCtx(ctx Ctx)
+	ServeEmbedFS(fs embed.FS, urlPath string)
+	ServeFiles(rootPath, urlPath string)
 }
 
 type Controller interface {

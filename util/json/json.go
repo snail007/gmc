@@ -15,14 +15,64 @@ import (
 )
 
 var (
-	AddModifier    = gjson.AddModifier
+	// AddModifier binds a custom modifier command to the GJSON syntax.
+	// This operation is not thread safe and should be executed prior to
+	// using all other gjson function.
+	AddModifier = gjson.AddModifier
+
+	// ModifierExists returns true when the specified modifier exists.
 	ModifierExists = gjson.ModifierExists
-	Escape         = gjson.Escape
-	ForEachLine    = gjson.ForEachLine
-	Parse          = gjson.Parse
-	ParseBytes     = gjson.ParseBytes
-	Valid          = gjson.Valid
-	ValidBytes     = gjson.ValidBytes
+
+	// Escape returns an escaped path component.
+	//
+	//	json := `{
+	//	  "user":{
+	//	     "first.name": "Janet",
+	//	     "last.name": "Prichard"
+	//	   }
+	//	}`
+	//	user := gjson.Get(json, "user")
+	//	println(user.Get(gjson.Escape("first.name"))
+	//	println(user.Get(gjson.Escape("last.name"))
+	//	// Output:
+	//	// Janet
+	//	// Prichard
+	Escape = gjson.Escape
+
+	// ForEachLine iterates through lines of JSON as specified by the JSON Lines
+	// format (http://jsonlines.org/).
+	// Each line is returned as a GJSON Result.
+	ForEachLine = gjson.ForEachLine
+
+	// Parse parses the json and returns a result.
+	//
+	// This function expects that the json is well-formed, and does not validate.
+	// Invalid json will not panic, but it may return back unexpected results.
+	// If you are consuming JSON from an unpredictable source then you may want to
+	// use the Valid function first.
+	Parse = gjson.Parse
+
+	// ParseBytes parses the json and returns a result.
+	// If working with bytes, this method preferred over Parse(string(data))
+	ParseBytes = gjson.ParseBytes
+
+	// Valid returns true if the input is valid json.
+	//
+	//	if !gjson.Valid(json) {
+	//		return errors.New("invalid json")
+	//	}
+	//	value := gjson.Get(json, "name.last")
+	Valid = gjson.Valid
+
+	// ValidBytes returns true if the input is valid json.
+	//
+	//	if !gjson.Valid(json) {
+	//		return errors.New("invalid json")
+	//	}
+	//	value := gjson.Get(json, "name.last")
+	//
+	// If working with bytes, this method preferred over ValidBytes(string(data))
+	ValidBytes = gjson.ValidBytes
 )
 
 type Options = sjson.Options
@@ -41,16 +91,12 @@ func (s Result) Paths() []string {
 	return s.paths
 }
 
-func (s Result) AsJSONObject() *JSONObject {
-	obj := NewJSONObject(nil)
-	obj.json = s.Raw
-	return obj
+func (s Result) ToJSONObject() *JSONObject {
+	return NewJSONObject(s.Raw)
 }
 
-func (s Result) AsJSONArray() *JSONArray {
-	obj := NewJSONArray(nil)
-	obj.json = s.Raw
-	return obj
+func (s Result) ToJSONArray() *JSONArray {
+	return NewJSONArray(s.Raw)
 }
 
 type Builder struct {
@@ -110,38 +156,11 @@ func (s *Builder) Set(path string, value interface{}) error {
 	return err
 }
 
-// SetOptions sets a json value for the specified path with options.
-// A path is in dot syntax, such as "name.last" or "age".
-// This function expects that the json is well-formed, and does not validate.
-// Invalid json will not panic, but it may return back unexpected results.
-// An error is returned if the path is not valid.
-func (s *Builder) SetOptions(path string, value interface{}, opts *Options) error {
-	j, err := sjson.SetOptions(s.json, path, value, opts)
-	if err == nil {
-		s.json = j
-	}
-	return err
-}
-
 // SetRaw sets a raw json value for the specified path.
 // This function works the same as Set except that the value is set as a
 // raw block of json. This allows for setting premarshalled json objects.
 func (s *Builder) SetRaw(path, value string) error {
 	j, err := sjson.SetRaw(s.json, path, value)
-	if err == nil {
-		if !Valid(j) {
-			return errors.New("invalid json value: " + value)
-		}
-		s.json = j
-	}
-	return err
-}
-
-// SetRawOptions sets a raw json value for the specified path with options.
-// This furnction works the same as SetOptions except that the value is set
-// as a raw block of json. This allows for setting premarshalled json objects.
-func (s *Builder) SetRawOptions(path, value string, opts *Options) error {
-	j, err := sjson.SetRawOptions(s.json, path, value, opts)
 	if err == nil {
 		if !Valid(j) {
 			return errors.New("invalid json value: " + value)
@@ -223,7 +242,9 @@ func (s *Builder) JSONArray() *JSONArray {
 	return NewJSONArray(s.json)
 }
 
-// GetMany batch of Get
+// GetMany searches json for the multiple paths.
+// The return value is a Result array where the number of items
+// will be equal to the number of input paths.
 func (s *Builder) GetMany(path ...string) []Result {
 	rs1 := gjson.GetMany(s.json, path...)
 	var rs []Result

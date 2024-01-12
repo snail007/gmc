@@ -9,10 +9,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"embed"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	ghttputil "github.com/snail007/gmc/internal/util/http"
 	"github.com/snail007/gmc/module/log"
+	gfile "github.com/snail007/gmc/util/file"
 	"io"
 	"io/ioutil"
 	"log"
@@ -408,4 +410,12 @@ func (this *APIServer) Listeners() []net.Listener {
 
 func (this *APIServer) Listener() net.Listener {
 	return this.listener
+}
+
+func (s *APIServer) ServeEmbedFS(fs embed.FS, urlPath string) {
+	serveEmbedFS(s.router, fs, urlPath)
+}
+
+func (s *APIServer) ServeFiles(rootPath, urlPath string) {
+	serveFiles(s.router, gfile.Abs(rootPath), urlPath)
 }

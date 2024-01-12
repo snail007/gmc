@@ -7,6 +7,7 @@ package ghttpserver
 
 import (
 	gcore "github.com/snail007/gmc/core"
+	"github.com/snail007/gmc/http/template/testdata"
 	"net"
 	"testing"
 
@@ -179,4 +180,21 @@ func TestAPIServer_createListener(t *testing.T) {
 	e = api.createListener()
 	assert.Nil(e)
 	assert.IsType((*MyListener)(nil), api.listener)
+}
+
+func TestAPIServer_ServeFiles(t *testing.T) {
+	assert := assert.New(t)
+	api := NewAPIServer(gcore.ProviderCtx()(), ":")
+	api.ServeEmbedFS(testdata.TplFS, "/tpls/")
+	api.ServeFiles("tests", "/files/")
+
+	w, r := mockRequest("/tpls/f/f.txt")
+	api.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("f", str)
+
+	w, r = mockRequest("/files/d.txt")
+	api.ServeHTTP(w, r)
+	str, _ = result(w)
+	assert.Equal("d", str)
 }

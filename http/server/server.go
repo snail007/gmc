@@ -6,21 +6,25 @@
 package ghttpserver
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"embed"
 	"encoding/base64"
 	"fmt"
 	gcore "github.com/snail007/gmc/core"
 	ghttputil "github.com/snail007/gmc/internal/util/http"
 	"github.com/snail007/gmc/module/log"
+	gfile "github.com/snail007/gmc/util/file"
 	"io"
 	"io/ioutil"
 	"log"
 	"mime"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -576,6 +580,7 @@ func (s *HTTPServer) SetLog(l gcore.Logger) {
 	s.logger = l
 	return
 }
+
 func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware) (isStop bool) {
 	for _, fn := range middleware {
 		func() {
@@ -590,4 +595,42 @@ func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware
 		}
 	}
 	return
+}
+
+func (s *HTTPServer) ServeEmbedFS(fs embed.FS, urlPath string) {
+	serveEmbedFS(s.router, fs, urlPath)
+}
+
+func (s *HTTPServer) ServeFiles(rootPath, urlPath string) {
+	serveFiles(s.router, gfile.Abs(rootPath), urlPath)
+}
+
+func serveEmbedFS(router gcore.HTTPRouter, fs embed.FS, urlPath string) {
+	urlPath = strings.TrimSuffix(urlPath, "/")
+	bindPath := urlPath + "/*filepath"
+	router.HandlerFuncAny(bindPath, func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, urlPath+"/")
+		b, err := fs.ReadFile(path)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("Not Found"))
+			return
+		}
+		http.ServeContent(w, r, filepath.Base(path), time.Time{}, bytes.NewReader(b))
+	})
+}
+
+func serveFiles(router gcore.HTTPRouter, root, urlPath string) {
+	urlPath = strings.TrimSuffix(urlPath, "/")
+	bindPath := urlPath + "/*filepath"
+	router.HandlerFuncAny(bindPath, func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, urlPath+"/")
+		b, err := os.ReadFile(filepath.Join(root, path))
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("Not Found"))
+			return
+		}
+		http.ServeContent(w, r, filepath.Base(path), time.Time{}, bytes.NewReader(b))
+	})
 }

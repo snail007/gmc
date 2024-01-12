@@ -203,27 +203,6 @@ func TestBuilderOperations(t *testing.T) {
 	assert.Nil(t, result.Paths())
 }
 
-func TestBuilderAdditionalOperations(t *testing.T) {
-	builder := NewBuilder(`{"name": "John", "age": 30, "city": "New York"}`)
-
-	opts := &Options{Optimistic: false}
-	err := builder.SetOptions("address", "123 Main St", opts)
-	if err != nil {
-		t.Errorf("SetOptions method failed: %v", err)
-	}
-
-	rawOpts := &Options{Optimistic: false}
-	err = builder.SetRawOptions("info", `{"key": "value"}`, rawOpts)
-	if err != nil {
-		t.Errorf("SetRawOptions method failed: %v", err)
-	}
-
-	err = builder.SetRawOptions("info", `abc`, rawOpts)
-	if err == nil {
-		t.Errorf("SetRawOptions method failed: %v", err)
-	}
-}
-
 func TestJSONArray_Append(t *testing.T) {
 	arr := NewJSONArray("[123]")
 	assert.Equal(t, "123", arr.Get("0").String())
@@ -231,7 +210,7 @@ func TestJSONArray_Append(t *testing.T) {
 	obj := NewJSONObject(map[string]string{"name": "456"})
 	arr.Append(obj)
 	assert.Equal(t, "456", arr.Get("1.name").String())
-	assert.Equal(t, "456", arr.Get("1").AsJSONObject().Get("name").String())
+	assert.Equal(t, "456", arr.Get("1").ToJSONObject().Get("name").String())
 
 	obj = NewJSONObject(nil)
 	obj.Set("name", "789")
@@ -243,7 +222,7 @@ func TestJSONArray_Append(t *testing.T) {
 	arr.Append(obja)
 	assert.Equal(t, "000", arr.Get("3.0").String())
 	assert.Equal(t, "111", arr.Get("3.1").String())
-	assert.Equal(t, "000", arr.Get("3").AsJSONArray().Get("0").String())
+	assert.Equal(t, "000", arr.Get("3").ToJSONArray().Get("0").String())
 
 	assert.Equal(t, int64(4), arr.Len())
 
@@ -251,7 +230,7 @@ func TestJSONArray_Append(t *testing.T) {
 	arr.Append(*obja)
 	assert.Equal(t, "0000", arr.Get("4.0").String())
 	assert.Equal(t, "1111", arr.Get("4.1").String())
-	assert.Equal(t, "0000", arr.Get("4").AsJSONArray().Get("0").String())
+	assert.Equal(t, "0000", arr.Get("4").ToJSONArray().Get("0").String())
 
 	obj = NewJSONObject(`{"name":"111"}`)
 	arr.Append(obj)

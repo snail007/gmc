@@ -38,4 +38,4 @@ You can reference the package sync/gpool to get more information about code spec
 
 # Thanks
 
-<a target="_blank" href="https://www.jetbrains.com/?from=gmc"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" height="120" alt="JetBrains"/></a>
+<a href="https://www.jetbrains.com/?from=gmc"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" height="120" alt="JetBrains"/></a>

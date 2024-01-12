@@ -129,6 +129,9 @@ func (s *Builder) SetOptions(path string, value interface{}, opts *Options) erro
 func (s *Builder) SetRaw(path, value string) error {
 	j, err := sjson.SetRaw(s.json, path, value)
 	if err == nil {
+		if !Valid(j) {
+			return errors.New("invalid json value: " + value)
+		}
 		s.json = j
 	}
 	return err
@@ -140,6 +143,9 @@ func (s *Builder) SetRaw(path, value string) error {
 func (s *Builder) SetRawOptions(path, value string, opts *Options) error {
 	j, err := sjson.SetRawOptions(s.json, path, value, opts)
 	if err == nil {
+		if !Valid(j) {
+			return errors.New("invalid json value: " + value)
+		}
 		s.json = j
 	}
 	return err
@@ -188,23 +194,29 @@ func (s *Builder) Get(path string) Result {
 	}
 }
 
-// String get the json string of *Builder
+// String convert the *Builder to JSON string,
 func (s *Builder) String() string {
 	return s.json
 }
 
-// AsJSONObject convert the *Builder to *JSONObject,
+// Interface convert the *Builder to Go DATA,
+func (s *Builder) Interface() (v interface{}) {
+	json.Unmarshal([]byte(s.json), &v)
+	return
+}
+
+// JSONObject convert the *Builder to *JSONObject,
 // if the *Builder is not a json object, nil returned.
-func (s *Builder) AsJSONObject() *JSONObject {
+func (s *Builder) JSONObject() *JSONObject {
 	if s.json != "" && !strings.HasPrefix(s.json, "{") {
 		return nil
 	}
 	return NewJSONObject(s.json)
 }
 
-// AsJSONArray convert the *Builder to *AsJSONArray,
+// JSONArray convert the *Builder to *JSONArray,
 // if the *Builder is not a json array, nil returned.
-func (s *Builder) AsJSONArray() *JSONArray {
+func (s *Builder) JSONArray() *JSONArray {
 	if s.json != "" && !strings.HasPrefix(s.json, "[") {
 		return nil
 	}

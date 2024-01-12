@@ -101,24 +101,20 @@ func TestJSONResult_SetData(t *testing.T) {
 }
 
 func TestJSONResult_WriteToCtx(t *testing.T) {
-	// 创建一个模拟的 HTTP 请求
 	req, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
 		fmt.Println("Failed to create request:", err)
 		return
 	}
 
-	// 创建一个 ResponseRecorder 来记录响应
 	recorder := httptest.NewRecorder()
 
-	// 处理请求
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := gctx.NewCtx().CloneWithHTTP(w, r)
 		result := NewResult(200, "OK", "data")
 		result.WriteToCtx(ctx)
 	})
 
-	// 将请求发送到处理器
 	handler.ServeHTTP(recorder, req)
 
 	expected := `{"code":200,"data":"data","message":"OK"}`
@@ -126,24 +122,20 @@ func TestJSONResult_WriteToCtx(t *testing.T) {
 }
 
 func TestJSONResult_Success(t *testing.T) {
-	// 创建一个模拟的 HTTP 请求
 	req, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
 		fmt.Println("Failed to create request:", err)
 		return
 	}
 
-	// 创建一个 ResponseRecorder 来记录响应
 	recorder := httptest.NewRecorder()
 
-	// 处理请求
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := gctx.NewCtxWithHTTP(w, r)
 		result := NewResultCtx(ctx)
 		result.Success("success")
 	})
 
-	// 将请求发送到处理器
 	handler.ServeHTTP(recorder, req)
 
 	expected := `{"code":0,"data":"success","message":""}`
@@ -151,14 +143,12 @@ func TestJSONResult_Success(t *testing.T) {
 }
 
 func TestJSONResult_Fail(t *testing.T) {
-	// 创建一个模拟的 HTTP 请求
 	req, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
 		fmt.Println("Failed to create request:", err)
 		return
 	}
 
-	// 创建一个 ResponseRecorder 来记录响应
 	recorder := httptest.NewRecorder()
 
 	// 处理请求
@@ -168,7 +158,6 @@ func TestJSONResult_Fail(t *testing.T) {
 		result.Fail("fail")
 	})
 
-	// 将请求发送到处理器
 	handler.ServeHTTP(recorder, req)
 
 	expected := `{"code":1,"data":null,"message":"fail"}`
@@ -176,35 +165,34 @@ func TestJSONResult_Fail(t *testing.T) {
 }
 
 func TestBuilderOperations(t *testing.T) {
-	// 创建一个新的 Builder 实例
 	builder := NewBuilder(`{"name": "John", "age": 30, "city": "New York"}`)
 
-	// 测试 Set 方法
 	err := builder.Set("name", "Doe")
 	if err != nil {
 		t.Errorf("Set method failed: %v", err)
 	}
 
-	// 测试 Delete 方法
 	err = builder.Delete("age")
 	if err != nil {
 		t.Errorf("Delete method failed: %v", err)
 	}
 
-	// 测试 SetRaw 方法
 	err = builder.SetRaw("country", `"USA"`)
 	if err != nil {
 		t.Errorf("SetRaw method failed: %v", err)
 	}
 
-	// 测试 Get 方法
+	err = builder.SetRaw("country", `USA`)
+	if err == nil {
+		t.Errorf("SetRaw method failed: %v", err)
+	}
+
 	result := builder.Get("name")
 	if result.String() != "Doe" {
 		t.Errorf("Get method failed, expected 'Doe', got '%s'", result.String())
 	}
 	assert.Equal(t, result.Path(), "name")
 
-	// 测试 GetMany 方法
 	results := builder.GetMany("name", "country")
 	if len(results) != 2 {
 		t.Errorf("GetMany method failed, expected 2 results, got %d", len(results))
@@ -216,20 +204,22 @@ func TestBuilderOperations(t *testing.T) {
 }
 
 func TestBuilderAdditionalOperations(t *testing.T) {
-	// 创建一个新的 Builder 实例
 	builder := NewBuilder(`{"name": "John", "age": 30, "city": "New York"}`)
 
-	// 测试 SetOptions 方法
 	opts := &Options{Optimistic: false}
 	err := builder.SetOptions("address", "123 Main St", opts)
 	if err != nil {
 		t.Errorf("SetOptions method failed: %v", err)
 	}
 
-	// 测试 SetRawOptions 方法
 	rawOpts := &Options{Optimistic: false}
 	err = builder.SetRawOptions("info", `{"key": "value"}`, rawOpts)
 	if err != nil {
+		t.Errorf("SetRawOptions method failed: %v", err)
+	}
+
+	err = builder.SetRawOptions("info", `abc`, rawOpts)
+	if err == nil {
 		t.Errorf("SetRawOptions method failed: %v", err)
 	}
 }
@@ -290,13 +280,13 @@ func TestJSONArray_Merge(t *testing.T) {
 
 func TestBuilder_AsJSONObject(t *testing.T) {
 	a := NewBuilder(`[]`)
-	assert.Nil(t, a.AsJSONObject())
-	assert.NotNil(t, a.AsJSONArray())
+	assert.Nil(t, a.JSONObject())
+	assert.NotNil(t, a.JSONArray())
 	assert.Equal(t, "[]", a.String())
-	assert.Error(t, a.AsJSONArray().Append(http.Client{}))
+	assert.Error(t, a.JSONArray().Append(http.Client{}))
 	a = NewBuilder(`{}`)
-	assert.Nil(t, a.AsJSONArray())
-	assert.NotNil(t, a.AsJSONObject())
+	assert.Nil(t, a.JSONArray())
+	assert.NotNil(t, a.JSONObject())
 	assert.Equal(t, "{}", a.String())
 }
 
@@ -322,4 +312,22 @@ func TestNewJSONObjectE(t *testing.T) {
 	assert.Error(t, err)
 	_, err = NewJSONArrayE(map[string]string{})
 	assert.Error(t, err)
+}
+
+func TestBuilder_Interface(t *testing.T) {
+	a := NewBuilder(nil)
+	assert.Nil(t, a.Interface())
+
+	a = NewBuilder("")
+	assert.Nil(t, a)
+
+	a = NewBuilder(`{"a":"b"}`)
+	assert.Equal(t, map[string]interface{}{"a": "b"}, a.Interface())
+	a = NewBuilder(map[string]interface{}{"a": "b"})
+	assert.Equal(t, map[string]interface{}{"a": "b"}, a.Interface())
+
+	a = NewBuilder(`[123]`)
+	assert.Equal(t, []interface{}{float64(123)}, a.Interface())
+	a = NewBuilder([]interface{}{123})
+	assert.Equal(t, []interface{}{float64(123)}, a.Interface())
 }

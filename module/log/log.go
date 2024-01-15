@@ -8,6 +8,7 @@ package glog
 import (
 	"errors"
 	"fmt"
+	gerror "github.com/snail007/gmc/module/error"
 	"github.com/snail007/gmc/util/gpool"
 	"io"
 	"io/ioutil"
@@ -332,13 +333,14 @@ func (s *Logger) asyncWriterInit() {
 	go func() {
 		for {
 			item := <-s.bufChn
-			s.output(item.msg, item.writer, item.level)
-			func() {
-				defer func() {
-					_ = recover()
-				}()
+			if e := gerror.Try(func() {
+				s.output(item.msg, item.writer, item.level)
+			}); e != nil {
+				fmt.Println("[WARN] gmclog output error: " + e.Error())
+			}
+			gerror.Try(func() {
 				s.asyncWG.Done()
-			}()
+			})
 		}
 	}()
 }
@@ -399,7 +401,7 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 			pool.Submit(func() {
 				defer func() {
 					if e := recover(); e != nil {
-						fmt.Println(fmt.Sprintf("[ERROR] gmclog writer write error: %s", e))
+						fmt.Println(fmt.Sprintf("[WARN] gmclog writer write error: %s", e))
 					}
 					g.Done()
 				}()
@@ -683,7 +685,7 @@ func (s *Logger) write(str string, writer *levelWriter, level gcore.LogLevel) {
 		}:
 			s.asyncWG.Add(1)
 		default:
-			s.output("WARN gmclog buf chan overflow", writer, level)
+			s.output("[WARN] gmclog buf chan overflow", writer, level)
 		}
 		return
 	}

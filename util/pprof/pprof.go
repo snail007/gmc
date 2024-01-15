@@ -8,8 +8,10 @@ package ghttppprof
 import (
 	gcore "github.com/snail007/gmc/core"
 	gctx "github.com/snail007/gmc/module/ctx"
+	gjson "github.com/snail007/gmc/util/json"
 	"net/http"
 	"net/http/pprof"
+	"runtime"
 	"strings"
 )
 
@@ -37,6 +39,16 @@ func BindRouter(r gcore.HTTPRouter, prefix string, checker ...checkerFunc) {
 	r.HandlerAny(root+"/cmdline", newCheckerHandler(pprofHandler(pprof.Cmdline), c))
 	r.HandlerAny(root+"/symbol", newCheckerHandler(pprofHandler(pprof.Symbol), c))
 	r.HandlerAny(root+"/trace", newCheckerHandler(pprofHandler(pprof.Trace), c))
+	r.HandlerAny(root+"/enable_block_mutex", newCheckerHandler(pprofHandler(func(w http.ResponseWriter, r *http.Request) {
+		runtime.SetMutexProfileFraction(1)
+		runtime.SetBlockProfileRate(1)
+		gjson.NewResult().SetMessage("success").WriteTo(w)
+	}), c))
+	r.HandlerAny(root+"/disable_block_mutex", newCheckerHandler(pprofHandler(func(w http.ResponseWriter, r *http.Request) {
+		runtime.SetMutexProfileFraction(0)
+		runtime.SetBlockProfileRate(0)
+		gjson.NewResult().SetMessage("success").WriteTo(w)
+	}), c))
 	r.HandlerAny(root+"/", newCheckerHandler(pprofHandler(pprof.Index), c))
 	r.HandlerAny(root, newCheckerHandler(http.RedirectHandler(root+"/", 302), c))
 }

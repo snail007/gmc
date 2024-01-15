@@ -397,7 +397,12 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 			w0 := w
 			g.Add(1)
 			pool.Submit(func() {
-				defer g.Done()
+				defer func() {
+					if e := recover(); e != nil {
+						fmt.Println(fmt.Sprintf("[ERROR] gmclog writer write error: %s", e))
+					}
+					g.Done()
+				}()
 				s.write(str, w0, level)
 			})
 		}

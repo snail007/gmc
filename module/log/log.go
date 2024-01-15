@@ -705,12 +705,16 @@ func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
 		ln = "\n"
 	}
 	line := []byte(time.Now().Format(s.datetimeLayout) + " " + str + ln)
+	var e error
 	if writer != nil {
 		writer.lock.Lock()
 		defer writer.lock.Unlock()
-		writer.Write(line)
+		_, e = writer.Write(line)
 	} else {
-		s.writer.Write(line, level)
+		_, e = s.writer.Write(line, level)
+	}
+	if e != nil {
+		fmt.Println("[WARN] gmclog writer fail to write, error: " + e.Error())
 	}
 }
 

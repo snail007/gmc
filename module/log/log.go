@@ -795,7 +795,12 @@ func (s *multiWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
 	for _, w := range s.writers {
 		w0 := w
 		pool.Submit(func() {
-			defer g.Done()
+			defer func() {
+				if e := recover(); e != nil {
+					err = fmt.Errorf("writer write error: %s", e)
+				}
+				g.Done()
+			}()
 			n, e := w0.Write(p, level)
 			if e != nil {
 				err = e

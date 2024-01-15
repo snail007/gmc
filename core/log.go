@@ -81,6 +81,8 @@ type Logger interface {
 	WithRate(duration time.Duration) Logger
 	SetRateCallback(cb func(msg string)) Logger
 	SetTimeLayout(layout string)
+	SetAsyncBufferSize(asyncBufferSize int)
+	SetErrHandler(errHandler func(error))
 }
 
 type LoggerWriter interface {

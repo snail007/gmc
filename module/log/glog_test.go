@@ -253,6 +253,8 @@ func TestGlog_Async(t *testing.T) {
 		glog.SetTimeLayout("2006/01/02 15:04:05.000")
 		glog.SetOutput(glog.NewLoggerWriter(os.Stdout))
 		glog.EnableAsync()
+		glog.SetAsyncBufferSize(2048)
+		glog.SetErrHandler(func(err error) {})
 		assert.True(glog.Async())
 		assert.Equal(1, glog.ExitCode())
 		glog.Info("a")

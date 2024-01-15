@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	gerror "github.com/snail007/gmc/module/error"
+	gcond "github.com/snail007/gmc/util/cond"
 	"github.com/snail007/gmc/util/gpool"
 	"io"
 	"io/ioutil"
@@ -24,10 +25,11 @@ import (
 )
 
 var (
-	logger            = New()
-	pool              = gpool.NewWithLogger(10, nil)
-	defaultTimeLayout = "2006/01/02 15:04:05.000000"
-	DiscardLogger     = New()
+	logger                 = New()
+	pool                   = gpool.NewWithLogger(10, nil)
+	defaultTimeLayout      = "2006/01/02 15:04:05.000000"
+	defaultAsyncBufferSize = 4096
+	DiscardLogger          = New()
 )
 
 func init() {
@@ -158,6 +160,14 @@ func EnableAsync() {
 	logger.EnableAsync()
 }
 
+func SetAsyncBufferSize(size int) {
+	logger.SetAsyncBufferSize(size)
+}
+
+func SetErrHandler(h func(err error)) {
+	logger.SetErrHandler(h)
+}
+
 func SetFlag(f gcore.LogFlag) {
 	logger.SetFlag(f)
 }
@@ -206,24 +216,13 @@ type Logger struct {
 	lim         *rate.Limiter
 	limCallback func(msg string)
 	// for testing purpose
-	skipCheckGMC   bool
-	levelWriters   []*levelWriter
-	datetimeLayout string
-	writer         gcore.LoggerWriter
-	prefix         string
-	errHandler     func(error)
-}
-
-func (s *Logger) callErrHandler(e error) {
-	if s.errHandler != nil {
-		s.errHandler(e)
-	} else {
-		fmt.Println("[WARN] gmclog " + e.Error())
-	}
-}
-
-func (s *Logger) SetErrHandler(errHandler func(error)) {
-	s.errHandler = errHandler
+	skipCheckGMC    bool
+	levelWriters    []*levelWriter
+	datetimeLayout  string
+	writer          gcore.LoggerWriter
+	prefix          string
+	errHandler      func(error)
+	asyncBufferSize int
 }
 
 func New(prefix ...string) gcore.Logger {
@@ -247,23 +246,25 @@ func New(prefix ...string) gcore.Logger {
 
 func (s *Logger) clone() *Logger {
 	return &Logger{
-		parent:         s.parent,
-		ns:             s.ns,
-		level:          s.level,
-		async:          s.async,
-		asyncOnce:      s.asyncOnce,
-		bufChn:         s.bufChn,
-		asyncWG:        s.asyncWG,
-		callerSkip:     s.callerSkip,
-		exitCode:       s.exitCode,
-		exitFunc:       s.exitFunc,
-		flag:           s.flag,
-		lim:            s.lim,
-		skipCheckGMC:   s.skipCheckGMC,
-		levelWriters:   s.levelWriters,
-		datetimeLayout: s.datetimeLayout,
-		writer:         s.writer,
-		prefix:         s.prefix,
+		parent:          s.parent,
+		ns:              s.ns,
+		level:           s.level,
+		async:           s.async,
+		asyncOnce:       s.asyncOnce,
+		bufChn:          s.bufChn,
+		asyncWG:         s.asyncWG,
+		callerSkip:      s.callerSkip,
+		exitCode:        s.exitCode,
+		exitFunc:        s.exitFunc,
+		flag:            s.flag,
+		lim:             s.lim,
+		skipCheckGMC:    s.skipCheckGMC,
+		levelWriters:    s.levelWriters,
+		datetimeLayout:  s.datetimeLayout,
+		writer:          s.writer,
+		prefix:          s.prefix,
+		errHandler:      s.errHandler,
+		asyncBufferSize: s.asyncBufferSize,
 	}
 }
 
@@ -271,6 +272,22 @@ func (s *Logger) exit() {
 	if s.exitCode >= 0 {
 		s.exitFunc(s.exitCode)
 	}
+}
+
+func (s *Logger) callErrHandler(e error) {
+	if s.errHandler != nil {
+		s.errHandler(e)
+	} else {
+		fmt.Println("[WARN] gmclog " + e.Error())
+	}
+}
+
+func (s *Logger) SetAsyncBufferSize(asyncBufferSize int) {
+	s.asyncBufferSize = asyncBufferSize
+}
+
+func (s *Logger) SetErrHandler(errHandler func(error)) {
+	s.errHandler = errHandler
 }
 
 func (s *Logger) SetTimeLayout(layout string) {
@@ -341,7 +358,8 @@ func (s *Logger) Async() bool {
 }
 
 func (s *Logger) asyncWriterInit() {
-	s.bufChn = make(chan bufChnItem, 2048)
+	size := gcond.Cond(s.asyncBufferSize > 0, s.asyncBufferSize, defaultAsyncBufferSize).Int()
+	s.bufChn = make(chan bufChnItem, size)
 	s.asyncWG = &sync.WaitGroup{}
 	go func() {
 		for {

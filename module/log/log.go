@@ -211,6 +211,19 @@ type Logger struct {
 	datetimeLayout string
 	writer         gcore.LoggerWriter
 	prefix         string
+	errHandler     func(error)
+}
+
+func (s *Logger) callErrHandler(e error) {
+	if s.errHandler != nil {
+		s.errHandler(e)
+	} else {
+		fmt.Println("[WARN] gmclog " + e.Error())
+	}
+}
+
+func (s *Logger) SetErrHandler(errHandler func(error)) {
+	s.errHandler = errHandler
 }
 
 func New(prefix ...string) gcore.Logger {
@@ -336,7 +349,7 @@ func (s *Logger) asyncWriterInit() {
 			if e := gerror.Try(func() {
 				s.output(item.msg, item.writer, item.level)
 			}); e != nil {
-				fmt.Println("[WARN] gmclog output error: " + e.Error())
+				s.callErrHandler(errors.New("output error: " + e.Error()))
 			}
 			gerror.Try(func() {
 				s.asyncWG.Done()
@@ -401,7 +414,7 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 			pool.Submit(func() {
 				defer func() {
 					if e := recover(); e != nil {
-						fmt.Println(fmt.Sprintf("[WARN] gmclog writer write error: %s", e))
+						s.callErrHandler(fmt.Errorf("writer write error: %s", e))
 					}
 					g.Done()
 				}()
@@ -685,7 +698,7 @@ func (s *Logger) write(str string, writer *levelWriter, level gcore.LogLevel) {
 		}:
 			s.asyncWG.Add(1)
 		default:
-			s.output("[WARN] gmclog buf chan overflow", writer, level)
+			s.callErrHandler(fmt.Errorf("buf chan overflow"))
 		}
 		return
 	}
@@ -721,7 +734,7 @@ func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
 		_, e = s.writer.Write(line, level)
 	}
 	if e != nil {
-		fmt.Println("[WARN] gmclog writer fail to write, error: " + e.Error())
+		s.callErrHandler(errors.New("writer fail to write, error:" + e.Error()))
 	}
 }
 

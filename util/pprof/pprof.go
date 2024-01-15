@@ -54,7 +54,7 @@ type checkerHandler struct {
 
 func (c checkerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := gctx.NewCtxWithHTTP(w, r)
-	if !c.checker(ctx) {
+	if c.checker != nil && !c.checker(ctx) {
 		return
 	}
 	c.h.ServeHTTP(w, r)

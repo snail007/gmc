@@ -22,7 +22,7 @@ import (
 
 var (
 	cmd        *exec.Cmd
-	log        = logger.New(os.Stderr, "", logger.LstdFlags)
+	log        = logger.New(os.Stdout, "", logger.LstdFlags)
 	isDaemon   = false
 	isForever  = false
 	flog       = ""
@@ -32,11 +32,11 @@ var (
 	initArgs   []string
 )
 
-//SetLogger sets the logger for logging
+// SetLogger sets the logger for logging
 //
-//default is logger.New(os.Stderr, "", logger.LstdFlags)
+// default is logger.New(os.Stderr, "", logger.LstdFlags)
 //
-//you can SetLogger(nil) to disable logging
+// you can SetLogger(nil) to disable logging
 func SetLogger(l *logger.Logger) {
 	log = l
 }
@@ -93,7 +93,7 @@ func InitFlags() {
 	return
 }
 
-//Start daemon or forever or flog
+// Start daemon or forever or flog
 func Start() (err error) {
 	if !initCalled {
 		InitFlags()
@@ -203,7 +203,7 @@ func Start() (err error) {
 	return
 }
 
-//Clean process, should be call before program exit.
+// Clean process, should be call before program exit.
 func Clean() {
 	clean(true)
 }
@@ -220,7 +220,7 @@ func clean(showlog bool) {
 	}
 }
 
-//CanRun check if program can be run
+// CanRun check if program can be run
 func CanRun() bool {
 	return !isDaemon && !isForever && flog == ""
 }

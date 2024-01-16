@@ -7,8 +7,10 @@ package glog
 
 import (
 	"compress/gzip"
+	"fmt"
 	"github.com/fatih/color"
 	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
 	gcast "github.com/snail007/gmc/util/cast"
 	gfile "github.com/snail007/gmc/util/file"
 	gonce "github.com/snail007/gmc/util/sync/once"
@@ -29,13 +31,6 @@ type FileWriter struct {
 	archiveDir string
 	openLock   sync.Mutex
 	opt        *FileWriterOption
-}
-type FileIOWriter struct {
-	*FileWriter
-}
-
-func (s *FileIOWriter) Write(p []byte) (n int, err error) {
-	return s.FileWriter.Write(p, gcore.LogLeveInfo)
 }
 
 type FileWriterOption struct {
@@ -107,6 +102,10 @@ func (s *FileWriter) Write(p []byte, _ gcore.LogLevel) (n int, err error) {
 			return
 		}
 		go func() {
+			defer gerror.Recover(func(e interface{}) {
+				er := gerror.ParseRecover(e)
+				fmt.Println("[WARN] gmclog fail to move log file, panic: " + er.Error())
+			})
 			toMoveFile := oldFilepath
 			if s.opt.IsGzip {
 				flog, e := os.OpenFile(oldFilepath, os.O_RDONLY, 0700)

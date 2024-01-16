@@ -176,6 +176,10 @@ func Write(s string, level gcore.LogLevel) {
 	logger.Write(s, level)
 }
 
+func WriteRaw(s string, level gcore.LogLevel) {
+	logger.WriteRaw(s, level)
+}
+
 func Level() gcore.LogLevel {
 	return logger.Level()
 }
@@ -276,7 +280,11 @@ func (s *Logger) exit() {
 
 func (s *Logger) callErrHandler(e error) {
 	if s.errHandler != nil {
-		s.errHandler(e)
+		if err := gerror.Try(func() {
+			s.errHandler(e)
+		}); err != nil {
+			fmt.Println("[WARN] gmclog call error handler panic: " + e.Error())
+		}
 	} else {
 		fmt.Println("[WARN] gmclog " + e.Error())
 	}
@@ -367,7 +375,7 @@ func (s *Logger) asyncWriterInit() {
 			if e := gerror.Try(func() {
 				s.output(item.msg, item.writer, item.level)
 			}); e != nil {
-				s.callErrHandler(errors.New("output error: " + e.Error()))
+				s.callErrHandler(errors.New("output panic error: " + e.Error()))
 			}
 			gerror.Try(func() {
 				s.asyncWG.Done()
@@ -432,7 +440,7 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 			pool.Submit(func() {
 				defer func() {
 					if e := recover(); e != nil {
-						s.callErrHandler(fmt.Errorf("writer write error: %s", e))
+						s.callErrHandler(fmt.Errorf("writer write panic error: %s", e))
 					}
 					g.Done()
 				}()
@@ -724,11 +732,30 @@ func (s *Logger) write(str string, writer *levelWriter, level gcore.LogLevel) {
 }
 
 func (s *Logger) Write(msg string, level gcore.LogLevel) {
-	s.write(s.caller(msg, s.skip()), nil, level)
+	levelWrite := s.canLevelWrite(level)
+	if s.level > level && !levelWrite {
+		return
+	}
+	str := s.caller(msg, s.skip())
+	if levelWrite {
+		s.levelWrite(str, level)
+	}
+	if s.level <= level {
+		s.write(s.caller(msg, s.skip()), nil, level)
+	}
 }
 
 func (s *Logger) WriteRaw(msg string, level gcore.LogLevel) {
-	s.write(msg, nil, level)
+	levelWrite := s.canLevelWrite(level)
+	if s.level > level && !levelWrite {
+		return
+	}
+	if levelWrite {
+		s.levelWrite(msg, level)
+	}
+	if s.level <= level {
+		s.write(msg, nil, level)
+	}
 }
 
 func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
@@ -743,16 +770,23 @@ func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
 		ln = "\n"
 	}
 	line := []byte(time.Now().Format(s.datetimeLayout) + " " + str + ln)
-	var e error
+	var err error
+	var panicErr error
 	if writer != nil {
 		writer.lock.Lock()
 		defer writer.lock.Unlock()
-		_, e = writer.Write(line)
+		panicErr = gerror.Try(func() {
+			_, err = writer.Write(line)
+		})
 	} else {
-		_, e = s.writer.Write(line, level)
+		panicErr = gerror.Try(func() {
+			_, err = s.writer.Write(line, level)
+		})
 	}
-	if e != nil {
-		s.callErrHandler(errors.New("writer fail to write, error:" + e.Error()))
+	if panicErr != nil {
+		s.callErrHandler(errors.New("writer fail to write, panic error:" + panicErr.Error()))
+	} else if err != nil {
+		s.callErrHandler(errors.New("writer fail to write, error:" + err.Error()))
 	}
 }
 
@@ -835,7 +869,7 @@ func (s *multiWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
 		pool.Submit(func() {
 			defer func() {
 				if e := recover(); e != nil {
-					err = fmt.Errorf("writer write error: %s", e)
+					err = fmt.Errorf("writer write panic error: %s", e)
 				}
 				g.Done()
 			}()

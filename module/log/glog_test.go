@@ -311,6 +311,7 @@ func TestGlog_WithRate(t *testing.T) {
 	l0.SetRateCallback(func(msg string) {
 		atomic.AddInt32(cnt, 1)
 	})
+	l0.SetLevel(gcore.LogLeveInfo)
 	for i := 0; i < 35; i++ {
 		l0.Write("hello", gcore.LogLeveInfo)
 		time.Sleep(time.Millisecond * 100)

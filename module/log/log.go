@@ -856,6 +856,8 @@ type multiWriter struct {
 	writers []gcore.LoggerWriter
 }
 
+var ErrShortWrite = errors.New("short write")
+
 func (s *multiWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
 	if len(s.writers) == 0 {
 		return
@@ -871,10 +873,13 @@ func (s *multiWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
 				}
 				g.Done()
 			}()
-			_, e := w0.Write(p, level)
+			n, e := w0.Write(p, level)
 			if e != nil {
 				err = e
 				return
+			}
+			if n != len(p) {
+				err = ErrShortWrite
 			}
 		})
 	}

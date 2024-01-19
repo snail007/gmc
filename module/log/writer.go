@@ -190,6 +190,7 @@ func (s *ConsoleWriter) Write(p []byte, level gcore.LogLevel) (n int, err error)
 	if s.isRedirected() || s.disableColor {
 		return s.w.Write(p)
 	}
+	defer func() { n = len(p) }()
 	switch level {
 	case gcore.LogLevelTrace, gcore.LogLeveDebug:
 		return s.w.Write([]byte(color.WhiteString("%s", string(p))))

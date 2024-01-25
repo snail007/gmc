@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	gbatch "github.com/snail007/gmc/util/batch"
 	"io"
 	"mime/multipart"
 	"net"
@@ -92,7 +93,7 @@ type HTTPClient struct {
 	proxyURL          *url.URL
 	opts              *x509.VerifyOptions
 	setProxyFromEnv   bool
-	dns               string
+	dns               []string
 	connWrap          func(net.Conn) (conn net.Conn, err error)
 	jar               http.CookieJar
 	dialer            func(network, address string, timeout time.Duration) (net.Conn, error)
@@ -237,13 +238,15 @@ func (s *HTTPClient) SetProxy(proxyURL string) (err error) {
 }
 
 // SetDNS sets a dns for resolve domain in url when send request.
-func (s *HTTPClient) SetDNS(dns string) (err error) {
-	if dns == "" {
+func (s *HTTPClient) SetDNS(dns ...string) (err error) {
+	if len(dns) == 0 {
 		return
 	}
-	_, _, err = net.SplitHostPort(dns)
-	if err != nil {
-		return
+	for _, v := range dns {
+		_, _, err = net.SplitHostPort(v)
+		if err != nil {
+			return
+		}
 	}
 	s.dns = dns
 	return
@@ -585,7 +588,7 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 
 func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver) {
 	resolver = net.DefaultResolver
-	if s.dns != "" {
+	if len(s.dns) > 0 {
 		resolver = &net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -593,7 +596,18 @@ func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver)
 					Timeout:   timeout,
 					KeepAlive: timeout,
 				}
-				return d.DialContext(ctx, "udp", s.dns)
+				be := gbatch.NewBatchExecutor()
+				for _, v := range s.dns {
+					addr := v
+					be.AppendTask(func(_ context.Context) (value interface{}, err error) {
+						return d.DialContext(ctx, "udp", addr)
+					})
+				}
+				c, err := be.WaitFirstSuccess()
+				if err != nil {
+					return nil, err
+				}
+				return c.(net.Conn), nil
 			},
 		}
 	}

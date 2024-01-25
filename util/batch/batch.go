@@ -28,6 +28,7 @@ func NewBatchExecutor() *Executor {
 func (s *Executor) SetWorkers(workersCnt int) {
 	s.workers = workersCnt
 }
+
 func (s *Executor) AppendTask(tasks ...task) {
 	s.tasks = append(s.tasks, tasks...)
 }

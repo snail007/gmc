@@ -238,6 +238,9 @@ func TestHTTPClient_SetDNS(t *testing.T) {
 	assert.True(strings.Contains(string(body1), "STATUS OK") || strings.Contains(string(body2), "STATUS OK"))
 	assert2.Error(t, client.SetDNS("8.8.8.8"))
 	assert2.Nil(t, client.SetDNS())
+	client.SetDNS("8.8.8.8:5555", "114.114.114.114:5555")
+	_, _, _, e := client.Get("http://www.baidu.com/", time.Second*5, nil, map[string]string{"token": "200"})
+	assert2.NotNil(t, e)
 }
 
 func TestDownload(t *testing.T) {

@@ -309,4 +309,8 @@ func TestBuilder_Interface(t *testing.T) {
 	assert.Equal(t, []interface{}{float64(123)}, a.Interface())
 	a = NewBuilder([]interface{}{123})
 	assert.Equal(t, []interface{}{float64(123)}, a.Interface())
+
+	r := Parse(`{"a":"b"}`)
+	assert.Equal(t, "b", r.Get("a").String())
+
 }

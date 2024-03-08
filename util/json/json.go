@@ -50,8 +50,14 @@ var (
 	// Invalid json will not panic, but it may return back unexpected results.
 	// If you are consuming JSON from an unpredictable source then you may want to
 	// use the Valid function first.
-	Parse = gjson.Parse
-
+	Parse = func(json string) Result {
+		r := gjson.Parse(json)
+		return Result{
+			Result: r,
+			path:   r.Path(json),
+			paths:  r.Paths(json),
+		}
+	}
 	// ParseBytes parses the json and returns a result.
 	// If working with bytes, this method preferred over Parse(string(data))
 	ParseBytes = gjson.ParseBytes
@@ -97,6 +103,16 @@ func (s Result) ToJSONObject() *JSONObject {
 
 func (s Result) ToJSONArray() *JSONArray {
 	return NewJSONArray(s.Raw)
+}
+
+func (s Result) ForEach(f func(k, v Result) bool){
+	s.Result.ForEach(func(key, value gjson.Result) bool {
+		return f(Result{
+			Result:key,
+		},Result{
+			Result:value,
+		})
+	}) 
 }
 
 type Builder struct {
@@ -314,7 +330,7 @@ func NewJSONArray(v interface{}) *JSONArray {
 // Merge *JSONArray, JSONArray or any valid slice to s
 func (s *JSONArray) Merge(arr interface{}) (err error) {
 	var merge = func(a *JSONArray) {
-		a.Get("@this").ForEach(func(key, value gjson.Result) bool {
+		a.Get("@this").ForEach(func(key, value Result) bool {
 			err = s.Append(value.Value())
 			return err == nil
 		})

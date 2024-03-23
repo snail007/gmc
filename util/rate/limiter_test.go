@@ -2,6 +2,7 @@ package grate
 
 import (
 	gatomic "github.com/snail007/gmc/util/sync/atomic"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ func TestRateLimiter(t *testing.T) {
 	requests := 30
 
 	limiter := NewRateLimiter(rate, interval)
+	assert.Equal(t, rate, limiter.Rate())
+	assert.Equal(t, interval, limiter.Interval())
 
 	var wg sync.WaitGroup
 

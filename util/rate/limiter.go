@@ -22,6 +22,14 @@ func NewRateLimiter(rate int, interval time.Duration) *RateLimiter {
 	}
 }
 
+func (rl *RateLimiter) Rate() int {
+	return rl.rate
+}
+
+func (rl *RateLimiter) Interval() time.Duration {
+	return rl.interval
+}
+
 func (rl *RateLimiter) Allow() bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()

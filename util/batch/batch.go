@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-type task func(ctx context.Context) (value interface{}, err error)
+type task func(ctx context.Context) (value interface{}, cancelFunc func(), err error)
 type Executor struct {
 	workers    int
 	tasks      []task
@@ -43,8 +43,8 @@ func (s *Executor) WaitAll() (allResults []taskResult) {
 		task := t
 		p.Submit(func() {
 			defer g.Done()
-			v, e := task(s.rootCtx)
-			allResult.Add(taskResult{value: v, err: e})
+			v, f, e := task(s.rootCtx)
+			allResult.Add(taskResult{value: v, err: e, cancelFunc: f})
 		})
 	}
 	g.Wait()
@@ -63,8 +63,9 @@ func (s *Executor) getPool() *gpool.Pool {
 }
 
 type taskResult struct {
-	value interface{}
-	err   error
+	value      interface{}
+	err        error
+	cancelFunc func()
 }
 
 func (t taskResult) Value() interface{} {
@@ -96,8 +97,8 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 		task := t
 		p.Submit(func() {
 			defer g.Done()
-			v, e := task(s.rootCtx)
-			item := taskResult{value: v, err: e}
+			v, f, e := task(s.rootCtx)
+			item := taskResult{value: v, err: e, cancelFunc: f}
 			allResult.Add(item)
 			if checkSuccess && e != nil {
 				return
@@ -105,6 +106,9 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 			select {
 			case waitChan <- item:
 			default:
+				if f != nil {
+					f()
+				}
 			}
 		})
 	}

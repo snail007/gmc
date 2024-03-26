@@ -237,3 +237,28 @@ func TestCancelFunc(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	assert.True(t, canceled)
 }
+
+func TestPanic(t *testing.T) {
+	t.Parallel()
+	executor := NewBatchExecutor()
+	executor.AppendTask(
+		func(ctx context.Context) (interface{}, func(), error) {
+			time.Sleep(time.Second * 2)
+			return "Task 2 result", nil, nil
+		},
+		func(ctx context.Context) (interface{}, func(), error) {
+			panic("abc")
+			return "Task 1 result", nil, nil
+		})
+
+	value, err := executor.WaitFirstSuccess()
+
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	expectedValue := "Task 2 result"
+	if value != expectedValue {
+		t.Errorf("Expected value %q, but got: %q", expectedValue, value)
+	}
+	time.Sleep(time.Second * 3)
+}

@@ -2,8 +2,8 @@ package gbatch
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	gerror "github.com/snail007/gmc/module/error"
 	"github.com/snail007/gmc/util/gpool"
 	glist "github.com/snail007/gmc/util/list"
 	gsync "github.com/snail007/gmc/util/sync"
@@ -80,7 +80,8 @@ func (t taskResult) Err() error {
 
 // WaitFirstSuccess wait first success, value is the first success task's returned value, if all task fail, err is the last error.
 func (s *Executor) WaitFirstSuccess() (value interface{}, err error) {
-	return s.waitFirst(true)
+	value, err = s.waitFirst(true)
+	return
 }
 
 // WaitFirstDone wait first done, value and err is the task returned.
@@ -99,25 +100,36 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 		task := t
 		p.Submit(func() {
 			defer g.Done()
-			var v interface{}
-			var f func()
-			var e error
-			if err := gerror.TryWithStack(func() {
-				v, f, e = task(s.rootCtx)
-			}); err != nil {
-				e = err
-				fmt.Println("[WARN] run task panic, error:" + err.String())
-			}
-			item := taskResult{value: v, err: e, cancelFunc: f}
+			resultChn := make(chan taskResult)
+			go func() {
+				defer func() {
+					if e0 := recover(); e0 != nil {
+						e := errors.New(fmt.Sprintf("%s", e0))
+						resultChn <- taskResult{
+							value:      nil,
+							err:        e,
+							cancelFunc: nil,
+						}
+						fmt.Println("[WARN] run task panic, error:" + e.Error())
+					}
+				}()
+				v, f, e := task(s.rootCtx)
+				resultChn <- taskResult{
+					value:      v,
+					err:        e,
+					cancelFunc: f,
+				}
+			}()
+			item := <-resultChn
 			allResult.Add(item)
-			if checkSuccess && e != nil {
+			if checkSuccess && item.err != nil {
 				return
 			}
 			select {
 			case waitChan <- item:
 			default:
-				if f != nil {
-					f()
+				if item.cancelFunc != nil {
+					item.cancelFunc()
 				}
 			}
 		})

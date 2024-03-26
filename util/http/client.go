@@ -599,8 +599,9 @@ func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver)
 				be := gbatch.NewBatchExecutor()
 				for _, v := range s.dns {
 					addr := v
-					be.AppendTask(func(_ context.Context) (value interface{}, err error) {
-						return d.DialContext(ctx, "udp", addr)
+					be.AppendTask(func(_ context.Context) (value interface{}, f func(), err error) {
+						ret, e := d.DialContext(ctx, "udp", addr)
+						return ret, nil, e
 					})
 				}
 				c, err := be.WaitFirstSuccess()

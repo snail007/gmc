@@ -2,6 +2,8 @@ package gbatch
 
 import (
 	"context"
+	"fmt"
+	gerror "github.com/snail007/gmc/module/error"
 	"github.com/snail007/gmc/util/gpool"
 	glist "github.com/snail007/gmc/util/list"
 	gsync "github.com/snail007/gmc/util/sync"
@@ -97,7 +99,15 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 		task := t
 		p.Submit(func() {
 			defer g.Done()
-			v, f, e := task(s.rootCtx)
+			var v interface{}
+			var f func()
+			var e error
+			if err := gerror.TryWithStack(func() {
+				v, f, e = task(s.rootCtx)
+			}); err != nil {
+				e = err
+				fmt.Println("[WARN] run task panic, error:" + err.String())
+			}
 			item := taskResult{value: v, err: e, cancelFunc: f}
 			allResult.Add(item)
 			if checkSuccess && e != nil {

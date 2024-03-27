@@ -600,7 +600,7 @@ func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver)
 				for _, v := range s.dns {
 					addr := v
 					be.AppendTask(func(_ context.Context) (value interface{}, f func(), err error) {
-						ret, e := d.DialContext(ctx, "udp", addr)
+						ret, e := d.Dial("udp", addr)
 						return ret, nil, e
 					})
 				}

@@ -2,9 +2,8 @@ package gbatch
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/snail007/gmc/util/gpool"
+	gerror "github.com/snail007/gmc/module/error"
 	glist "github.com/snail007/gmc/util/list"
 	gsync "github.com/snail007/gmc/util/sync"
 	"sync"
@@ -12,10 +11,11 @@ import (
 
 type task func(ctx context.Context) (value interface{}, cancelFunc func(), err error)
 type Executor struct {
-	workers    int
-	tasks      []task
-	rootCtx    context.Context
-	rootCancel context.CancelFunc
+	workers      int
+	tasks        []task
+	rootCtx      context.Context
+	rootCancel   context.CancelFunc
+	panicHandler func(e interface{})
 }
 
 func NewBatchExecutor() *Executor {
@@ -35,19 +35,20 @@ func (s *Executor) AppendTask(tasks ...task) {
 	s.tasks = append(s.tasks, tasks...)
 }
 
+func (s *Executor) SetPanicHandler(panicHandler func(e interface{})) {
+	s.panicHandler = panicHandler
+}
+
 func (s *Executor) WaitAll() (allResults []taskResult) {
-	p := s.getPool()
-	defer p.Stop()
 	allResult := glist.New()
 	g := sync.WaitGroup{}
 	g.Add(len(s.tasks))
 	for _, t := range s.tasks {
-		task := t
-		p.Submit(func() {
+		go func(t task) {
 			defer g.Done()
-			v, f, e := task(s.rootCtx)
-			allResult.Add(taskResult{value: v, err: e, cancelFunc: f})
-		})
+			item := s.run(t)
+			allResult.Add(item)
+		}(t)
 	}
 	g.Wait()
 	allResult.RangeFast(func(index int, value interface{}) bool {
@@ -56,12 +57,25 @@ func (s *Executor) WaitAll() (allResults []taskResult) {
 	})
 	return
 }
-func (s *Executor) getPool() *gpool.Pool {
-	workers := len(s.tasks)
-	if s.workers > 0 {
-		workers = s.workers
-	}
-	return gpool.NewWithPreAlloc(workers)
+
+func (s *Executor) run(fn task) (result taskResult) {
+	defer func() {
+		if e := recover(); e != nil {
+			err := gerror.Wrap(e)
+			result.err = err
+			msg := fmt.Sprintf("[WARN] task panic, err: %s", err.StackStr())
+			if s.panicHandler != nil {
+				s.panicHandler(e)
+			} else {
+				fmt.Println(msg)
+			}
+		}
+	}()
+	v, f, e := fn(s.rootCtx)
+	result.value = v
+	result.cancelFunc = f
+	result.err = e
+	return
 }
 
 type taskResult struct {
@@ -90,37 +104,14 @@ func (s *Executor) WaitFirstDone() (value interface{}, err error) {
 }
 
 func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
-	p := s.getPool()
-	defer p.Stop()
 	g := sync.WaitGroup{}
 	g.Add(len(s.tasks))
 	waitChan := make(chan taskResult)
 	allResult := glist.New()
 	for _, t := range s.tasks {
-		task := t
-		p.Submit(func() {
+		go func(t task) {
 			defer g.Done()
-			resultChn := make(chan taskResult)
-			go func() {
-				defer func() {
-					if e0 := recover(); e0 != nil {
-						e := errors.New(fmt.Sprintf("%s", e0))
-						resultChn <- taskResult{
-							value:      nil,
-							err:        e,
-							cancelFunc: nil,
-						}
-						fmt.Println("[WARN] run task panic, error:" + e.Error())
-					}
-				}()
-				v, f, e := task(s.rootCtx)
-				resultChn <- taskResult{
-					value:      v,
-					err:        e,
-					cancelFunc: f,
-				}
-			}()
-			item := <-resultChn
+			item := s.run(t)
 			allResult.Add(item)
 			if checkSuccess && item.err != nil {
 				return
@@ -132,7 +123,7 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 					item.cancelFunc()
 				}
 			}
-		})
+		}(t)
 	}
 	select {
 	case v := <-waitChan:

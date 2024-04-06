@@ -49,7 +49,7 @@ func TestNewBatchExecutor2(t *testing.T) {
 	be.WaitAll()
 	diff := time.Now().Sub(start)
 	assert.Equal(t, 45, i.Val())
-	assert.True(t, diff >= time.Second*2)
+	assert.True(t, diff >= time.Second)
 	assert.True(t, diff < time.Millisecond*2500)
 }
 

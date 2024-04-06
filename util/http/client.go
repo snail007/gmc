@@ -12,7 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	gbatch "github.com/snail007/gmc/util/batch"
+	gsync "github.com/snail007/gmc/util/sync"
 	"io"
 	"mime/multipart"
 	"net"
@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	gproxy "github.com/snail007/gmc/util/proxy"
@@ -596,19 +597,31 @@ func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver)
 					Timeout:   timeout,
 					KeepAlive: timeout,
 				}
-				be := gbatch.NewBatchExecutor()
+				dnsLen := len(s.dns)
+				errsChn := make(chan error, dnsLen)
+				connChn := make(chan net.Conn)
+				g := sync.WaitGroup{}
+				g.Add(dnsLen)
 				for _, v := range s.dns {
-					addr := v
-					be.AppendTask(func(_ context.Context) (value interface{}, f func(), err error) {
-						ret, e := d.Dial("udp", addr)
-						return ret, nil, e
-					})
+					go func(addr string) {
+						defer g.Done()
+						c, e := d.Dial("udp", addr)
+						if e != nil {
+							errsChn <- e
+							return
+						}
+						select {
+						case connChn <- c:
+						default:
+						}
+					}(v)
 				}
-				c, err := be.WaitFirstSuccess()
-				if err != nil {
-					return nil, err
+				select {
+				case c := <-connChn:
+					return c, nil
+				case <-gsync.WaitGroupToChan(&g):
+					return nil, <-errsChn
 				}
-				return c.(net.Conn), nil
 			},
 		}
 	}

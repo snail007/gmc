@@ -29,6 +29,7 @@ func TestBatchGet_1(t *testing.T) {
 	}
 	r, err := NewBatchGet(reqUrls, time.Second, nil, nil)
 	assert2.Nil(t, err)
+	r.Keepalive(false)
 	called := false
 	r.AppendBeforeDo(func(idx int, req *http.Request) {
 		called = true
@@ -263,5 +264,23 @@ func TestBatchRequest_CheckErrorFunc_1(t *testing.T) {
 	assert2.Equal(t, 0, r.ErrorCount())
 	assert2.NotNil(t, r.Resp())
 	assert2.Greater(t, gcast.ToInt(string(r.Resp().Body())), 0)
+	r.Close()
+}
+
+func TestBatchRequest_AllFail(t *testing.T) {
+	t.Parallel()
+	u := "http://127.0.0.1:1/?"
+	reqUrls := []string{
+		u + "idx=1&nosleep=1",
+		u + "idx=2&nosleep=1",
+		u + "idx=3&nosleep=1",
+		u + "idx=4&nosleep=1",
+	}
+	r, err := NewBatchPost(reqUrls, time.Second, gmap.Mss{"sleep": "3"}, nil)
+	assert2.Nil(t, err)
+	assert2.False(t, r.WaitFirstSuccess().MaxTry(2).Execute().Success())
+	assert2.Equal(t, 4, r.ErrorCount())
+	assert2.NotNil(t, r.Err())
+	assert2.Nil(t, r.Resp())
 	r.Close()
 }

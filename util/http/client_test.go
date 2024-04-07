@@ -11,6 +11,7 @@ import (
 	"fmt"
 	assert2 "github.com/stretchr/testify/assert"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -226,6 +227,12 @@ func TestHTTPClient_SetProxy(t *testing.T) {
 }
 
 func TestHTTPClient_SetDNS(t *testing.T) {
+	u1, _ := url.Parse("http://foo.com/")
+	u2, _ := url.Parse("http://127.0.0.1/")
+	jar := NewCookieJar()
+	jar.SetCookies(u1, []*http.Cookie{{Name: "foo", Value: "value1"}})
+	jar.SetCookies(u2, []*http.Cookie{{Name: "foo", Value: "value2", Domain: "127.0.0.1"}})
+	assert2.Equal(t, "value1", jar.Cookies(u1)[0].Value)
 	assert := assert2.New(t)
 	client := NewHTTPClient()
 	client.SetDNS("114.114.114.114:53")

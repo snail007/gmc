@@ -250,6 +250,15 @@ func TestHTTPClient_SetDNS(t *testing.T) {
 	assert2.NotNil(t, e)
 }
 
+func TestHTTPClient_SetDNS_AllFail(t *testing.T) {
+	client := NewHTTPClient()
+	client.SetDNS("0.0.0.256:555", "0.0.0.257:555")
+	body1, _, _, err := client.Get("http://www.baidu.com/", time.Second*5, nil, map[string]string{"token": "200"})
+	assert2.NotNil(t, err)
+	assert2.Nil(t, body1)
+	t.Log(string(body1))
+}
+
 func TestDownload(t *testing.T) {
 	type args struct {
 		u       string

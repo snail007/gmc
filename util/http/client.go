@@ -613,6 +613,7 @@ func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver)
 						select {
 						case connChn <- c:
 						default:
+							c.Close()
 						}
 					}(v)
 				}

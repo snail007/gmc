@@ -621,6 +621,11 @@ func (s *HTTPClient) newResolver(timeout time.Duration) (resolver *net.Resolver)
 				case c := <-connChn:
 					return c, nil
 				case <-gsync.WaitGroupToChan(&g):
+					//case selected randomly, so here need check double if it is success
+					if len(connChn) > 0 {
+						c := <-connChn
+						return c, nil
+					}
 					return nil, <-errsChn
 				}
 			},

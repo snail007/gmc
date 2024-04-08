@@ -131,6 +131,13 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 		go s.rootCancel()
 		return v.value, v.err
 	case <-gsync.WaitGroupToChan(&g):
+		//case selected randomly, so here need check double if it is success
+		if len(waitChan) > 0 {
+			v := <-waitChan
+			//a task returned, call rootCancel to cancel others task.
+			go s.rootCancel()
+			return v.value, v.err
+		}
 		// all task done, return the last err
 		return nil, allResult.Pop().(taskResult).err
 	}

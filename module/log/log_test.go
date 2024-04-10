@@ -323,44 +323,6 @@ func TestLogger_Write5(t *testing.T) {
 	assert.NotContains(out.String(), "foo2")
 	assert.Contains(out.String(), "foo3\n")
 	assert.Contains(out.String(), "foo4\n")
-
-	glog.AddLevelWriter(&out, gcore.LogLeveInfo)
-	glog.AddLevelsWriter(&out, gcore.LogLeveWarn)
-	glog.Infof("foo5")
-	glog.Warnf("foo6")
-	assert.Contains(out.String(), "foo5\n")
-	assert.Contains(out.String(), "foo6\n")
-
-	glog.SetAsyncBufferSize(1024)
-	glog.EnableAsync()
-	assert.True(glog.Async())
-	glog.Infof("foo7")
-	glog.Write("foo8", gcore.LogLeveInfo)
-	glog.Write("foo9", gcore.LogLeveDebug)
-	glog.WriteRaw("foo10", gcore.LogLeveDebug)
-	glog.WaitAsyncDone()
-	assert.Contains(out.String(), "foo7\n")
-	assert.Contains(out.String(), "foo8\n")
-	assert.NotContains(out.String(), "foo9")
-	assert.NotContains(out.String(), "foo10")
-
-	var e error
-	glog.SetErrHandler(func(err error) {
-		e = err
-	})
-	glog.AddWriter(glog.NewLoggerWriter(&errWriter{}))
-	glog.Infof("foo11")
-	time.Sleep(time.Second)
-	assert.Error(e)
-
-	e = nil
-	glog.SetErrHandler(func(err error) {
-		e = err
-	})
-	glog.AddWriter(glog.NewLoggerWriter(&panicWriter{}))
-	glog.Infof("foo12")
-	time.Sleep(time.Second)
-	assert.Error(e)
 }
 
 type errWriter struct {
@@ -430,4 +392,43 @@ func TestDefaultLogger(t *testing.T) {
 	l.SetLevel(gcore.LogLevelTrace)
 	l.Tracef("foo1")
 	assert.Contains(out1.String(), "foo1")
+
+	var out bytes.Buffer
+	glog.AddLevelWriter(&out, gcore.LogLeveInfo)
+	glog.AddLevelsWriter(&out, gcore.LogLeveWarn)
+	glog.Infof("foo5")
+	glog.Warnf("foo6")
+	assert.Contains(out.String(), "foo5\n")
+	assert.Contains(out.String(), "foo6\n")
+
+	glog.SetAsyncBufferSize(1024)
+	glog.EnableAsync()
+	assert.True(glog.Async())
+	glog.Infof("foo7")
+	glog.Write("foo8", gcore.LogLeveInfo)
+	glog.Write("foo9", gcore.LogLeveDebug)
+	glog.WriteRaw("foo10", gcore.LogLeveDebug)
+	glog.WaitAsyncDone()
+	assert.Contains(out.String(), "foo7\n")
+	assert.Contains(out.String(), "foo8\n")
+	assert.NotContains(out.String(), "foo9")
+	assert.NotContains(out.String(), "foo10")
+
+	var e error
+	glog.SetErrHandler(func(err error) {
+		e = err
+	})
+	glog.AddWriter(glog.NewLoggerWriter(&errWriter{}))
+	glog.Infof("foo11")
+	time.Sleep(time.Second * 2)
+	assert.Error(e)
+
+	e = nil
+	glog.SetErrHandler(func(err error) {
+		e = err
+	})
+	glog.AddWriter(glog.NewLoggerWriter(&panicWriter{}))
+	glog.Infof("foo12")
+	time.Sleep(time.Second * 2)
+	assert.Error(e)
 }

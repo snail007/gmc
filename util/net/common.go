@@ -130,7 +130,7 @@ func RandomListen(ip ...string) (l net.Listener, port string, err error) {
 	_, port, _ = net.SplitHostPort(l.Addr().String())
 	return
 }
-func RandomPort() (port string, err error) {
+func RandomPort(ip ...string) (port string, err error) {
 	maxTry := 3
 	var l net.Listener
 	defer func() {
@@ -139,7 +139,7 @@ func RandomPort() (port string, err error) {
 		}
 	}()
 	for i := 0; i < maxTry; i++ {
-		l, port, err = RandomListen()
+		l, port, err = RandomListen(ip...)
 		if err == nil {
 			port = NewAddr(l.Addr()).Port()
 			return

@@ -36,6 +36,38 @@ func TestCheckError(t *testing.T) {
 		return
 	}
 	assert.Equal(t, "abc", f3().Error())
+
+	var f4 = func() int {
+		defer CatchCheckError()
+		v := CheckError2(123, nil)
+		return v.Int()
+	}
+	assert.Equal(t, 123, f4())
+
+	var f5 = func() interface{} {
+		defer CatchCheckError()
+		v := CheckError2(123, errors.New("abc"))
+		return v.Val()
+	}
+	assert.Equal(t, nil, f5())
+
+	var f6 = func() (int, string) {
+		defer CatchCheckError()
+		v1, v2 := CheckError3(123, "abc", nil)
+		return v1.Int(), v2.String()
+	}
+	a, b := f6()
+	assert.Equal(t, 123, a)
+	assert.Equal(t, "abc", b)
+
+	var f7 = func() (interface{}, interface{}) {
+		defer CatchCheckError()
+		v1, v2 := CheckError3(123, "abc", errors.New("abc"))
+		return v1.Val(), v2.Val()
+	}
+	c, d := f7()
+	assert.Equal(t, nil, c)
+	assert.Equal(t, nil, d)
 }
 
 func TestRecover(t *testing.T) {

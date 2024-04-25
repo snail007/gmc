@@ -3,6 +3,7 @@ package gfunc
 import (
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
+	gvalue "github.com/snail007/gmc/util/value"
 )
 
 type panicError struct{}
@@ -61,4 +62,20 @@ func CheckError(err error) {
 		panic(panicErr)
 	}
 	return
+}
+
+// CheckError2 check the err and return the value if err is nil
+func CheckError2(v interface{}, err error) *gvalue.AnyValue {
+	if err != nil {
+		panic(panicErr)
+	}
+	return gvalue.NewAny(v)
+}
+
+// CheckError3 check the err and return the value if err is nil
+func CheckError3(v1 interface{}, v2 interface{}, err error) (*gvalue.AnyValue, *gvalue.AnyValue) {
+	if err != nil {
+		panic(panicErr)
+	}
+	return gvalue.NewAny(v1), gvalue.NewAny(v2)
 }

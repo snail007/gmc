@@ -558,8 +558,10 @@ func (s *ConnBinder) OnClose(onClose func()) *ConnBinder {
 func (s *ConnBinder) copy(src, dst net.Conn) error {
 	buf := gbytes.GetPool(s.readBufSize).Get().([]byte)
 	defer func() {
-		src.Close()
-		dst.Close()
+		if s.autoClose {
+			src.Close()
+			dst.Close()
+		}
 		gbytes.GetPool(s.readBufSize).Put(buf)
 	}()
 	for {

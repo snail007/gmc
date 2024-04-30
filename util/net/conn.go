@@ -524,6 +524,11 @@ type ConnBinder struct {
 	trafficBytes *int64
 	ctx          Context
 	started      bool
+	autoClose    bool
+}
+
+func (s *ConnBinder) SetAutoClose(autoClose bool) {
+	s.autoClose = autoClose
 }
 
 func (s *ConnBinder) Ctx() Context {
@@ -603,6 +608,7 @@ func NewContextConnBinder(ctx Context, src net.Conn, dst net.Conn) *ConnBinder {
 		onClose:      func() {},
 		trafficBytes: new(int64),
 		readBufSize:  defaultConnBinderReadBufferSize,
+		autoClose:    true,
 	}
 	cb.ctx.SetConnBinder(cb)
 	return cb

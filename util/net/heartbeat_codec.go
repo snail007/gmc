@@ -145,6 +145,7 @@ retry:
 				continue retry
 			}
 			s.sendWriteErr(err)
+			s.sendReadErr(err)
 			return
 		case <-s.ctx.Done():
 			return
@@ -173,6 +174,7 @@ retry:
 				continue retry
 			}
 			s.sendReadErr(err)
+			s.sendWriteErr(err)
 			return
 		case <-s.ctx.Done():
 			return

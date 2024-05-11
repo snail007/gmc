@@ -13,7 +13,7 @@ GMC is a smart and flexible golang web and api development framework. GMC goal i
 
 # Contents
 
-[USER GUIDE](https://snail007.github.io/gmc/) ｜ [使用指南](https://snail.gitee.io/gmc/zh)
+[USER GUIDE](https://snail007.github.io/gmc/) ｜ [使用指南](https://snail007.github.io/gmc/zh/)
 
 ## Attention
 this project is undergoing development, will be changed frequently.

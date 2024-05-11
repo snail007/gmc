@@ -27,7 +27,7 @@ func newI18n() *I18n {
 func (this *I18n) Clone(lang string) gcore.I18n {
 	return &I18n{
 		langs:        this.langs,
-		fallbackLang: lang,
+		fallbackLang: strings.ToLower(lang),
 	}
 }
 func (this *I18n) Add(lang string, data map[string]string) {
@@ -50,7 +50,7 @@ func (this *I18n) Tr(lang, key string, defaultMessage ...string) string {
 	if len(defaultMessage) > 0 {
 		msg = defaultMessage[0]
 	}
-	for _, k := range []string{lang, this.fallbackLang} {
+	for _, k := range []string{strings.ToLower(lang), this.fallbackLang} {
 		if v, ok := this.langs[k]; ok {
 			if vv, ok := v[key]; ok {
 				return vv
@@ -67,6 +67,7 @@ func (this *I18n) TrLangs(langs []string, key string, defaultMessage ...string) 
 		msg = defaultMessage[0]
 	}
 	for _, k := range langs {
+		k = strings.ToLower(k)
 		if v, ok := this.langs[k]; ok {
 			if vv, ok := v[key]; ok {
 				return vv

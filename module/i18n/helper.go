@@ -41,7 +41,7 @@ func Init(cfg gcore.Config) (err error) {
 }
 
 func initFromBinData(cfg gcore.Config) (err error) {
-	fallbackLang := cfg.GetString("i18n.default")
+	fallbackLang := strings.ToLower(cfg.GetString("i18n.default"))
 	enabled := cfg.GetBool("i18n.enable")
 	if !enabled {
 		return
@@ -71,7 +71,7 @@ func initFromBinData(cfg gcore.Config) (err error) {
 
 func initFromDisk(cfg gcore.Config) (err error) {
 	dir := cfg.GetString("i18n.dir")
-	fallbackLang := cfg.GetString("i18n.default")
+	fallbackLang := strings.ToLower(cfg.GetString("i18n.default"))
 	enalbed := cfg.GetBool("i18n.enable")
 	if !enalbed {
 		return

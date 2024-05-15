@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+
 const (
 	LogLevelTrace LogLevel = iota + 1
 	LogLeveDebug
@@ -20,13 +21,37 @@ const (
 	LogLeveFatal
 	LogLeveNone
 )
+
+type LogLevel int
+
+func (s LogLevel)String() string {
+	switch s {
+	case LogLevelTrace:
+		return "TRACE"
+	case LogLeveDebug:
+		return "DEBUG"
+	case LogLeveInfo:
+		return "INFO"
+	case LogLeveWarn:
+		return "WARN"
+	case LogLeveError:
+		return "ERROR"
+	case LogLevePanic:
+		return "PANIC"
+	case LogLeveFatal:
+		return "FATAL"
+	case LogLeveNone:
+		return "NONE"
+	}
+	return ""
+}
+
 const (
 	LogFlagNormal LogFlag = iota + 1
 	LogFlagShort
 	LogFlagLong
 )
 
-type LogLevel int
 type LogFlag int
 
 type Logger interface {

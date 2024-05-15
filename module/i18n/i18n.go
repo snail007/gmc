@@ -52,7 +52,7 @@ func (this *I18n) Tr(lang, key string, defaultMessage ...string) string {
 	}
 	for _, k := range []string{strings.ToLower(lang), this.fallbackLang} {
 		if v, ok := this.langs[k]; ok {
-			if vv, ok := v[key]; ok {
+			if vv, ok := v[key]; ok && vv != "" {
 				return vv
 			}
 		}
@@ -69,7 +69,7 @@ func (this *I18n) TrLangs(langs []string, key string, defaultMessage ...string) 
 	for _, k := range langs {
 		k = strings.ToLower(k)
 		if v, ok := this.langs[k]; ok {
-			if vv, ok := v[key]; ok {
+			if vv, ok := v[key]; ok && vv != "" {
 				return vv
 			}
 		}

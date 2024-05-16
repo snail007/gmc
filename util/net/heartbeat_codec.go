@@ -144,6 +144,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue retry
 			}
+			err=fmt.Errorf("heartbeat error: %s",err)
 			s.sendWriteErr(err)
 			s.sendReadErr(err)
 			return
@@ -173,6 +174,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue retry
 			}
+			err=fmt.Errorf("heartbeat error: %s",err)
 			s.sendReadErr(err)
 			s.sendWriteErr(err)
 			return

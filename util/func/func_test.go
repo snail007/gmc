@@ -6,6 +6,7 @@ import (
 	gcore "github.com/snail007/gmc/core"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestCheckError(t *testing.T) {
@@ -81,4 +82,31 @@ func TestRecover(t *testing.T) {
 	}
 	f3()
 	assert.Equal(t, "abc", e.Error())
+}
+
+func TestWait(t *testing.T) {
+	start := time.Now()
+	r := <-Wait(func() {
+		time.Sleep(time.Second)
+	})
+	assert.Nil(t, r)
+	r = <-Wait(func() {
+		panic("abc")
+	})
+	assert.NotNil(t, r)
+	assert.Greater(t, time.Now().Sub(start), time.Second/2)
+}
+
+func TestWaitTimeout(t *testing.T) {
+	assert.True(t, IsWaitTimeoutErr(WaitTimeout(func() {
+		time.Sleep(time.Second * 2)
+	}, time.Second)))
+
+	assert.False(t, IsWaitTimeoutErr(WaitTimeout(func() {
+		time.Sleep(time.Millisecond * 900)
+	}, time.Second)))
+
+	assert.Nil(t, WaitTimeout(func() {
+		time.Sleep(time.Millisecond * 900)
+	}, time.Second))
 }

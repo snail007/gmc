@@ -1,9 +1,11 @@
 package gfunc
 
 import (
+	"errors"
 	gcore "github.com/snail007/gmc/core"
 	gerror "github.com/snail007/gmc/module/error"
 	gvalue "github.com/snail007/gmc/util/value"
+	"time"
 )
 
 type panicError struct{}
@@ -78,4 +80,29 @@ func CheckError3(v1 interface{}, v2 interface{}, err error) (*gvalue.AnyValue, *
 		panic(panicErr)
 	}
 	return gvalue.NewAny(v1), gvalue.NewAny(v2)
+}
+
+func Wait(f func()) <-chan error {
+	ch := make(chan error)
+	go func() {
+		ch <- SafetyCall(f)
+	}()
+	return ch
+}
+
+var errWaitTimeout = errors.New("wait timeout")
+
+func IsWaitTimeoutErr(e error) bool {
+	return errors.Is(e, errWaitTimeout)
+}
+
+func WaitTimeout(f func(), timeout time.Duration) error {
+	t := time.NewTimer(timeout)
+	defer t.Stop()
+	select {
+	case err := <-Wait(f):
+		return err
+	case <-t.C:
+		return errWaitTimeout
+	}
 }

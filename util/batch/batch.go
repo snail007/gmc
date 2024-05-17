@@ -2,6 +2,7 @@ package gbatch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	gerror "github.com/snail007/gmc/module/error"
 	glist "github.com/snail007/gmc/util/list"
@@ -104,6 +105,9 @@ func (s *Executor) WaitFirstDone() (value interface{}, err error) {
 }
 
 func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
+	if len(s.tasks) == 0 {
+		return nil, errors.New("tasks is empty")
+	}
 	g := sync.WaitGroup{}
 	g.Add(len(s.tasks))
 	waitChan := make(chan taskResult)

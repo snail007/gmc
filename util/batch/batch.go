@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	gerror "github.com/snail007/gmc/module/error"
+	gfunc "github.com/snail007/gmc/util/func"
+	"github.com/snail007/gmc/util/gpool"
 	glist "github.com/snail007/gmc/util/list"
-	gsync "github.com/snail007/gmc/util/sync"
-	"sync"
 )
 
 type task func(ctx context.Context) (value interface{}, cancelFunc func(), err error)
@@ -41,17 +41,17 @@ func (s *Executor) SetPanicHandler(panicHandler func(e interface{})) {
 }
 
 func (s *Executor) WaitAll() (allResults []taskResult) {
+	p := gpool.New(s.workers)
+	defer p.Stop()
 	allResult := glist.New()
-	g := sync.WaitGroup{}
-	g.Add(len(s.tasks))
 	for _, t := range s.tasks {
-		go func(t task) {
-			defer g.Done()
-			item := s.run(t)
+		t0 := t
+		p.Submit(func() {
+			item := s.run(t0)
 			allResult.Add(item)
-		}(t)
+		})
 	}
-	g.Wait()
+	p.WaitDone()
 	allResult.RangeFast(func(index int, value interface{}) bool {
 		allResults = append(allResults, value.(taskResult))
 		return true
@@ -64,7 +64,7 @@ func (s *Executor) run(fn task) (result taskResult) {
 		if e := recover(); e != nil {
 			err := gerror.Wrap(e)
 			result.err = err
-			msg := fmt.Sprintf("[WARN] task panic, err: %s", err.StackStr())
+			msg := fmt.Sprintf("[WARN] task panic, err: %s", err.ErrorStack())
 			if s.panicHandler != nil {
 				s.panicHandler(e)
 			} else {
@@ -108,14 +108,13 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 	if len(s.tasks) == 0 {
 		return nil, errors.New("tasks is empty")
 	}
-	g := sync.WaitGroup{}
-	g.Add(len(s.tasks))
 	waitChan := make(chan taskResult)
 	allResult := glist.New()
+	p := gpool.New(s.workers)
 	for _, t := range s.tasks {
-		go func(t task) {
-			defer g.Done()
-			item := s.run(t)
+		t0 := t
+		p.Submit(func() {
+			item := s.run(t0)
 			allResult.Add(item)
 			if checkSuccess && item.err != nil {
 				return
@@ -127,14 +126,14 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 					item.cancelFunc()
 				}
 			}
-		}(t)
+		})
 	}
 	select {
 	case v := <-waitChan:
 		//a task returned, call rootCancel to cancel others task.
 		go s.rootCancel()
 		return v.value, v.err
-	case <-gsync.WaitGroupToChan(&g):
+	case <-gfunc.Wait(p.WaitDone):
 		//case selected randomly, so here need check double if it is success
 		if len(waitChan) > 0 {
 			v := <-waitChan

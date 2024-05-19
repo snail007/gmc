@@ -111,6 +111,7 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 	waitChan := make(chan taskResult)
 	allResult := glist.New()
 	p := gpool.New(s.workers)
+	defer p.Stop()
 	for _, t := range s.tasks {
 		t0 := t
 		p.Submit(func() {

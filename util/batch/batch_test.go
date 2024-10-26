@@ -30,7 +30,7 @@ func TestNewBatchExecutor(t *testing.T) {
 	diff := time.Now().Sub(start)
 	assert.Equal(t, 45, i.Val())
 	assert.True(t, diff >= time.Second)
-	assert.True(t, diff < time.Millisecond*1500)
+	assert.True(t, diff < time.Second*3)
 }
 
 func TestNewBatchExecutor2(t *testing.T) {

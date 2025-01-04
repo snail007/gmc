@@ -29,6 +29,7 @@ func TestHasHTTPPrefix(t *testing.T) {
 
 func TestHasSuffix(t *testing.T) {
 	assert.True(t, HasSuffixAny("a.txt", ".log", ".txt"))
+	assert.True(t, HasSuffixAny("a.txt", "", ".txt"))
 	assert.False(t, HasSuffixAny("a.log", ".log1", ".txt1"))
 }
 

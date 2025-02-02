@@ -102,12 +102,12 @@ func (h *heartbeatCodecMsg) Bytes() []byte {
 func (h *heartbeatCodecMsg) PutBackBytesBuf() {
 	if h.hbBuf != nil {
 		//reset slice
-		h.hbBuf = h.hbBuf[0:]
+		h.hbBuf = h.hbBuf[:0]
 		hbBufPool.Put(h.hbBuf)
 	}
 	if h.msgBuf != nil {
 		//reset slice
-		h.msgBuf = h.msgBuf[0:]
+		h.msgBuf = h.msgBuf[:0]
 		msgBufPool.Put(h.msgBuf)
 	}
 }

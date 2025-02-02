@@ -1,12 +1,20 @@
 package gsync
 
-import "sync"
+import (
+	gfunc "github.com/snail007/gmc/util/func"
+	"sync"
+)
 
 func WaitGroupToChan(g *sync.WaitGroup) <-chan bool {
 	ch := make(chan bool)
 	go func() {
 		g.Wait()
-		ch <- true
+		select {
+		case ch <- true:
+		default:
+			defer gfunc.RecoverNop()
+			close(ch)
+		}
 	}()
 	return ch
 }

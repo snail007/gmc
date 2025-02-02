@@ -278,6 +278,8 @@ func (s *HeartbeatCodec) Close() (err error) {
 		s.bufReader.Close()
 		s.bufWriter.Close()
 		err = s.Conn.Close()
+		s.readPool.Stop()
+		s.writePool.Stop()
 	})
 	return
 }

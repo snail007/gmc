@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	gbytes "github.com/snail007/gmc/util/bytes"
 	"io"
 	"net"
 	"sync"
@@ -20,10 +21,19 @@ const (
 	heartbeatCodecMsgFlag uint16 = 0x6699
 )
 
+var (
+	HeartbeatCodecMsgBufferSize = 32 * 1024
+	heartbeatMsgBufferSize      = 2 + 4 //uint16 + uint32
+	msgBufPool                  = gbytes.GetPoolCap(0, HeartbeatCodecMsgBufferSize)
+	hbBufPool                   = gbytes.GetPoolCap(0, heartbeatMsgBufferSize)
+)
+
 type heartbeatCodecMsg struct {
-	flag uint16
-	len  uint32
-	data []byte
+	flag   uint16
+	len    uint32
+	data   []byte
+	msgBuf []byte
+	hbBuf  []byte
 }
 
 func (h *heartbeatCodecMsg) Data() []byte {
@@ -70,13 +80,36 @@ func (h *heartbeatCodecMsg) ReadFrom(r net.Conn) (err error) {
 }
 
 func (h *heartbeatCodecMsg) Bytes() []byte {
-	buf := &bytes.Buffer{}
+	var buf *bytes.Buffer
+	if len(h.data) == 0 {
+		h.hbBuf = hbBufPool.Get().([]byte)
+		buf = bytes.NewBuffer(h.hbBuf)
+	} else {
+		h.msgBuf = msgBufPool.Get().([]byte)
+		buf = bytes.NewBuffer(h.msgBuf)
+	}
+	//buf := bytes.NewBuffer(make([]byte, 0, 32*1024))
+	//buf := &bytes.Buffer{}
 	binary.Write(buf, binary.LittleEndian, h.flag)
 	binary.Write(buf, binary.LittleEndian, uint32(len(h.data)))
 	if h.len > 0 {
 		binary.Write(buf, binary.LittleEndian, h.data)
 	}
 	return buf.Bytes()
+}
+
+// PutBackBytesBuf should be called after Bytes()
+func (h *heartbeatCodecMsg) PutBackBytesBuf() {
+	if h.hbBuf != nil {
+		//reset slice
+		h.hbBuf = h.hbBuf[0:]
+		hbBufPool.Put(h.hbBuf)
+	}
+	if h.msgBuf != nil {
+		//reset slice
+		h.msgBuf = h.msgBuf[0:]
+		msgBufPool.Put(h.msgBuf)
+	}
 }
 
 func newHeartbeatCodecMsg() *heartbeatCodecMsg {
@@ -144,7 +177,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue retry
 			}
-			err=fmt.Errorf("heartbeat error: %s",err)
+			err = fmt.Errorf("heartbeat error: %s", err)
 			s.sendWriteErr(err)
 			s.sendReadErr(err)
 			return
@@ -174,7 +207,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue retry
 			}
-			err=fmt.Errorf("heartbeat error: %s",err)
+			err = fmt.Errorf("heartbeat error: %s", err)
 			s.sendReadErr(err)
 			s.sendWriteErr(err)
 			return
@@ -216,7 +249,11 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	msg.SetData(b)
 	done := make(chan bool)
 	go func() {
-		defer close(done)
+		defer func() {
+			close(done)
+			//put msg buffer back to pool
+			msg.PutBackBytesBuf()
+		}()
 		n, err = s.Conn.Write(msg.Bytes())
 		if err == nil {
 			// decrease the n with msg header length 6 bytes

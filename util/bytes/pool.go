@@ -5,11 +5,16 @@
 
 package gbytes
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 var (
-	poolMap  = map[int]*Pool{}
-	poolLock = &sync.Mutex{}
+	poolMap     = map[int]*Pool{}
+	poolLock    = &sync.Mutex{}
+	poolCapMap  = map[string]*Pool{}
+	poolCapLock = &sync.Mutex{}
 )
 
 func GetPool(bufSize int) *Pool {
@@ -20,6 +25,18 @@ func GetPool(bufSize int) *Pool {
 	}
 	p := NewPool(bufSize)
 	poolMap[bufSize] = p
+	return p
+}
+
+func GetPoolCap(bufSize, capSize int) *Pool {
+	poolLock.Lock()
+	defer poolLock.Unlock()
+	k := fmt.Sprintf("%d-%d", bufSize, capSize)
+	if v, ok := poolCapMap[k]; ok {
+		return v
+	}
+	p := NewPoolCap(bufSize, capSize)
+	poolCapMap[k] = p
 	return p
 }
 
@@ -39,6 +56,16 @@ func NewPool(bufSize int) *Pool {
 	p := &sync.Pool{}
 	p.New = func() interface{} {
 		return make([]byte, bufSize)
+	}
+	return &Pool{
+		Pool: p,
+	}
+}
+
+func NewPoolCap(bufSize, capSize int) *Pool {
+	p := &sync.Pool{}
+	p.New = func() interface{} {
+		return make([]byte, bufSize, capSize)
 	}
 	return &Pool{
 		Pool: p,

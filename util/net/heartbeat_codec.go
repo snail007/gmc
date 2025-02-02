@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	gbytes "github.com/snail007/gmc/util/bytes"
+	"github.com/snail007/gmc/util/gpool"
 	"io"
 	"net"
 	"sync"
@@ -130,6 +131,8 @@ type HeartbeatCodec struct {
 	writeErrChn chan error
 	ctx         context.Context
 	ctxCancel   context.CancelFunc
+	readPool    *gpool.Pool
+	writePool   *gpool.Pool
 }
 
 func (s *HeartbeatCodec) sendReadErr(err error) {
@@ -159,14 +162,15 @@ func (s *HeartbeatCodec) tempDelay(tempDelay time.Duration) time.Duration {
 func (s *HeartbeatCodec) heartbeat() {
 	done := make(chan error)
 	tempDelay := time.Duration(0)
+	p := gpool.New(1)
 retry:
 	for {
-		go func() {
+		p.Submit(func() {
 			s.SetWriteDeadline(time.Now().Add(s.timeout))
 			_, err := s.Write(nil)
 			s.SetWriteDeadline(time.Time{})
 			done <- err
-		}()
+		})
 		select {
 		case err := <-done:
 			if err == nil {
@@ -192,11 +196,12 @@ func (s *HeartbeatCodec) backgroundRead() {
 	tempDelay := time.Duration(0)
 	msg := newHeartbeatCodecMsg()
 	out := make(chan error)
+	p := gpool.New(1)
 retry:
 	for {
-		go func() {
+		p.Submit(func() {
 			out <- msg.ReadFrom(s.Conn)
-		}()
+		})
 		select {
 		case err := <-out:
 			if err == nil {
@@ -230,11 +235,11 @@ func (s *HeartbeatCodec) SetConn(c net.Conn) Codec {
 
 func (s *HeartbeatCodec) Read(b []byte) (n int, err error) {
 	done := make(chan bool)
-	go func() {
+	s.readPool.Submit(func() {
 		defer close(done)
 		n, err = s.bufReader.Read(b)
 		_ = err
-	}()
+	})
 	select {
 	case <-done:
 	case err = <-s.readErrChn:
@@ -248,7 +253,7 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	msg := newHeartbeatCodecMsg()
 	msg.SetData(b)
 	done := make(chan bool)
-	go func() {
+	s.writePool.Submit(func() {
 		defer func() {
 			close(done)
 			//put msg buffer back to pool
@@ -259,7 +264,7 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 			// decrease the n with msg header length 6 bytes
 			n = n - 6
 		}
-	}()
+	})
 	select {
 	case <-done:
 	case err = <-s.writeErrChn:
@@ -305,6 +310,8 @@ func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
 	}
 	s.readErrChn = make(chan error, 1)
 	s.writeErrChn = make(chan error, 1)
+	s.readPool = gpool.New(2)
+	s.writePool = gpool.New(2)
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	go s.backgroundRead()
 	go s.heartbeat()

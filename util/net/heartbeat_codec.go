@@ -260,9 +260,9 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	}
 	p.Submit(func() {
 		defer func() {
-			close(done)
 			//put msg buffer back to pool
 			msg.PutBackBytesBuf()
+			close(done)
 		}()
 		n, err = s.Conn.Write(msg.Bytes())
 		if err == nil {
@@ -285,6 +285,7 @@ func (s *HeartbeatCodec) Close() (err error) {
 		err = s.Conn.Close()
 		s.readPool.Stop()
 		s.writePool.Stop()
+		s.writeHbPool.Stop()
 	})
 	return
 }

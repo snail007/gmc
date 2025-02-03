@@ -133,6 +133,7 @@ type HeartbeatCodec struct {
 	ctxCancel   context.CancelFunc
 	readPool    *gpool.Pool
 	writePool   *gpool.Pool
+	writeHbPool *gpool.Pool
 }
 
 func (s *HeartbeatCodec) sendReadErr(err error) {
@@ -253,7 +254,11 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	msg := newHeartbeatCodecMsg()
 	msg.SetData(b)
 	done := make(chan bool)
-	s.writePool.Submit(func() {
+	p := s.writePool
+	if len(b) == 0 {
+		p = s.writeHbPool
+	}
+	p.Submit(func() {
 		defer func() {
 			close(done)
 			//put msg buffer back to pool
@@ -312,8 +317,9 @@ func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
 	}
 	s.readErrChn = make(chan error, 1)
 	s.writeErrChn = make(chan error, 1)
-	s.readPool = gpool.New(2)
-	s.writePool = gpool.New(2)
+	s.readPool = gpool.New(1)
+	s.writePool = gpool.New(1)
+	s.writeHbPool = gpool.New(1)
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	go s.backgroundRead()
 	go s.heartbeat()

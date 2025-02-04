@@ -108,7 +108,7 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 	if len(s.tasks) == 0 {
 		return nil, errors.New("tasks is empty")
 	}
-	waitChan := make(chan taskResult)
+	waitChan := make(chan taskResult, 1)
 	allResult := glist.New()
 	p := gpool.New(s.workers)
 	defer p.Stop()

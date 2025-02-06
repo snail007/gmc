@@ -159,7 +159,7 @@ func (s *HeartbeatCodec) tempDelay(tempDelay time.Duration) time.Duration {
 	return tempDelay
 }
 func (s *HeartbeatCodec) heartbeat() {
-	done := make(chan error)
+	done := make(chan error, 1)
 	tempDelay := time.Duration(0)
 	p := gpool.New(1)
 	defer p.Stop()
@@ -195,7 +195,7 @@ retry:
 func (s *HeartbeatCodec) backgroundRead() {
 	tempDelay := time.Duration(0)
 	msg := newHeartbeatCodecMsg()
-	out := make(chan error)
+	out := make(chan error, 1)
 	p := gpool.New(1)
 	defer p.Stop()
 retry:
@@ -235,7 +235,7 @@ func (s *HeartbeatCodec) SetConn(c net.Conn) Codec {
 }
 
 func (s *HeartbeatCodec) Read(b []byte) (n int, err error) {
-	done := make(chan bool)
+	done := make(chan bool, 1)
 	s.readPool.Submit(func() {
 		defer close(done)
 		n, err = s.bufReader.Read(b)
@@ -252,7 +252,7 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	defer s.Unlock()
 	msg := newHeartbeatCodecMsg()
 	msg.SetData(b)
-	done := make(chan bool)
+	done := make(chan bool, 1)
 	p := s.writePool
 	if len(b) == 0 {
 		p = s.writeHbPool

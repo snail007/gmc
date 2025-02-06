@@ -83,7 +83,7 @@ func CheckError3(v1 interface{}, v2 interface{}, err error) (*gvalue.AnyValue, *
 }
 
 func Wait(f func()) <-chan error {
-	ch := make(chan error, 1)
+	ch := make(chan error)
 	go func() {
 		ch <- SafetyCall(f)
 	}()

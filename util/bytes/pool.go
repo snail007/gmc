@@ -29,8 +29,8 @@ func GetPool(bufSize int) *Pool {
 }
 
 func GetPoolCap(bufSize, capSize int) *Pool {
-	poolLock.Lock()
-	defer poolLock.Unlock()
+	poolCapLock.Lock()
+	defer poolCapLock.Unlock()
 	k := fmt.Sprintf("%d-%d", bufSize, capSize)
 	if v, ok := poolCapMap[k]; ok {
 		return v

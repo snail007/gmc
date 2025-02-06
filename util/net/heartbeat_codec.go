@@ -164,6 +164,7 @@ func (s *HeartbeatCodec) heartbeat() {
 	done := make(chan error, 1)
 	tempDelay := time.Duration(0)
 	p := gpool.New(1)
+	defer p.Stop()
 retry:
 	for {
 		p.Submit(func() {
@@ -198,6 +199,7 @@ func (s *HeartbeatCodec) backgroundRead() {
 	msg := newHeartbeatCodecMsg()
 	out := make(chan error, 1)
 	p := gpool.New(1)
+	defer p.Stop()
 retry:
 	for {
 		p.Submit(func() {

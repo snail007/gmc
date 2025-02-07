@@ -34,6 +34,11 @@ func TestURLBuilder_Query(t *testing.T) {
 	assert.Equal(t, "http://a.com:88/", link.String())
 	link = NewBuilder().Host("a.com").Port("88").SetQuery("a", "1")
 	assert.Equal(t, "http://a.com:88/?a=1", link.String())
+	link = NewBuilder().Parse("http://a.com:88/?a=1")
+	assert.Equal(t, "http://a.com:88/?a=1", link.String())
+	assert.Nil(t, link.Error())
+	link = NewBuilder().Parse("http://a.com:abc/?a=1")
+	assert.NotNil(t, link.Error())
 }
 
 func TestGetConcatChar(t *testing.T) {

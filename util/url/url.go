@@ -11,6 +11,7 @@ type Builder struct {
 	query   map[string]string
 	holders []string
 	port    string
+	err     error
 }
 
 func NewBuilder() *Builder {
@@ -23,6 +24,15 @@ func NewBuilder() *Builder {
 func (s *Builder) HTTP() *Builder {
 	s.URL.Scheme = "http"
 	return s
+}
+
+func (s *Builder) Parse(ref string) (b *Builder) {
+	s.URL, s.err = s.URL.Parse(ref)
+	return s
+}
+
+func (s *Builder) Error() error {
+	return s.err
 }
 
 func (s *Builder) String() string {

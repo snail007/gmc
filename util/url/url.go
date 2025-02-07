@@ -81,6 +81,11 @@ func (s *Builder) Query(data map[string]string) *Builder {
 	return s
 }
 
+func (s *Builder) SetQuery(k, v string) *Builder {
+	s.query[k] = v
+	return s
+}
+
 func (s *Builder) HostsURL(hosts []string) (urlArr []string) {
 	h0 := s.URL.Host
 	for _, h := range hosts {

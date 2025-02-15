@@ -46,6 +46,14 @@ func (h *heartbeatCodecMsg) Data() []byte {
 	return d
 }
 
+func (h *heartbeatCodecMsg) Reset() {
+	h.flag = 0
+	h.len = 0
+	h.data = h.data[:0]
+	h.msgBuf = h.msgBuf[:0]
+	h.hbBuf = h.hbBuf[:0]
+}
+
 func (h *heartbeatCodecMsg) DataLength() uint32 {
 	return h.len
 }
@@ -181,7 +189,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue retry
 			}
-			err = fmt.Errorf("heartbeat error: %s", err)
+			err = fmt.Errorf("heartbeat write hb error: %s", err)
 			s.sendWriteErr(err)
 			s.sendReadErr(err)
 			return
@@ -200,6 +208,7 @@ func (s *HeartbeatCodec) backgroundRead() {
 	defer p.Stop()
 retry:
 	for {
+		msg.Reset()
 		p.Submit(func() {
 			out <- msg.ReadFrom(s.Conn)
 		})
@@ -213,7 +222,7 @@ retry:
 				time.Sleep(tempDelay)
 				continue retry
 			}
-			err = fmt.Errorf("heartbeat error: %s", err)
+			err = fmt.Errorf("heartbeat bg read error: %s", err)
 			s.sendReadErr(err)
 			s.sendWriteErr(err)
 			return
@@ -234,14 +243,23 @@ func (s *HeartbeatCodec) SetConn(c net.Conn) Codec {
 	return s
 }
 
+type readWriteResult struct {
+	n   int
+	err error
+}
+
 func (s *HeartbeatCodec) Read(b []byte) (n int, err error) {
-	done := make(chan bool, 1)
+	resultChn := make(chan readWriteResult, 1)
 	s.readPool.Submit(func() {
-		defer close(done)
-		n, err = s.bufReader.Read(b)
+		cnt, e := s.bufReader.Read(b)
+		resultChn <- readWriteResult{n: cnt, err: e}
 	})
 	select {
-	case <-done:
+	case r := <-resultChn:
+		if r.err != nil {
+			return 0, fmt.Errorf("heartbeat codec read data error: %s", err)
+		}
+		return r.n, nil
 	case err = <-s.readErrChn:
 	}
 	return
@@ -252,25 +270,29 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	defer s.Unlock()
 	msg := newHeartbeatCodecMsg()
 	msg.SetData(b)
-	done := make(chan bool, 1)
 	p := s.writePool
 	if len(b) == 0 {
 		p = s.writeHbPool
 	}
+	resultChn := make(chan readWriteResult, 1)
 	p.Submit(func() {
 		defer func() {
 			//put msg buffer back to pool
 			msg.PutBackBytesBuf()
-			close(done)
 		}()
 		n, err = s.Conn.Write(msg.Bytes())
 		if err == nil {
 			// decrease the n with msg header length 6 bytes
 			n = n - 6
 		}
+		resultChn <- readWriteResult{n: n, err: err}
 	})
 	select {
-	case <-done:
+	case r := <-resultChn:
+		if r.err != nil {
+			return 0, fmt.Errorf("heartbeat codec write data error: %s", err)
+		}
+		return r.n, nil
 	case err = <-s.writeErrChn:
 	}
 	return

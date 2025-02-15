@@ -336,7 +336,7 @@ func TestBufferedConn_PeekMax(t *testing.T) {
 	Write(":0", "error")
 }
 
-func TestNewConnBinder(t *testing.T) {
+func TestNewConnBinder1(t *testing.T) {
 	t.Parallel()
 	l1, p1, err := RandomListen("")
 	assert.NoError(t, err)
@@ -360,7 +360,6 @@ func TestNewConnBinder(t *testing.T) {
 			dstClosed.SetTrue()
 		}).SetReadBufSize(100)
 		b.Start()
-		b.Start()
 		assert.Equal(t, b, b.Ctx().ConnBinder())
 	}).Start()
 	time.Sleep(time.Second)
@@ -371,6 +370,28 @@ func TestNewConnBinder(t *testing.T) {
 	assert.True(t, closed.IsTrue())
 	assert.True(t, srcClosed.IsTrue())
 	assert.True(t, dstClosed.IsTrue())
+}
+
+func TestNewConnBinder2(t *testing.T) {
+	t.Parallel()
+	l1, p1, err := RandomListen("")
+	assert.NoError(t, err)
+	l2, p2, err := RandomListen("")
+	assert.NoError(t, err)
+	str := gatomic.NewString("")
+	NewEventListener(l2).OnAccept(func(ctx Context, c net.Conn) {
+		c.Close()
+	}).Start()
+	NewEventListener(l1).OnAccept(func(ctx Context, c net.Conn) {
+		c2, _ := net.Dial("tcp", "127.0.0.1:"+p2)
+		b := NewConnBinder(c, c2)
+		b.StartAndWait()
+		str.SetVal(b.Error().Error())
+	}).Start()
+	time.Sleep(time.Second)
+	Write("127.0.0.1:"+p1, "hello")
+	time.Sleep(time.Second)
+	assert.NotEmpty(t, str.Val())
 }
 
 func TestConn_FilterBreak(t *testing.T) {
@@ -697,4 +718,103 @@ func TestConn_CodecError1(t *testing.T) {
 	c0.AddCodec(newInitErrorCodec(gatomic.NewBool(false)))
 	_, err := c0.Write([]byte(""))
 	assert.Error(t, err)
+}
+
+func TestConn_MaxIdleTimeout1(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := gatomic.NewBool(false)
+	el := NewEventListener(l)
+	el.AddCodecFactory(func(ctx Context) Codec {
+		return NewHeartbeatCodec().SetInterval(time.Millisecond * 100)
+	})
+	el.AddCodecFactory(func(ctx Context) Codec {
+		return NewAESCodec("123")
+	})
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.Write([]byte("hello"))
+	})
+	el.Start()
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	c0 := NewConn(c)
+	c0.SetMaxIdleTimeout(time.Second)
+	c0.SetOnIdleTimeout(func(conn *Conn) {
+		called.SetTrue()
+	})
+	c0.AddCodec(NewHeartbeatCodec().SetInterval(time.Millisecond * 100))
+	c0.AddCodec(NewAESCodec("123"))
+	resp := ""
+	go func() {
+		buf := make([]byte, 1024)
+		n, _ := c0.Read(buf)
+		resp = string(buf[:n])
+	}()
+	time.Sleep(time.Second * 3)
+	assert.True(t, called.IsTrue())
+	assert.Equal(t, resp, "hello")
+	assert.True(t, c0.TouchTime().Add(time.Second).Before(time.Now()))
+}
+
+func TestConn_MaxIdleTimeout2(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called := gatomic.NewBool(false)
+	el := NewEventListener(l)
+	el.AddCodecFactory(func(ctx Context) Codec {
+		return NewHeartbeatCodec().SetInterval(time.Millisecond * 100)
+	})
+	el.AddCodecFactory(func(ctx Context) Codec {
+		return NewAESCodec("123")
+	})
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.Write([]byte("hello"))
+	})
+	el.Start()
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	c0 := NewConn(c)
+	c0.SetMaxIdleTimeout(time.Second)
+	c0.SetOnIdleTimeout(func(conn *Conn) {
+		called.SetTrue()
+	})
+	c0.AddCodec(NewHeartbeatCodec().SetInterval(time.Millisecond * 100))
+	c0.AddCodec(NewAESCodec("123"))
+	resp := ""
+	go func() {
+		buf := make([]byte, 1024)
+		n, _ := c0.Read(buf)
+		resp = string(buf[:n])
+	}()
+	time.Sleep(time.Millisecond * 400)
+	c0.Close()
+	assert.True(t, called.IsFalse())
+	assert.Equal(t, resp, "hello")
+	assert.False(t, c0.TouchTime().Add(time.Second).Before(time.Now()))
+}
+
+func TestConn_Hook(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	called1 := gatomic.NewBool(false)
+	called2 := gatomic.NewBool(false)
+	el := NewEventListener(l)
+	el.OnAccept(func(ctx Context, c net.Conn) {
+		c.Write([]byte("hello"))
+	})
+	el.Start()
+	time.Sleep(time.Second)
+	c, _ := Dial("127.0.0.1:"+p, time.Second)
+	c.SetOnClose(func(conn *Conn) {
+		called1.SetTrue()
+	})
+	c.SetOnInitialize(func(conn *Conn) {
+		called2.SetTrue()
+	})
+	buf := make([]byte, 1024)
+	c.Read(buf)
+	c.Close()
+	assert.True(t, called1.IsTrue())
+	assert.True(t, called2.IsTrue())
 }

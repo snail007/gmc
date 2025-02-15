@@ -6,6 +6,7 @@
 package gpool
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	glist "github.com/snail007/gmc/util/list"
 	gmap "github.com/snail007/gmc/util/map"
 	"io"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -59,6 +61,8 @@ type Option struct {
 	PreAlloc bool
 	// PanicHandler is used to handle panics from each job function.
 	PanicHandler func(e interface{})
+	//WithStack sets if fill stack info with submitted job
+	WithStack bool
 }
 
 // Blocking  the count of queued job to run reach the max, if blocking Submit call
@@ -107,7 +111,9 @@ func (s *Pool) SetDebug(debug bool) {
 
 // New create a gpool object to using
 func New(workerCount int) (p *Pool) {
-	return NewWithOption(workerCount, &Option{})
+	return NewWithOption(workerCount, &Option{
+		WithStack: true,
+	})
 }
 
 func NewWithLogger(workerCount int, logger gcore.Logger) (p *Pool) {
@@ -237,7 +243,7 @@ func (s *Pool) newWorkerID() string {
 }
 
 // run a job function, using defer to catch job exception
-func (s *Pool) run(fn func()) {
+func (s *Pool) run(j *JobItem) {
 	defer func() {
 		s.g.Done()
 		if e := recover(); e != nil {
@@ -252,7 +258,12 @@ func (s *Pool) run(fn func()) {
 			}
 		}
 	}()
-	fn()
+	j.Job()
+}
+
+type JobItem struct {
+	Stack string
+	Job   func()
 }
 
 // Submit adds a function as a job ready to run
@@ -271,8 +282,19 @@ func (s *Pool) Submit(job func()) error {
 			return ErrMaxQueuedJobCountReached
 		}
 	}
+	j := &JobItem{
+		Job: job,
+	}
+	if s.opt.WithStack {
+		a := bytes.SplitN(debug.Stack(), []byte("\n"), 4)
+		stackStr := string(a[0])
+		if len(a) > 3 {
+			stackStr += "\n" + string(a[3])
+		}
+		j.Stack = stackStr
+	}
 	s.g.Add(1)
-	s.jobs.Add(job)
+	s.jobs.Add(j)
 	s.notifyAll()
 	return nil
 }
@@ -288,10 +310,10 @@ func (s *Pool) notifyAll() {
 }
 
 // shift an element from array head
-func (s *Pool) pop() (fn func()) {
+func (s *Pool) pop() (fn *JobItem) {
 	f := s.jobs.Pop()
 	if f != nil {
-		fn = f.(func())
+		fn = f.(*JobItem)
 	}
 	return
 }
@@ -434,7 +456,7 @@ func (w *worker) start() {
 			w.pool.debugLog("Pool: worker[%s] stopped", w.id)
 		}()
 		w.pool.debugLog("Pool: worker[%s] started ...", w.id)
-		var fn func()
+		j := new(JobItem)
 		var doJob = func() (isReturn bool) {
 			w.SetStatus(statusRunning)
 			w.addRunningWorkerCounter(1)
@@ -446,9 +468,9 @@ func (w *worker) start() {
 					w.pool.debugLog("Pool: worker[%s] break", w.id)
 					return true
 				}
-				if fn = w.pool.pop(); fn != nil {
+				if j = w.pool.pop(); j != nil {
 					//w.pool.debugLog("Pool: worker[%s] called", w.id)
-					w.pool.run(fn)
+					w.pool.run(j)
 				} else {
 					w.pool.debugLog("Pool: worker[%s] no job, break", w.id)
 					break

@@ -8,11 +8,15 @@ package gdaemon
 import (
 	"bufio"
 	"fmt"
+	glog "github.com/snail007/gmc/module/log"
+	gcast "github.com/snail007/gmc/util/cast"
+	gfile "github.com/snail007/gmc/util/file"
 	"io"
 	"io/ioutil"
 	logger "log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -21,16 +25,46 @@ import (
 )
 
 var (
-	cmd        *exec.Cmd
-	log        = logger.New(os.Stdout, "", logger.LstdFlags)
-	isDaemon   = false
-	isForever  = false
-	flog       = ""
-	initCalled bool
-	initError  error
-	initOSArgs []string
-	initArgs   []string
+	cmd            *exec.Cmd
+	log            = logger.New(os.Stdout, "", logger.LstdFlags)
+	isDaemon       = false
+	isForever      = false
+	flog           = ""
+	initCalled     bool
+	initError      error
+	initOSArgs     []string
+	initArgs       []string
+	flogNameExp    string
+	rollFileWriter *glog.FileWriter
 )
+
+func initFileLogger() {
+	flogNameExp = os.Getenv("FLOG_NAME")
+	if flogNameExp == "" && gcast.ToBool(os.Getenv("FLOG_BY_MONTH")) {
+		flogNameExp = "logs/gateway_%Y%m.log"
+	}
+	if flogNameExp == "" && gcast.ToBool(os.Getenv("FLOG_BY_DAY")) {
+		flogNameExp = "logs/gateway_%Y%m%d.log"
+	}
+	if flogNameExp == "" && gcast.ToBool(os.Getenv("FLOG_BY_HOUR")) {
+		flogNameExp = "logs/gateway_%Y%m%d-%H.log"
+	}
+	if flogNameExp == "" && gcast.ToBool(os.Getenv("FLOG_BY_MINUTE")) {
+		flogNameExp = "logs/gateway_%Y%m%d-%H%i.log"
+	}
+	if flogNameExp != "" {
+		var err error
+		rollFileWriter, err = glog.NewFileWriterE(&glog.FileWriterOption{
+			Filename:      gfile.BaseName(flogNameExp),
+			LogsDir:       filepath.Dir(flogNameExp),
+			AliasFilename: "gateway.log",
+		})
+		if err != nil {
+			fmt.Println("init log file error:", err)
+			os.Exit(-1)
+		}
+	}
+}
 
 // SetLogger sets the logger for logging
 //
@@ -126,6 +160,7 @@ func Start() (err error) {
 		if isForever {
 			f = "forever "
 		}
+		initFileLogger()
 		l("%s%s [PID] %d running...\n", f, os.Args[0], cmd.Process.Pid)
 		os.Exit(0)
 	}
@@ -142,9 +177,10 @@ func Start() (err error) {
 			log.SetOutput(f)
 			w = f
 		}
+		initFileLogger()
 		go func() {
 			defer gcore.ProviderError()().Recover(func(e interface{}) {
-				fmt.Fprintf(w, "crashed, err: %s", gcore.ProviderError()().StackError(e))
+				fprintf(w, "crashed, err: %s", gcore.ProviderError()().StackError(e))
 			})
 			for {
 				if cmd != nil {
@@ -170,18 +206,18 @@ func Start() (err error) {
 				scannerStdErr := bufio.NewScanner(cmdReaderStderr)
 				go func() {
 					defer gcore.ProviderError()().Recover(func(e interface{}) {
-						fmt.Fprintf(w, "crashed, err: %s", gcore.ProviderError()().StackError(e))
+						fprintf(w, "crashed, err: %s", gcore.ProviderError()().StackError(e))
 					})
 					for scanner.Scan() {
-						fmt.Fprintf(w, scanner.Text()+"\n")
+						fprintf(w, scanner.Text()+"\n")
 					}
 				}()
 				go func() {
 					defer gcore.ProviderError()().Recover(func(e interface{}) {
-						fmt.Fprintf(w, "crashed, err: %s", gcore.ProviderError()().StackError(e))
+						fprintf(w, "crashed, err: %s", gcore.ProviderError()().StackError(e))
 					})
 					for scannerStdErr.Scan() {
-						fmt.Fprintf(w, scannerStdErr.Text()+"\n")
+						fprintf(w, scannerStdErr.Text()+"\n")
 					}
 				}()
 				if err := cmd.Start(); err != nil {
@@ -234,9 +270,26 @@ func trimArgs(trim string, _args []string) []string {
 	return args
 }
 
+// control message
 func l(format string, val ...interface{}) {
+	msg := fmt.Sprintf(format, val...)
+	fileLoggerWrite(msg)
 	if log == nil {
 		return
 	}
-	log.Printf(format, val...)
+	log.Print(msg)
+}
+
+// child process std & stderr output
+func fprintf(w io.Writer, format string, a ...interface{}) {
+	msg := fmt.Sprintf(format, a...)
+	fmt.Fprint(w, msg)
+	fileLoggerWrite(msg)
+}
+
+func fileLoggerWrite(msg string) {
+	if rollFileWriter==nil{
+		return
+	}
+	rollFileWriter.Write([]byte(msg), gcore.LogLeveNone)
 }

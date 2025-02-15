@@ -7,6 +7,7 @@ package gnet
 
 import (
 	"bufio"
+	"github.com/pkg/errors"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -95,9 +96,39 @@ type Conn struct {
 	writeBytes                *int64
 	rawConn                   net.Conn
 	onClose                   func(*Conn)
+	onCloseHook               func(*Conn)
+	onInitializeHook          func(*Conn)
 	closeOnce                 *sync.Once
 	autoCloseOnReadWriteError bool
 	initOnce                  *sync.Once
+	maxIdleTimeout            time.Duration
+	touchTime                 time.Time
+	idleChn                   chan bool
+	onIdleTimeout             func(*Conn)
+}
+
+func (s *Conn) SetOnClose(f func(conn *Conn)) {
+	s.onCloseHook = f
+}
+
+func (s *Conn) SetOnInitialize(f func(conn *Conn)) {
+	s.onInitializeHook = f
+}
+
+func (s *Conn) SetOnIdleTimeout(f func(conn *Conn)) {
+	s.onIdleTimeout = f
+}
+
+func (s *Conn) TouchTime() time.Time {
+	return s.touchTime
+}
+
+func (s *Conn) touch() {
+	s.touchTime = time.Now()
+}
+
+func (s *Conn) SetMaxIdleTimeout(d time.Duration) {
+	s.maxIdleTimeout = d
 }
 
 func (s *Conn) Ctx() Context {
@@ -154,7 +185,9 @@ func (s *Conn) Close() (err error) {
 			defer func() { _ = recover() }()
 			err = s.Conn.Close()
 		}()
+		close(s.idleChn)
 		s.onClose(s)
+		s.onCloseHook(s)
 	})
 	return
 }
@@ -184,8 +217,42 @@ func (s *Conn) initialize() (err error) {
 		return err
 	}
 	s.Conn = s.ctx.Conn()
+
+	//init idle monitor, this must be after filters and codecs
+	s.initIdleTimeoutDaemon()
+
+	//call Initialize hook
+	s.onInitializeHook(s)
+
 	return nil
 }
+
+func (s *Conn) initIdleTimeoutDaemon() {
+	if s.maxIdleTimeout <= 0 {
+		return
+	}
+	go func() {
+		t := time.NewTimer(s.maxIdleTimeout)
+		defer t.Stop()
+		for {
+			t.Reset(s.maxIdleTimeout)
+			select {
+			case <-s.idleChn:
+				return
+			case <-t.C:
+				if s.touchTime.Add(s.maxIdleTimeout).Before(time.Now()) {
+					//idle timeout, close the connection
+					s.Close()
+					if s.onIdleTimeout != nil {
+						s.onIdleTimeout(s)
+					}
+					return
+				}
+			}
+		}
+	}()
+}
+
 func (s *Conn) Read(b []byte) (n int, err error) {
 	if e := s.doInitialize(); e != nil {
 		return 0, e
@@ -193,6 +260,7 @@ func (s *Conn) Read(b []byte) (n int, err error) {
 	defer func() {
 		if n > 0 {
 			atomic.AddInt64(s.readBytes, int64(n))
+			s.touch()
 		}
 		if err != nil && s.autoCloseOnReadWriteError {
 			s.Close()
@@ -213,6 +281,7 @@ func (s *Conn) Write(b []byte) (n int, err error) {
 	defer func() {
 		if n > 0 {
 			atomic.AddInt64(s.writeBytes, int64(n))
+			s.touch()
 		}
 		if err != nil && s.autoCloseOnReadWriteError {
 			s.Close()
@@ -254,9 +323,13 @@ func newContextConn(ctx Context, conn net.Conn, f ...bool) *Conn {
 			readBytes:                 new(int64),
 			rawConn:                   conn,
 			onClose:                   func(conn *Conn) {},
+			onCloseHook:               func(conn *Conn) {},
+			onInitializeHook:          func(conn *Conn) {},
 			closeOnce:                 &sync.Once{},
 			initOnce:                  &sync.Once{},
 			autoCloseOnReadWriteError: true,
+			idleChn:                   make(chan bool),
+			touchTime:                 time.Now(),
 		}
 	}
 	ctx.(*defaultContext).conn = c
@@ -525,6 +598,18 @@ type ConnBinder struct {
 	ctx          Context
 	started      bool
 	autoClose    bool
+	err          error
+}
+
+func (s *ConnBinder) setError(err error) {
+	if s.err != nil || err == nil {
+		return
+	}
+	s.err = err
+}
+
+func (s *ConnBinder) Error() error {
+	return s.err
 }
 
 func (s *ConnBinder) SetAutoClose(autoClose bool) {
@@ -566,8 +651,14 @@ func (s *ConnBinder) copy(src, dst net.Conn) error {
 	}()
 	for {
 		n, err := src.Read(buf)
+		if err != nil {
+			err = errors.Wrap(err, "failed to read from src: "+src.RemoteAddr().String())
+		}
 		if n > 0 {
 			_, err = dst.Write(buf[:n])
+			if err != nil {
+				err = errors.Wrap(err, "failed to write to dst: "+dst.RemoteAddr().String())
+			}
 			atomic.AddInt64(s.trafficBytes, int64(n))
 		}
 		if err != nil {
@@ -584,12 +675,12 @@ func (s *ConnBinder) StartAndWait() {
 	g.Add(2)
 	go func() {
 		defer g.Done()
-		s.copy(s.src, s.dst)
+		s.setError(s.copy(s.src, s.dst))
 		s.onSrcClose(s.ctx)
 	}()
 	go func() {
 		defer g.Done()
-		s.copy(s.dst, s.src)
+		s.setError(s.copy(s.dst, s.src))
 		s.onDstClose(s.ctx)
 	}()
 	g.Wait()

@@ -240,7 +240,7 @@ func New(prefix ...string) gcore.Logger {
 		callerSkip:     2,
 		exitCode:       1,
 		exitFunc:       os.Exit,
-		flag:           gcore.LogFlagShort,
+		flag:           gcore.LogFlagNormal,
 		skipCheckGMC:   os.Getenv("LOG_SKIP_CHECK_GMC") == "yes",
 		datetimeLayout: defaultTimeLayout,
 		prefix:         pre,

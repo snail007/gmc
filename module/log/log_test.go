@@ -58,6 +58,7 @@ func TestLogger_With_1(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := glog.New()
+	l.SetFlag(gcore.LogFlagShort)
 	l.SetOutput(glog.NewLoggerWriter(&out))
 	l0 := l.With("api")
 	l0.Info("a", "b")
@@ -72,6 +73,7 @@ func TestLogger_With_2(t *testing.T) {
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
 	l.SetOutput(glog.NewLoggerWriter(&out))
+	l.SetFlag(gcore.LogFlagShort)
 	l0 := l.With("api").With("user").With("list")
 	l0.Info("a")
 	t.Log(out.String())
@@ -256,6 +258,7 @@ func TestLogger_Write1(t *testing.T) {
 	assert := assert2.New(t)
 	var out bytes.Buffer
 	l := gcore.ProviderLogger()(nil, "")
+	l.SetFlag(gcore.LogFlagShort)
 	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.Write("abc", gcore.LogLeveInfo)
 	assert.Equal(strings.Contains(out.String(), "log/log_test.go:"),

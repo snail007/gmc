@@ -30,6 +30,7 @@ func TestGlog(t *testing.T) {
 	var out bytes.Buffer
 	glog.SetOutput(glog.NewLoggerWriter(&out))
 	glog.SetTimeLayout("")
+	glog.SetFlag(gcore.LogFlagShort)
 	assert.False(glog.Async())
 	assert.NotNil(glog.Writer())
 	assert.Equal(glog.ExitCode(), 1)
@@ -334,6 +335,7 @@ func StartWebPProf(log gcore.Logger) {
 func TestGLog_With(t *testing.T) {
 	if gtest.RunProcess(t, func() {
 		l := glog.With("api")
+		l.SetFlag(gcore.LogFlagShort)
 		l.Info("abc")
 	}) {
 		return
@@ -350,6 +352,7 @@ func TestGLog_AddLevelWriter(t *testing.T) {
 	if gtest.RunProcess(t, func() {
 		var out bytes.Buffer
 		l := glog.New()
+		l.SetFlag(gcore.LogFlagShort)
 		l.AddLevelWriter(&out, gcore.LogLeveInfo)
 		l.SetLevel(gcore.LogLeveNone)
 		l.Tracef("foo1")

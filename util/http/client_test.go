@@ -235,6 +235,7 @@ func TestHTTPClient_SetDNS(t *testing.T) {
 	assert2.Equal(t, "value1", jar.Cookies(u1)[0].Value)
 	assert := assert2.New(t)
 	client := NewHTTPClient()
+	client.SetDisableDNS(false)
 	client.SetDNS("114.114.114.114:53")
 	body1, _, _, _ := client.Get("http://www.baidu.com/", time.Second*5, nil, map[string]string{"token": "200"})
 	client.SetDNS("8.8.8.8:53")

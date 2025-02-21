@@ -106,6 +106,7 @@ type HTTPClient struct {
 	proxyUsed         *url.URL
 	beforeDo          []BeforeDoClientFunc
 	afterDo           []AfterDoClientFunc
+	disableDNS        bool
 }
 
 // NewHTTPClient new a HTTPClient, all request shared one http.Client object, keep cookies, keepalive etc.
@@ -115,6 +116,10 @@ func NewHTTPClient() *HTTPClient {
 		keepalive: true,
 		jar:       NewCookieJar(),
 	}
+}
+
+func (s *HTTPClient) SetDisableDNS(disableDNS bool) {
+	s.disableDNS = disableDNS
 }
 
 // SetBeforeDo sets callback call before request sent.
@@ -523,16 +528,18 @@ func (s *HTTPClient) newTransport(timeout time.Duration) (tr *http.Transport, er
 				}
 				conn, err = j.Dial(addr)
 			} else {
-				host, port, _ := net.SplitHostPort(addr)
-				iparr, e := resolver.LookupIPAddr(ctx, host)
-				if e != nil {
-					return nil, e
+				if !s.disableDNS {
+					host, port, _ := net.SplitHostPort(addr)
+					iparr, e := resolver.LookupIPAddr(ctx, host)
+					if e != nil {
+						return nil, e
+					}
+					if len(iparr) == 0 {
+						return nil, fmt.Errorf("can not resolve domain %s", host)
+					}
+					ip := iparr[0]
+					addr = net.JoinHostPort(ip.String(), port)
 				}
-				if len(iparr) == 0 {
-					return nil, fmt.Errorf("can not resolve domain %s", host)
-				}
-				ip := iparr[0]
-				addr = net.JoinHostPort(ip.String(), port)
 				if s.dialer != nil {
 					conn, err = s.dialer(network, addr, timeout)
 				} else {

@@ -7,6 +7,7 @@ package accesslog
 
 import (
 	"fmt"
+	"github.com/snail007/gmc/util/gpool"
 	"strings"
 	"time"
 
@@ -14,6 +15,14 @@ import (
 	"github.com/snail007/gmc/module/log"
 	"github.com/snail007/gmc/util/cast"
 )
+
+var (
+	pool = gpool.New(1)
+)
+
+func init() {
+	pool.SetMaxJobCount(100000)
+}
 
 type accesslog struct {
 	logger *glog.Logger
@@ -41,7 +50,9 @@ func newFromConfig(c gcore.Config) *accesslog {
 func NewFromConfig(c gcore.Config) gcore.Middleware {
 	a := newFromConfig(c)
 	return func(ctx gcore.Ctx) (isStop bool) {
-		go log(ctx, a)
+		pool.Submit(func() {
+			log(ctx, a)
+		})
 		return false
 	}
 }

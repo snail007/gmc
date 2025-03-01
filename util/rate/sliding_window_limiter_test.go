@@ -12,6 +12,8 @@ import (
 // 单线程测试
 func TestSingleThread(t *testing.T) {
 	limiter := NewSlidingWindowLimiter(5, time.Second)
+	assert.Equal(t, limiter.Capacity(), 5)
+	assert.Equal(t, limiter.Duration(), time.Second)
 	var success, fail int32
 
 	for i := 0; i < 10; i++ {

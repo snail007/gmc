@@ -16,12 +16,12 @@ type SlidingWindowLimiter struct {
 }
 
 // NewSlidingWindowLimiter 创建一个新的滑动窗口限流器
-func NewSlidingWindowLimiter(count int, duration time.Duration) *SlidingWindowLimiter {
+func NewSlidingWindowLimiter(capacity int, duration time.Duration) *SlidingWindowLimiter {
 	bucketSize := 10 // 分成10个时间窗口
 	interval := duration / time.Duration(bucketSize)
 	return &SlidingWindowLimiter{
 		buckets:   make([]int32, bucketSize),
-		capacity:  int32(count),
+		capacity:  int32(capacity),
 		duration:  duration,
 		interval:  interval,
 		lastCheck: time.Now().UnixNano(),
@@ -72,4 +72,12 @@ func (l *SlidingWindowLimiter) AllowN(n int32) bool {
 // Allow 允许 1 个请求
 func (l *SlidingWindowLimiter) Allow() bool {
 	return l.AllowN(1)
+}
+
+func (l *SlidingWindowLimiter) Duration() time.Duration {
+	return l.duration
+}
+
+func (l *SlidingWindowLimiter) Capacity() int {
+	return int(l.capacity)
 }

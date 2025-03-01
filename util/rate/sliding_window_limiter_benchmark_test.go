@@ -13,7 +13,7 @@ import (
 
 // Benchmark 测试
 func BenchmarkLimiter(b *testing.B) {
-	limiter := NewSlidingWindowLimiterLimiter(1000, time.Second)
+	limiter := NewSlidingWindowLimiter(1000, time.Second)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		limiter.Allow()
@@ -22,7 +22,7 @@ func BenchmarkLimiter(b *testing.B) {
 
 // 高并发基准测试
 func BenchmarkHighConcurrency(b *testing.B) {
-	limiter := NewSlidingWindowLimiterLimiter(1000, time.Second)
+	limiter := NewSlidingWindowLimiter(1000, time.Second)
 	var wg sync.WaitGroup
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -37,7 +37,7 @@ func BenchmarkHighConcurrency(b *testing.B) {
 
 // AllowN 基准测试
 func BenchmarkAllowN(b *testing.B) {
-	limiter := NewSlidingWindowLimiterLimiter(1000, time.Second)
+	limiter := NewSlidingWindowLimiter(1000, time.Second)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		limiter.AllowN(5)
@@ -46,7 +46,7 @@ func BenchmarkAllowN(b *testing.B) {
 
 // 高并发 AllowN 基准测试
 func BenchmarkAllowNHighConcurrency(b *testing.B) {
-	limiter := NewSlidingWindowLimiterLimiter(1000, time.Second)
+	limiter := NewSlidingWindowLimiter(1000, time.Second)
 	var wg sync.WaitGroup
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

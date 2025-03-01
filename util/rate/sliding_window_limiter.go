@@ -15,8 +15,8 @@ type SlidingWindowLimiter struct {
 	lastCheck int64
 }
 
-// NewSlidingWindowLimiterLimiter 创建一个新的滑动窗口限流器
-func NewSlidingWindowLimiterLimiter(count int, duration time.Duration) *SlidingWindowLimiter {
+// NewSlidingWindowLimiter 创建一个新的滑动窗口限流器
+func NewSlidingWindowLimiter(count int, duration time.Duration) *SlidingWindowLimiter {
 	bucketSize := 10 // 分成10个时间窗口
 	interval := duration / time.Duration(bucketSize)
 	return &SlidingWindowLimiter{

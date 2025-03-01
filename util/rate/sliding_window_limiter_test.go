@@ -11,7 +11,7 @@ import (
 
 // 单线程测试
 func TestSingleThread(t *testing.T) {
-	limiter := NewSlidingWindowLimiterLimiter(5, time.Second)
+	limiter := NewSlidingWindowLimiter(5, time.Second)
 	var success, fail int32
 
 	for i := 0; i < 10; i++ {
@@ -33,7 +33,7 @@ func TestSingleThread(t *testing.T) {
 
 // 高并发测试
 func TestHighConcurrency(t *testing.T) {
-	limiter := NewSlidingWindowLimiterLimiter(5, time.Second)
+	limiter := NewSlidingWindowLimiter(5, time.Second)
 	var success, fail int32
 	var wg sync.WaitGroup
 
@@ -59,7 +59,7 @@ func TestHighConcurrency(t *testing.T) {
 
 // 测试恢复速率
 func TestRecoveryRate(t *testing.T) {
-	limiter := NewSlidingWindowLimiterLimiter(5, time.Second)
+	limiter := NewSlidingWindowLimiter(5, time.Second)
 	for i := 0; i < 5; i++ {
 		if !limiter.Allow() {
 			t.Fatalf("Expected request %d to be allowed", i)
@@ -76,7 +76,7 @@ func TestRecoveryRate(t *testing.T) {
 
 // 并发+恢复测试
 func TestConcurrencyWithRecovery(t *testing.T) {
-	limiter := NewSlidingWindowLimiterLimiter(5, time.Second)
+	limiter := NewSlidingWindowLimiter(5, time.Second)
 	var success, fail int32
 	var wg sync.WaitGroup
 

@@ -34,17 +34,17 @@ type FileWriter struct {
 }
 
 // FileWriterOption
-// 1. the curent log file final path is: LogsDir/Filename
-// 2. the curent backup log file final path is: LogsDir/ArchiveDir/Filename
-// ArchiveDir and  Filename can contais:
-// %Y: represents the year, will replaced such as: 2012
-// %m: represents the month, will replaced such as: 12
-// %d: represents the day of month, will replaced such as: 31
-// %h: represents the hour, will replaced such as: 23
-// %i: represents the minute, will replaced such as: 36
-// %s: represents the sencods, will replaced such as: 00
-// Example of ArchiveDir: "%Y%m%d", ArchiveDir will splited by day. ArchiveDir can't contains: /
-// Example of Filename: "access_log_%Y%m%d%h.log", logfile will splited by hour.
+// 1. the current log file final path is: LogsDir/Filename
+// 2. the current backup log file final path is: LogsDir/ArchiveDir/Filename
+// ArchiveDir and  Filename can contain:
+// %Y: represents the year, will be replaced such as: 2012
+// %m: represents the month, will be replaced such as: 12
+// %d: represents the day of month, will be replaced such as: 31
+// %h: represents the hour, will be replaced such as: 23
+// %i: represents the minute, will be replaced such as: 36
+// %s: represents the second, will be replaced such as: 00
+// Example of ArchiveDir: "%Y%m%d", ArchiveDir will be split by day. ArchiveDir can't contain: /
+// Example of Filename: "access_log_%Y%m%d%h.log", logfile will be split by hour.
 type FileWriterOption struct {
 	Filename      string
 	LogsDir       string

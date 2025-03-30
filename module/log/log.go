@@ -201,6 +201,7 @@ func SetExitFunc(exitFunc func(int)) {
 }
 
 type bufChnItem struct {
+	logger *Logger
 	writer *levelWriter
 	level  gcore.LogLevel
 	msg    string
@@ -373,7 +374,7 @@ func (s *Logger) asyncWriterInit() {
 		for {
 			item := <-s.bufChn
 			if e := gerror.Try(func() {
-				s.output(item.msg, item.writer, item.level)
+				item.logger.output(item.msg, item.writer, item.level)
 			}); e != nil {
 				s.callErrHandler(errors.New("output panic error: " + e.Error()))
 			}
@@ -721,6 +722,7 @@ func (s *Logger) write(str string, writer *levelWriter, level gcore.LogLevel) {
 			msg:    str,
 			writer: writer,
 			level:  level,
+			logger: s,
 		}:
 			s.asyncWG.Add(1)
 		default:

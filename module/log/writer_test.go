@@ -18,6 +18,37 @@ import (
 	"time"
 )
 
+func TestClean(t *testing.T) {
+	dir := "fwwlogs"
+	archiveDir := "%Y%m%d"
+	fileName := "a_%h%i%s.log"
+	os.RemoveAll(dir)
+	listFilesCLeanIntervalOld := listFilesCLeanInterval
+	listFilesCLeanInterval = time.Second
+	defer func() {
+		listFilesCLeanInterval = listFilesCLeanIntervalOld
+		os.RemoveAll(dir)
+	}()
+	assert := assert2.New(t)
+	w := NewFileWriter(&FileWriterOption{
+		Filename:      fileName,
+		LogsDir:       dir,
+		ArchiveDir:    archiveDir,
+		MaxBackups:    2,
+		AliasFilename: "app.log",
+	}).ToWriter()
+	for i := 0; i < 4; i++ {
+		w.Write([]byte("abc"))
+		time.Sleep(time.Second)
+	}
+	time.Sleep(time.Second * 4)
+	assert.FileExists(filepath.Join(dir, "app.log"))
+	typ := ".log"
+	fs, err := filepath.Glob(dir + "/" + timeFormatText(time.Now(), archiveDir) + "/*" + typ)
+	assert.Nil(err)
+	assert.Len(fs, 2)
+}
+
 func TestNewFileWriter(t *testing.T) {
 	dir := "fwlogs"
 	os.RemoveAll(dir)
@@ -34,7 +65,7 @@ func TestNewFileWriter(t *testing.T) {
 	fs, err := filepath.Glob(dir + "/*.log")
 	assert.Nil(err)
 	assert.Len(fs, 1)
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 1)
 	_, err = w.Write([]byte("\n"))
 	assert.Nil(err)
 	fs, err = filepath.Glob(dir + "/*.log")
@@ -159,6 +190,47 @@ func TestWrite1(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	p := filepath.Join(dir, timeFormatText(time.Now().Add(-time.Hour*24), archiveDir))
 	assert.DirExists(p)
+}
+
+func TestWrite2(t *testing.T) {
+	testMax(t, true)
+}
+
+func TestWrite3(t *testing.T) {
+	testMax(t, false)
+}
+
+func testMax(t *testing.T, isGzip bool) {
+	dir := "fwwlogs"
+	archiveDir := "%Y%m%d"
+	fileName := "a_%h%i%s.log"
+	os.RemoveAll(dir)
+	defer func() {
+		os.RemoveAll(dir)
+	}()
+	assert := assert2.New(t)
+	w := NewFileWriter(&FileWriterOption{
+		Filename:      fileName,
+		LogsDir:       dir,
+		ArchiveDir:    archiveDir,
+		IsGzip:        isGzip,
+		MaxSize:       "1B",
+		MaxBackups:    10,
+		AliasFilename: "app.log",
+	}).ToWriter()
+	for i := 0; i < 3; i++ {
+		_, err := w.Write([]byte("abc"))
+		assert.Nil(err)
+	}
+	time.Sleep(time.Second * 2)
+	assert.FileExists(filepath.Join(dir, "app.log"))
+	typ := ".*"
+	if isGzip {
+		typ = ".gz"
+	}
+	fs, err := filepath.Glob(dir + "/" + timeFormatText(time.Now(), archiveDir) + "/*" + typ)
+	assert.Nil(err)
+	assert.Len(fs, 2)
 }
 
 func TestColor(t *testing.T) {

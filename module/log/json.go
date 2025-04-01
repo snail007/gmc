@@ -68,51 +68,31 @@ func (l *JSONLogger) Bool(key string, value bool) *JSONLogger {
 }
 
 func (l *JSONLogger) Time(key string, value time.Time) *JSONLogger {
-	return l.setValue(key, value)
+	return l.setValue(key, value.Format("2006-01-02 15:04:05.000 -07"))
 }
 
 func (l *JSONLogger) Duration(key string, value time.Duration) *JSONLogger {
-	return l.setValue(key, value)
+	return l.setValue(key, value.Round(time.Millisecond).String())
 }
 
 func (l *JSONLogger) Any(key string, value interface{}) *JSONLogger {
 	return l.setValue(key, value)
 }
 
-func (l *JSONLogger) Trace(msg string) string {
-	return l.write(gcore.LogLevelTrace, msg)
-}
-
 func (l *JSONLogger) Tracef(format string, values ...interface{}) string {
 	return l.write(gcore.LogLevelTrace, format, values...)
-}
-
-func (l *JSONLogger) Debug(msg string) string {
-	return l.write(gcore.LogLeveDebug, msg)
 }
 
 func (l *JSONLogger) Debugf(format string, values ...interface{}) string {
 	return l.write(gcore.LogLeveDebug, format, values...)
 }
 
-func (l *JSONLogger) Info(msg string) string {
-	return l.write(gcore.LogLeveInfo, msg)
-}
-
 func (l *JSONLogger) Infof(format string, values ...interface{}) string {
 	return l.write(gcore.LogLeveInfo, format, values...)
 }
 
-func (l *JSONLogger) Warn(msg string) string {
-	return l.write(gcore.LogLeveWarn, msg)
-}
-
 func (l *JSONLogger) Warnf(format string, values ...interface{}) string {
 	return l.write(gcore.LogLeveWarn, format, values...)
-}
-
-func (l *JSONLogger) Error(msg string) string {
-	return l.write(gcore.LogLeveError, msg)
 }
 
 func (l *JSONLogger) Errorf(format string, values ...interface{}) string {
@@ -127,13 +107,11 @@ func (l *JSONLogger) Panicf(format string, values ...interface{}) {
 	panic(l.write(gcore.LogLevePanic, format, values...))
 }
 
-func (l *JSONLogger) Fatal(msg string) {
-	l.write(gcore.LogLeveFatal, msg)
-	os.Exit(-1)
-}
-
 func (l *JSONLogger) Fatalf(format string, values ...interface{}) {
 	l.write(gcore.LogLeveFatal, format, values...)
+	if l.logger.async {
+		l.logger.WaitAsyncDone()
+	}
 	os.Exit(-1)
 }
 

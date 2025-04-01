@@ -205,6 +205,7 @@ type bufChnItem struct {
 	writer *levelWriter
 	level  gcore.LogLevel
 	msg    string
+	isRaw  bool
 }
 type Logger struct {
 	parent      *Logger
@@ -230,7 +231,7 @@ type Logger struct {
 	asyncBufferSize int
 }
 
-func New(prefix ...string) gcore.Logger {
+func NewLogger(prefix ...string) *Logger {
 	pre := ""
 	if len(prefix) == 1 {
 		pre = prefix[0]
@@ -247,6 +248,10 @@ func New(prefix ...string) gcore.Logger {
 		prefix:         pre,
 		writer:         NewConsoleWriter(),
 	}
+}
+
+func New(prefix ...string) gcore.Logger {
+	return NewLogger(prefix...)
 }
 
 func (s *Logger) clone() *Logger {
@@ -374,7 +379,11 @@ func (s *Logger) asyncWriterInit() {
 		for {
 			item := <-s.bufChn
 			if e := gerror.Try(func() {
-				item.logger.output(item.msg, item.writer, item.level)
+				if item.isRaw {
+					item.logger.output([]byte(item.msg), item.writer, item.level)
+				} else {
+					item.logger.output(s.parseLine(item.msg), item.writer, item.level)
+				}
 			}); e != nil {
 				s.callErrHandler(errors.New("output panic error: " + e.Error()))
 			}
@@ -429,7 +438,7 @@ func (s *Logger) namespace() string {
 	return ""
 }
 
-func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
+func (s *Logger) levelWrite(str string, isRaw bool, level gcore.LogLevel) {
 	if len(s.levelWriters) == 0 {
 		return
 	}
@@ -445,7 +454,7 @@ func (s *Logger) levelWrite(str string, level gcore.LogLevel) {
 					}
 					g.Done()
 				}()
-				s.write(str, w0, level)
+				s.write(str, isRaw, w0, level)
 			})
 		}
 	}
@@ -469,11 +478,11 @@ func (s *Logger) Panicf(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"PANIC "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLevePanic)
+		s.levelWrite(str, false, gcore.LogLevePanic)
 	}
 
 	if s.level <= gcore.LogLevePanic {
-		s.write(str, nil, gcore.LogLevePanic)
+		s.write(str, false, nil, gcore.LogLevePanic)
 	}
 	s.WaitAsyncDone()
 	panic(str)
@@ -488,11 +497,11 @@ func (s *Logger) Panic(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLevePanic)
+		s.levelWrite(str, false, gcore.LogLevePanic)
 	}
 
 	if s.level <= gcore.LogLevePanic {
-		s.write(str, nil, gcore.LogLevePanic)
+		s.write(str, false, nil, gcore.LogLevePanic)
 	}
 	s.WaitAsyncDone()
 	panic(str)
@@ -506,11 +515,11 @@ func (s *Logger) Fatalf(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"FATAL "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveFatal)
+		s.levelWrite(str, false, gcore.LogLeveFatal)
 	}
 
 	if s.level <= gcore.LogLeveFatal {
-		s.write(str, nil, gcore.LogLeveFatal)
+		s.write(str, false, nil, gcore.LogLeveFatal)
 	}
 	s.WaitAsyncDone()
 	s.exit()
@@ -525,11 +534,11 @@ func (s *Logger) Fatal(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveFatal)
+		s.levelWrite(str, false, gcore.LogLeveFatal)
 	}
 
 	if s.level <= gcore.LogLeveFatal {
-		s.write(str, nil, gcore.LogLeveFatal)
+		s.write(str, false, nil, gcore.LogLeveFatal)
 	}
 	s.WaitAsyncDone()
 	s.exit()
@@ -544,11 +553,11 @@ func (s *Logger) Errorf(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"ERROR "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveError)
+		s.levelWrite(str, false, gcore.LogLeveError)
 	}
 
 	if s.level <= gcore.LogLeveError {
-		s.write(str, nil, gcore.LogLeveError)
+		s.write(str, false, nil, gcore.LogLeveError)
 	}
 }
 
@@ -562,11 +571,11 @@ func (s *Logger) Error(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveError)
+		s.levelWrite(str, false, gcore.LogLeveError)
 	}
 
 	if s.level <= gcore.LogLeveError {
-		s.write(str, nil, gcore.LogLeveError)
+		s.write(str, false, nil, gcore.LogLeveError)
 	}
 }
 
@@ -578,11 +587,11 @@ func (s *Logger) Warnf(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"WARN "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveWarn)
+		s.levelWrite(str, false, gcore.LogLeveWarn)
 	}
 
 	if s.level <= gcore.LogLeveWarn {
-		s.write(str, nil, gcore.LogLeveWarn)
+		s.write(str, false, nil, gcore.LogLeveWarn)
 	}
 }
 
@@ -595,11 +604,11 @@ func (s *Logger) Warn(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveWarn)
+		s.levelWrite(str, false, gcore.LogLeveWarn)
 	}
 
 	if s.level <= gcore.LogLeveWarn {
-		s.write(str, nil, gcore.LogLeveWarn)
+		s.write(str, false, nil, gcore.LogLeveWarn)
 	}
 }
 
@@ -611,11 +620,11 @@ func (s *Logger) Infof(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"INFO "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveInfo)
+		s.levelWrite(str, false, gcore.LogLeveInfo)
 	}
 
 	if s.level <= gcore.LogLeveInfo {
-		s.write(str, nil, gcore.LogLeveInfo)
+		s.write(str, false, nil, gcore.LogLeveInfo)
 	}
 }
 
@@ -629,11 +638,11 @@ func (s *Logger) Info(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveInfo)
+		s.levelWrite(str, false, gcore.LogLeveInfo)
 	}
 
 	if s.level <= gcore.LogLeveInfo {
-		s.write(str, nil, gcore.LogLeveInfo)
+		s.write(str, false, nil, gcore.LogLeveInfo)
 	}
 }
 
@@ -645,11 +654,11 @@ func (s *Logger) Debugf(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"DEBUG "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveDebug)
+		s.levelWrite(str, false, gcore.LogLeveDebug)
 	}
 
 	if s.level <= gcore.LogLeveDebug {
-		s.write(str, nil, gcore.LogLeveDebug)
+		s.write(str, false, nil, gcore.LogLeveDebug)
 	}
 }
 
@@ -662,11 +671,11 @@ func (s *Logger) Debug(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLeveDebug)
+		s.levelWrite(str, false, gcore.LogLeveDebug)
 	}
 
 	if s.level <= gcore.LogLeveDebug {
-		s.write(str, nil, gcore.LogLeveDebug)
+		s.write(str, false, nil, gcore.LogLeveDebug)
 	}
 }
 
@@ -678,11 +687,11 @@ func (s *Logger) Tracef(format string, v ...interface{}) {
 	str := s.caller(logSprintf(s.namespace()+"TRACE "+format, v...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLevelTrace)
+		s.levelWrite(str, false, gcore.LogLevelTrace)
 	}
 
 	if s.level <= gcore.LogLevelTrace {
-		s.write(str, nil, gcore.LogLevelTrace)
+		s.write(str, false, nil, gcore.LogLevelTrace)
 	}
 }
 
@@ -695,11 +704,11 @@ func (s *Logger) Trace(v ...interface{}) {
 	str := s.caller(fmt.Sprint(append(v0, v...)...), s.skip())
 
 	if levelWrite {
-		s.levelWrite(str, gcore.LogLevelTrace)
+		s.levelWrite(str, false, gcore.LogLevelTrace)
 	}
 
 	if s.level <= gcore.LogLevelTrace {
-		s.write(str, nil, gcore.LogLevelTrace)
+		s.write(str, false, nil, gcore.LogLevelTrace)
 	}
 }
 
@@ -715,24 +724,6 @@ func (s *Logger) SetFlag(f gcore.LogFlag) {
 	s.flag = f
 }
 
-func (s *Logger) write(str string, writer *levelWriter, level gcore.LogLevel) {
-	if s.async {
-		select {
-		case s.bufChn <- bufChnItem{
-			msg:    str,
-			writer: writer,
-			level:  level,
-			logger: s,
-		}:
-			s.asyncWG.Add(1)
-		default:
-			s.callErrHandler(fmt.Errorf("buf chan overflow"))
-		}
-		return
-	}
-	s.output(str, writer, level)
-}
-
 func (s *Logger) Write(msg string, level gcore.LogLevel) {
 	levelWrite := s.canLevelWrite(level)
 	if s.level > level && !levelWrite {
@@ -740,10 +731,10 @@ func (s *Logger) Write(msg string, level gcore.LogLevel) {
 	}
 	str := s.caller(msg, s.skip())
 	if levelWrite {
-		s.levelWrite(str, level)
+		s.levelWrite(str, false, level)
 	}
 	if s.level <= level {
-		s.write(s.caller(msg, s.skip()), nil, level)
+		s.write(s.caller(msg, s.skip()), false, nil, level)
 	}
 }
 
@@ -753,25 +744,42 @@ func (s *Logger) WriteRaw(msg string, level gcore.LogLevel) {
 		return
 	}
 	if levelWrite {
-		s.levelWrite(msg, level)
+		s.levelWrite(msg, true, level)
 	}
 	if s.level <= level {
-		s.write(msg, nil, level)
+		s.write(msg, true, nil, level)
+	}
+}
+func (s *Logger) write(str string, isRaw bool, writer *levelWriter, level gcore.LogLevel) {
+	if s.async {
+		select {
+		case s.bufChn <- bufChnItem{
+			msg:    str,
+			writer: writer,
+			level:  level,
+			logger: s,
+			isRaw:  isRaw,
+		}:
+			s.asyncWG.Add(1)
+		default:
+			s.callErrHandler(fmt.Errorf("buf chan overflow"))
+		}
+		return
+	}
+	if isRaw {
+		s.output([]byte(str), writer, level)
+	} else {
+		s.output(s.parseLine(str), writer, level)
 	}
 }
 
-func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
+func (s *Logger) output(line []byte, writer *levelWriter, level gcore.LogLevel) {
 	if s.lim != nil && !s.lim.Allow() {
 		return
 	}
 	if s.lim != nil && s.limCallback != nil {
-		go s.limCallback(str)
+		go s.limCallback(string(line))
 	}
-	ln := ""
-	if len(str) == 0 || str[len(str)-1] != '\n' {
-		ln = "\n"
-	}
-	line := []byte(time.Now().Format(s.datetimeLayout) + " " + str + ln)
 	var err error
 	var panicErr error
 	if writer != nil {
@@ -795,6 +803,14 @@ func (s *Logger) output(str string, writer *levelWriter, level gcore.LogLevel) {
 func (s *Logger) skip() int {
 	skip := s.callerSkip
 	return skip
+}
+
+func (s *Logger) parseLine(str string) []byte {
+	ln := ""
+	if len(str) == 0 || str[len(str)-1] != '\n' {
+		ln = "\n"
+	}
+	return []byte(time.Now().Format(s.datetimeLayout) + " " + str + ln)
 }
 
 func (s *Logger) caller(msg string, skip int) string {
@@ -821,6 +837,10 @@ func (s *Logger) caller(msg string, skip int) string {
 	}
 	msg = fmt.Sprintf("%s:%d ", file, line) + msg
 	return msg
+}
+
+func (s *Logger) JSON() *JSONLogger {
+	return &JSONLogger{logger: s, data: make(map[string]interface{})}
 }
 
 type levelWriter struct {

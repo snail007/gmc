@@ -272,8 +272,7 @@ func TestLogger_Write2(t *testing.T) {
 	l := gcore.ProviderLogger()(nil, "")
 	l.SetOutput(glog.NewLoggerWriter(&out))
 	l.WriteRaw("abc", gcore.LogLeveInfo)
-	assert.Equal(!strings.Contains(out.String(), "log/log_test.go:"),
-		strings.HasSuffix(out.String(), "abc\n"))
+	assert.Equal(out.String(), "abc")
 }
 
 func TestLogger_Write3(t *testing.T) {

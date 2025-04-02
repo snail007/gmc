@@ -35,3 +35,11 @@ func RemoveOnce(uniqueKey string) {
 	onceDataMap.Delete(uniqueKey)
 	return
 }
+
+func IsOnce(once *sync.Once) bool {
+	isOnce := false
+	once.Do(func() {
+		isOnce = true
+	})
+	return isOnce
+}

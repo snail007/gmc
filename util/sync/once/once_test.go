@@ -8,6 +8,7 @@ package gonce
 import (
 	"fmt"
 	assert2 "github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 )
 
@@ -34,4 +35,11 @@ func TestLoadOnce_2(t *testing.T) {
 	once := LoadOnce("")
 	once1 := LoadOnce("")
 	assert.NotEqual(fmt.Sprintf("%p", once), fmt.Sprintf("%p", once1))
+}
+
+func TestIsOnce(t *testing.T) {
+	once := &sync.Once{}
+	assert := assert2.New(t)
+	assert.True(IsOnce(once))
+	assert.False(IsOnce(once))
 }

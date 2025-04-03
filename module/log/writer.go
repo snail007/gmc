@@ -127,6 +127,7 @@ type FileWriter struct {
 	writeBytesCount *gatomic.Int64
 	fileListPath    string
 	fileListLock    *sync.Mutex
+	initOnceMap     sync.Map
 }
 
 func NewFileWriter(opt *FileWriterOption) (w *FileWriter) {
@@ -155,6 +156,10 @@ func NewFileWriterE(opt *FileWriterOption) (w *FileWriter, err error) {
 	}
 	err = w.init()
 	return
+}
+func (s *FileWriter) getOnce(uniqueKey string) *sync.Once {
+	once, _ := s.initOnceMap.LoadOrStore(uniqueKey, &sync.Once{})
+	return once.(*sync.Once)
 }
 
 func (s *FileWriter) init() (err error) {
@@ -223,11 +228,7 @@ func (s *FileWriter) initLogfile() (changed bool, oldFilepath, oldArchiveDir str
 		return
 	}
 	changed = true
-	isInit := false
-	gonce.OnceDo(newFilePath, func() {
-		isInit = true
-	})
-	if !isInit {
+	if !gonce.IsOnce(s.getOnce(newFilePath)) {
 		return
 	}
 	s.filepath = newFilePath

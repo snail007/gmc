@@ -101,7 +101,7 @@ func (s *EmbedTemplateFS) Parse() (err error) {
 		if !d.IsDir() && filepath.Ext(d.Name()) == s.ext {
 			b, _ := s.fs.ReadFile(path)
 			key := strings.TrimSuffix(path, s.ext)
-			trimPrefix := gcond.Cond(s.root == "", "", strings.TrimRight(s.root, "/")+"/").String()
+			trimPrefix := gcond.Cond(s.root == "", "", strings.Trim(s.root, "/")+"/").String()
 			if len(trimPrefix) > 0 {
 				key = strings.TrimPrefix(key, trimPrefix)
 			}

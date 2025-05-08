@@ -76,6 +76,7 @@ type EmbedTemplateFS struct {
 // NewEmbedTemplateFS parse template files from fs embed.FS to tpl *Template,
 // it should be called before tpl.Parse(), if the tpl parsed already , nil returned.
 func NewEmbedTemplateFS(tpl *Template, fs embed.FS, rootDir string) *EmbedTemplateFS {
+	rootDir = strings.Trim(rootDir, "/")
 	return &EmbedTemplateFS{
 		fs:   fs,
 		tpl:  tpl,
@@ -101,7 +102,7 @@ func (s *EmbedTemplateFS) Parse() (err error) {
 		if !d.IsDir() && filepath.Ext(d.Name()) == s.ext {
 			b, _ := s.fs.ReadFile(path)
 			key := strings.TrimSuffix(path, s.ext)
-			trimPrefix := gcond.Cond(s.root == "", "", strings.Trim(s.root, "/")+"/").String()
+			trimPrefix := gcond.Cond(s.root == "", "", s.root+"/").String()
 			if len(trimPrefix) > 0 {
 				key = strings.TrimPrefix(key, trimPrefix)
 			}

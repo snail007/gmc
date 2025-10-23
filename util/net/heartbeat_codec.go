@@ -10,8 +10,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	gbytes "github.com/snail007/gmc/util/bytes"
-	"github.com/snail007/gmc/util/gpool"
 	"io"
 	"net"
 	"sync"
@@ -23,219 +21,144 @@ const (
 )
 
 var (
-	HeartbeatCodecMsgBufferSize = 32 * 1024
-	heartbeatMsgBufferSize      = 2 + 4 //uint16 + uint32
-	msgBufPool                  = gbytes.GetPoolCap(0, HeartbeatCodecMsgBufferSize)
-	hbBufPool                   = gbytes.GetPoolCap(0, heartbeatMsgBufferSize)
+	// a buffer of 64KB for received data
+	readBufferSize = 64 * 1024
 )
 
-type heartbeatCodecMsg struct {
-	flag   uint16
-	len    uint32
-	data   []byte
-	msgBuf []byte
-	hbBuf  []byte
-}
-
-func (h *heartbeatCodecMsg) Data() []byte {
-	if h.len == 0 {
-		return nil
-	}
-	d := make([]byte, h.len)
-	copy(d, h.data)
-	return d
-}
-
-func (h *heartbeatCodecMsg) Reset() {
-	h.flag = 0
-	h.len = 0
-	h.data = h.data[:0]
-	h.msgBuf = h.msgBuf[:0]
-	h.hbBuf = h.hbBuf[:0]
-}
-
-func (h *heartbeatCodecMsg) DataLength() uint32 {
-	return h.len
-}
-
-func (h *heartbeatCodecMsg) SetData(data []byte) {
-	h.len = uint32(len(data))
-	h.data = data
-}
-
-func (h *heartbeatCodecMsg) ReadFrom(r net.Conn) (err error) {
-	var flag uint16
-	err = binary.Read(r, binary.LittleEndian, &flag)
-	if err != nil {
-		return
-	}
-	if flag != heartbeatCodecMsgFlag {
-		return fmt.Errorf("unrecognized msg type: %x, remote: %s", flag, r.RemoteAddr().String())
-	}
-	err = binary.Read(r, binary.LittleEndian, &h.len)
-	if err != nil {
-		return
-	}
-	if h.len == 0 {
-		return
-	}
-	h.data = make([]byte, h.len)
-	_, err = io.ReadFull(r, h.data)
-	if err != nil {
-		h.data = nil
-		return
-	}
-	return
-}
-
-func (h *heartbeatCodecMsg) Bytes() []byte {
-	var buf *bytes.Buffer
-	if len(h.data) == 0 {
-		h.hbBuf = hbBufPool.Get().([]byte)
-		buf = bytes.NewBuffer(h.hbBuf)
-	} else {
-		h.msgBuf = msgBufPool.Get().([]byte)
-		buf = bytes.NewBuffer(h.msgBuf)
-	}
-	binary.Write(buf, binary.LittleEndian, h.flag)
-	binary.Write(buf, binary.LittleEndian, uint32(len(h.data)))
-	if h.len > 0 {
-		binary.Write(buf, binary.LittleEndian, h.data)
-	}
-	return buf.Bytes()
-}
-
-// PutBackBytesBuf should be called after Bytes()
-func (h *heartbeatCodecMsg) PutBackBytesBuf() {
-	if h.hbBuf != nil {
-		//reset slice
-		h.hbBuf = h.hbBuf[:0]
-		hbBufPool.Put(h.hbBuf)
-	}
-	if h.msgBuf != nil {
-		//reset slice
-		h.msgBuf = h.msgBuf[:0]
-		msgBufPool.Put(h.msgBuf)
+// read from conn and write to buffer
+func (s *HeartbeatCodec) backgroundRead() {
+	defer s.Close()
+	buf := make([]byte, readBufferSize)
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		default:
+		}
+		// read from conn
+		n, err := s.Conn.Read(buf)
+		if err != nil {
+			if s.isTimeout(err) {
+				// read timeout is not a fatal error, just continue to wait for data.
+				// the heartbeat goroutine will check the real connection status.
+				continue
+			}
+			s.setError(err)
+			return
+		}
+		if n == 0 {
+			continue
+		}
+		// parse received data stream
+		// a stream may contains multi-msg
+		readBytes := buf[:n]
+		for {
+			// read flag
+			if len(readBytes) < 2 {
+				s.setError(fmt.Errorf("invalid heartbeat msg, remote: %s", s.Conn.RemoteAddr()))
+				return
+			}
+			flag := binary.LittleEndian.Uint16(readBytes[:2])
+			if flag != heartbeatCodecMsgFlag {
+				s.setError(fmt.Errorf("unrecognized heartbeat msg type: %x, remote: %s", flag, s.Conn.RemoteAddr()))
+				return
+			}
+			// read len
+			if len(readBytes) < 6 {
+				s.setError(fmt.Errorf("invalid heartbeat msg, remote: %s", s.Conn.RemoteAddr()))
+				return
+			}
+			msgLen := binary.LittleEndian.Uint32(readBytes[2:6])
+			// it's a heartbeat msg
+			if msgLen == 0 {
+				readBytes = readBytes[6:]
+				if len(readBytes) == 0 {
+					break
+				}
+				continue
+			}
+			// it's a data msg
+			if int(msgLen) > len(readBytes)-6 {
+				s.setError(fmt.Errorf("invalid heartbeat msg data, remote: %s", s.Conn.RemoteAddr()))
+				return
+			}
+			data := readBytes[6 : 6+msgLen]
+			s.readBufLock.Lock()
+			s.readBuf.Write(data)
+			s.readBufLock.Unlock()
+			// signal the reader goroutine that data is available
+			s.readCond.Signal()
+			readBytes = readBytes[6+msgLen:]
+			if len(readBytes) == 0 {
+				break
+			}
+		}
 	}
 }
 
-func newHeartbeatCodecMsg() *heartbeatCodecMsg {
-	return &heartbeatCodecMsg{
-		flag: heartbeatCodecMsgFlag,
+func (s *HeartbeatCodec) isTimeout(err error) bool {
+	e, ok := err.(net.Error)
+	return ok && e.Timeout()
+}
+
+func (s *HeartbeatCodec) heartbeat() {
+	ticker := time.NewTicker(s.interval)
+	defer ticker.Stop()
+	defer s.Close()
+	for {
+		select {
+		case <-ticker.C:
+			s.Conn.SetWriteDeadline(time.Now().Add(s.timeout))
+			_, err := s.Write(nil)
+			s.Conn.SetWriteDeadline(time.Time{})
+			if err != nil {
+				if s.isTimeout(err) {
+					// write timeout is not a fatal error, just continue to send heartbeat.
+					// the read goroutine will check the real connection status.
+					continue
+				}
+				s.setError(err)
+				return
+			}
+		case <-s.ctx.Done():
+			return
+		}
 	}
 }
 
 type HeartbeatCodec struct {
 	net.Conn
-	sync.Mutex
 	sync.Once
+	writeLock   sync.Mutex
+	readBuf     *bytes.Buffer
+	readBufLock sync.Mutex
+	readCond    *sync.Cond
+	err         error
+	errLock     sync.Mutex
 	interval    time.Duration
 	timeout     time.Duration
-	bufReader   *io.PipeReader
-	bufWriter   *io.PipeWriter
-	readErrChn  chan error
-	writeErrChn chan error
 	ctx         context.Context
 	ctxCancel   context.CancelFunc
-	readPool    *gpool.Pool
-	writePool   *gpool.Pool
-	writeHbPool *gpool.Pool
 }
 
-func (s *HeartbeatCodec) sendReadErr(err error) {
-	select {
-	case s.readErrChn <- err:
-	default:
-	}
+func NewHeartbeatCodec() *HeartbeatCodec {
+	s := &HeartbeatCodec{}
+	s.readBuf = &bytes.Buffer{}
+	s.readCond = sync.NewCond(&s.readBufLock)
+	return s
 }
 
-func (s *HeartbeatCodec) sendWriteErr(err error) {
-	select {
-	case s.writeErrChn <- err:
-	default:
+func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
+	if s.timeout == 0 {
+		s.timeout = time.Second * 5
 	}
-}
-func (s *HeartbeatCodec) tempDelay(tempDelay time.Duration) time.Duration {
-	if tempDelay == 0 {
-		tempDelay = time.Millisecond * 5
+	if s.interval == 0 {
+		s.interval = time.Second * 5
 	}
-	if tempDelay > time.Second {
-		tempDelay = time.Second
-	} else {
-		tempDelay *= 2
-	}
-	return tempDelay
-}
-func (s *HeartbeatCodec) heartbeat() {
-	done := make(chan error, 1)
-	tempDelay := time.Duration(0)
-	p := gpool.New(1)
-	defer p.Stop()
-retry:
-	for {
-		p.Submit(func() {
-			s.SetWriteDeadline(time.Now().Add(s.timeout))
-			_, err := s.Write(nil)
-			s.SetWriteDeadline(time.Time{})
-			done <- err
-		})
-		select {
-		case err := <-done:
-			if err == nil {
-				break
-			}
-			if e, ok := err.(net.Error); ok && e.Temporary() {
-				tempDelay = s.tempDelay(tempDelay)
-				time.Sleep(tempDelay)
-				continue retry
-			}
-			err = fmt.Errorf("heartbeat write hb error: %s", err)
-			s.sendWriteErr(err)
-			s.sendReadErr(err)
-			return
-		case <-s.ctx.Done():
-			return
-		}
-		tempDelay = 0
-		time.Sleep(s.interval)
-	}
-}
-func (s *HeartbeatCodec) backgroundRead() {
-	tempDelay := time.Duration(0)
-	msg := newHeartbeatCodecMsg()
-	out := make(chan error, 1)
-	p := gpool.New(1)
-	defer p.Stop()
-retry:
-	for {
-		msg.Reset()
-		p.Submit(func() {
-			out <- msg.ReadFrom(s.Conn)
-		})
-		select {
-		case err := <-out:
-			if err == nil {
-				break
-			}
-			if e, ok := err.(net.Error); ok && e.Temporary() {
-				tempDelay = s.tempDelay(tempDelay)
-				time.Sleep(tempDelay)
-				continue retry
-			}
-			err = fmt.Errorf("heartbeat bg read error: %s", err)
-			s.sendReadErr(err)
-			s.sendWriteErr(err)
-			return
-		case <-s.ctx.Done():
-			return
-		}
-		if msg.DataLength() == 0 {
-			// it's a heartbeat msg.
-			continue
-		}
-		// it's a data msg.
-		s.bufWriter.Write(msg.Data())
-	}
+	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
+	go s.backgroundRead()
+	go s.heartbeat()
+	return
 }
 
 func (s *HeartbeatCodec) SetConn(c net.Conn) Codec {
@@ -243,57 +166,42 @@ func (s *HeartbeatCodec) SetConn(c net.Conn) Codec {
 	return s
 }
 
-type readWriteResult struct {
-	n   int
-	err error
-}
-
 func (s *HeartbeatCodec) Read(b []byte) (n int, err error) {
-	resultChn := make(chan readWriteResult, 1)
-	s.readPool.Submit(func() {
-		cnt, e := s.bufReader.Read(b)
-		resultChn <- readWriteResult{n: cnt, err: e}
-	})
-	select {
-	case r := <-resultChn:
-		if r.err != nil {
-			return 0, fmt.Errorf("heartbeat codec read data error: %s", err)
-		}
-		return r.n, nil
-	case err = <-s.readErrChn:
+	if err = s.getError(); err != nil {
+		return 0, err
 	}
-	return
+	s.readBufLock.Lock()
+	defer s.readBufLock.Unlock()
+	for s.readBuf.Len() == 0 {
+		if err = s.getError(); err != nil {
+			return 0, err
+		}
+		s.readCond.Wait()
+	}
+	return s.readBuf.Read(b)
 }
 
 func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
-	s.Lock()
-	defer s.Unlock()
-	msg := newHeartbeatCodecMsg()
-	msg.SetData(b)
-	p := s.writePool
-	if len(b) == 0 {
-		p = s.writeHbPool
+	if err = s.getError(); err != nil {
+		return 0, err
 	}
-	resultChn := make(chan readWriteResult, 1)
-	p.Submit(func() {
-		defer func() {
-			//put msg buffer back to pool
-			msg.PutBackBytesBuf()
-		}()
-		n, err = s.Conn.Write(msg.Bytes())
-		if err == nil {
-			// decrease the n with msg header length 6 bytes
-			n = n - 6
-		}
-		resultChn <- readWriteResult{n: n, err: err}
-	})
-	select {
-	case r := <-resultChn:
-		if r.err != nil {
-			return 0, fmt.Errorf("heartbeat codec write data error: %s", err)
-		}
-		return r.n, nil
-	case err = <-s.writeErrChn:
+	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
+
+	buf := make([]byte, 6+len(b))
+	binary.LittleEndian.PutUint16(buf[0:2], heartbeatCodecMsgFlag)
+	binary.LittleEndian.PutUint32(buf[2:6], uint32(len(b)))
+	if len(b) > 0 {
+		copy(buf[6:], b)
+	}
+	n, err = s.Conn.Write(buf)
+	if err != nil {
+		s.setError(err)
+		return
+	}
+	n -= 6
+	if n < 0 {
+		n = 0
 	}
 	return
 }
@@ -301,12 +209,8 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 func (s *HeartbeatCodec) Close() (err error) {
 	s.Do(func() {
 		s.ctxCancel()
-		s.bufReader.Close()
-		s.bufWriter.Close()
+		s.readCond.Broadcast() // Wake up all waiting readers
 		err = s.Conn.Close()
-		s.readPool.Stop()
-		s.writePool.Stop()
-		s.writeHbPool.Stop()
 	})
 	return
 }
@@ -329,25 +233,21 @@ func (s *HeartbeatCodec) SetTimeout(timeout time.Duration) *HeartbeatCodec {
 	return s
 }
 
-func (s *HeartbeatCodec) Initialize(ctx Context) (err error) {
-	s.bufReader, s.bufWriter = io.Pipe()
-	if s.timeout == 0 {
-		s.timeout = time.Second * 5
-	}
-	if s.interval == 0 {
-		s.interval = time.Second * 5
-	}
-	s.readErrChn = make(chan error, 1)
-	s.writeErrChn = make(chan error, 1)
-	s.readPool = gpool.New(1)
-	s.writePool = gpool.New(1)
-	s.writeHbPool = gpool.New(1)
-	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
-	go s.backgroundRead()
-	go s.heartbeat()
-	return
+func (s *HeartbeatCodec) getError() error {
+	s.errLock.Lock()
+	defer s.errLock.Unlock()
+	return s.err
 }
 
-func NewHeartbeatCodec() *HeartbeatCodec {
-	return &HeartbeatCodec{}
+func (s *HeartbeatCodec) setError(err error) {
+	s.errLock.Lock()
+	defer s.errLock.Unlock()
+	if s.err == nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+		s.err = err
+		// Wake up waiting readers to receive the error
+		s.readCond.Broadcast()
+	}
 }

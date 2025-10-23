@@ -7,11 +7,12 @@ package gnet
 
 import (
 	"fmt"
-	gatomic "github.com/snail007/gmc/util/sync/atomic"
 	"net"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	gatomic "github.com/snail007/gmc/util/sync/atomic"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -119,7 +120,7 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	c.Write([]byte("hello"))
 	time.Sleep(time.Millisecond * 200)
-	assert.Contains(t, str.Val(), "unrecognized msg type:")
+	assert.Contains(t, str.Val(), "unrecognized heartbeat msg type:")
 }
 
 type tempErrorConn struct {

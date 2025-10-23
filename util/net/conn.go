@@ -7,11 +7,14 @@ package gnet
 
 import (
 	"bufio"
-	"github.com/pkg/errors"
+	"context"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/pkg/errors"
+	"golang.org/x/time/rate"
 
 	gbytes "github.com/snail007/gmc/util/bytes"
 )
@@ -105,6 +108,24 @@ type Conn struct {
 	touchTime                 time.Time
 	idleChn                   chan bool
 	onIdleTimeout             func(*Conn)
+	readLimiter, writeLimiter *rate.Limiter
+	rwCtx                     context.Context
+}
+
+func (s *Conn) ReadLimiter() *rate.Limiter {
+	return s.readLimiter
+}
+
+func (s *Conn) SetReadLimiter(readLimiter *rate.Limiter) {
+	s.readLimiter = readLimiter
+}
+
+func (s *Conn) WriteLimiter() *rate.Limiter {
+	return s.writeLimiter
+}
+
+func (s *Conn) SetWriteLimiter(writeLimiter *rate.Limiter) {
+	s.writeLimiter = writeLimiter
 }
 
 func (s *Conn) SetOnClose(f func(conn *Conn)) {
@@ -270,7 +291,14 @@ func (s *Conn) Read(b []byte) (n int, err error) {
 		s.Conn.SetReadDeadline(time.Now().Add(s.readTimeout))
 		defer s.Conn.SetReadDeadline(time.Time{})
 	}
+	if s.readLimiter == nil {
+		return s.Conn.Read(b)
+	}
 	n, err = s.Conn.Read(b)
+	if err != nil {
+		return n, err
+	}
+	err = s.readLimiter.WaitN(s.rwCtx, n)
 	return
 }
 
@@ -291,7 +319,14 @@ func (s *Conn) Write(b []byte) (n int, err error) {
 		s.SetWriteDeadline(time.Now().Add(s.readTimeout))
 		defer s.SetWriteDeadline(time.Time{})
 	}
+	if s.writeLimiter == nil {
+		return s.Conn.Write(b)
+	}
 	n, err = s.Conn.Write(b)
+	if err != nil {
+		return n, err
+	}
+	err = s.writeLimiter.WaitN(s.rwCtx, n)
 	return
 }
 
@@ -330,6 +365,7 @@ func newContextConn(ctx Context, conn net.Conn, f ...bool) *Conn {
 			autoCloseOnReadWriteError: true,
 			idleChn:                   make(chan bool),
 			touchTime:                 time.Now(),
+			rwCtx:                     context.Background(),
 		}
 	}
 	ctx.(*defaultContext).conn = c

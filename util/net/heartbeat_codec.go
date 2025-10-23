@@ -18,29 +18,41 @@ import (
 
 const (
 	heartbeatCodecMsgFlag uint16 = 0x6699
+	headerSize            = 6
 )
 
 var (
-	// a buffer of 64KB for received data
+	// A buffer of 64KB for received data.
 	readBufferSize = 64 * 1024
+	// Pool for write buffers to reduce memory allocation.
+	writeBufferPool = sync.Pool{
+		New: func() interface{} {
+			// The buffer is sized to accommodate the header plus a typical payload.
+			// It will grow if necessary.
+			return new(bytes.Buffer)
+		},
+	}
 )
 
-// read from conn and write to buffer
+// backgroundRead reads from the connection and writes to the internal buffer.
 func (s *HeartbeatCodec) backgroundRead() {
 	defer s.Close()
-	buf := make([]byte, readBufferSize)
+	readBuf := make([]byte, readBufferSize)
+	var data bytes.Buffer
+
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
 		default:
 		}
-		// read from conn
-		n, err := s.Conn.Read(buf)
+
+		// Read from the underlying connection.
+		n, err := s.Conn.Read(readBuf)
 		if err != nil {
 			if s.isTimeout(err) {
-				// read timeout is not a fatal error, just continue to wait for data.
-				// the heartbeat goroutine will check the real connection status.
+				// A read timeout is not a fatal error, just continue to wait for data.
+				// The heartbeat goroutine will check the real connection status.
 				continue
 			}
 			s.setError(err)
@@ -49,49 +61,55 @@ func (s *HeartbeatCodec) backgroundRead() {
 		if n == 0 {
 			continue
 		}
-		// parse received data stream
-		// a stream may contains multi-msg
-		readBytes := buf[:n]
+
+		// Append new data to the buffer.
+		data.Write(readBuf[:n])
+
+		// Process all complete messages in the buffer.
+		var pendingWrite []byte
 		for {
-			// read flag
-			if len(readBytes) < 2 {
-				s.setError(fmt.Errorf("invalid heartbeat msg, remote: %s", s.Conn.RemoteAddr()))
-				return
+			if data.Len() < 2 {
+				// Not enough data to check the flag, wait for more.
+				break
 			}
-			flag := binary.LittleEndian.Uint16(readBytes[:2])
+
+			// First, check for the magic flag.
+			flag := binary.LittleEndian.Uint16(data.Bytes()[:2])
 			if flag != heartbeatCodecMsgFlag {
 				s.setError(fmt.Errorf("unrecognized heartbeat msg type: %x, remote: %s", flag, s.Conn.RemoteAddr()))
 				return
 			}
-			// read len
-			if len(readBytes) < 6 {
-				s.setError(fmt.Errorf("invalid heartbeat msg, remote: %s", s.Conn.RemoteAddr()))
-				return
-			}
-			msgLen := binary.LittleEndian.Uint32(readBytes[2:6])
-			// it's a heartbeat msg
-			if msgLen == 0 {
-				readBytes = readBytes[6:]
-				if len(readBytes) == 0 {
-					break
-				}
-				continue
-			}
-			// it's a data msg
-			if int(msgLen) > len(readBytes)-6 {
-				s.setError(fmt.Errorf("invalid heartbeat msg data, remote: %s", s.Conn.RemoteAddr()))
-				return
-			}
-			data := readBytes[6 : 6+msgLen]
-			s.readBufLock.Lock()
-			s.readBuf.Write(data)
-			s.readBufLock.Unlock()
-			// signal the reader goroutine that data is available
-			s.readCond.Signal()
-			readBytes = readBytes[6+msgLen:]
-			if len(readBytes) == 0 {
+
+			if data.Len() < headerSize {
+				// We have the flag, but not the full header. Wait for more data.
 				break
 			}
+
+			header := data.Bytes()[:headerSize]
+			msgLen := binary.LittleEndian.Uint32(header[2:6])
+
+			if msgLen == 0 { // It's a heartbeat message.
+				data.Next(headerSize)
+				continue
+			}
+
+			if uint32(data.Len()) < headerSize+msgLen {
+				// Not enough data for the full message, wait for more.
+				break
+			}
+
+			// We have a complete message.
+			data.Next(headerSize)
+			// Collect payload to write to the read buffer later.
+			pendingWrite = append(pendingWrite, data.Next(int(msgLen))...)
+		}
+
+		if len(pendingWrite) > 0 {
+			s.readBufLock.Lock()
+			s.readBuf.Write(pendingWrite)
+			s.readBufLock.Unlock()
+			// Signal the reader goroutine that data is available.
+			s.readCond.Signal()
 		}
 	}
 }
@@ -101,6 +119,7 @@ func (s *HeartbeatCodec) isTimeout(err error) bool {
 	return ok && e.Timeout()
 }
 
+// heartbeat sends a heartbeat message periodically.
 func (s *HeartbeatCodec) heartbeat() {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
@@ -108,13 +127,14 @@ func (s *HeartbeatCodec) heartbeat() {
 	for {
 		select {
 		case <-ticker.C:
+			// The write deadline is set only for the heartbeat write.
 			s.Conn.SetWriteDeadline(time.Now().Add(s.timeout))
 			_, err := s.Write(nil)
 			s.Conn.SetWriteDeadline(time.Time{})
 			if err != nil {
 				if s.isTimeout(err) {
-					// write timeout is not a fatal error, just continue to send heartbeat.
-					// the read goroutine will check the real connection status.
+					// A write timeout is not a fatal error, just continue to send heartbeats.
+					// The read goroutine will check the real connection status.
 					continue
 				}
 				s.setError(err)
@@ -185,25 +205,34 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	if err = s.getError(); err != nil {
 		return 0, err
 	}
+
+	buf := writeBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer writeBufferPool.Put(buf)
+
+	header := make([]byte, headerSize)
+	binary.LittleEndian.PutUint16(header[0:2], heartbeatCodecMsgFlag)
+	binary.LittleEndian.PutUint32(header[2:6], uint32(len(b)))
+
+	buf.Write(header)
+	if len(b) > 0 {
+		buf.Write(b)
+	}
+
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
-	buf := make([]byte, 6+len(b))
-	binary.LittleEndian.PutUint16(buf[0:2], heartbeatCodecMsgFlag)
-	binary.LittleEndian.PutUint32(buf[2:6], uint32(len(b)))
-	if len(b) > 0 {
-		copy(buf[6:], b)
-	}
-	n, err = s.Conn.Write(buf)
+	written, err := s.Conn.Write(buf.Bytes())
 	if err != nil {
 		s.setError(err)
-		return
+		return 0, err
 	}
-	n -= 6
+
+	n = written - headerSize
 	if n < 0 {
 		n = 0
 	}
-	return
+	return n, nil
 }
 
 func (s *HeartbeatCodec) Close() (err error) {

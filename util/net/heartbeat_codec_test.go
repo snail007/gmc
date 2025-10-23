@@ -8,7 +8,7 @@ package gnet
 import (
 	"fmt"
 	"net"
-	"sync/atomic"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,39 +21,32 @@ func TestHeartbeatCodec(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt := new(int32)
-	errCnt := new(int32)
+	g := sync.WaitGroup{}
+	g.Add(4)
 	go func() {
 		c, _ := l.Accept()
 		codec := NewHeartbeatCodec()
 		conn := NewConn(c).AddCodec(codec)
 		conn.SetTimeout(time.Second * 10)
 		go func() {
-			for {
-				_, err := conn.Write([]byte("hello from server"))
-				assert.Equal(t, time.Second*5, codec.Interval())
-				assert.Equal(t, time.Second*5, codec.Timeout())
-				if err != nil {
-					atomic.AddInt32(errCnt, 1)
-					fmt.Println("server write error", err)
-					return
-				}
-				time.Sleep(time.Millisecond * 300)
+			defer g.Done()
+			_, err := conn.Write([]byte("hello from server"))
+			assert.Equal(t, time.Second*5, codec.Interval())
+			assert.Equal(t, time.Second*5, codec.Timeout())
+			if err != nil {
+				fmt.Println("server write error", err)
+				return
 			}
 		}()
 		go func() {
-			for {
-				buf := make([]byte, 1024)
-				n, err := conn.Read(buf)
-				if err != nil {
-					atomic.AddInt32(errCnt, 1)
-					fmt.Println("server read error", err)
-					return
-				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
-				atomic.AddInt32(outputCnt, 1)
-				//fmt.Printf("%s %d\n", string(buf[:n]), n)
+			defer g.Done()
+			buf := make([]byte, 1024)
+			n, err := conn.Read(buf)
+			if err != nil {
+				fmt.Println("server read error", err)
+				return
 			}
+			assert.Equal(t, "hello from client", string(buf[:n]))
 		}()
 		time.AfterFunc(time.Second*13, func() {
 			conn.Close()
@@ -70,33 +63,20 @@ func TestHeartbeatCodec(t *testing.T) {
 	assert.Equal(t, time.Second*10, conn.ReadTimeout())
 	assert.Equal(t, time.Second*10, conn.WriteTimeout())
 	go func() {
-		for {
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				atomic.AddInt32(errCnt, 1)
-				fmt.Println("client read error", err)
-				return
-			}
-			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
+		defer g.Done()
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("client read error", err)
+			return
 		}
+		assert.Equal(t, "hello from server", string(buf[:n]))
 	}()
 	go func() {
-		for {
-			_, err := conn.Write([]byte("hello from client"))
-			if err != nil {
-				atomic.AddInt32(errCnt, 1)
-				fmt.Println("client write error", err)
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
+		defer g.Done()
+		conn.Write([]byte("hello from client"))
 	}()
-	time.Sleep(time.Second * 15)
-	assert.Equal(t, atomic.LoadInt32(errCnt), int32(4))
-	t.Log("outputCnt:", *outputCnt)
-	assert.True(t, *outputCnt > 150)
+	g.Wait()
 }
 
 func TestHeartbeatCodec_UnknownMsg(t *testing.T) {

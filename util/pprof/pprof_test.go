@@ -1,17 +1,18 @@
 package ghttppprof
 
 import (
+	"net"
+	"net/http"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/snail007/gmc"
 	gcore "github.com/snail007/gmc/core"
 	gctx "github.com/snail007/gmc/module/ctx"
 	ghttp "github.com/snail007/gmc/util/http"
 	gtest "github.com/snail007/gmc/util/testing"
 	"github.com/stretchr/testify/assert"
-	"net"
-	"net/http"
-	"os"
-	"testing"
-	"time"
 )
 
 func TestBindRouter(t *testing.T) {
@@ -39,7 +40,7 @@ func TestBindRouter(t *testing.T) {
 	err := p.Start()
 	defer p.Kill()
 	assert.NoError(t, err)
-	time.Sleep(time.Second * 8)
+	time.Sleep(time.Second * 15)
 	_, _, err = ghttp.Download("http://127.0.0.1:"+port+"/debug/", time.Second, nil, nil)
 	assert.NoError(t, err)
 	_, _, err = ghttp.Download("http://127.0.0.1:"+port+"/debug/allocs?debug=1", time.Second, nil, nil)

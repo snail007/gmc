@@ -210,11 +210,10 @@ func (s *HeartbeatCodec) Write(b []byte) (n int, err error) {
 	buf.Reset()
 	defer writeBufferPool.Put(buf)
 
-	header := make([]byte, headerSize)
-	binary.LittleEndian.PutUint16(header[0:2], heartbeatCodecMsgFlag)
-	binary.LittleEndian.PutUint32(header[2:6], uint32(len(b)))
+	// Write header directly into the buffer to avoid allocation.
+	binary.Write(buf, binary.LittleEndian, heartbeatCodecMsgFlag)
+	binary.Write(buf, binary.LittleEndian, uint32(len(b)))
 
-	buf.Write(header)
 	if len(b) > 0 {
 		buf.Write(b)
 	}

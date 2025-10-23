@@ -8,11 +8,12 @@ package gnet
 import (
 	"errors"
 	"fmt"
-	glog "github.com/snail007/gmc/module/log"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	glog "github.com/snail007/gmc/module/log"
 )
 
 var _ net.Listener = &Listener{}
@@ -32,6 +33,7 @@ type ProtocolListenerOption struct {
 	OverflowAutoClose bool
 }
 
+// ProtocolListener 在构建多协议服务时，必须使用 `Listener.SetFirstReadTimeout` 设置一个合理的时间，来防止恶意或行为不当的客户端阻塞整个服务。
 type ProtocolListener struct {
 	opt       *ProtocolListenerOption
 	connChn   chan net.Conn

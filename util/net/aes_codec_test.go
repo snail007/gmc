@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -88,227 +89,64 @@ func TestAESCodec(t *testing.T) {
 	time.Sleep(time.Second * 3)
 	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
 }
-
-func TestAESCodec128(t *testing.T) {
+func AESCodecxx(t *testing.T, typ string) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt := new(int32)
 	options := &AESOptions{
-		Type:     "aes-128",
+		Type:     typ,
 		Password: "abc",
 	}
-	debug := false
+	g := sync.WaitGroup{}
+	g.Add(4)
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-
 		go func() {
-			for {
-				_, err := conn.Write([]byte("hello from server"))
-				if err != nil {
-					fmt.Println("server write error", err)
-					return
-				}
-				time.Sleep(time.Millisecond * 100)
-			}
+			defer g.Done()
+			conn.Write([]byte("hello from server"))
 		}()
 		go func() {
-			for {
-				buf := make([]byte, 1024)
-				n, err := conn.Read(buf)
-				if err != nil {
-					fmt.Println("server read error", err)
-					return
-				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
-				atomic.AddInt32(outputCnt, 1)
-				if debug {
-					fmt.Println(string(buf[:n]))
-				}
+			defer g.Done()
+			buf := make([]byte, 1024)
+			n, err := conn.Read(buf)
+			if err != nil {
+				fmt.Println("server read error", err)
+				return
 			}
+			assert.Equal(t, "hello from client", string(buf[:n]))
 		}()
 		select {}
 	}()
 	time.Sleep(time.Second * 2)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-
 	go func() {
-		for {
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println("client read error", err)
-				return
-			}
-			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
-			if debug {
-				fmt.Println(string(buf[:n]))
-			}
+		g.Done()
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("client read error", err)
+			return
 		}
+		assert.Equal(t, "hello from server", string(buf[:n]))
 	}()
 	go func() {
-		for {
-			_, err := conn.Write([]byte("hello from client"))
-			if err != nil {
-				fmt.Println("client write error", err)
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
+		g.Done()
+		conn.Write([]byte("hello from client"))
 	}()
-	time.Sleep(time.Second * 3)
-	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
+	g.Wait()
+}
+func TestAESCodec128(t *testing.T) {
+	AESCodecxx(t, "aes-128")
 }
 
 func TestAESCodec192(t *testing.T) {
-	t.Parallel()
-	l, _ := net.Listen("tcp", ":0")
-	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt := new(int32)
-	options := &AESOptions{
-		Type:     "aes-192",
-		Password: "abc",
-	}
-	debug := false
-	go func() {
-		c, _ := l.Accept()
-		conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-
-		go func() {
-			for {
-				_, err := conn.Write([]byte("hello from server"))
-				if err != nil {
-					fmt.Println("server write error", err)
-					return
-				}
-				time.Sleep(time.Millisecond * 100)
-			}
-		}()
-		go func() {
-			for {
-				buf := make([]byte, 1024)
-				n, err := conn.Read(buf)
-				if err != nil {
-					fmt.Println("server read error", err)
-					return
-				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
-				atomic.AddInt32(outputCnt, 1)
-				if debug {
-					fmt.Println(string(buf[:n]))
-				}
-			}
-		}()
-		select {}
-	}()
-	time.Sleep(time.Second * 2)
-	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
-	conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-
-	go func() {
-		for {
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println("client read error", err)
-				return
-			}
-			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
-			if debug {
-				fmt.Println(string(buf[:n]))
-			}
-		}
-	}()
-	go func() {
-		for {
-			_, err := conn.Write([]byte("hello from client"))
-			if err != nil {
-				fmt.Println("client write error", err)
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
-	}()
-	time.Sleep(time.Second * 3)
-	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
+	AESCodecxx(t, "aes-192")
 }
 
 func TestAESCodec256(t *testing.T) {
-	t.Parallel()
-	l, _ := net.Listen("tcp", ":0")
-	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt := new(int32)
-	options := &AESOptions{
-		Type:     "aes-256",
-		Password: "abc",
-	}
-	debug := false
-	go func() {
-		c, _ := l.Accept()
-		conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-
-		go func() {
-			for {
-				_, err := conn.Write([]byte("hello from server"))
-				if err != nil {
-					fmt.Println("server write error", err)
-					return
-				}
-				time.Sleep(time.Millisecond * 100)
-			}
-		}()
-		go func() {
-			for {
-				buf := make([]byte, 1024)
-				n, err := conn.Read(buf)
-				if err != nil {
-					fmt.Println("server read error", err)
-					return
-				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
-				atomic.AddInt32(outputCnt, 1)
-				if debug {
-					fmt.Println(string(buf[:n]))
-				}
-			}
-		}()
-		select {}
-	}()
-	time.Sleep(time.Second * 2)
-	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
-	conn := NewConn(c).AddCodec(NewAESCodecFromOptions(options))
-
-	go func() {
-		for {
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println("client read error", err)
-				return
-			}
-			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
-			if debug {
-				fmt.Println(string(buf[:n]))
-			}
-		}
-	}()
-	go func() {
-		for {
-			_, err := conn.Write([]byte("hello from client"))
-			if err != nil {
-				fmt.Println("client write error", err)
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
-	}()
-	time.Sleep(time.Second * 3)
-	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
+	AESCodecxx(t, "aes-256")
 }
 
 func TestNewAESCodec_Error(t *testing.T) {

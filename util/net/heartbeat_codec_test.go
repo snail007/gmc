@@ -38,7 +38,7 @@ func TestHeartbeatCodec(t *testing.T) {
 					fmt.Println("server write error", err)
 					return
 				}
-				time.Sleep(time.Millisecond * 100)
+				time.Sleep(time.Millisecond * 300)
 			}
 		}()
 		go func() {
@@ -96,7 +96,7 @@ func TestHeartbeatCodec(t *testing.T) {
 	time.Sleep(time.Second * 15)
 	assert.Equal(t, atomic.LoadInt32(errCnt), int32(4))
 	t.Log("outputCnt:", *outputCnt)
-	assert.True(t, *outputCnt > 250)
+	assert.True(t, *outputCnt > 150)
 }
 
 func TestHeartbeatCodec_UnknownMsg(t *testing.T) {

@@ -18,7 +18,7 @@ import (
 
 const (
 	heartbeatCodecMsgFlag uint16 = 0x6699
-	headerSize            = 6
+	headerSize                   = 6
 )
 
 var (
@@ -34,12 +34,24 @@ var (
 	}
 )
 
+func (s *HeartbeatCodec) tempDelay(tempDelay time.Duration) time.Duration {
+	if tempDelay == 0 {
+		tempDelay = time.Millisecond * 5
+	}
+	if tempDelay > time.Second {
+		tempDelay = time.Second
+	} else {
+		tempDelay *= 2
+	}
+	return tempDelay
+}
+
 // backgroundRead reads from the connection and writes to the internal buffer.
 func (s *HeartbeatCodec) backgroundRead() {
 	defer s.Close()
 	readBuf := make([]byte, readBufferSize)
 	var data bytes.Buffer
-
+	tempDelay := time.Duration(0)
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -50,9 +62,9 @@ func (s *HeartbeatCodec) backgroundRead() {
 		// Read from the underlying connection.
 		n, err := s.Conn.Read(readBuf)
 		if err != nil {
-			if s.isTimeout(err) {
-				// A read timeout is not a fatal error, just continue to wait for data.
-				// The heartbeat goroutine will check the real connection status.
+			if s.isTempNetError(err) {
+				tempDelay = s.tempDelay(tempDelay)
+				time.Sleep(tempDelay)
 				continue
 			}
 			s.setError(err)
@@ -114,9 +126,11 @@ func (s *HeartbeatCodec) backgroundRead() {
 	}
 }
 
-func (s *HeartbeatCodec) isTimeout(err error) bool {
-	e, ok := err.(net.Error)
-	return ok && e.Timeout()
+func (s *HeartbeatCodec) isTempNetError(err error) bool {
+	if e, ok := err.(net.Error); ok && e.Temporary() {
+		return true
+	}
+	return false
 }
 
 // heartbeat sends a heartbeat message periodically.
@@ -124,6 +138,7 @@ func (s *HeartbeatCodec) heartbeat() {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 	defer s.Close()
+	tempDelay := time.Duration(0)
 	for {
 		select {
 		case <-ticker.C:
@@ -132,14 +147,15 @@ func (s *HeartbeatCodec) heartbeat() {
 			_, err := s.Write(nil)
 			s.Conn.SetWriteDeadline(time.Time{})
 			if err != nil {
-				if s.isTimeout(err) {
-					// A write timeout is not a fatal error, just continue to send heartbeats.
-					// The read goroutine will check the real connection status.
+				if s.isTempNetError(err) {
+					tempDelay = s.tempDelay(tempDelay)
+					time.Sleep(tempDelay)
 					continue
 				}
 				s.setError(err)
 				return
 			}
+			tempDelay = 0
 		case <-s.ctx.Done():
 			return
 		}

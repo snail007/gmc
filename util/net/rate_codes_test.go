@@ -52,7 +52,6 @@ func TestRateCodec2(t *testing.T) {
 }
 
 func TestRateCodec3(t *testing.T) {
-	t.Parallel()
 	l, p, _ := RandomListen()
 	l0 := NewEventListener(l)
 	l0.SetAutoCloseConn(true)

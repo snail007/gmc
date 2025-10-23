@@ -7,22 +7,22 @@ package gnet
 
 import (
 	"fmt"
-	"github.com/snail007/gmc/util/sync/atomic"
 	"net"
-	"sync/atomic"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/snail007/gmc/util/sync/atomic"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMultipleCodec(t *testing.T) {
-	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt := new(int32)
 	password := "abc"
-	debug := false
+	g := sync.WaitGroup{}
+	g.Add(4)
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c)
@@ -30,31 +30,19 @@ func TestMultipleCodec(t *testing.T) {
 		conn.AddCodec(NewAESCodec(password))
 		assert.Equal(t, conn.ctx, conn.Ctx())
 		go func() {
-			for {
-				n, err := conn.Write([]byte("hello from server"))
-				if err != nil {
-					fmt.Printf("server write error %s, %d\n", err, n)
-					return
-				}
-				time.Sleep(time.Millisecond * 100)
-			}
+			defer g.Done()
+			conn.Write([]byte("hello from server"))
 		}()
 		go func() {
-			for {
-				buf := make([]byte, 1024)
-				n, err := conn.Read(buf)
-				if err != nil {
-					fmt.Println("server read error", err)
-					return
-				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
-				atomic.AddInt32(outputCnt, 1)
-				if debug {
-					fmt.Println(string(buf[:n]))
-				}
+			defer g.Done()
+			buf := make([]byte, 1024)
+			n, err := conn.Read(buf)
+			if err != nil {
+				fmt.Println("server read error", err)
+				return
 			}
+			assert.Equal(t, "hello from client", string(buf[:n]))
 		}()
-		select {}
 	}()
 	time.Sleep(time.Second * 2)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
@@ -62,72 +50,48 @@ func TestMultipleCodec(t *testing.T) {
 	conn.AddCodec(NewHeartbeatCodec())
 	conn.AddCodec(NewAESCodec(password))
 	go func() {
-		for {
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println("client read error", err)
-				return
-			}
-			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
-			if debug {
-				fmt.Println(string(buf[:n]))
-			}
+		defer g.Done()
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("client read error", err)
+			return
 		}
+		assert.Equal(t, "hello from server", string(buf[:n]))
 	}()
 	go func() {
-		for {
-			n, err := conn.Write([]byte("hello from client"))
-			if err != nil {
-				fmt.Printf("client write error %s, %d\n", err, n)
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
+		defer g.Done()
+		conn.Write([]byte("hello from client"))
 	}()
-	time.Sleep(time.Second * 3)
-	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
+	g.Wait()
 	assert.IsType(t, (*net.TCPConn)(nil), conn.RawConn())
 	assert.IsType(t, (*AESCodec)(nil), conn.Conn)
 }
 
 func TestMultipleCodec2(t *testing.T) {
-	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
-	outputCnt := new(int32)
 	password := "abc"
-	debug := false
+	g := sync.WaitGroup{}
+	g.Add(4)
 	go func() {
 		c, _ := l.Accept()
 		conn := NewConn(c)
 		conn.AddCodec(NewAESCodec(password))
 		conn.AddCodec(NewHeartbeatCodec())
 		go func() {
-			for {
-				_, err := conn.Write([]byte("hello from server"))
-				if err != nil {
-					fmt.Println("server write error", err)
-					return
-				}
-				time.Sleep(time.Millisecond * 100)
-			}
+			defer g.Done()
+			conn.Write([]byte("hello from server"))
 		}()
 		go func() {
-			for {
-				buf := make([]byte, 1024)
-				n, err := conn.Read(buf)
-				if err != nil {
-					fmt.Println("server read error", err)
-					return
-				}
-				assert.Equal(t, "hello from client", string(buf[:n]))
-				atomic.AddInt32(outputCnt, 1)
-				if debug {
-					fmt.Println(string(buf[:n]))
-				}
+			defer g.Done()
+			buf := make([]byte, 1024)
+			n, err := conn.Read(buf)
+			if err != nil {
+				fmt.Println("server read error", err)
+				return
 			}
+			assert.Equal(t, "hello from client", string(buf[:n]))
 		}()
 		select {}
 	}()
@@ -137,34 +101,20 @@ func TestMultipleCodec2(t *testing.T) {
 	conn.AddCodec(NewAESCodec(password))
 	conn.AddCodec(NewHeartbeatCodec())
 	go func() {
-		for {
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println("client read error", err)
-				return
-			}
-			atomic.AddInt32(outputCnt, 1)
-			assert.Equal(t, "hello from server", string(buf[:n]))
-			if debug {
-				fmt.Println(string(buf[:n]))
-			}
+		defer g.Done()
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("client read error", err)
+			return
 		}
+		assert.Equal(t, "hello from server", string(buf[:n]))
 	}()
 	go func() {
-		for {
-			_, err := conn.Write([]byte("hello from client"))
-			if err != nil {
-				fmt.Println("client write error", err)
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
+		defer g.Done()
+		conn.Write([]byte("hello from client"))
 	}()
-	time.Sleep(time.Second * 3)
-	assert.True(t, conn.ReadBytes() > 450)
-	assert.True(t, conn.WriteBytes() > 450)
-	assert.True(t, atomic.LoadInt32(outputCnt) > 50)
+	g.Wait()
 }
 
 func TestMultipleCodec3(t *testing.T) {

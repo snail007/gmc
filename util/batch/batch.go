@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	gerror "github.com/snail007/gmc/module/error"
-	gfunc "github.com/snail007/gmc/util/func"
 	"github.com/snail007/gmc/util/gpool"
 	glist "github.com/snail007/gmc/util/list"
 )
 
-type task func(ctx context.Context) (value interface{}, cancelFunc func(), err error)
+type task func(ctx context.Context) (value interface{}, err error)
 type Executor struct {
 	workers      int
 	tasks        []task
@@ -72,17 +72,15 @@ func (s *Executor) run(fn task) (result taskResult) {
 			}
 		}
 	}()
-	v, f, e := fn(s.rootCtx)
+	v, e := fn(s.rootCtx)
 	result.value = v
-	result.cancelFunc = f
 	result.err = e
 	return
 }
 
 type taskResult struct {
-	value      interface{}
-	err        error
-	cancelFunc func()
+	value interface{}
+	err   error
 }
 
 func (t taskResult) Value() interface{} {
@@ -108,41 +106,30 @@ func (s *Executor) waitFirst(checkSuccess bool) (value interface{}, err error) {
 	if len(s.tasks) == 0 {
 		return nil, errors.New("tasks is empty")
 	}
-	waitChan := make(chan taskResult)
-	allResult := glist.New()
-	p := gpool.New(s.workers)
-	defer p.Stop()
+	allResultChan := make(chan taskResult, len(s.tasks))
 	for _, t := range s.tasks {
 		t0 := t
-		p.Submit(func() {
-			item := s.run(t0)
-			allResult.Add(item)
-			if checkSuccess && item.err != nil {
+		go func() {
+			if s.rootCtx.Err() != nil {
 				return
 			}
-			select {
-			case waitChan <- item:
-			default:
-				if item.cancelFunc != nil {
-					item.cancelFunc()
-				}
+			allResultChan <- s.run(t0)
+		}()
+	}
+	cnt := 0
+	for item := range allResultChan {
+		cnt++
+		if checkSuccess {
+			if item.err == nil {
+				go s.rootCancel()
+				return item.value, nil
+			} else if cnt == len(s.tasks) {
+				return item.value, item.err
 			}
-		})
-	}
-	select {
-	case v := <-waitChan:
-		//a task returned, call rootCancel to cancel others task.
-		go s.rootCancel()
-		return v.value, v.err
-	case <-gfunc.Wait(p.WaitDone):
-		//case selected randomly, so here need check double if it is success
-		if len(waitChan) > 0 {
-			v := <-waitChan
-			//a task returned, call rootCancel to cancel others task.
+		} else {
 			go s.rootCancel()
-			return v.value, v.err
+			return item.value, item.err
 		}
-		// all task done, return the last err
-		return nil, allResult.Pop().(taskResult).err
 	}
+	return nil, errors.New("failed task not found, this should not happen")
 }

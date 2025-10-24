@@ -96,7 +96,7 @@ func TestHeartbeatCodec_UnknownMsg(t *testing.T) {
 		}
 	})
 	el.Start()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 3)
 	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
 	c.Write([]byte("hello"))
 	time.Sleep(time.Millisecond * 200)

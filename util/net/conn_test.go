@@ -768,3 +768,70 @@ func TestConn_Hook(t *testing.T) {
 	assert.True(t, called1.IsTrue())
 	assert.True(t, called2.IsTrue())
 }
+
+func TestConn_RateLimiter(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	go func() {
+		c, _ := l.Accept()
+		c.Write([]byte("hello"))
+		time.Sleep(time.Second)
+		c.Close()
+	}()
+	c, _ := net.Dial("tcp", "127.0.0.1:"+p)
+	conn := NewConn(c)
+	
+	rateCodec := NewRateCodec(1024)
+	
+	conn.SetReadLimiter(rateCodec.readLimiter)
+	conn.SetWriteLimiter(rateCodec.writeLimiter)
+	
+	assert.Equal(t, rateCodec.readLimiter, conn.ReadLimiter())
+	assert.Equal(t, rateCodec.writeLimiter, conn.WriteLimiter())
+	
+	buf := make([]byte, 1024)
+	conn.Read(buf)
+	conn.Close()
+}
+
+func TestConnBinder_SetAfterRead(t *testing.T) {
+	t.Parallel()
+	l1, p1, err := RandomListen("")
+	assert.NoError(t, err)
+	l2, p2, err := RandomListen("")
+	assert.NoError(t, err)
+	
+	srcFirstRead := gatomic.NewBool(false)
+	dstFirstRead := gatomic.NewBool(false)
+	str := gatomic.NewString("")
+	
+	NewEventListener(l2).OnAccept(func(ctx Context, c net.Conn) {
+		s, _ := Read(c, 5)
+		str.SetVal(s)
+		c.Write([]byte("world"))
+	}).Start()
+	
+	NewEventListener(l1).OnAccept(func(ctx Context, c net.Conn) {
+		c2, _ := net.Dial("tcp", "127.0.0.1:"+p2)
+		b := NewConnBinder(c, c2)
+		b.SetAfterSrcFirstRead(func(data []byte) []byte {
+			srcFirstRead.SetTrue()
+			return data
+		})
+		b.SetAfterDstFirstRead(func(data []byte) []byte {
+			dstFirstRead.SetTrue()
+			return data
+		})
+		b.SetAutoClose(false)
+		b.Start()
+	}).Start()
+	
+	time.Sleep(time.Second)
+	Write("127.0.0.1:"+p1, "hello")
+	time.Sleep(time.Second * 2)
+	
+	assert.Equal(t, "hello", str.Val())
+	assert.True(t, srcFirstRead.IsTrue())
+	assert.True(t, dstFirstRead.IsTrue())
+}

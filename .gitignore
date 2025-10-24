@@ -18,3 +18,4 @@ gmcrun.toml
 !/vendor/gopkg.in/yaml.v2
 /vendor/*
 coverage.txt
+/util/net/coverage.html

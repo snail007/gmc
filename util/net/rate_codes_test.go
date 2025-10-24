@@ -99,3 +99,67 @@ func TestRateCodec4(t *testing.T) {
 	out, _, _ := gtest.NewProcess(t).Wait()
 	assert.True(t, strings.Contains(out, "burstCnt_1_okay"))
 }
+
+func TestRateCodec_Close(t *testing.T) {
+	t.Parallel()
+	l, p, _ := RandomListen()
+	l0 := NewEventListener(l)
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		time.Sleep(time.Second * 2)
+		c.Close()
+	}).Start()
+	
+	time.Sleep(time.Millisecond * 300)
+	c, _ := Dial("127.0.0.1:"+p, time.Second)
+	c.AddCodec(NewRateCodec(1024))
+	
+	err := c.Close()
+	assert.NoError(t, err)
+}
+
+func TestRateCodec_ReadWriteError(t *testing.T) {
+	t.Parallel()
+	l, p, _ := RandomListen()
+	done := make(chan bool)
+	l0 := NewEventListener(l)
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		<-done
+		c.Close()
+	}).Start()
+	
+	time.Sleep(time.Millisecond * 300)
+	c, _ := Dial("127.0.0.1:"+p, time.Second)
+	c.AddCodec(NewRateCodec(1024))
+	
+	c.RawConn().Close()
+	time.Sleep(time.Millisecond * 100)
+	
+	_, err := c.Write([]byte("test"))
+	assert.Error(t, err)
+	
+	buf := make([]byte, 100)
+	_, err = c.Read(buf)
+	assert.Error(t, err)
+	
+	done <- true
+}
+
+func TestRateCodec_LargeData(t *testing.T) {
+	t.Parallel()
+	l, p, _ := RandomListen()
+	largeData := make([]byte, 1024*1024*5) // 5MB
+	
+	l0 := NewEventListener(l)
+	l0.SetAutoCloseConn(true)
+	l0.OnAccept(func(ctx Context, c net.Conn) {
+		c.Write(largeData)
+	}).Start()
+	
+	time.Sleep(time.Millisecond * 300)
+	c, _ := Dial("127.0.0.1:"+p, time.Second)
+	c.AddCodec(NewRateCodec(1024 * 1024 * 100)) // 100MB/s
+	
+	received, err := io.ReadAll(c)
+	assert.NoError(t, err)
+	assert.Equal(t, len(largeData), len(received))
+}

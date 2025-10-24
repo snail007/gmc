@@ -8,7 +8,6 @@ package gnet
 import (
 	"bytes"
 	"fmt"
-	"github.com/snail007/gmc/util/sync/atomic"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/snail007/gmc/util/sync/atomic"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -605,6 +606,25 @@ func isHTTP(head []byte) bool {
 		}
 	}
 	return false
+}
+
+func TestNewListenerAddr_Error(t *testing.T) {
+	t.Parallel()
+	_, err := NewListenerAddr("invalid:address:format")
+	assert.Error(t, err)
+}
+
+func TestNewEventListenerAddr_Error(t *testing.T) {
+	t.Parallel()
+	_, err := NewEventListenerAddr("invalid:address:format")
+	assert.Error(t, err)
+}
+
+func TestListener_Close(t *testing.T) {
+	t.Parallel()
+	l, _ := NewListenerAddr(":0")
+	err := l.Close()
+	assert.NoError(t, err)
 }
 
 func TestProtocolListener_4(t *testing.T) {

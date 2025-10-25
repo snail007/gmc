@@ -211,21 +211,34 @@ func TestWaitFirstDone_PartialSuccess(t *testing.T) {
 func TestCancelFunc(t *testing.T) {
 	t.Parallel()
 	executor := NewBatchExecutor()
-	canceled := false
+	task1Canceled := false
+	task2Canceled := false
 	executor.AppendTask(
 		func(ctx context.Context) (interface{}, error) {
 			go func() {
 				select {
 				case <-ctx.Done():
-					canceled = true
+					// 检查是否是第一个成功的
+					if !IsFirstSuccess(ctx) {
+						task1Canceled = true
+					}
 				}
 			}()
 			time.Sleep(time.Second * 2)
-			return "Task 2 result", nil
+			return "Task 1 result", nil
 		},
 		func(ctx context.Context) (interface{}, error) {
+			go func() {
+				select {
+				case <-ctx.Done():
+					// 检查是否是第一个成功的
+					if !IsFirstSuccess(ctx) {
+						task2Canceled = true
+					}
+				}
+			}()
 			time.Sleep(time.Second)
-			return "Task 1 result", nil
+			return "Task 2 result", nil
 		})
 
 	value, err := executor.WaitFirstSuccess()
@@ -233,12 +246,15 @@ func TestCancelFunc(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
-	expectedValue := "Task 1 result"
+	expectedValue := "Task 2 result"
 	if value != expectedValue {
 		t.Errorf("Expected value %q, but got: %q", expectedValue, value)
 	}
 	time.Sleep(time.Second * 3)
-	assert.True(t, canceled)
+	// Task 2 是第一个完成的，不应该被标记为 canceled
+	assert.False(t, task2Canceled, "First completed task should not be canceled")
+	// Task 1 不是第一个完成的，应该被取消
+	assert.True(t, task1Canceled, "Non-first task should be canceled")
 }
 
 func TestPanic(t *testing.T) {
@@ -269,4 +285,102 @@ func TestPanic(t *testing.T) {
 	}
 	assert.True(t, called)
 	time.Sleep(time.Second * 3)
+}
+
+func TestCancelFuncForFirstCompletedTask(t *testing.T) {
+	t.Parallel()
+	executor := NewBatchExecutor()
+	firstTaskCanceledCount := 0
+	secondTaskCanceledCount := 0
+
+	executor.AppendTask(
+		func(ctx context.Context) (interface{}, error) {
+			go func() {
+				select {
+				case <-ctx.Done():
+					// 检查是否是第一个完成的
+					if !IsFirstSuccess(ctx) {
+						firstTaskCanceledCount++
+					}
+				}
+			}()
+			time.Sleep(time.Second)
+			return "Task 1 result", nil
+		},
+		func(ctx context.Context) (interface{}, error) {
+			go func() {
+				select {
+				case <-ctx.Done():
+					// 检查是否是第一个完成的
+					if !IsFirstSuccess(ctx) {
+						secondTaskCanceledCount++
+					}
+				}
+			}()
+			time.Sleep(time.Second * 3)
+			return "Task 2 result", nil
+		})
+
+	value, err := executor.WaitFirstSuccess()
+
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	expectedValue := "Task 1 result"
+	if value != expectedValue {
+		t.Errorf("Expected value %q, but got: %q", expectedValue, value)
+	}
+
+	time.Sleep(time.Second * 2)
+
+	// 第一个完成的 task 不应该执行取消逻辑
+	assert.Equal(t, 0, firstTaskCanceledCount, "First completed task should not execute cancel logic")
+	// 第二个 task 应该执行取消逻辑
+	assert.Equal(t, 1, secondTaskCanceledCount, "Second task should execute cancel logic")
+}
+
+func TestIsFirstDone(t *testing.T) {
+	t.Parallel()
+	executor := NewBatchExecutor()
+	task1Cancelled := false
+	task2Cancelled := false
+
+	executor.AppendTask(
+		func(ctx context.Context) (interface{}, error) {
+			go func() {
+				<-ctx.Done()
+				if !IsFirstDone(ctx) {
+					task1Cancelled = true
+				}
+			}()
+			time.Sleep(time.Second * 2)
+			return "Task 1 result", nil
+		},
+		func(ctx context.Context) (interface{}, error) {
+			go func() {
+				<-ctx.Done()
+				if !IsFirstDone(ctx) {
+					task2Cancelled = true
+				}
+			}()
+			time.Sleep(100 * time.Millisecond)
+			return "Task 2 result", nil
+		})
+
+	value, err := executor.WaitFirstDone()
+ 
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	expectedValue := "Task 2 result"
+	if value != expectedValue {
+		t.Errorf("Expected value %q, but got: %q", expectedValue, value)
+	}
+
+	time.Sleep(time.Second * 3)
+
+	// Task 2 是第一个完成的，不应该被标记为 cancelled
+	assert.False(t, task2Cancelled, "First done task should not be marked as cancelled")
+	// Task 1 不是第一个完成的，应该被取消
+	assert.True(t, task1Cancelled, "Non-first task should be cancelled")
 }

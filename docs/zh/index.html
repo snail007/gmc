@@ -20,19 +20,20 @@
             --theme-color: #42b983;
             --base-font-size: 16px;
         }
-        /* 行内代码样式 */
+        /* 行内代码样式 - 增强对比度 */
         .markdown-section code {
             border-radius: 2px;
-            color: #c7254e;
-            background-color: #f9f2f4;
-            font-size: .8rem;
+            color: #e01e5a;
+            background-color: #f8f8f8;
+            font-size: .85rem;
             margin: 0 2px;
-            padding: 3px 5px;
-            font-weight: 500;
+            padding: 3px 6px;
+            font-weight: 600;
+            border: 1px solid #e1e4e8;
         }
         /* 代码块样式 */
         .markdown-section pre>code {
-            color: #000;
+            color: #24292e;
             background-color: #f6f8fa;
             font-weight: normal;
         }
@@ -42,21 +43,29 @@
             border-radius: 6px;
             padding: 16px;
         }
-        /* 代码块关键字高亮 */
+        /* 代码块关键字高亮 - 增强对比度 */
         .token.keyword,
         .token.function,
         .token.class-name {
             color: #d73a49 !important;
-            font-weight: 600;
+            font-weight: 700;
         }
         .token.string {
             color: #032f62 !important;
+            font-weight: 500;
         }
         .token.comment {
             color: #6a737d !important;
         }
         .token.number {
             color: #005cc5 !important;
+            font-weight: 600;
+        }
+        /* 增强变量和标识符对比度 */
+        .token.variable,
+        .token.operator,
+        .token.punctuation {
+            color: #24292e !important;
         }
         .lang-switcher {
             position: fixed;
@@ -80,17 +89,19 @@
 </head>
 <body>
 <div class="lang-switcher">
-    <a href="/">English</a>
-    <a href="/zh/">中文</a>
+    <a href="/gmc/">English</a>
+    <a href="/gmc/zh/">中文</a>
 </div>
 <div id="app">加载中...</div>
 <script>
     window.$docsify = {
         name: 'GMC 用户手册',
         repo: 'snail007/gmc',
+        basePath: '/gmc/zh/',
         homepage: 'MANUAL_ZH.md',
         loadSidebar: true,
-        subMaxLevel: 0,
+        subMaxLevel: 2,
+        sidebarDisplayLevel: 1,
         auto2top: true,
         search: {
             maxAge: 86400000,
@@ -112,15 +123,32 @@
     }
 </script>
 <script>
-    // 简化版：仅在必要时折叠
+    // 修复导航展开问题
     window.$docsify.plugins = [].concat(window.$docsify.plugins || [], [
         function(hook, vm) {
-            hook.doneEach(function() {
-                // 每次路由变化后，移除所有可能的展开状态
+            hook.ready(function() {
+                // 初始化时设置正确的折叠状态
                 setTimeout(function() {
-                    var items = document.querySelectorAll('.sidebar-nav li');
+                    var items = document.querySelectorAll('.sidebar-nav > ul > li');
                     items.forEach(function(item) {
                         item.classList.remove('open');
+                        item.classList.add('collapse');
+                    });
+                }, 100);
+            });
+            
+            hook.doneEach(function() {
+                // 路由变化后保持折叠状态
+                setTimeout(function() {
+                    var activeLink = document.querySelector('.sidebar-nav .active');
+                    var items = document.querySelectorAll('.sidebar-nav > ul > li');
+                    items.forEach(function(item) {
+                        // 只展开包含当前活动链接的父级
+                        if (activeLink && item.contains(activeLink)) {
+                            item.classList.add('open');
+                        } else {
+                            item.classList.remove('open');
+                        }
                     });
                 }, 50);
             });

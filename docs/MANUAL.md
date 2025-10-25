@@ -2,6 +2,10 @@
 
 <img align="right" src="https://github.com/snail007/gmc/blob/master/doc/images/logo2.png?raw=true" width="200" height="auto"/>  
 
+> **📖 Language**: [🌐 中文版本 (Chinese Version)](zh/MANUAL_ZH.md) | **English**
+> 
+> **Note**: This English documentation provides core features and basic usage. For complete and detailed documentation, please refer to the [Chinese version](zh/MANUAL_ZH.md).
+
 GMC provides easy and fast Web and API development, and aims at high performance, high productivity, and lightweight. 
 
 GMC provides a powerful supporting tool chain, let you one-command to generate a base project, get rid of the manual 
@@ -292,24 +296,64 @@ delimiterright="}}"
 
 ## INCLUDE
 
+GMC supports template inclusion for reusing common template fragments. The framework automatically handles template file loading without requiring `{{define}}`.
+
 The template directory is views and the file structure is as follows:
 
 ```text
 views/
 ├── common
-│   └── head.html
+│   └── header.html
+├── paginator
+│   └── default.html
 └── user
-    └── list.html
+    └── list.html
 ```
 
-user/list.html contents:
+**common/header.html** contents:
 
-```text
-{{template "common/head" . }}
+```html
+<header>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+</header>
 ```
 
-In this way, the template file `common/head.html` is included in `user/list.html`. There is no need to write `.html `suffix,`. `is used to put the data of the current template
-Pass to `common/head.html`. If you do not need to pass data, you can omit `.`, that is, `{{template "common/head"}}`.
+**user/list.html** contents:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>User List</title>
+</head>
+<body>
+    <!-- Include header component, pass current data -->
+    {{template "common/header.html" .}}
+    
+    <main>
+        <h1>User List</h1>
+        <!-- User list content -->
+    </main>
+    
+    <!-- Include paginator -->
+    {{template "paginator/default.html" .}}
+</body>
+</html>
+```
+
+**Notes:**
+- Use the relative path from the views directory, **including the file extension**
+- Use `.` to pass all current data to the included template
+- If you don't need to pass data, you can omit `.`: `{{template "common/header.html"}}`
+- GMC automatically loads and parses all template files
+
 
 ## LAYOUT
 
@@ -1146,57 +1190,97 @@ In this example, `website` is the program name, and `11297` is the program's `PI
 
 # USEFUL GMC PACKAGES
 
-## gpool
+GMC provides a rich set of utility packages covering common development needs. Below is a list of available packages with links to their GitHub documentation:
 
-## gmap 
+## String and Encoding
 
-## glist 
+- **[strings](https://github.com/snail007/gmc/tree/master/util/strings)** - String manipulation utilities
+- **[bytes](https://github.com/snail007/gmc/tree/master/util/bytes)** - Byte manipulation utilities
+- **[cast](https://github.com/snail007/gmc/tree/master/util/cast)** - Type conversion utilities
+- **[hash](https://github.com/snail007/gmc/tree/master/util/hash)** - Hash and encryption utilities
+- **[compress](https://github.com/snail007/gmc/tree/master/util/compress)** - Compression and decompression utilities
 
-## glinklist 
+## Data Structures
 
-## gset 
+- **[collection](https://github.com/snail007/gmc/tree/master/util/collection)** - Collection operation utilities
+- **[map](https://github.com/snail007/gmc/tree/master/util/map)** - Map operation utilities
+- **[set](https://github.com/snail007/gmc/tree/master/util/set)** - Set collection implementation
+- **[list](https://github.com/snail007/gmc/tree/master/util/list)** - List operation utilities
+- **[linklist](https://github.com/snail007/gmc/tree/master/util/linklist)** - Linked list implementation
+- **[value](https://github.com/snail007/gmc/tree/master/util/value)** - Value operation utilities
 
-## glog  
+## Concurrency and Performance
 
-## gbytes  
+- **[gpool](https://github.com/snail007/gmc/tree/master/util/gpool)** - Goroutine pool
+- **[sync](https://github.com/snail007/gmc/tree/master/util/sync)** - Synchronization utilities
+- **[rate](https://github.com/snail007/gmc/tree/master/util/rate)** - Rate limiter
+- **[batch](https://github.com/snail007/gmc/tree/master/util/batch)** - Batch processing utilities
+- **[loop](https://github.com/snail007/gmc/tree/master/util/loop)** - Loop utilities
 
-## gcast 
+## Network and HTTP
 
-## gcaptcha 
+- **[net](https://github.com/snail007/gmc/tree/master/util/net)** - Network utilities
+- **[http](https://github.com/snail007/gmc/tree/master/util/http)** - HTTP utilities
+- **[proxy](https://github.com/snail007/gmc/tree/master/util/proxy)** - Proxy utilities
+- **[url](https://github.com/snail007/gmc/tree/master/util/url)** - URL handling utilities
 
-## gcompress 
+## File and System
 
-## gfile 
+- **[file](https://github.com/snail007/gmc/tree/master/util/file)** - File operation utilities
+- **[os](https://github.com/snail007/gmc/tree/master/util/os)** - Operating system utilities
+- **[env](https://github.com/snail007/gmc/tree/master/util/env)** - Environment variable utilities
+- **[exec](https://github.com/snail007/gmc/tree/master/util/exec)** - Command execution utilities
+- **[process](https://github.com/snail007/gmc/tree/master/util/process)** - Process management utilities
 
-## ghttp 
+## Development and Debugging
 
-## gjson 
+- **[pprof](https://github.com/snail007/gmc/tree/master/util/pprof)** - Performance profiling utilities
+- **[testing](https://github.com/snail007/gmc/tree/master/util/testing)** - Testing utilities
+- **[reflect](https://github.com/snail007/gmc/tree/master/util/reflect)** - Reflection utilities
+- **[args](https://github.com/snail007/gmc/tree/master/util/args)** - Command-line argument utilities
 
-## gnet 
+## Other Utilities
 
-## gos 
+- **[captcha](https://github.com/snail007/gmc/tree/master/util/captcha)** - Captcha generation
+- **[paginator](https://github.com/snail007/gmc/tree/master/util/paginator)** - Pagination utilities
+- **[rand](https://github.com/snail007/gmc/tree/master/util/rand)** - Random utilities
+- **[json](https://github.com/snail007/gmc/tree/master/util/json)** - JSON utilities
+- **[cond](https://github.com/snail007/gmc/tree/master/util/cond)** - Conditional utilities
+- **[func](https://github.com/snail007/gmc/tree/master/util/func)** - Function utilities
 
-## gpaginator 
+## Usage Example
 
-## ghttppprof 
+Each utility package has detailed README documentation and usage examples. Click the links above for specific usage.
 
-## gprocess 
+Basic usage:
 
-## ghook 
+```go
+import (
+    "github.com/snail007/gmc/util/gpool"
+    "github.com/snail007/gmc/util/strings"
+    "github.com/snail007/gmc/util/hash"
+)
 
-## gdaemon 
+func main() {
+    // Using goroutine pool
+    pool := gpool.NewGPool(10)
+    pool.Submit(func() {
+        // Task code
+    })
+    
+    // Using string utilities
+    result := strings.Reverse("hello")
+    
+    // Using hash utilities
+    md5 := hash.MD5("data")
+}
+```
 
-## gprofiling 
+## Contributing
 
-## gproxy 
+If you've developed useful utility packages, feel free to submit a Pull Request to contribute to the GMC project!
 
-## grand 
-
-## gstrings 
-
-## gsync 
-
-## gtesting 
+--- 
 
 # MISC
 

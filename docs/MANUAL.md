@@ -95,7 +95,7 @@ func(this *Demo) Hello() {
 }
 ```
 
-## RULES IOF CONTROLLER
+## RULES OF CONTROLLER
 
 1. Unlimited controller name.
 
@@ -405,7 +405,7 @@ GMC defines a number of useful functions for the use of aspect templates.
 
 Example:
 
-`{{tr.lang "key001" "prompt message, what is this"}}`
+`{{tr .Lang "key001" "prompt message, what is this"}}`
 
 1. `trs` has the same function as `tr`, but the data type returned is String.
 
@@ -855,7 +855,7 @@ func main() {
 }
 ```
 
-Due to a database that is more, detailed please reference [here](https://github.com/snail007/gmc/blob/master/module/db/mysql/README.md)
+For detailed database operations, please refer to the documentation [here](https://github.com/snail007/gmc/blob/master/module/db/mysql/README.md)
 
 ## SQLITE3
 
@@ -883,7 +883,7 @@ cachemode="shared"
 In an API or Web project, after the app is launched, that is, after the database has been initialized successfully, it can be passed in the code
 `gmc.DB.DB(id ... String) ` or ` GMC.DB.SQLite3(id... String) `gets the database action object.
 
-Due to a database that is more, detailed please reference [here](https://github.com/snail007/gmc/blob/master/module/db/sqlite3/README.md)
+For detailed database operations, please refer to the documentation [here](https://github.com/snail007/gmc/blob/master/module/db/sqlite3/README.md)
 
 # CACHE
 
@@ -1070,7 +1070,8 @@ func InitRouter(s gcore.HTTPServer) {
 - The second parameter is the path of the debugging function in the URL. If it is empty, the default is: `/debug/pprof/`.
 - Visit: `http://127.0.0.1:7080/gmcdebug/` to see the effect, and then use `go tool` to remotely debug various indicators.
 
-#Configuration file
+# CONFIGURATION FILE
+
 gmc uses toml as the configuration file. The configuration in the configuration file can be dynamically changed by setting the environment variables.
 
 A configuration file fragment is as follows:
@@ -1097,17 +1098,13 @@ Set the environment variable `ENV_PREFIX=APP_`, change it to `APP_`, then set th
 
 # MIDDLEWARE
 
-Both THE Web and API servers of GMC support middleware. When existing functions cannot meet your requirements, you can complete various functions by registering middleware, such as: `authorization`, `logging`, `modification request` and so on.
+Both the Web and API servers of GMC support middleware. When existing functions cannot meet your requirements, you can complete various functions by registering middleware, such as: `authorization`, `logging`, `request modification` and so on.
 From the time the GMC receives a user request to the time the controller method or handler is actually executed, the middleware is divided into four types according to the order and timing of execution.
 
-With the names` Middleware0 `, `Middleware1`, `Middleware2`, `Middleware3`, each type of middleware can be registered with more than one.
-They are executed in the order in which they were added, but when one of the middleware returns FALSE, the middleware behind that middleware is skipped.
+With the names `Middleware0`, `Middleware1`, `Middleware2`, `Middleware3`, each type of middleware can be registered with more than one.
+They are executed in the order in which they were added, but when one of the middleware returns TRUE, the middleware behind that middleware is skipped.
 
-A middleware is a function.
-
-In the API service it is defined as` func(ctx gcore.Ctx, Server gcore.APIServer)(isStop bool) `.
-
-In the Web service it is defined as` func(ctx gcore.Ctx, Server gcore.HTTPServer)(isStop bool) `.
+A middleware is a function with signature: `func(ctx gcore.Ctx) (isStop bool)`.
 
 The diagram of the API and Web HTTP server workflow architecture is shown below. The sequence and timing of their execution can help you quickly master the use of middleware.
 

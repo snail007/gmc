@@ -17,7 +17,7 @@ A smart, flexible, and high-performance Golang Web and API development framework
 
 English | [简体中文](README.md)
 
-[📖 Documentation](https://snail007.github.io/gmc/) | [🎯 Quick Start](#quick-start) | [💡 Features](#core-features) | [🔧 Examples](#code-examples)
+[📖 Documentation](https://snail007.github.io/gmc/) | [🎯 Quick Start](#-quick-start) | [💡 Features](#-core-features) | [🔧 Examples](#-code-examples)
 
 </div>
 
@@ -25,20 +25,20 @@ English | [简体中文](README.md)
 
 ## 📋 Table of Contents
 
-- [Introduction](#introduction)
-- [Core Features](#core-features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Architecture](#architecture)
-- [Code Examples](#code-examples)
-- [Core Components](#core-components)
-- [Utility Packages](#utility-packages)
-- [Configuration](#configuration)
-- [Performance](#performance)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [Introduction](#-introduction)
+- [Core Features](#-core-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Architecture](#-architecture)
+- [Code Examples](#-code-examples)
+- [Core Components](#-core-components)
+- [Utility Packages](#-utility-packages)
+- [Configuration](#-configuration)
+- [Performance](#-performance)
+- [Project Structure](#-project-structure)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Contact](#-contact)
 
 ---
 

@@ -1260,10 +1260,13 @@ import (
 
 func main() {
     // Using goroutine pool
-    pool := gpool.NewGPool(10)
+    pool := gpool.New(10)  // Returns *gpool.BasicPool implementing gpool.Pool
+    defer pool.Stop()
+    
     pool.Submit(func() {
         // Task code
     })
+    pool.WaitDone()
     
     // Using string utilities
     result := strings.Reverse("hello")

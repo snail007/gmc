@@ -7249,10 +7249,13 @@ import (
 
 func main() {
     // 使用 goroutine 池
-    pool := gpool.NewGPool(10)
+    pool := gpool.New(10)  // 返回 *gpool.BasicPool，实现了 gpool.Pool 接口
+    defer pool.Stop()
+    
     pool.Submit(func() {
         // 任务代码
     })
+    pool.WaitDone()
     
     // 使用字符串工具
     result := strings.Reverse("hello")

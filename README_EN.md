@@ -570,6 +570,7 @@ import "github.com/snail007/gmc/util/gpool"
 
 // Create goroutine pool (max 10 concurrent)
 pool := gpool.New(10)
+defer pool.Stop()
 
 // Submit tasks
 for i := 0; i < 100; i++ {
@@ -579,8 +580,12 @@ for i := 0; i < 100; i++ {
 }
 
 // Wait for all tasks to complete
-pool.Wait()
+pool.WaitDone()
 ```
+
+**Notes**:
+- `gpool.New()` returns `*gpool.BasicPool` which implements the `gpool.Pool` interface
+- You can also use `gpool.NewOptimized()` for better performance
 
 📖 **Full Documentation**: [Goroutine Pool Guide](util/gpool/README.md)
 

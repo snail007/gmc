@@ -105,13 +105,7 @@ func BenchmarkOptimized_Workers1000(b *testing.B) {
 }
 
 // 通用基准测试辅助函数
-type PoolInterface interface {
-	Submit(func()) error
-	WaitDone()
-	Stop()
-}
-
-func benchmarkPoolSubmit(b *testing.B, p PoolInterface) {
+func benchmarkPoolSubmit(b *testing.B, p Pool) {
 	defer p.Stop()
 	
 	b.ResetTimer()

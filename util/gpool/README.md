@@ -142,6 +142,86 @@ pool.WaitDone()
 pool.Stop()
 ```
 
+## 接口抽象
+
+为了提供更好的灵活性，gpool 定义了 `Pool` 接口，允许外部代码使用任意实现：
+
+```go
+// Pool 接口定义
+type Pool interface {
+    // Submit 添加作业到池的队列
+    Submit(job func()) error
+    
+    // WorkerCount 返回池中的工作协程数量
+    WorkerCount() int
+    
+    // RunningWorkerCount 返回正在运行的工作协程数量
+    RunningWorkerCount() int
+    
+    // IdleWorkerCount 返回空闲的工作协程数量
+    IdleWorkerCount() int
+    
+    // QueuedJobCount 返回等待执行的作业数量
+    QueuedJobCount() int
+    
+    // WaitDone 等待所有已提交的作业完成
+    WaitDone()
+    
+    // Increase 增加工作协程
+    Increase(count int)
+    
+    // Decrease 减少工作协程
+    Decrease(count int)
+    
+    // Stop 停止所有工作协程并释放资源
+    Stop()
+}
+
+// BasicPool - 标准实现
+type BasicPool struct { /* ... */ }
+
+// OptimizedPool - 优化实现  
+type OptimizedPool struct { /* ... */ }
+```
+
+**使用场景**：
+
+```go
+import "github.com/snail007/gmc/util/gpool"
+
+// 函数参数使用接口类型
+func ProcessWithPool(pool gpool.Pool) {
+    for i := 0; i < 100; i++ {
+        pool.Submit(func() {
+            // 处理任务
+        })
+    }
+    
+    // 监控池的状态
+    fmt.Printf("Workers: %d, Running: %d, Idle: %d, Queued: %d\n",
+        pool.WorkerCount(),
+        pool.RunningWorkerCount(),
+        pool.IdleWorkerCount(),
+        pool.QueuedJobCount())
+    
+    pool.WaitDone()
+}
+
+// 可以传入任意实现
+pool1 := gpool.New(10)              // 返回 *BasicPool
+ProcessWithPool(pool1)
+
+pool2 := gpool.NewOptimized(10)     // 返回 *OptimizedPool
+ProcessWithPool(pool2)
+```
+
+**设计优势**：
+- ✅ **命名简洁**：接口名就是 `Pool`，符合 Go 惯例
+- ✅ **类型明确**：`BasicPool` 和 `OptimizedPool` 清晰表示不同实现
+- ✅ **无需子包**：直接在 gpool 包中，使用更方便
+- ✅ **解耦灵活**：外部代码不依赖具体实现
+- ✅ **测试友好**：易于编写 Mock 进行测试
+
 ## API 参考
 
 ### OptimizedPool（推荐）
@@ -201,9 +281,11 @@ Stop()                           // 停止所有工作协程
 | 内存占用 | 更低 | 标准 |
 | API 兼容性 | 完全兼容 | - |
 
-### Pool（标准版）
+### BasicPool（标准实现）
 
-标准版协程池，功能完整，适合一般场景。
+标准协程池实现，功能完整，适合一般场景。
+
+> **注意**：`gpool.New()` 返回的是 `*BasicPool` 类型，但可以赋值给 `gpool.Pool` 接口。
 
 #### 创建方法
 

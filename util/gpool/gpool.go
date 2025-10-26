@@ -32,8 +32,39 @@ var (
 	ErrMaxQueuedJobCountReached = errors.New("max queued job count reached")
 )
 
-// Pool is a goroutine pool, you can increase or decrease pool size in runtime.
-type Pool struct {
+// Pool defines the common interface for all pool implementations.
+// This allows external code to work with different pool implementations interchangeably.
+type Pool interface {
+	// Submit adds a job to the pool's queue
+	Submit(job func()) error
+
+	// WorkerCount returns the count of workers in the pool
+	WorkerCount() int
+
+	// RunningWorkerCount returns the count of running workers
+	RunningWorkerCount() int
+
+	// IdleWorkerCount returns the count of idle workers
+	IdleWorkerCount() int
+
+	// QueuedJobCount returns the count of queued jobs waiting to be executed
+	QueuedJobCount() int
+
+	// WaitDone waits for all submitted jobs to complete
+	WaitDone()
+
+	// Increase adds more workers to the pool
+	Increase(count int)
+
+	// Decrease removes workers from the pool
+	Decrease(count int)
+
+	// Stop stops all workers and releases resources
+	Stop()
+}
+
+// BasicPool is a goroutine pool, you can increase or decrease pool size in runtime.
+type BasicPool struct {
 	maxWorkCount         int
 	jobs                 *glist.List
 	workers              *gmap.Map
@@ -66,18 +97,18 @@ type Option struct {
 }
 
 // Blocking  the count of queued job to run reach the max, if blocking Submit call
-func (s *Pool) Blocking() bool {
+func (s *BasicPool) Blocking() bool {
 	return s.opt.Blocking
 }
 
 // SetBlocking sets the count of queued job to run reach the max, if blocking Submit call
-func (s *Pool) SetBlocking(blocking bool) {
+func (s *BasicPool) SetBlocking(blocking bool) {
 	s.opt.Blocking = blocking
 }
 
 // IdleDuration is the idle time duration before the worker exit,
 // duration 0 means the work will not exit.
-func (s *Pool) IdleDuration() time.Duration {
+func (s *BasicPool) IdleDuration() time.Duration {
 	return s.opt.IdleDuration
 }
 
@@ -85,47 +116,47 @@ func (s *Pool) IdleDuration() time.Duration {
 // duration 0 means the work will not exit.
 //
 // Notice: if idle duration changed from zero, only the new worker will support the idle.
-func (s *Pool) SetIdleDuration(idleDuration time.Duration) {
+func (s *BasicPool) SetIdleDuration(idleDuration time.Duration) {
 	s.opt.IdleDuration = idleDuration
 }
 
 // MaxJobCount returns the max queued job count.
-func (s *Pool) MaxJobCount() int {
+func (s *BasicPool) MaxJobCount() int {
 	return s.opt.MaxJobCount
 }
 
 // SetMaxJobCount sets the max queued job count.
-func (s *Pool) SetMaxJobCount(maxJobCount int) {
+func (s *BasicPool) SetMaxJobCount(maxJobCount int) {
 	s.opt.MaxJobCount = maxJobCount
 }
 
 // IsDebug returns the pool in debug mode or not.
-func (s *Pool) IsDebug() bool {
+func (s *BasicPool) IsDebug() bool {
 	return s.opt.Debug
 }
 
 // SetDebug sets the pool in debug mode, the pool will output more logging.
-func (s *Pool) SetDebug(debug bool) {
+func (s *BasicPool) SetDebug(debug bool) {
 	s.opt.Debug = debug
 }
 
 // New create a gpool object to using
-func New(workerCount int) (p *Pool) {
+func New(workerCount int) (p *BasicPool) {
 	return NewWithOption(workerCount, &Option{
 		WithStack: true,
 	})
 }
 
-func NewWithLogger(workerCount int, logger gcore.Logger) (p *Pool) {
+func NewWithLogger(workerCount int, logger gcore.Logger) (p *BasicPool) {
 	return NewWithOption(workerCount, &Option{Logger: logger})
 }
 
-func NewWithPreAlloc(workerCount int) (p *Pool) {
+func NewWithPreAlloc(workerCount int) (p *BasicPool) {
 	return NewWithOption(workerCount, &Option{PreAlloc: true})
 }
 
-func NewWithOption(workerCount int, opt *Option) (p *Pool) {
-	p = &Pool{
+func NewWithOption(workerCount int, opt *Option) (p *BasicPool) {
+	p = &BasicPool{
 		submitBlockChanList:  glist.New(),
 		jobs:                 glist.New(),
 		workers:              gmap.New(),
@@ -144,27 +175,27 @@ func NewWithOption(workerCount int, opt *Option) (p *Pool) {
 }
 
 // Increase add the count of `workerCount` workers
-func (s *Pool) Increase(workerCount int) {
+func (s *BasicPool) Increase(workerCount int) {
 	s.increase(workerCount, true)
 }
 
-func (s *Pool) increase(workerCount int, modifyCounter bool) {
+func (s *BasicPool) increase(workerCount int, modifyCounter bool) {
 	if modifyCounter {
 		s.maxWorkCount += workerCount
 	}
 	s.addWorker(workerCount)
 }
 
-func (s *Pool) removeWorker(w *worker) {
+func (s *BasicPool) removeWorker(w *worker) {
 	w.Stop()
 	s.workers.Delete(w.id)
 }
-func (s *Pool) Decrease(workerCount int) {
+func (s *BasicPool) Decrease(workerCount int) {
 	s.decrease(workerCount, true)
 }
 
 // Decrease stop the count of `workerCount` workers
-func (s *Pool) decrease(workerCount int, modifyCounter bool) {
+func (s *BasicPool) decrease(workerCount int, modifyCounter bool) {
 	if modifyCounter {
 		s.maxWorkCount -= workerCount
 		if s.maxWorkCount < 0 {
@@ -201,7 +232,7 @@ func (s *Pool) decrease(workerCount int, modifyCounter bool) {
 }
 
 // ResetTo set the count of workers
-func (s *Pool) ResetTo(workerCount int) {
+func (s *BasicPool) ResetTo(workerCount int) {
 	length := s.workers.Len()
 	if length == workerCount {
 		return
@@ -215,16 +246,16 @@ func (s *Pool) ResetTo(workerCount int) {
 }
 
 // WorkerCount returns the count of workers
-func (s *Pool) WorkerCount() int {
+func (s *BasicPool) WorkerCount() int {
 	return s.workers.Len()
 }
 
 // WaitDone wait all the jobs submitted executed done, if no job, return immediately.
-func (s *Pool) WaitDone() {
+func (s *BasicPool) WaitDone() {
 	s.g.Wait()
 }
 
-func (s *Pool) addWorker(cnt int) {
+func (s *BasicPool) addWorker(cnt int) {
 	if s.WorkerCount() >= s.maxWorkCount {
 		return
 	}
@@ -234,7 +265,7 @@ func (s *Pool) addWorker(cnt int) {
 	}
 }
 
-func (s *Pool) newWorkerID() string {
+func (s *BasicPool) newWorkerID() string {
 	k := make([]byte, 16)
 	if _, err := io.ReadFull(rand.Reader, k); err != nil {
 		return ""
@@ -243,7 +274,7 @@ func (s *Pool) newWorkerID() string {
 }
 
 // run a job function, using defer to catch job exception
-func (s *Pool) run(j *JobItem) {
+func (s *BasicPool) run(j *JobItem) {
 	defer func() {
 		s.g.Done()
 		if e := recover(); e != nil {
@@ -267,7 +298,7 @@ type JobItem struct {
 }
 
 // Submit adds a function as a job ready to run
-func (s *Pool) Submit(job func()) error {
+func (s *BasicPool) Submit(job func()) error {
 	s.submitLock.Lock()
 	defer s.submitLock.Unlock()
 	if s.WorkerCount() < s.maxWorkCount && !s.hasIdleWorker() {
@@ -300,7 +331,7 @@ func (s *Pool) Submit(job func()) error {
 }
 
 // notify all workers, only idle workers be awakened
-func (s *Pool) notifyAll() {
+func (s *BasicPool) notifyAll() {
 	s.workers.RangeFast(func(_, v interface{}) bool {
 		if v.(*worker).Status() == statusIdle {
 			v.(*worker).Wakeup()
@@ -310,7 +341,7 @@ func (s *Pool) notifyAll() {
 }
 
 // shift an element from array head
-func (s *Pool) pop() (fn *JobItem) {
+func (s *BasicPool) pop() (fn *JobItem) {
 	f := s.jobs.Pop()
 	if f != nil {
 		fn = f.(*JobItem)
@@ -319,7 +350,7 @@ func (s *Pool) pop() (fn *JobItem) {
 }
 
 // Stop and remove all workers in the pool
-func (s *Pool) Stop() {
+func (s *BasicPool) Stop() {
 	s.workers.RangeFast(func(_, v interface{}) bool {
 		v.(*worker).Stop()
 		return true
@@ -328,32 +359,32 @@ func (s *Pool) Stop() {
 }
 
 // RunningWorkerCount returns the count of running workers
-func (s *Pool) RunningWorkerCount() (workerCount int) {
+func (s *BasicPool) RunningWorkerCount() (workerCount int) {
 	return int(atomic.LoadInt64(s.runningWorkerCounter))
 }
 
 // IdleWorkerCount returns the count of idle workers
-func (s *Pool) IdleWorkerCount() (workerCount int) {
+func (s *BasicPool) IdleWorkerCount() (workerCount int) {
 	return int(atomic.LoadInt64(s.idleWorkerCounter))
 }
 
-func (s *Pool) hasIdleWorker() (has bool) {
+func (s *BasicPool) hasIdleWorker() (has bool) {
 	return atomic.LoadInt64(s.idleWorkerCounter) > 0
 }
 
 // QueuedJobCount returns the count of queued job
-func (s *Pool) QueuedJobCount() (jobCount int) {
+func (s *BasicPool) QueuedJobCount() (jobCount int) {
 	return s.jobs.Len()
 }
 
-func (s *Pool) debugLog(fmt string, v ...interface{}) {
+func (s *BasicPool) debugLog(fmt string, v ...interface{}) {
 	if !s.opt.Debug {
 		return
 	}
 	s.log(fmt, v...)
 }
 
-func (s *Pool) log(fmt string, v ...interface{}) {
+func (s *BasicPool) log(fmt string, v ...interface{}) {
 	if s.opt.Logger == nil {
 		return
 	}
@@ -363,13 +394,13 @@ func (s *Pool) log(fmt string, v ...interface{}) {
 // SetLogger set the logger to logging, you can SetLogger(nil) to disable logging
 //
 // default is log.New(os.Stdout, "", log.LstdFlags),
-func (s *Pool) SetLogger(l gcore.Logger) {
+func (s *BasicPool) SetLogger(l gcore.Logger) {
 	s.opt.Logger = l
 }
 
 type worker struct {
 	status    int
-	pool      *Pool
+	pool      *BasicPool
 	wakeupSig chan bool
 	breakSig  chan bool
 	id        string
@@ -520,7 +551,7 @@ func (w *worker) start() {
 	}()
 }
 
-func newWorker(pool *Pool) *worker {
+func newWorker(pool *BasicPool) *worker {
 	w := &worker{
 		pool:      pool,
 		id:        pool.newWorkerID(),

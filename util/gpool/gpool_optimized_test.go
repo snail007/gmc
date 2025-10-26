@@ -486,9 +486,40 @@ func TestOptimized_NoPreAlloc(t *testing.T) {
 }
 
 func TestOptimized_ZeroWorkers(t *testing.T) {
-	// 0个worker的情况，任务会进入队列但没有worker执行
-	// 这是预期行为，跳过这个测试或者改为测试能正确入队
-	t.Skip("0 workers means no execution, which is expected behavior")
+	// 测试0个worker的情况
+	p := gpool.NewOptimized(0)
+	defer p.Stop()
+	
+	// 应该可以正常创建
+	assert.NotNil(t, p)
+	assert.Equal(t, 0, p.WorkerCount())
+	
+	// 提交任务应该成功，但任务会在队列中等待
+	executed := gatomic.NewInt(0)
+	err := p.Submit(func() {
+		executed.Increase(1)
+	})
+	
+	// 提交不应该失败
+	assert.NoError(t, err)
+	
+	// 等待一小段时间，确认任务未执行（因为没有worker）
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, 0, executed.Val(), "任务不应该被执行，因为没有worker")
+	
+	// 队列中应该有1个任务
+	assert.Equal(t, 1, p.QueuedJobCount())
+	
+	// 增加worker后，任务应该被执行
+	p.Increase(1)
+	time.Sleep(100 * time.Millisecond)
+	
+	assert.Equal(t, 1, executed.Val(), "增加worker后任务应该被执行")
+	assert.Equal(t, 1, p.WorkerCount())
+	
+	// 等待所有任务完成
+	p.WaitDone()
+	assert.Equal(t, 0, p.QueuedJobCount())
 }
 
 func TestOptimized_MultipleStop(t *testing.T) {

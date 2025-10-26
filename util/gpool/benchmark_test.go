@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-var pSubmit, pWorker *Pool
+var pSubmit, pWorker *BasicPool
 
 func BenchmarkSubmit(b *testing.B) {
 	var do = func(max, step int) {

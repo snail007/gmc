@@ -570,6 +570,7 @@ import "github.com/snail007/gmc/util/gpool"
 
 // 创建协程池（最多10个并发）
 pool := gpool.New(10)
+defer pool.Stop()
 
 // 提交任务
 for i := 0; i < 100; i++ {
@@ -579,8 +580,12 @@ for i := 0; i < 100; i++ {
 }
 
 // 等待所有任务完成
-pool.Wait()
+pool.WaitDone()
 ```
+
+**说明**：
+- `gpool.New()` 返回 `*gpool.BasicPool`，实现了 `gpool.Pool` 接口
+- 也可以使用 `gpool.NewOptimized()` 获得性能更好的实现
 
 📖 **详细文档**: [协程池使用指南](util/gpool/README.md)
 

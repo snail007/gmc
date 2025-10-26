@@ -7,8 +7,8 @@ import (
 	"github.com/snail007/gmc/util/gpool"
 )
 
-// ExamplePoolInterface 演示接口的灵活性
-func ExamplePoolInterface() {
+// Example_poolInterface 演示接口的灵活性
+func Example_poolInterface() {
 	// 定义一个接受接口的函数
 	processJobs := func(pool gpool.Pool, jobCount int) {
 		for i := 0; i < jobCount; i++ {
@@ -39,8 +39,8 @@ func ExamplePoolInterface() {
 	// Both implementations work!
 }
 
-// ExamplePoolInterface_switchImplementation 演示如何轻松切换实现
-func ExamplePoolInterface_switchImplementation() {
+// Example_switchImplementation 演示如何轻松切换实现
+func Example_switchImplementation() {
 	// 配置决定使用哪个实现
 	useOptimized := true
 
@@ -63,8 +63,8 @@ func ExamplePoolInterface_switchImplementation() {
 	fmt.Println("Done")
 }
 
-// ExamplePoolInterface_dynamicScaling 演示接口支持的动态扩缩容
-func ExamplePoolInterface_dynamicScaling() {
+// Example_dynamicScaling 演示接口支持的动态扩缩容
+func Example_dynamicScaling() {
 	pool := gpool.NewOptimized(2)
 	defer pool.Stop()
 

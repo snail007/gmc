@@ -8,8 +8,8 @@ import (
 	"github.com/snail007/gmc/util/gpool"
 )
 
-// TestPoolInterfaceCompatibility verifies both Pool implementations work with BatchRequest
-func TestPoolInterfaceCompatibility(t *testing.T) {
+// TestPool_InterfaceCompatibility verifies both Pool implementations work with BatchRequest
+func TestPool_InterfaceCompatibility(t *testing.T) {
 	// 编译时检查类型兼容性
 	var _ gpool.Pool = (*gpool.BasicPool)(nil)
 	var _ gpool.Pool = (*gpool.OptimizedPool)(nil)
@@ -70,8 +70,8 @@ loop:
 	}
 }
 
-// ExamplePoolInterface demonstrates using gpool.Pool for flexibility
-func ExamplePoolInterface() {
+// Example_poolInterface demonstrates using gpool.Pool for flexibility
+func Example_poolInterface() {
 	// 函数接受接口类型，可以使用任意实现
 	processJobs := func(pool gpool.Pool) {
 		for i := 0; i < 5; i++ {

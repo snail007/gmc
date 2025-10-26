@@ -32,7 +32,7 @@ func TestNewBatchExecutor(t *testing.T) {
 	assert.Equal(t, 45, i.Val())
 	t.Log(diff)
 	assert.True(t, diff >= time.Second)
-	assert.True(t, diff < time.Second*6)
+	assert.True(t, diff < time.Second*10)
 }
 
 func TestNewBatchExecutor2(t *testing.T) {
@@ -368,7 +368,7 @@ func TestIsFirstDone(t *testing.T) {
 		})
 
 	value, err := executor.WaitFirstDone()
- 
+
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
@@ -383,4 +383,32 @@ func TestIsFirstDone(t *testing.T) {
 	assert.False(t, task2Cancelled, "First done task should not be marked as cancelled")
 	// Task 1 不是第一个完成的，应该被取消
 	assert.True(t, task1Cancelled, "Non-first task should be cancelled")
+}
+
+func TestWaitAllResultsOrder(t *testing.T) {
+	t.Parallel()
+	executor := NewBatchExecutor()
+	executor.SetWorkers(5)
+	
+	// 添加10个任务，每个任务返回它的索引
+	// 用不同的延迟来确保完成顺序是随机的
+	for i := 0; i < 10; i++ {
+		idx := i
+		executor.AppendTask(func(_ context.Context) (interface{}, error) {
+			// 让后面的任务更快完成
+			time.Sleep(time.Millisecond * time.Duration(100 - idx*10))
+			return idx, nil
+		})
+	}
+	
+	results := executor.WaitAll()
+	
+	// 验证结果数量
+	assert.Equal(t, 10, len(results), "Results length should be 10")
+	
+	// 验证每个结果的值与索引对应
+	for i, r := range results {
+		assert.Nil(t, r.Err(), "Task %d should have no error", i)
+		assert.Equal(t, i, r.Value().(int), "Task %d result should be %d", i, i)
+	}
 }

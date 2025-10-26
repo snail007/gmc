@@ -82,7 +82,7 @@ GMC 不仅是一个 Web 框架，更是一个完整的开发工具集，适用�
 ### ⚙️ 高级功能
 - **中间件** - 灵活的中间件系统
 - **协程池** - 高性能 Goroutine 池管理
-- **限流器** - 内置限流、熔断功能
+- **限流器** - 双算法限流（滑动窗口/令牌桶），支持 API 限流、带宽控制
 - **性能分析** - pprof 集成，便捷的性能分析
 - **进程管理** - 守护进程、优雅重启支持
 - **依赖注入** - 清晰的依赖注入机制
@@ -601,11 +601,14 @@ img, code := cap.Create(4, gcaptcha.NUM)
 
 ### 限流器
 
+GMC 提供两种高性能限流器：
+
+**滑动窗口限流器** - 适用于严格控制 QPS，如 API 接口限流：
 ```go
 import "github.com/snail007/gmc/util/rate"
 
-// 创建限流器（每秒100个请求）
-limiter := grate.NewLimiter(100, 1)
+// 创建滑动窗口限流器（每秒最多100个请求）
+limiter := grate.NewSlidingWindowLimiter(100, time.Second)
 
 if limiter.Allow() {
     // 处理请求
@@ -613,6 +616,22 @@ if limiter.Allow() {
     // 请求被限流
 }
 ```
+
+**令牌桶限流器** - 适用于带宽控制、流量整形：
+```go
+// 创建令牌桶限流器（每秒100个令牌，支持突发200个）
+limiter := grate.NewTokenBucketBurstLimiter(100, time.Second, 200)
+
+// 阻塞等待令牌
+if err := limiter.Wait(ctx); err != nil {
+    return err
+}
+// 处理请求
+```
+
+**使用场景：**
+- ✅ **滑动窗口**：API 限流、防刷、严格 QPS 控制
+- ✅ **令牌桶**：带宽限制、文件传输、消息队列消费
 
 📖 **详细文档**: [限流器使用指南](util/rate/README.md)
 
@@ -714,7 +733,7 @@ GMC 提供 60+ 独立的工具包，可以在任何 Go 项目中单独使用：
 | | captcha | 验证码生成 |
 | ⚡ **并发** | gpool | 协程池 |
 | | sync | 同步工具 |
-| | rate | 限流器 |
+| | rate | 限流器（滑动窗口/令牌桶） |
 | | loop | 循环控制 |
 | 🔧 **系统** | process | 进程管理 |
 | | exec | 命令执行 |

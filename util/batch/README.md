@@ -619,15 +619,25 @@ func (s *Executor) SetPanicHandler(panicHandler func(e interface{}))
 func (s *Executor) WaitAll() []taskResult
 ```
 
-等待所有任务完成，返回所有任务的结果。
+等待所有任务完成，返回所有任务的结果。**结果顺序与任务添加顺序严格对应**，results[i] 对应第 i 个添加的任务。
 
 **返回值：**
-- `[]taskResult`：所有任务的结果数组
+- `[]taskResult`：所有任务的结果数组，顺序与任务添加顺序一致
 
 **示例：**
 ```go
+executor.AppendTask(
+    func(ctx context.Context) (interface{}, error) {
+        return "task0", nil
+    },
+    func(ctx context.Context) (interface{}, error) {
+        return "task1", nil
+    },
+)
 results := executor.WaitAll()
-for _, result := range results {
+// results[0] 对应第1个任务，results[1] 对应第2个任务
+for i, result := range results {
+    fmt.Printf("Task %d: ", i)
     if result.Err() != nil {
         // 处理错误
     } else {
@@ -717,7 +727,7 @@ func(ctx context.Context) (value interface{}, err error)
    - `WaitFirstDone` → 使用 `IsFirstDone(ctx)`
    - 不要混用，否则会得到错误的结果
 4. **Panic 处理**：任务中的 panic 会被捕获并转换为 error
-5. **结果顺序**：`WaitAll` 返回的结果顺序与任务添加顺序可能不同
+5. **结果顺序**：`WaitAll` 返回的结果顺序与任务添加顺序严格对应，results[i] 对应 tasks[i]
 6. **资源清理**：确保在任务函数中正确处理资源清理，避免资源泄漏
 7. **Goroutine 泄漏**：在 `WaitFirstSuccess/Done` 中，所有 context 都会被取消以避免 goroutine 泄漏
 

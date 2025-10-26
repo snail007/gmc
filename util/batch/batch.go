@@ -7,7 +7,6 @@ import (
 
 	gerror "github.com/snail007/gmc/module/error"
 	"github.com/snail007/gmc/util/gpool"
-	glist "github.com/snail007/gmc/util/list"
 )
 
 type taskStatusKey struct{}
@@ -64,22 +63,20 @@ func (s *Executor) SetPanicHandler(panicHandler func(e interface{})) {
 	s.panicHandler = panicHandler
 }
 
+// WaitAll 等待所有任务完成并返回结果
+// 返回的结果数组与任务添加顺序严格对应，allResults[i] 对应 tasks[i]
 func (s *Executor) WaitAll() (allResults []taskResult) {
 	p := gpool.New(s.workers)
 	defer p.Stop()
-	allResult := glist.New()
-	for _, t := range s.tasks {
+	allResults = make([]taskResult, len(s.tasks))
+	for idx, t := range s.tasks {
 		t0 := t
+		idx0 := idx
 		p.Submit(func() {
-			item := s.run(t0)
-			allResult.Add(item)
+			allResults[idx0] = s.run(t0)
 		})
 	}
 	p.WaitDone()
-	allResult.RangeFast(func(index int, value interface{}) bool {
-		allResults = append(allResults, value.(taskResult))
-		return true
-	})
 	return
 }
 

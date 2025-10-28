@@ -218,10 +218,11 @@ func (this *Ctx) Param() gcore.Params {
 
 // GetParam returns the value of the URL param.
 // It is a shortcut for c.Param().ByName(key)
-//     router.GET("/user/:id", func(c *gcore.Ctx) {
-//         // a GET request to /user/john
-//         id := c.Param("id") // id == "john"
-//     })
+//
+//	router.GET("/user/:id", func(c *gcore.Ctx) {
+//	    // a GET request to /user/john
+//	    id := c.Param("id") // id == "john"
+//	})
 func (this *Ctx) GetParam(key string) string {
 	return this.param.ByName(key)
 }
@@ -586,8 +587,8 @@ func (this *Ctx) JSON(code int, data interface{}) (err error) {
 // It also sets the Content-Type as "application/json".
 func (this *Ctx) JSONTo(w io.Writer, code int, data interface{}) (err error) {
 	if w, ok := w.(http.ResponseWriter); ok {
-		w.WriteHeader(code)
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
 	}
 	_, err = this.WriteTo(w, data)
 	return
@@ -723,9 +724,10 @@ func (this *Ctx) WriteFileAttachment(filepath, filename string) {
 
 // FullPath returns a matched route full path. For not found routes
 // returns an empty string.
-//     router.GET("/user/:id", func(c gcore.Ctx) {
-//         c.FullPath() == "/user/:id" // true
-//     })
+//
+//	router.GET("/user/:id", func(c gcore.Ctx) {
+//	    c.FullPath() == "/user/:id" // true
+//	})
 func (this *Ctx) FullPath() string {
 	return this.param.MatchedRoutePath()
 }

@@ -412,10 +412,18 @@ func (this *APIServer) Listener() net.Listener {
 	return this.listener
 }
 
+func (s *APIServer) ServeEmbedFSWithFilter(fs embed.FS, urlPath string, filter gcore.HttpFileFilter) {
+	serveEmbedFS(s.router, fs, urlPath, filter)
+}
+
 func (s *APIServer) ServeEmbedFS(fs embed.FS, urlPath string) {
-	serveEmbedFS(s.router, fs, urlPath)
+	serveEmbedFS(s.router, fs, urlPath, nil)
+}
+
+func (s *APIServer) ServeFilesWithFilter(rootPath, urlPath string, filter gcore.HttpFileFilter) {
+	serveFiles(s.router, gfile.Abs(rootPath), urlPath, filter)
 }
 
 func (s *APIServer) ServeFiles(rootPath, urlPath string) {
-	serveFiles(s.router, gfile.Abs(rootPath), urlPath)
+	serveFiles(s.router, gfile.Abs(rootPath), urlPath, nil)
 }

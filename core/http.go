@@ -18,9 +18,10 @@ type (
 	// Handle is a function that can be registered to a route to handle HTTP
 	// requests. Like http.HandlerFunc, but has a third parameter for the values of
 	// wildcards (path variables).
-	Handle     func(http.ResponseWriter, *http.Request, Params)
-	Handler    func(ctx Ctx)
-	Middleware func(ctx Ctx) (isStop bool)
+	Handle         func(http.ResponseWriter, *http.Request, Params)
+	Handler        func(ctx Ctx)
+	Middleware     func(ctx Ctx) (isStop bool)
+	HttpFileFilter func(r *http.Request, filePath string) (newPath string, ok bool)
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -175,7 +176,9 @@ type APIServer interface {
 	ListenerFactory() func(addr string) (net.Listener, error)
 	SetListenerFactory(listenerFactory func(addr string) (net.Listener, error))
 	ServeEmbedFS(fs embed.FS, urlPath string)
+	ServeEmbedFSWithFilter(fs embed.FS, urlPath string, filter HttpFileFilter)
 	ServeFiles(rootPath, urlPath string)
+	ServeFilesWithFilter(rootPath, urlPath string, filter HttpFileFilter)
 }
 
 type HTTPServer interface {
@@ -210,7 +213,9 @@ type HTTPServer interface {
 	ListenTLS() (err error)
 	SetCtx(ctx Ctx)
 	ServeEmbedFS(fs embed.FS, urlPath string)
+	ServeEmbedFSWithFilter(fs embed.FS, urlPath string, filter HttpFileFilter)
 	ServeFiles(rootPath, urlPath string)
+	ServeFilesWithFilter(rootPath, urlPath string, filter HttpFileFilter)
 }
 
 type Controller interface {

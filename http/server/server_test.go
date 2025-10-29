@@ -686,3 +686,45 @@ func TestHTTPServer_ServeEmbedFS(t *testing.T) {
 	s.ServeHTTP(w, r)
 	assert.Equal(404, w.Result().StatusCode)
 }
+
+func TestHTTPServer_ServeEmbedFSWithFilter(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.ServeEmbedFSWithFilter(testdata.TplFS, "/tpls/", func(r *http.Request, path string) (newPath string, doNext bool) {
+		if path == "none.txt" {
+			return "", false
+		}
+		return path, true
+	})
+
+	w, r := mockRequest("/tpls/none.txt")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("Not Found", str)
+
+	w, r = mockRequest("/tpls/f/f.txt")
+	s.ServeHTTP(w, r)
+	str, _ = result(w)
+	assert.Equal("f", str)
+}
+
+func TestHTTPServer_ServeFilesWithFilter(t *testing.T) {
+	assert := assert.New(t)
+	s := mockHTTPServer()
+	s.ServeFilesWithFilter("tests", "/files/", func(r *http.Request, path string) (newPath string, doNext bool) {
+		if path == "d.txt" {
+			return "", false
+		}
+		return path, true
+	})
+
+	w, r := mockRequest("/files/d.txt")
+	s.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("Not Found", str)
+
+	w, r = mockRequest("/files/abc.txt")
+	s.ServeHTTP(w, r)
+	str, _ = result(w)
+	assert.Equal("abc", str)
+}

@@ -9,6 +9,7 @@ import (
 	gcore "github.com/snail007/gmc/core"
 	"github.com/snail007/gmc/http/template/testdata"
 	"net"
+	"net/http"
 	"testing"
 
 	ghttputil "github.com/snail007/gmc/internal/util/http"
@@ -197,4 +198,46 @@ func TestAPIServer_ServeFiles(t *testing.T) {
 	api.ServeHTTP(w, r)
 	str, _ = result(w)
 	assert.Equal("d", str)
+}
+
+func TestAPIServer_ServeEmbedFSWithFilter(t *testing.T) {
+	assert := assert.New(t)
+	api := NewAPIServer(gcore.ProviderCtx()(), ":")
+	api.ServeEmbedFSWithFilter(testdata.TplFS, "/tpls/", func(r *http.Request, path string) (newPath string, doNext bool) {
+		if path == "none.txt" {
+			return "", false
+		}
+		return path, true
+	})
+
+	w, r := mockRequest("/tpls/none.txt")
+	api.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("Not Found", str)
+
+	w, r = mockRequest("/tpls/f/f.txt")
+	api.ServeHTTP(w, r)
+	str, _ = result(w)
+	assert.Equal("f", str)
+}
+
+func TestAPIServer_ServeFilesWithFilter(t *testing.T) {
+	assert := assert.New(t)
+	api := NewAPIServer(gcore.ProviderCtx()(), ":")
+	api.ServeFilesWithFilter("tests", "/files/", func(r *http.Request, path string) (newPath string, doNext bool) {
+		if path == "d.txt" {
+			return "", false
+		}
+		return path, true
+	})
+
+	w, r := mockRequest("/files/d.txt")
+	api.ServeHTTP(w, r)
+	str, _ := result(w)
+	assert.Equal("Not Found", str)
+
+	w, r = mockRequest("/files/abc.txt")
+	api.ServeHTTP(w, r)
+	str, _ = result(w)
+	assert.Equal("abc", str)
 }

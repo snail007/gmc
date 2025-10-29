@@ -597,40 +597,67 @@ func (s *HTTPServer) callMiddleware(ctx gcore.Ctx, middleware []gcore.Middleware
 	return
 }
 
+func (s *HTTPServer) ServeEmbedFSWithFilter(fs embed.FS, urlPath string, filter gcore.HttpFileFilter) {
+	serveEmbedFS(s.router, fs, urlPath, filter)
+}
+
 func (s *HTTPServer) ServeEmbedFS(fs embed.FS, urlPath string) {
-	serveEmbedFS(s.router, fs, urlPath)
+	serveEmbedFS(s.router, fs, urlPath, nil)
+}
+
+func (s *HTTPServer) ServeFilesWithFilter(rootPath, urlPath string, filter gcore.HttpFileFilter) {
+	serveFiles(s.router, gfile.Abs(rootPath), urlPath, filter)
 }
 
 func (s *HTTPServer) ServeFiles(rootPath, urlPath string) {
-	serveFiles(s.router, gfile.Abs(rootPath), urlPath)
+	serveFiles(s.router, gfile.Abs(rootPath), urlPath, nil)
 }
 
-func serveEmbedFS(router gcore.HTTPRouter, fs embed.FS, urlPath string) {
+func serveEmbedFS(router gcore.HTTPRouter, fs embed.FS, urlPath string, filter gcore.HttpFileFilter) {
 	urlPath = strings.TrimSuffix(urlPath, "/")
 	bindPath := urlPath + "/*filepath"
 	router.HandlerFuncAny(bindPath, func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, urlPath+"/")
+		if filter != nil {
+			newPath, ok := filter(r, path)
+			if !ok {
+				notFound(w)
+				return
+			}
+			path = newPath
+		}
 		b, err := fs.ReadFile(path)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Not Found"))
+			notFound(w)
 			return
 		}
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, bytes.NewReader(b))
 	})
 }
 
-func serveFiles(router gcore.HTTPRouter, root, urlPath string) {
+func serveFiles(router gcore.HTTPRouter, root, urlPath string, filter gcore.HttpFileFilter) {
 	urlPath = strings.TrimSuffix(urlPath, "/")
 	bindPath := urlPath + "/*filepath"
 	router.HandlerFuncAny(bindPath, func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, urlPath+"/")
+		if filter != nil {
+			newPath, ok := filter(r, path)
+			if !ok {
+				notFound(w)
+				return
+			}
+			path = newPath
+		}
 		b, err := os.ReadFile(filepath.Join(root, path))
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Not Found"))
+			notFound(w)
 			return
 		}
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, bytes.NewReader(b))
 	})
+}
+
+func notFound(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte("Not Found"))
 }

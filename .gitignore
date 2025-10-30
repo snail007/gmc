@@ -19,3 +19,4 @@ gmcrun.toml
 /vendor/*
 coverage.txt
 /util/net/coverage.html
+/.serena/

@@ -210,9 +210,15 @@ curl http://localhost:7080/demo/getparams?name=张三
 # 输出: Hello, 张三!
 ```
 
+> **HTTP Server 详细文档：** [http/server/README.md](https://github.com/snail007/gmc/blob/master/http/server/README.md) - 查看完整的服务器配置、TLS 设置、性能优化等
+
 ---
 
 ## 核心概念
+
+GMC 采用分层架构、Provider 模式和完整的生命周期管理，提供灵活可扩展的应用框架。
+
+> **详细文档：** [module/app/README.md](https://github.com/snail007/gmc/blob/master/module/app/README.md) - 查看完整的应用架构、生命周期管理、热重载等
 
 ### 架构设计
 
@@ -335,11 +341,23 @@ app.Run()
 
 ### 资源嵌入
 
-GMC 支持使用 Go 1.16+ 的 `embed` 功能将静态资源和视图模板直接打包到二进制文件中，实现单文件部署。
+**推荐方式：使用 Go embed 功能**
+
+GMC 推荐使用 Go 1.16+ 原生的 `embed` 功能将静态资源和视图模板直接打包到二进制文件中，实现单文件部署。这是标准、类型安全的方式。
+
+> **⚠️ 注意：** 不再推荐使用 `gmct tpl`、`gmct static`、`gmct i18n` 等打包命令。请使用下面介绍的 `embed` 方式。
+
+**embed 的优势：**
+- ✅ Go 原生功能，无需额外工具
+- ✅ 编译时类型检查
+- ✅ IDE 支持完善
+- ✅ 标准化、易维护
 
 关键在于，你需要**显式导入**包含 `embed.FS` 变量的包，并在代码中**直接使用**这些变量。
 
 #### 嵌入静态文件
+
+> **详细文档：** [http/server/README.md](https://github.com/snail007/gmc/blob/master/http/server/README.md) - 查看静态文件服务和嵌入的完整说明
 
 1.  在 `static` 文件夹中创建 `static.go` 文件，并导出一个 `embed.FS` 变量：
 
@@ -359,6 +377,10 @@ var StaticFS embed.FS
 
 #### 嵌入视图文件
 
+> **详细文档：** 
+> - [http/template/README.md](https://github.com/snail007/gmc/blob/master/http/template/README.md) - 模板引擎完整说明
+> - [http/view/README.md](https://github.com/snail007/gmc/blob/master/http/view/README.md) - 视图渲染完整文档
+
 1.  在 `views` 文件夹中创建 `views.go` 文件，并导出一个 `embed.FS` 变量：
 
 ```go
@@ -373,6 +395,8 @@ var ViewFS embed.FS
 ```
 
 #### 嵌入 i18n 文件
+
+> **详细文档：** [module/i18n/README.md](https://github.com/snail007/gmc/blob/master/module/i18n/README.md) - 查看国际化完整使用指南
 
 GMC 提供了简单的 API 来嵌入 i18n 国际化文件：
 
@@ -406,13 +430,13 @@ func main() {
 }
 ```
 
-**重要提示**: 使用 `InitEmbedFS` 时，应将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false` 或 `dir` 设置为空 (`dir=""`)。
+**重要提示**: 使用 `InitEmbedFS` 时，应将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false`。
 
-查看 [i18n 模块文档](../../module/i18n/README.md) 了解更多详情。
+查看 [i18n 模块文档](https://github.com/snail007/gmc/blob/master/module/i18n/README.md) 了解更多详情。
 
 #### 完整示例
 
-下面我们提供两种方式来初始化并使用嵌入的资源。
+下面我们提供两种方式来初始化并使用嵌入的资源（包含静态文件、视图和 i18n）。
 
 **通用文件:**
 
@@ -428,6 +452,10 @@ func main() {
     ├── views/
     │   ├── index.html
     │   └── views.go
+    ├── i18n/
+    │   ├── zh-CN.toml
+    │   ├── en-US.toml
+    │   └── i18n.go
     └── main.go
     ```
 
@@ -437,7 +465,7 @@ func main() {
     package static
     import "embed"
 
-    //go:embed all:*
+    //go:embed *
     var StaticFS embed.FS
     ```
 
@@ -447,15 +475,25 @@ func main() {
     package views
     import "embed"
 
-    //go:embed all:*
+    //go:embed *
     var ViewFS embed.FS
+    ```
+
+*   **`i18n/i18n.go`:**
+
+    ```go
+    package i18n
+    import "embed"
+
+    //go:embed *.toml
+    var I18nFS embed.FS
     ```
 
 ---
 
 **方式一：直接使用 HTTPServer (简单直接)**
 
-*   **`main.go` (正确版):**
+*   **`main.go`**
 
     ```go
     package main
@@ -463,28 +501,34 @@ func main() {
     import (
     	"github.com/snail007/gmc"
     	gtemplate "github.com/snail007/gmc/http/template"
+    	gi18n "github.com/snail007/gmc/module/i18n"
 
-    	// 显式导入 static 和 views 包
+    	// 显式导入 static、views 和 i18n 包
     	"myapp/static"
     	"myapp/views"
+    	"myapp/i18n"
     )
 
     func main() {
-    	// 1. 创建一个 HTTP 服务器
+    	// 1. 初始化嵌入的 i18n 文件
+    	err := gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
+    	if err != nil {
+    		panic(err)
+    	}
+
+    	// 2. 创建一个 HTTP 服务器
     	s := gmc.New.HTTPServer(gmc.New.CtxDefault())
 
-    	// 2. 注册嵌入的静态文件
-    	// 直接使用 static 包中导出的 StaticFS 变量
+    	// 3. 注册嵌入的静态文件
     	s.ServeEmbedFS(static.StaticFS, "/static")
 
-    	// 3. 注册嵌入的视图文件
-    	// 直接使用 views 包中导出的 ViewFS 变量
+    	// 4. 注册嵌入的视图文件
     	tpl := gtemplate.NewEmbedTemplateFS(s.Tpl(), views.ViewFS, ".")
     	if err := tpl.Parse(); err != nil {
     		s.Logger().Panicf("解析模板失败: %s", err)
     	}
 
-    	// 4. 设置路由并启动
+    	// 5. 设置路由并启动
     	s.Router().GET("/", func(ctx gmc.Ctx) {
     		ctx.View.Render("index.html")
     	})
@@ -496,7 +540,7 @@ func main() {
 
 **方式二：使用 App 管理服务 (推荐用于复杂应用)**
 
-*   **`main.go` (正确版):**
+*   **`main.go`**
 
     ```go
     package main
@@ -505,13 +549,22 @@ func main() {
     	"github.com/snail007/gmc"
     	gcore "github.com/snail007/gmc/core"
     	gtemplate "github.com/snail007/gmc/http/template"
+    	gi18n "github.com/snail007/gmc/module/i18n"
 
-    	// 显式导入 static 和 views 包
+    	// 显式导入 static、views 和 i18n 包
     	"myapp/static"
     	"myapp/views"
+    	"myapp/i18n"
     )
 
     func main() {
+    	// 1. 初始化嵌入的 i18n 文件
+    	err := gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
+    	if err != nil {
+    		panic(err)
+    	}
+
+    	// 2. 创建应用
     	app := gmc.New.App()
     	app.AddService(gcore.ServiceItem{
     		Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
@@ -540,6 +593,10 @@ func main() {
 ---
 
 ## 配置
+
+GMC 使用强大的配置管理模块，基于 Viper 封装，支持多种配置格式、环境变量、配置热加载等特性。
+
+> **详细文档：** [module/config/README.md](https://github.com/snail007/gmc/blob/master/module/config/README.md) - 查看完整的 API 文档、高级用法和最佳实践
 
 ### 配置文件
 
@@ -994,6 +1051,10 @@ func validateConfig(cfg gcore.Config) error {
 
 ## 路由
 
+GMC 提供灵活强大的路由系统，支持多种路由绑定方式、路由参数、路由组、中间件等特性。
+
+> **详细文档：** [http/router/README.md](https://github.com/snail007/gmc/blob/master/http/router/README.md) - 查看完整的路由 API、高级路由模式和最佳实践
+
 ### 基础路由
 
 GMC 提供灵活强大的路由系统，支持多种路由绑定方式。
@@ -1167,7 +1228,9 @@ admin.Controller("/post", new(controller.AdminPost))
 
 ### 中间件
 
-中间件是在请求到达控制器之前或之后执行的代码。
+中间件是在请求到达控制器之前或之后执行的代码，GMC 提供 4 个优先级的中间件层。
+
+> **详细文档：** [module/middleware/README.md](https://github.com/snail007/gmc/blob/master/module/middleware/README.md) - 查看内置中间件、自定义中间件开发指南
 
 #### 中间件架构
 
@@ -1300,6 +1363,10 @@ r.PrintRouteTable(os.Stdout)
 ---
 
 ## 控制器
+
+GMC 控制器提供完整的 HTTP 请求处理能力，包括生命周期钩子、请求解析、响应输出、视图渲染等功能。
+
+> **详细文档：** [http/controller/README.md](https://github.com/snail007/gmc/blob/master/http/controller/README.md) - 查看完整的控制器 API、生命周期详解和高级用法
 
 ### 创建控制器
 
@@ -1765,6 +1832,8 @@ func (this *User) Headers() {
 
 #### Cookie 操作
 
+> **详细文档：** [http/cookie/README.md](https://github.com/snail007/gmc/blob/master/http/cookie/README.md) - 查看完整的 Cookie API、安全选项和最佳实践
+
 ```go
 func (this *User) CookieDemo() {
     // 读取 Cookie
@@ -2082,6 +2151,12 @@ func (this *User) ClientInfo() {
 
 
 ## 视图模板
+
+GMC 的模板引擎基于 Go 标准库的 `text/template`，增强了模板继承、包含、自定义函数等功能。
+
+> **详细文档：** 
+> - [http/template/README.md](https://github.com/snail007/gmc/blob/master/http/template/README.md) - 模板引擎详细说明
+> - [http/view/README.md](https://github.com/snail007/gmc/blob/master/http/view/README.md) - 视图渲染完整文档
 
 ### 模板配置
 
@@ -2676,6 +2751,10 @@ func (this *User) SafeRender() {
 
 ## 数据库
 
+GMC 提供强大的数据库操作能力，基于 GORM 封装，支持 MySQL、PostgreSQL、SQLite 等多种数据库。
+
+> **详细文档：** [module/db/README.md](https://github.com/snail007/gmc/blob/master/module/db/README.md) - 查看完整的数据库 API、查询构建器、事务处理等
+
 ### 配置连接
 
 #### 数据库配置
@@ -3236,6 +3315,10 @@ func (this *User) MultiDBExample() {
 
 ## 缓存
 
+GMC Cache 模块提供统一的缓存接口，支持 Redis、内存缓存、文件缓存等多种后端，支持多数据源配置和管理。
+
+> **详细文档：** [module/cache/README.md](https://github.com/snail007/gmc/blob/master/module/cache/README.md) - 查看完整的配置选项、高级功能和使用示例
+
 ### 缓存配置
 
 #### 配置文件
@@ -3611,6 +3694,10 @@ func init() {
 
 ## Session
 
+GMC Session 模块提供灵活的会话管理，支持多种存储后端（内存、Redis、文件），内置安全特性。
+
+> **详细文档：** [http/session/README.md](https://github.com/snail007/gmc/blob/master/http/session/README.md) - 查看完整的 Session API、安全配置和高级用法
+
 ### Session 配置
 
 #### 配置文件
@@ -3977,6 +4064,10 @@ func SessionTimeoutMiddleware(ctx gcore.Ctx) bool {
 
 ## 日志
 
+GMC Log 模块提供强大的日志记录功能，支持多级别、多种输出格式、异步日志、日志轮转、结构化日志等特性。
+
+> **详细文档：** [module/log/README.md](https://github.com/snail007/gmc/blob/master/module/log/README.md) - 查看完整的 API 文档、输出格式、日志轮转配置等
+
 ### 日志配置
 
 #### 配置文件
@@ -4258,6 +4349,10 @@ logs/
 ---
 
 ## 国际化
+
+GMC I18n 模块提供完整的国际化支持，支持多语言文件、占位符、复数形式等特性。
+
+> **详细文档：** [module/i18n/README.md](https://github.com/snail007/gmc/blob/master/module/i18n/README.md) - 查看完整的国际化 API、语言文件格式和高级用法
 
 ### 配置国际化
 
@@ -5604,49 +5699,28 @@ echo "所有平台编译完成"
 
 ### 静态文件嵌入
 
-#### 嵌入模板文件
+推荐使用 Go 1.16+ 的 `embed` 功能来嵌入静态资源，而不是使用 GMCT 打包命令。
 
-在 `initialize` 目录执行：
+> **详细文档：** 请查看 [资源嵌入](#资源嵌入) 章节了解如何使用 `embed` 嵌入静态文件、视图和 i18n 文件。
 
-```bash
-# 打包模板文件
-gmct tpl --dir ../views
+**使用 embed 的优势：**
+- ✅ 原生 Go 功能，无需额外工具
+- ✅ 类型安全，编译时检查
+- ✅ 更好的 IDE 支持
+- ✅ 标准化的实现方式
 
-# 生成的文件会自动被编译进二进制
-```
-
-生成的代码示例：
+**快速示例：**
 
 ```go
-// gmc_templates_bindata_xxx.go
-package initialize
+package static
 
-func init() {
-    // 模板数据会被自动注入
-    gmc.TemplateString(`/views/index.html`, `...`)
-    gmc.TemplateString(`/views/user/list.html`, `...`)
-}
+import "embed"
+
+//go:embed *
+var StaticFS embed.FS
 ```
 
-#### 嵌入静态文件
-
-```bash
-# 打包静态文件
-gmct static --dir ../static
-
-# 清理生成的文件（开发时）
-gmct static --clean
-```
-
-#### 嵌入国际化文件
-
-```bash
-# 打包 i18n 文件
-gmct i18n --dir ../i18n
-
-# 清理
-gmct i18n --clean
-```
+详细用法请参考 [资源嵌入](#资源嵌入) 章节。
 
 ### 生产环境配置
 
@@ -6301,49 +6375,38 @@ exclude_dirs = ["${DIR}/vendor", "${DIR}/.git"]
 
 ### 资源打包
 
-#### 打包模板
+**推荐使用 Go embed 功能代替 GMCT 打包命令**
 
-```bash
-# 在 initialize 目录执行
-cd initialize
+GMC 推荐使用 Go 1.16+ 原生的 `embed` 功能来嵌入静态资源、视图模板和国际化文件，而不是使用 GMCT 的打包命令。
 
-# 打包 views 目录
-gmct tpl --dir ../views
+详细的 embed 使用方法请参考 [资源嵌入](#资源嵌入) 章节。
 
-# 清理生成的文件
-gmct tpl --clean
-```
+**使用 embed 的优势：**
+- ✅ Go 原生功能，无需额外工具
+- ✅ 类型安全，编译时检查
+- ✅ IDE 支持良好
+- ✅ 更标准化的实现
 
-使用打包的模板：
+**快速参考：**
 
 ```go
-// 编译后，模板已嵌入二进制
-// 自动从二进制加载，无需 views 目录
-this.View.Render("user/list")
-```
+// static/static.go
+package static
+import "embed"
+//go:embed *
+var StaticFS embed.FS
 
-#### 打包静态文件
+// views/views.go
+package views
+import "embed"
+//go:embed *
+var ViewFS embed.FS
 
-```bash
-# 打包 static 目录
-gmct static --dir ../static
-
-# 清理
-gmct static --clean
-```
-
-文件查找顺序：
-1. 先从二进制中查找
-2. 再从文件系统查找
-
-#### 打包 i18n 文件
-
-```bash
-# 打包国际化文件
-gmct i18n --dir ../i18n
-
-# 清理
-gmct i18n --clean
+// i18n/i18n.go
+package i18n
+import "embed"
+//go:embed *.toml
+var I18nFS embed.FS
 ```
 
 ### 项目模板
@@ -6400,6 +6463,29 @@ gmc-template/
 ---
 
 ## 进阶主题
+
+### 错误处理
+
+GMC Error 模块提供增强的错误处理功能，支持堆栈跟踪、错误包装、Panic 恢复等特性。
+
+> **详细文档：** [module/error/README.md](https://github.com/snail007/gmc/blob/master/module/error/README.md) - 查看完整的错误处理 API、堆栈跟踪、Try/Catch 模式等
+
+**基本使用：**
+
+```go
+import gerror "github.com/snail007/gmc/module/error"
+
+// 创建带堆栈的错误
+err := gerror.New("something went wrong")
+
+// 包装现有错误
+wrappedErr := gerror.Wrap(existingErr)
+
+// 打印完整堆栈
+fmt.Println(err.ErrorStack())
+```
+
+---
 
 ### 自定义 Provider
 
@@ -7628,94 +7714,130 @@ GMC 是一个功能全面、性能卓越的 Go Web 框架：
 
 ## 常用工具包
 
-GMC 提供了丰富的工具包，涵盖常见的开发需求。以下是可用的工具包列表及其 GitHub 文档链接：
+GMC 提供了丰富的工具包，涵盖常见的开发需求。
 
-### 字符串和编码
+### GPool - 协程池
 
-- **[strings](https://github.com/snail007/gmc/tree/master/util/strings)** - 字符串处理工具
-- **[bytes](https://github.com/snail007/gmc/tree/master/util/bytes)** - 字节处理工具
-- **[cast](https://github.com/snail007/gmc/tree/master/util/cast)** - 类型转换工具
-- **[hash](https://github.com/snail007/gmc/tree/master/util/hash)** - 哈希和加密工具
-- **[compress](https://github.com/snail007/gmc/tree/master/util/compress)** - 压缩和解压工具
+高性能、并发安全的 Go 协程池，支持动态伸缩、空闲超时、panic 恢复等特性。
 
-### 数据结构
+**核心特性：**
+- ✅ 动态工作协程管理，运行时增减
+- ✅ 支持空闲超时自动回收
+- ✅ 自动 panic 恢复和自定义处理
+- ✅ 提供 OptimizedPool（推荐）和 BasicPool 两种实现
+- ✅ 性能提升 30-50%（OptimizedPool）
 
-- **[collection](https://github.com/snail007/gmc/tree/master/util/collection)** - 集合操作工具
-- **[map](https://github.com/snail007/gmc/tree/master/util/map)** - Map 操作工具
-- **[set](https://github.com/snail007/gmc/tree/master/util/set)** - Set 集合实现
-- **[list](https://github.com/snail007/gmc/tree/master/util/list)** - 列表操作工具
-- **[linklist](https://github.com/snail007/gmc/tree/master/util/linklist)** - 链表实现
-- **[value](https://github.com/snail007/gmc/tree/master/util/value)** - 值操作工具
-
-### 并发和性能
-
-- **[gpool](https://github.com/snail007/gmc/tree/master/util/gpool)** - Goroutine 池
-- **[sync](https://github.com/snail007/gmc/tree/master/util/sync)** - 同步工具
-- **[rate](https://github.com/snail007/gmc/tree/master/util/rate)** - 限流器
-- **[batch](https://github.com/snail007/gmc/tree/master/util/batch)** - 批处理工具
-- **[loop](https://github.com/snail007/gmc/tree/master/util/loop)** - 循环工具
-
-### 网络和 HTTP
-
-- **[net](https://github.com/snail007/gmc/tree/master/util/net)** - 网络工具
-- **[http](https://github.com/snail007/gmc/tree/master/util/http)** - HTTP 工具
-- **[proxy](https://github.com/snail007/gmc/tree/master/util/proxy)** - 代理工具
-- **[url](https://github.com/snail007/gmc/tree/master/util/url)** - URL 处理工具
-
-### 文件和系统
-
-- **[file](https://github.com/snail007/gmc/tree/master/util/file)** - 文件操作工具
-- **[os](https://github.com/snail007/gmc/tree/master/util/os)** - 操作系统工具
-- **[env](https://github.com/snail007/gmc/tree/master/util/env)** - 环境变量工具
-- **[exec](https://github.com/snail007/gmc/tree/master/util/exec)** - 命令执行工具
-- **[process](https://github.com/snail007/gmc/tree/master/util/process)** - 进程管理工具
-
-### 开发和调试
-
-- **[pprof](https://github.com/snail007/gmc/tree/master/util/pprof)** - 性能分析工具
-- **[testing](https://github.com/snail007/gmc/tree/master/util/testing)** - 测试工具
-- **[reflect](https://github.com/snail007/gmc/tree/master/util/reflect)** - 反射工具
-- **[args](https://github.com/snail007/gmc/tree/master/util/args)** - 命令行参数工具
-
-### 其他工具
-
-- **[captcha](https://github.com/snail007/gmc/tree/master/util/captcha)** - 验证码生成
-- **[paginator](https://github.com/snail007/gmc/tree/master/util/paginator)** - 分页工具
-- **[rand](https://github.com/snail007/gmc/tree/master/util/rand)** - 随机数工具
-- **[json](https://github.com/snail007/gmc/tree/master/util/json)** - JSON 工具
-- **[cond](https://github.com/snail007/gmc/tree/master/util/cond)** - 条件判断工具
-- **[func](https://github.com/snail007/gmc/tree/master/util/func)** - 函数工具
-
-### 使用示例
-
-每个工具包都有详细的 README 文档和使用示例。点击上面的链接查看具体用法。
-
-基本使用方式：
+**快速使用：**
 
 ```go
-import (
-    "github.com/snail007/gmc/util/gpool"
-    "github.com/snail007/gmc/util/strings"
-    "github.com/snail007/gmc/util/hash"
-)
+import "github.com/snail007/gmc/util/gpool"
 
-func main() {
-    // 使用 goroutine 池
-    pool := gpool.New(10)  // 返回 *gpool.BasicPool，实现了 gpool.Pool 接口
-    defer pool.Stop()
-    
-    pool.Submit(func() {
-        // 任务代码
-    })
-    pool.WaitDone()
-    
-    // 使用字符串工具
-    result := strings.Reverse("hello")
-    
-    // 使用哈希工具
-    md5 := hash.MD5("data")
-}
+// 推荐：使用 OptimizedPool
+pool := gpool.NewOptimized(10)
+defer pool.Stop()
+
+pool.Submit(func() {
+    // 执行任务
+})
+pool.WaitDone()
 ```
+
+**详细文档：** [util/gpool/README.md](https://github.com/snail007/gmc/blob/master/util/gpool/README.md)
+
+---
+
+### Rate - 限流器
+
+提供滑动窗口和令牌桶两种限流算法，支持 API 限流、带宽控制等场景。
+
+**核心特性：**
+- ✅ 滑动窗口限流器 - 严格控制时间窗口内的请求数
+- ✅ 令牌桶限流器 - 平滑限流，支持突发流量
+- ✅ 并发安全，高性能
+- ✅ 适用于 API 限流、带宽控制、防刷等场景
+
+**快速使用：**
+
+```go
+import "github.com/snail007/gmc/util/rate"
+
+// 滑动窗口：每秒最多 100 个请求
+limiter := grate.NewSlidingWindowLimiter(100, time.Second)
+if limiter.Allow() {
+    // 处理请求
+}
+
+// 令牌桶：每秒 10 个令牌，支持突发 20 个
+burstLimiter := grate.NewTokenBucketBurstLimiter(10, time.Second, 20)
+```
+
+**详细文档：** [util/rate/README.md](https://github.com/snail007/gmc/blob/master/util/rate/README.md)
+
+---
+
+### Captcha - 验证码
+
+纯 Go 实现的验证码生成器，不依赖第三方图形库。
+
+**核心特性：**
+- ✅ 使用简单，无需额外依赖
+- ✅ 支持多字体、多颜色
+- ✅ 可自定义大小、干扰强度
+- ✅ 支持数字、字母、混合模式
+
+**快速使用：**
+
+```go
+import "github.com/snail007/gmc/util/captcha"
+
+cap := gcaptcha.New()
+cap.SetFont("comic.ttf")
+cap.SetSize(128, 64)
+
+// 生成 4 位数字验证码
+img, str := cap.Create(4, gcaptcha.NUM)
+
+// 自定义验证码内容
+img := cap.CreateCustom("hello")
+```
+
+**详细文档：** [util/captcha/README.md](https://github.com/snail007/gmc/blob/master/util/captcha/README.md)
+
+---
+
+### 完整工具包列表
+
+GMC 还提供了更多实用工具包，每个包都有详细的 README 文档：
+
+#### 字符串和编码
+- **[strings](https://github.com/snail007/gmc/blob/master/util/strings/README.md)** - 字符串处理工具
+- **[bytes](https://github.com/snail007/gmc/blob/master/util/bytes/README.md)** - 字节处理工具
+- **[cast](https://github.com/snail007/gmc/blob/master/util/cast/README.md)** - 类型转换工具
+- **[hash](https://github.com/snail007/gmc/blob/master/util/hash/README.md)** - 哈希和加密工具
+- **[compress](https://github.com/snail007/gmc/blob/master/util/compress/README.md)** - 压缩和解压工具
+
+#### 数据结构
+- **[collection](https://github.com/snail007/gmc/blob/master/util/collection/README.md)** - 集合操作工具
+- **[value](https://github.com/snail007/gmc/blob/master/util/value/README.md)** - 值操作工具
+
+#### 网络和 HTTP
+- **[net](https://github.com/snail007/gmc/blob/master/util/net/README.md)** - 网络工具
+- **[proxy](https://github.com/snail007/gmc/blob/master/util/proxy/README.md)** - 代理工具
+- **[url](https://github.com/snail007/gmc/blob/master/util/url/README.md)** - URL 处理工具
+
+#### 文件和系统
+- **[file](https://github.com/snail007/gmc/blob/master/util/file/README.md)** - 文件操作工具
+- **[env](https://github.com/snail007/gmc/blob/master/util/env/README.md)** - 环境变量工具
+
+#### 开发和调试
+- **[pprof](https://github.com/snail007/gmc/blob/master/util/pprof/README.md)** - 性能分析工具
+- **[testing](https://github.com/snail007/gmc/blob/master/util/testing/README.md)** - 测试工具
+- **[reflect](https://github.com/snail007/gmc/blob/master/util/reflect/README.md)** - 反射工具
+
+#### 其他工具
+- **[cond](https://github.com/snail007/gmc/blob/master/util/cond/README.md)** - 条件判断工具
+
+> **提示：** 点击工具包名称查看详细的 API 文档、使用示例和最佳实践。
 
 ### 贡献
 
@@ -7745,17 +7867,10 @@ gmct model -n user -t sqlite3
 
 # 热编译
 gmct run
-
-# 资源打包
-gmct tpl --dir ../views
-gmct static --dir ../static
-gmct i18n --dir ../i18n
-
-# 清理
-gmct tpl --clean
-gmct static --clean
-gmct i18n --clean
 ```
+
+> **注意：** 不再推荐使用 `gmct tpl`、`gmct static`、`gmct i18n` 打包命令。  
+> 请使用 Go 原生的 `embed` 功能，详见 [资源嵌入](#资源嵌入) 章节。
 
 #### Go 命令
 

@@ -348,32 +348,45 @@ build_cmd = "go build -o tmp/app"
 run_cmd = "./tmp/app"
 ```
 
-#### 3. Resource Packaging
+#### 3. Resource Embedding (Recommended: Use Go embed)
 
-Pack static files, templates, i18n files into binary for single-file deployment:
+**Recommended to use Go 1.16+ native `embed` feature for resource embedding, no need for GMCT pack commands.**
 
-```bash
-# Pack template files
-gmct tpl --dir ./views
+**Advantages of using embed:**
+- ✅ Native Go feature, no extra tools needed
+- ✅ Type-safe, compile-time checking
+- ✅ Better IDE support
+- ✅ More standardized implementation
 
-# Pack static files
-gmct static --dir ./static
+**Quick Example:**
 
-# Pack i18n files
-gmct i18n --dir ./i18n
+```go
+// static/static.go
+package static
+import "embed"
+//go:embed *
+var StaticFS embed.FS
 
-# Clean packed files
-gmct static --clean
-gmct tpl --clean
-gmct i18n --clean
+// views/views.go
+package views
+import "embed"
+//go:embed *
+var ViewFS embed.FS
+
+// i18n/i18n.go
+package i18n
+import "embed"
+//go:embed *.toml
+var I18nFS embed.FS
 ```
 
-After packaging, your application can be compiled into a single binary without carrying any resource files.
+**Detailed Documentation:**
+- [i18n Embedding Guide](https://github.com/snail007/gmc/blob/master/module/i18n/README.md)
+- [Template Embedding Guide](https://github.com/snail007/gmc/blob/master/http/template/README.md)
+- [Static Files Embedding Guide](https://github.com/snail007/gmc/blob/master/http/server/README.md)
+- [Complete Example](docs/zh/MANUAL_ZH.md#资源嵌入)
 
-**Manually use Go 1.16+ embed feature**, see module documentation for details:
-- [i18n Embedding Guide](module/i18n/README.md#packing-to-binary-goembed)
-- [Template Embedding Guide](http/template/README.md)
-- [Static Files Embedding Guide](http/server/README.md#embedding-resources)
+> **⚠️ Note:** `gmct tpl`, `gmct static`, `gmct i18n` commands are deprecated.
 
 #### 4. Project Information
 
@@ -395,11 +408,12 @@ gmct run --help
 |---------|-------------|---------|
 | `gmct new` | Create new project | `gmct new web` |
 | `gmct run` | Run with hot compilation | `gmct run` |
-| `gmct tpl` | Pack templates | `gmct tpl --dir ./views` |
-| `gmct static` | Pack static files | `gmct static --dir ./static` |
-| `gmct i18n` | Pack i18n files | `gmct i18n --dir ./i18n` |
+| `gmct controller` | Generate controller | `gmct controller -n User` |
+| `gmct model` | Generate model | `gmct model -n user` |
 | `gmct version` | Show version | `gmct version` |
 | `gmct help` | Show help | `gmct help` |
+
+> **⚠️ Deprecated:** `gmct tpl`, `gmct static`, `gmct i18n` are deprecated. Use Go `embed` instead.
 
 ### 🎬 Complete Development Workflow Example
 
@@ -415,10 +429,9 @@ gmct new web --pkg github.com/me/mywebapp
 gmct run
 # Auto recompile and restart after code changes
 
-# 4. Pack resources (production)
-gmct static --dir ./static
-gmct tpl --dir ./views
-gmct i18n --dir ./i18n
+# 4. Use embed for resource embedding (Recommended)
+# Use embed in static/static.go, views/views.go etc.
+# See Resource Embedding section for details
 
 # 5. Build for release
 go build -ldflags "-s -w" -o myapp

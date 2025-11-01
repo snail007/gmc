@@ -348,32 +348,45 @@ build_cmd = "go build -o tmp/app"
 run_cmd = "./tmp/app"
 ```
 
-#### 3. 资源打包
+#### 3. 资源嵌入（推荐使用 Go embed）
 
-将静态文件、模板、i18n 文件打包进二进制，实现单文件部署：
+**推荐使用 Go 1.16+ 的 `embed` 功能来嵌入资源，无需使用 GMCT 打包命令。**
 
-```bash
-# 打包模板文件
-gmct tpl --dir ./views
+**使用 embed 的优势：**
+- ✅ Go 原生功能，无需额外工具
+- ✅ 类型安全，编译时检查
+- ✅ IDE 支持良好
+- ✅ 更标准化的实现
 
-# 打包静态文件
-gmct static --dir ./static
+**快速示例：**
 
-# 打包 i18n 文件
-gmct i18n --dir ./i18n
+```go
+// static/static.go
+package static
+import "embed"
+//go:embed *
+var StaticFS embed.FS
 
-# 清理打包文件
-gmct static --clean
-gmct tpl --clean
-gmct i18n --clean
+// views/views.go  
+package views
+import "embed"
+//go:embed *
+var ViewFS embed.FS
+
+// i18n/i18n.go
+package i18n
+import "embed"
+//go:embed *.toml
+var I18nFS embed.FS
 ```
 
-打包后，你的应用可以编译成单个二进制文件，无需携带任何资源文件。
+**详细文档：**
+- [i18n 嵌入指南](https://github.com/snail007/gmc/blob/master/module/i18n/README.md)
+- [模板嵌入指南](https://github.com/snail007/gmc/blob/master/http/template/README.md)
+- [静态文件嵌入指南](https://github.com/snail007/gmc/blob/master/http/server/README.md)
+- [完整示例](docs/zh/MANUAL_ZH.md#资源嵌入)
 
-**手动使用 Go 1.16+ 的 embed 功能**，详见各模块文档：
-- [i18n 嵌入指南](module/i18n/README.md#打包到二进制文件-goembed)
-- [模板嵌入指南](http/template/README.md)
-- [静态文件嵌入指南](http/server/README.md#嵌入资源文件)
+> **⚠️ 注意：** `gmct tpl`、`gmct static`、`gmct i18n` 命令已不再推荐使用。
 
 #### 4. 项目信息
 
@@ -395,11 +408,12 @@ gmct run --help
 |------|------|------|
 | `gmct new` | 创建新项目 | `gmct new web` |
 | `gmct run` | 热编译运行 | `gmct run` |
-| `gmct tpl` | 打包模板 | `gmct tpl --dir ./views` |
-| `gmct static` | 打包静态文件 | `gmct static --dir ./static` |
-| `gmct i18n` | 打包国际化文件 | `gmct i18n --dir ./i18n` |
+| `gmct controller` | 生成控制器 | `gmct controller -n User` |
+| `gmct model` | 生成模型 | `gmct model -n user` |
 | `gmct version` | 查看版本 | `gmct version` |
 | `gmct help` | 查看帮助 | `gmct help` |
+
+> **⚠️ 已弃用：** `gmct tpl`、`gmct static`、`gmct i18n` 已不再推荐，请使用 Go `embed` 功能。
 
 ### 🎬 完整开发流程示例
 
@@ -415,10 +429,9 @@ gmct new web --pkg github.com/me/mywebapp
 gmct run
 # 修改代码后自动重新编译和重启
 
-# 4. 打包资源（生产环境）
-gmct static --dir ./static
-gmct tpl --dir ./views
-gmct i18n --dir ./i18n
+# 4. 使用 embed 嵌入资源（推荐）
+# 在 static/static.go、views/views.go 等文件中使用 embed
+# 详见资源嵌入章节
 
 # 5. 编译发布
 go build -ldflags "-s -w" -o myapp

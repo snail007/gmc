@@ -333,6 +333,210 @@ app.OnShutdown(func() {
 app.Run()
 ```
 
+### 资源嵌入
+
+GMC 支持使用 Go 1.16+ 的 `embed` 功能将静态资源和视图模板直接打包到二进制文件中，实现单文件部署。
+
+关键在于，你需要**显式导入**包含 `embed.FS` 变量的包，并在代码中**直接使用**这些变量。
+
+#### 嵌入静态文件
+
+1.  在 `static` 文件夹中创建 `static.go` 文件，并导出一个 `embed.FS` 变量：
+
+```go
+package static
+
+import (
+	"embed"
+)
+
+//go:embed *
+var StaticFS embed.FS
+```
+
+**重要提示**: 当使用 `go:embed` 嵌入静态资源时，为了避免框架优先从本地目录加载文件，应将 `app.toml` 中 `[static]` 配置块下的 `dir` 设置为空，即 `dir = ""`。
+
+
+#### 嵌入视图文件
+
+1.  在 `views` 文件夹中创建 `views.go` 文件，并导出一个 `embed.FS` 变量：
+
+```go
+package views
+
+import (
+	"embed"
+)
+
+//go:embed *
+var ViewFS embed.FS
+```
+
+#### 嵌入 i18n 文件
+
+GMC 提供了简单的 API 来嵌入 i18n 国际化文件：
+
+1.  在 `i18n` 文件夹中创建 `i18n.go` 文件：
+
+```go
+package i18n
+
+import "embed"
+
+//go:embed *.toml
+var I18nFS embed.FS
+```
+
+2.  在 `main.go` 中初始化：
+
+```go
+import (
+    gi18n "github.com/snail007/gmc/module/i18n"
+    "myapp/i18n"
+)
+
+func main() {
+    // 初始化嵌入的 i18n 文件，设置默认语言
+    err := gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
+    if err != nil {
+        panic(err)
+    }
+    
+    // 继续初始化应用...
+}
+```
+
+**重要提示**: 使用 `InitEmbedFS` 时，应将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false` 或 `dir` 设置为空 (`dir=""`)。
+
+查看 [i18n 模块文档](../../module/i18n/README.md) 了解更多详情。
+
+#### 完整示例
+
+下面我们提供两种方式来初始化并使用嵌入的资源。
+
+**通用文件:**
+
+*   **项目结构:**
+
+    ```text
+    /myapp
+    ├── go.mod
+    ├── static/
+    │   ├── css/
+    │   │   └── style.css
+    │   └── static.go
+    ├── views/
+    │   ├── index.html
+    │   └── views.go
+    └── main.go
+    ```
+
+*   **`static/static.go`:**
+
+    ```go
+    package static
+    import "embed"
+
+    //go:embed all:*
+    var StaticFS embed.FS
+    ```
+
+*   **`views/views.go`:**
+
+    ```go
+    package views
+    import "embed"
+
+    //go:embed all:*
+    var ViewFS embed.FS
+    ```
+
+---
+
+**方式一：直接使用 HTTPServer (简单直接)**
+
+*   **`main.go` (正确版):**
+
+    ```go
+    package main
+
+    import (
+    	"github.com/snail007/gmc"
+    	gtemplate "github.com/snail007/gmc/http/template"
+
+    	// 显式导入 static 和 views 包
+    	"myapp/static"
+    	"myapp/views"
+    )
+
+    func main() {
+    	// 1. 创建一个 HTTP 服务器
+    	s := gmc.New.HTTPServer(gmc.New.CtxDefault())
+
+    	// 2. 注册嵌入的静态文件
+    	// 直接使用 static 包中导出的 StaticFS 变量
+    	s.ServeEmbedFS(static.StaticFS, "/static")
+
+    	// 3. 注册嵌入的视图文件
+    	// 直接使用 views 包中导出的 ViewFS 变量
+    	tpl := gtemplate.NewEmbedTemplateFS(s.Tpl(), views.ViewFS, ".")
+    	if err := tpl.Parse(); err != nil {
+    		s.Logger().Panicf("解析模板失败: %s", err)
+    	}
+
+    	// 4. 设置路由并启动
+    	s.Router().GET("/", func(ctx gmc.Ctx) {
+    		ctx.View.Render("index.html")
+    	})
+    	s.Run()
+    }
+    ```
+
+---
+
+**方式二：使用 App 管理服务 (推荐用于复杂应用)**
+
+*   **`main.go` (正确版):**
+
+    ```go
+    package main
+
+    import (
+    	"github.com/snail007/gmc"
+    	gcore "github.com/snail007/gmc/core"
+    	gtemplate "github.com/snail007/gmc/http/template"
+
+    	// 显式导入 static 和 views 包
+    	"myapp/static"
+    	"myapp/views"
+    )
+
+    func main() {
+    	app := gmc.New.App()
+    	app.AddService(gcore.ServiceItem{
+    		Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
+    		AfterInit: func(s *gcore.ServiceItem) (err error) {
+    			httpServer := s.Service.(*gmc.HTTPServer)
+
+    			// 注册静态文件，直接使用导入的 static.StaticFS
+    			httpServer.ServeEmbedFS(static.StaticFS, "/static")
+
+    			// 注册视图文件，直接使用导入的 views.ViewFS
+    			tpl := gtemplate.NewEmbedTemplateFS(httpServer.Tpl(), views.ViewFS, ".")
+    			if err = tpl.Parse(); err != nil {
+    				return
+    			}
+
+    			// 注册路由
+    			httpServer.Router().GET("/", func(ctx gmc.Ctx) {
+    				ctx.View.Render("index.html")
+    			})
+    			return
+    		},
+    	})
+    	app.Run()
+    }
+    ```
 ---
 
 ## 配置
@@ -344,50 +548,321 @@ GMC 使用 TOML 格式的配置文件。默认配置文件是 `conf/app.toml`。
 #### 基本配置结构
 
 ```toml
-# HTTP 服务器配置
+# GMC 默认配置文件 app.toml
+
+############################################################
+# HTTP 服务配置
+############################################################
 [httpserver]
-listen = ":7080"
-tlsenable = false
-# tlscert = "cert.pem"
-# tlskey = "key.pem"
+# 监听地址和端口
+listen=":7080"
+# 是否启用 TLS (HTTPS)
+tlsenable=false
+# TLS 证书文件路径
+tlscert="conf/server.crt"
+# TLS 密钥文件路径
+tlskey="conf/server.key"
+# 是否开启客户端证书认证 (双向TLS)
+tlsclientauth=false
+# 客户端 CA 证书路径
+tlsclientsca="./conf/clintsca.crt"
+# 是否在启动时打印路由表
+printroute=true
+# 是否在发生 panic 时在浏览器中显示错误和调用栈
+showerrorstack=true
 
-# 模板配置
-[template]
-dir = "views"
-ext = ".html"
-delimiterleft = "{{"
-delimiterright = "}}"
+############################################################
+# 静态文件服务配置 (当不使用 embed 嵌入时)
+############################################################
+[static]
+# 静态文件目录的本地路径
+dir="static"
+# 访问静态文件的 URL 前缀
+urlpath="/static/"
 
-# 数据库配置
-[database]
-enable = true
-driver = "mysql"
-dsn = "root:password@tcp(127.0.0.1:3306)/mydb?charset=utf8mb4&parseTime=True"
-maxidle = 10
-maxconns = 100
-maxlifetimeseconds = 3600
-
-# 缓存配置
-[cache]
-enable = true
-# 内存缓存
-[[cache.stores]]
-store = "memory"
-cleanupintervalseconds = 60
-
-# Session 配置
-[session]
-enable = true
-store = "memory"
-ttl = 3600
-cookiedomain = ""
-
+#############################################################
 # 日志配置
+#############################################################
 [log]
-level = "info"
-output = "console"
-async = false
+# 日志级别: 1-7 分别对应 TRACE, DEBUG, INFO, WARN, ERROR, PANIC, NONE
+# 7 表示不输出任何日志
+level=3 # 默认为 INFO
+# 日志输出目标: 0 表示控制台, 1 表示文件
+output=[0,1]
+# 日志文件存放目录 (仅当 output 包含 1 时有效)
+dir="./logs"
+# 归档目录，如果设置，过期的日志文件会被移动到这里
+archive_dir=""
+# 日志文件名，支持占位符: %Y(年), %m(月), %d(日), %H(时)
+filename="web_%Y%m%d.log"
+# 是否启用 gzip 压缩日志文件
+gzip=true
+# 是否开启异步日志，开启后需要确保在程序退出前调用 logger.WaitAsyncDone()
+async=true
+
+#############################################################
+# i18n (国际化) 配置
+#############################################################
+[i18n]
+# 是否启用 i18n
+enable=false
+# 语言文件目录
+dir="i18n"
+# 默认语言 (文件名，不含扩展名，如 zh-CN.toml)
+default="zh-CN"
+
+#############################################################
+# 视图/模板配置
+#############################################################
+[template]
+# 模板文件目录 (当不使用 embed 嵌入时)
+dir="views"
+# 模板文件扩展名
+ext=".html"
+# 模板语法分隔符
+delimiterleft="{{"
+delimiterright="}}"
+# 布局(layout)文件所在的子目录名
+layout="layout"
+
+########################################################
+# Session 配置
+########################################################
+[session]
+# 是否启用 Session
+enable=true
+# 存储引擎: "file", "memory", "redis"
+store="memory"
+# Session ID 存储在 Cookie 中的名称
+cookiename="gmcsid"
+# Session 过期时间 (秒)
+ttl=3600
+
+# 文件存储引擎配置
+[session.file]
+# Session 文件存放目录, {tmp} 是系统临时目录的占位符
+dir="{tmp}"
+# GC (垃圾回收) 周期 (秒)
+gctime=300
+# Session 文件前缀
+prefix=".gmcsession_"
+
+# 内存存储引擎配置
+[session.memory]
+# GC 周期 (秒)
+gctime=300
+
+# Redis 存储引擎配置
+[session.redis]
+debug=false
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
+maxconnlifetime=3600
+wait=false
+
+############################################################
+# 缓存配置
+############################################################
+[cache]
+# 默认使用的缓存实例 ID
+default="default"
+
+# Redis 缓存实例配置 (可以有多个)
+[[cache.redis]]
+debug=true
+enable=true
+id="default"
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
+maxconnlifetime=3600
+wait=false
+
+# 内存缓存实例配置
+[[cache.memory]]
+enable=true
+id="default"
+# 清理周期 (秒)
+cleanupinterval=30
+
+# 文件缓存实例配置
+[[cache.file]]
+enable=true
+id="default"
+# 缓存目录, {tmp} 是系统临时目录的占位符
+dir="{tmp}"
+# 清理周期 (秒)
+cleanupinterval=30
+
+########################################################
+# 数据库配置
+########################################################
+[database]
+# 默认使用的数据库实例 ID
+default="default"
+
+# MySQL 实例配置 (可以有多个)
+[[database.mysql]]
+enable=true
+id="default"
+host="127.0.0.1"
+port="3306"
+username="user"
+password="user"
+database="test"
+# 表前缀
+prefix=""
+# SQL语句中表前缀的占位符
+prefix_sql_holder="__PREFIX__"
+charset="utf8"
+collate="utf8_general_ci"
+maxidle=30
+maxconns=200
+timeout=15000
+readtimeout=15000
+writetimeout=15000
+maxlifetimeseconds=1800
+
+# SQLite 实例配置
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+# 如果密码不为空，数据库将被加密
+password=""
+prefix=""
+prefix_sql_holder="__PREFIX__"
+# 同步模式: 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+syncmode=0
+# 打开模式: ro,rw,rwc,memory
+openmode="rw"
+# 缓存模式: shared,private
+cachemode="shared"
+
+# SQLite 实例配置
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+# 如果密码不为空，数据库将被加密
+password=""
+prefix=""
+prefix_sql_holder="__PREFIX__"
+# 同步模式: 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+syncmode=0
+# 打开模式: ro,rw,rwc,memory
+openmode="rw"
+# 缓存模式: shared,private
+cachemode="shared"
+
+##############################################################
+# Web & API 访问日志中间件配置
+##############################################################
+[accesslog]
+dir = "./logs"
+archive_dir = ""
+# 日志文件名，支持占位符
+filename="access_%Y%m%d.log"
+gzip=true
+# 日志格式, 可用占位符:
+# $host: URL中的主机名(含端口)
+# $uri: 请求路径
+# $query: URL中的查询字符串
+# $status_code: 响应的 HTTP 状态码
+# $time_used: 请求处理耗时(毫秒)
+# $req_time: 请求时间, 格式: 2020-10-55 15:33:55
+# $client_ip: 客户端真实IP
+# $remote_addr: 客户端地址(含端口)
+# $local_addr: 服务端被访问的地址
+format="$req_time $client_ip $host $uri?$query $status_code ${time_used}ms"
+
+##############################################################
+# 前端代理配置 (用于安全地获取客户端IP)
+##############################################################
+[frontend]
+# 代理类型: "cloudflare", "proxy"
+# 当类型为 cloudflare, gmc 会自动获取 Cloudflare 的 IP 段来验证请求头
+# 当类型为 proxy, 你需要手动在下面的 ips 字段中提供你的代理服务器IP地址
+#type="proxy"
+# 代理服务器的 IP 或 CIDR 地址段
+#ips=["192.168.1.1","192.168.0.0/16"]
+# 用于获取真实IP的请求头字段
+# cloudflare 可用: True-Client-IP, CF-Connecting-IP (默认)
+# proxy 可用: X-Real-IP, X-Forwarded-For (默认)
+#header=""
 ```
+
+#### API 服务配置示例 (api.toml)
+
+对于纯 API 服务，配置可以更精简。如果使用默认应用(`gmc.New.AppDefault()`)并希望运行 `APIServer`，需要在 `app.toml` 中添加 `[apiserver]` 配置块。
+
+```toml
+# GMC API服务配置文件 api.toml
+
+############################################################
+# API 服务配置
+############################################################
+[apiserver]
+# 监听地址和端口
+listen=":7081"
+# 是否在启动时打印路由表
+printroute=true
+# 是否在发生 panic 时显示错误和调用栈
+showerrorstack=true
+
+#############################################################
+# 日志配置
+#############################################################
+[log]
+# 日志级别: 1-7 (INFO, WARN, ERROR 等)
+level=3
+# 输出目标: 0-控制台
+output=[0]
+
+############################################################
+# 缓存配置 (按需启用)
+############################################################
+[cache]
+default="default"
+
+[[cache.redis]]
+enable=false
+id="default"
+address="127.0.0.1:6379"
+
+########################################################
+# 数据库配置 (按需启用)
+########################################################
+[database]
+default="default"
+
+[[database.mysql]]
+enable=false
+id="default"
+host="127.0.0.1"
+port="3306"
+username="user"
+password="user"
+database="test"
+
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+password=""
+```
+
 
 ### 配置加载
 
@@ -3993,31 +4468,6 @@ func (this *User) GetAppleMessage(count int) string {
 }
 ```
 
-### 命名空间
-
-组织大型项目的翻译文件：
-
-`i18n/zh-CN/common.toml`:
-```toml
-save = "保存"
-cancel = "取消"
-delete = "删除"
-```
-
-`i18n/zh-CN/user.toml`:
-```toml
-title = "用户管理"
-create = "创建用户"
-edit = "编辑用户"
-```
-
-`i18n/zh-CN/order.toml`:
-```toml
-title = "订单管理"
-create = "创建订单"
-status_pending = "待处理"
-```
-
 ### 国际化最佳实践
 
 1. **语言代码**: 使用标准的 BCP 47 语言标签（zh-CN, en-US）
@@ -4028,6 +4478,8 @@ status_pending = "待处理"
 6. **测试**: 测试所有语言版本的显示效果
 7. **文档**: 维护翻译关键字文档
 8. **工具**: 使用工具检查缺失的翻译
+
+**注意**: GMC i18n 目前只支持单层目录结构，所有语言文件必须直接放在 `i18n` 目录下，如 `i18n/zh-CN.toml`、`i18n/en-US.toml`。不支持子目录结构。
 
 ---
 
@@ -7440,10 +7892,9 @@ Transaction: 3,000 req/s
 ### E. 版本兼容性
 
 ```
-GMC Framework: v3.0+
+GMC Framework: v1.0.0+
 Go Version: 1.16+
-MySQL: 5.7+, 8.0+
-PostgreSQL: 11+
+MySQL: 5.5+, 8.0+
 Redis: 5.0+, 6.0+, 7.0+
 SQLite: 3.30+
 ```

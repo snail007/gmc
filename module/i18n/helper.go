@@ -7,9 +7,12 @@ package gi18n
 
 import (
 	"bytes"
+	"embed"
 	"encoding/base64"
 	gcore "github.com/snail007/gmc/core"
+	gconfig "github.com/snail007/gmc/module/config"
 	"golang.org/x/text/language"
+	"io/fs"
 	"path/filepath"
 	"strings"
 )
@@ -38,6 +41,54 @@ func Init(cfg gcore.Config) (err error) {
 		return initFromBinData(cfg)
 	}
 	return initFromDisk(cfg)
+}
+
+func InitEmbedFS(embedFS embed.FS, defaultLang string) (err error) {
+	fallbackLang := strings.ToLower(defaultLang)
+	if _, err = language.Parse(fallbackLang); err != nil {
+		return err
+	}
+	I18N = &I18n{
+		langs:        map[string]map[string]string{},
+		fallbackLang: fallbackLang,
+	}
+
+	err = fs.WalkDir(embedFS, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || filepath.Ext(path) != ".toml" {
+			return nil
+		}
+
+		content, err := embedFS.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		c := gconfig.New()
+		c.SetConfigType("toml")
+		err = c.ReadConfig(bytes.NewReader(content))
+		if err != nil {
+			return err
+		}
+
+		lang := filepath.Base(path)
+		lang = strings.TrimSuffix(lang, filepath.Ext(lang))
+		if _, e := language.Parse(lang); e != nil {
+			return e
+		}
+
+		data := map[string]string{}
+		for _, k := range c.AllKeys() {
+			data[k] = c.GetString(k)
+		}
+		I18N.Add(lang, data)
+
+		return nil
+	})
+
+	return
 }
 
 func initFromBinData(cfg gcore.Config) (err error) {

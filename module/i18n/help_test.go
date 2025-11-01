@@ -7,6 +7,7 @@ package gi18n
 
 import (
 	"bytes"
+	"embed"
 	"encoding/base64"
 	"github.com/magiconair/properties/assert"
 	gcore "github.com/snail007/gmc/core"
@@ -15,6 +16,9 @@ import (
 	"net/http"
 	"testing"
 )
+
+//go:embed tests/*.toml
+var testFS embed.FS
 
 func TestNew(t *testing.T) {
 	assert := assert2.New(t)
@@ -109,4 +113,40 @@ func TestInitFromBinData(t *testing.T) {
 	assert.NoError(err)
 
 	assert.Equal("Hello world", I18N.Tr("en", "key"))
+}
+
+func TestInitEmbedFS(t *testing.T) {
+	assert := assert2.New(t)
+
+	err := InitEmbedFS(testFS, "zh-cn")
+	assert.NoError(err)
+
+	assert.Equal("你好", I18N.Tr("zh-cn", "001"))
+	assert.Equal("Hello", I18N.Tr("en-us", "001"))
+	assert.Equal("你好", I18N.Tr("none", "001"))
+}
+
+func TestInitEmbedFS_WithEnglishDefault(t *testing.T) {
+	assert := assert2.New(t)
+
+	err := InitEmbedFS(testFS, "en-us")
+	assert.NoError(err)
+
+	assert.Equal("你好", I18N.Tr("zh-cn", "001"))
+	assert.Equal("Hello", I18N.Tr("en-us", "001"))
+	assert.Equal("Hello", I18N.Tr("none", "001"))
+}
+
+func TestInitEmbedFS_InvalidDefaultLang(t *testing.T) {
+	assert := assert2.New(t)
+
+	err := InitEmbedFS(testFS, "invalid-lang-code")
+	assert.Error(err)
+}
+
+func TestInitEmbedFS_EmptyDefaultLang(t *testing.T) {
+	assert := assert2.New(t)
+
+	err := InitEmbedFS(testFS, "")
+	assert.Error(err)
 }

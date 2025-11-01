@@ -1,638 +1,287 @@
-# GMC HTTP Server
+# GMC HTTP Server 模块
 
 ## 简介
 
-GMC HTTP Server 是一个功能强大的 HTTP 服务器实现，提供了完整的 Web 服务和 API 服务功能。支持路由、模板、会话、中间件、静态文件服务、HTTPS、HTTP/2 等特性。
+GMC HTTP Server 模块提供了两种核心服务器实现：
 
-## 功能特性
+-   **`HTTPServer`**: 一个功能完备的 Web 服务器，适用于构建传统的、包含页面渲染的 MVC 应用。它内置了模板引擎、会话管理、静态文件服务等功能。
+-   **`APIServer`**: 一个轻量级的 API 服务器，移除了模板和会话等功能，专注于提供高性能的 RESTful API 服务。
 
-- **双服务器模式**：支持 HTTPServer（完整 Web 功能）和 APIServer（轻量级 API）
-- **强大的路由**：基于高性能的 httprouter，支持 RESTful 路由
-- **模板引擎**：支持多种模板引擎和自定义函数
-- **会话管理**：内置会话支持，多种存储后端
-- **中间件系统**：4 级中间件，灵活的请求处理流程
-- **静态文件服务**：支持静态文件、嵌入式文件、Gzip 压缩
-- **HTTPS/HTTP2**：完整的 TLS 和 HTTP/2 支持
-- **优雅关闭**：支持优雅关闭和重启
-- **i18n 支持**：内置国际化支持
-- **错误处理**：可自定义 404、500 错误处理
-- **连接统计**：实时连接数统计
+两者共享相同的底层请求处理流程和中间件架构。
 
-## 安装
+## 核心概念：请求生命周期与中间件
 
-```bash
-go get github.com/snail007/gmc
+无论是 `HTTPServer` 还是 `APIServer`，一个 HTTP 请求的处理都遵循着一个清晰、分层的生命周期。理解这个流程对于高效使用中间件至关重要。
+
+### 请求处理流程图
+
+```
++--------------------------------------------------------------------+
+|                                                                    |
+|    请求进入 -> [ Middleware0 ] -> 路由匹配 -> [ Middleware1 ]      |
+|                                    |                               |
+|                                    |                               |
+|                                    |         +---------------------v-+
+|                                    |         |                      |
+|                                    |         |   执行控制器/处理器    |
+|                                    |         |                      |
+|                                    |         +-----------+-----------+
+|                                    |                     |            
+|                                    |                     |            
+|   [ 404 处理器 ] <-----------------+---------------------+            
+|        ^                                               |            
+|        |                                               v            
+|        +------------ [ 未找到路由 ] <------------+     [ Middleware2 ]
+|                                                                    |
+|                                                                    |
+| <----------------------------- [ Middleware3 ] <-------------------+
+|                                (defer中执行, 总会执行)               |
+|                                                                    |
++--------------------------------------------------------------------+
 ```
 
-## 快速开始
+### 各阶段详解
 
-### 创建简单的 Web 服务器
+1.  **`Middleware0`**: **路由前中间件**
+    -   **触发时机**：服务器接收到请求后，在进行任何路由匹配之前。
+    -   **主要用途**：执行最前置的全局逻辑，如 IP 黑名单、全局限流、CORS 预检请求处理等。如果此中间件返回 `true`，请求将直接中断，后续所有步骤（包括 `Middleware3`）都不会执行。
+
+2.  **路由匹配 (Router Lookup)**
+    -   框架根据请求的 `METHOD` 和 `PATH` 查找匹配的路由规则。
+    -   如果**未找到**匹配的路由，则直接跳转到 **404 处理器**。
+    -   如果**找到**匹配的路由，则继续下一步。
+
+3.  **`Middleware1`**: **路由后、处理器前中间件**
+    -   **触发时机**：路由匹配成功后，在执行用户定义的控制器方法或处理器之前。
+    -   **主要用途**：执行需要路由信息的逻辑，最典型的场景是**身份认证**和**权限校验**。因为此时已经知道请求要访问哪个具体的路由，可以进行精确的权限控制。
+
+4.  **执行控制器/处理器 (Handler Execution)**
+    -   执行用户在路由中注册的最终处理逻辑。
+    -   如果在此过程中发生 `panic`，执行将中断，并跳转到 **500 错误处理器**。
+
+5.  **`Middleware2`**: **处理器后中间件**
+    -   **触发时机**：在控制器/处理器**成功执行完毕**后（即没有发生 `panic`）。
+    -   **主要用途**：对成功的请求进行后置处理，例如修改响应内容、添加统一的响应头等。
+
+6.  **`Middleware3`**: **最终中间件**
+    -   **触发时机**：在 `defer` 语句中执行，因此**总是在请求的最后阶段被调用**，无论请求是成功、404 还是 500。
+    -   **主要用途**：进行最终的清理工作或日志记录，最典型的场景是**记录访问日志**（Access Log），因为它能获取到请求的完整信息，包括最终的响应状态码和处理耗时。
+
+7.  **错误处理器**
+    -   **404 处理器**: 当路由未匹配时触发。可通过 `SetNotFoundHandler` 自定义。
+    -   **500 处理器**: 当执行处理器时发生 `panic` 触发。可通过 `SetErrorHandler` 自定义。
+
+---
+
+## `HTTPServer` 详解
+
+`HTTPServer` 是为构建传统 Web 应用设计的全功能服务器。
+
+### 生命周期与初始化
+
+1.  **创建**: `gmc.New.HTTPServer(ctx)`
+2.  **`Init(cfg)`**: 由 `gmc.App` 调用，此方法会根据 `app.toml` 的配置自动初始化以下组件：
+    -   `[httpserver]`：服务器监听地址、TLS 等。
+    -   `[template]`：模板引擎。
+    -   `[session]`：会话管理器。
+    -   `[static]`：静态文件服务。
+    -   `[i18n]`：国际化支持。
+3.  **`Start()`**: 启动服务器，开始监听端口。
+4.  **`Stop()` / `GracefulStop()`**: 关闭服务器。
+
+### 核心钩子与示例
 
 ```go
 package main
 
 import (
+    "fmt"
     "github.com/snail007/gmc"
+    gcore "github.com/snail007/gmc/core"
+    "strings"
 )
 
 func main() {
-    // 创建应用
-    app := gmc.New.App()
-    
-    // 加载配置
-    cfg := app.Config()
-    cfg.SetConfigFile("app.toml")
-    cfg.ReadInConfig()
-    
-    // 创建 HTTP 服务器
-    s := gmc.New.HTTPServer(app.Ctx())
-    s.Init(cfg)
-    
-    // 配置路由
-    s.Router().HandlerFunc("GET", "/", func(c gmc.C) {
-        c.Write("Hello GMC!")
+    s := gmc.New.HTTPServer(gmc.New.CtxDefault())
+
+    // 1. 添加模板函数
+    s.AddFuncMap(map[string]interface{}{
+        "upper": func(s string) string {
+            return strings.ToUpper(s)
+        },
     })
-    
-    // 添加服务到应用
-    app.AddService(gmc.ServiceItem{
-        Service: s,
+
+    // 2. 自定义 404 处理器
+    s.SetNotFoundHandler(func(c gmc.C, tpl gcore.Template) {
+        c.WriteHeader(404)
+        c.Write("Custom 404 Page: " + c.Request().URL.Path)
     })
-    
-    // 运行应用
-    app.Run()
+
+    // 3. 自定义 500 处理器
+    s.SetErrorHandler(func(c gmc.C, tpl gcore.Template, err interface{}) {
+        c.WriteHeader(500)
+        c.Write(fmt.Sprintf("Custom 500 Page, Error: %v", err))
+    })
+
+    // 4. 添加各级中间件
+    s.AddMiddleware0(func(c gmc.C) bool { // CORS 或全局日志
+        fmt.Println("Middleware 0")
+        return false
+    })
+    s.AddMiddleware1(func(c gmc.C) bool { // 身份认证
+        fmt.Println("Middleware 1")
+        return false
+    })
+    s.AddMiddleware2(func(c gmc.C) bool { // 成功响应后处理
+        fmt.Println("Middleware 2")
+        return false
+    })
+    s.AddMiddleware3(func(c gmc.C) bool { // 最终日志记录
+        fmt.Println("Middleware 3")
+        return false
+    })
+
+    // 5. 注册路由
+    s.Router().GET("/", func(c gmc.C) {
+        c.Write("Hello from HTTPServer!")
+    })
+    s.Router().GET("/panic", func(c gmc.C) {
+        panic("test error")
+    })
+
+    // 6. 启动服务
+    s.Listen(":7080")
+    select {}
 }
 ```
 
-### 创建 API 服务器
+---
+
+## `APIServer` 详解
+
+`APIServer` 是为构建纯 API 服务而优化的轻量级服务器。
+
+### 生命周期与初始化
+
+`APIServer` 的生命周期与 `HTTPServer` 类似，但 `Init(cfg)` 方法是一个空实现，其配置主要在创建时通过 `gmc.New.APIServerDefault(ctx, cfg)` 或 `gmc.New.APIServer(ctx, address)` 完成，只关心 `[apiserver]` 配置块。
+
+### 核心钩子与示例
 
 ```go
 package main
 
 import (
+    "fmt"
     "github.com/snail007/gmc"
     gcore "github.com/snail007/gmc/core"
 )
 
 func main() {
-    app := gmc.New.App()
-    cfg := app.Config()
-    cfg.SetConfigFile("app.toml")
-    cfg.ReadInConfig()
-    
-    // 创建 API 服务器（轻量级，没有模板等功能）
-    api, err := gmc.New.APIServer(app.Ctx(), ":8080")
-    if err != nil {
-        panic(err)
-    }
-    
-    // 配置路由
-    r := api.Router()
-    r.HandlerFunc("GET", "/api/users", func(c gmc.C) {
-        c.JSON(gcore.M{
-            "users": []string{"Alice", "Bob"},
-        })
+    api, _ := gmc.New.APIServer(gmc.New.Ctx(), ":7081")
+
+    // 1. 自定义 404 处理器
+    api.SetNotFoundHandler(func(c gmc.C) {
+        c.WriteHeader(404)
+        c.JSON(gcore.M{"error": "Not Found"})
     })
-    
-    // 添加服务
-    app.AddService(gmc.ServiceItem{
-        Service: api,
+
+    // 2. 自定义 500 处理器
+    api.SetErrorHandler(func(c gmc.C, err interface{}) {
+        c.WriteHeader(500)
+        c.JSON(gcore.M{"error": fmt.Sprintf("Internal Server Error: %v", err)})
     })
-    
-    app.Run()
-}
-```
 
-### 使用控制器
-
-```go
-package main
-
-import (
-    "github.com/snail007/gmc"
-)
-
-type UserController struct {
-    gmc.Controller
-}
-
-func (c *UserController) List() {
-    c.Write("User list")
-}
-
-func (c *UserController) Detail() {
-    id := c.Query("id")
-    c.Write("User detail: " + id)
-}
-
-func main() {
-    app := gmc.New.App()
-    cfg := app.Config()
-    cfg.SetConfigFile("app.toml")
-    cfg.ReadInConfig()
-    
-    s := gmc.New.HTTPServer(app.Ctx())
-    s.Init(cfg)
-    
-    // 绑定控制器
-    // 访问: /user/list, /user/detail
-    s.Router().Controller("/user", new(UserController))
-    
-    app.AddService(gmc.ServiceItem{Service: s})
-    app.Run()
-}
-```
-
-## 配置文件
-
-### app.toml 基本配置
-
-```toml
-[httpserver]
-# 监听地址
-listen = ":8080"
-
-# 优雅关闭超时时间（秒）
-graceshutdowntimeout = 15
-
-# 静态文件目录
-static = "./static"
-
-# 模板目录
-template = "./views"
-
-# 会话配置
-[session]
-ttl = 3600
-store = "memory"
-
-# 日志配置
-[log]
-level = "info"
-output = "stdout"
-```
-
-### HTTPS 配置
-
-```toml
-[httpserver]
-listen = ":8443"
-
-# TLS 配置
-[httpserver.tls]
-# 启用 TLS
-enable = true
-# 证书文件
-cert = "./cert.pem"
-# 密钥文件
-key = "./key.pem"
-# 客户端证书认证
-[httpserver.tls.clientauth]
-enable = false
-ca = ""
-```
-
-### HTTP/2 配置
-
-HTTP/2 在启用 TLS 后自动启用，无需额外配置。
-
-## 中间件系统
-
-GMC 提供 4 级中间件，按执行顺序：
-
-### Middleware0 - 路由前中间件
-
-在路由匹配之前执行，可以用于全局过滤：
-
-```go
-s.AddMiddleware0(func(c gmc.C) (isStop bool) {
-    // 记录所有请求
-    c.Logger().Info(c.Request().URL.Path)
-    
-    // 返回 true 停止后续处理
-    if c.Request().URL.Path == "/blocked" {
-        c.WriteHeader(403)
-        c.Write("Forbidden")
-        return true
-    }
-    
-    return false
-})
-```
-
-### Middleware1 - 路由后、控制器前
-
-路由匹配后、控制器方法执行前：
-
-```go
-s.AddMiddleware1(func(c gmc.C) (isStop bool) {
-    // 身份验证
-    token := c.Header("Authorization")
-    if token == "" {
-        c.WriteHeader(401)
-        c.JSON(gcore.M{"error": "Unauthorized"})
-        return true
-    }
-    
-    return false
-})
-```
-
-### Middleware2 - 控制器后
-
-控制器方法执行后：
-
-```go
-s.AddMiddleware2(func(c gmc.C) (isStop bool) {
-    // 添加响应头
-    c.SetHeader("X-Powered-By", "GMC")
-    return false
-})
-```
-
-### Middleware3 - 最后执行
-
-所有处理完成后，适合日志记录：
-
-```go
-s.AddMiddleware3(func(c gmc.C) (isStop bool) {
-    // 记录响应状态和耗时
-    c.Logger().Infof("%s %d %dms", 
-        c.Request().URL.Path, 
-        c.StatusCode(), 
-        c.TimeUsed()/1000000)
-    return false
-})
-```
-
-### 使用内置中间件
-
-```go
-import "github.com/snail007/gmc/module/middleware/accesslog"
-
-func InitRouter(s *gmc.HTTPServer) {
-    // 访问日志中间件
-    s.AddMiddleware3(accesslog.NewFromConfig(s.Config()))
-    
-    // 其他路由配置...
-}
-```
-
-## 静态文件服务
-
-### 提供静态文件
-
-```go
-// 方法 1：配置文件
-// app.toml
-// [httpserver]
-// static = "./static"
-// staticurlpath = "/static"
-
-// 方法 2：代码设置
-s.SetStaticDir("./static")
-s.SetStaticUrlPath("/static")
-
-// 访问: http://localhost:8080/static/css/style.css
-// 映射到: ./static/css/style.css
-```
-
-### 嵌入式静态文件
-
-```go
-package main
-
-import (
-    "embed"
-    "github.com/snail007/gmc"
-)
-
-//go:embed static/*
-var staticFS embed.FS
-
-func main() {
-    app := gmc.New.App()
-    s := gmc.New.HTTPServer(app.Ctx())
-    
-    // 从嵌入式文件系统提供静态文件
-    s.Ext(".html")
-    s.Router().HandlerAny("/static/*filepath", func(c gmc.C) {
-        filepath := c.Param("filepath")
-        data, _ := staticFS.ReadFile("static" + filepath)
-        c.Write(string(data))
+    // 3. 添加中间件 (与 HTTPServer 相同)
+    api.AddMiddleware1(func(c gmc.C) bool {
+        fmt.Println("API Auth Check")
+        return false
     })
-    
-    app.AddService(gmc.ServiceItem{Service: s})
-    app.Run()
-}
-```
 
-## 模板渲染
-
-### 使用模板
-
-```go
-type HomeController struct {
-    gmc.Controller
-}
-
-func (c *HomeController) Index() {
-    data := gcore.M{
-        "title": "Welcome",
-        "name":  "GMC",
-    }
-    c.View("index", data)
-}
-```
-
-### 添加模板函数
-
-```go
-s.AddFuncMap(map[string]interface{}{
-    "add": func(a, b int) int {
-        return a + b
-    },
-    "upper": func(s string) string {
-        return strings.ToUpper(s)
-    },
-})
-```
-
-模板中使用：
-```html
-<h1>{{.title}}</h1>
-<p>{{upper .name}}</p>
-<p>Sum: {{add 1 2}}</p>
-```
-
-## 会话管理
-
-```go
-type LoginController struct {
-    gmc.Controller
-}
-
-func (c *LoginController) Login() {
-    username := c.PostForm("username")
-    password := c.PostForm("password")
-    
-    // 验证...
-    
-    // 启动会话
-    c.SessionStart()
-    defer c.SessionDestroy()
-    
-    // 设置会话数据
-    c.Session().Set("user_id", "123")
-    c.Session().Set("username", username)
-    
-    c.JSON(gcore.M{"status": "ok"})
-}
-
-func (c *LoginController) Profile() {
-    c.SessionStart()
-    defer c.SessionDestroy()
-    
-    // 读取会话数据
-    userID, ok := c.Session().Get("user_id")
-    if !ok {
-        c.WriteHeader(401)
-        c.JSON(gcore.M{"error": "Not logged in"})
-        return
-    }
-    
-    c.JSON(gcore.M{
-        "user_id": userID,
+    // 4. 注册路由
+    api.API("/hello", func(c gmc.C) {
+        c.JSON(gcore.M{"message": "Hello from APIServer!"})
     })
+    api.API("/panic", func(c gmc.C) {
+        panic("api test error")
+    })
+
+    // 5. 启动服务
+    api.Run()
+    select {}
 }
-```
-
-## 错误处理
-
-### 自定义 404 处理
-
-```go
-s.SetNotFoundHandler(func(c gmc.C, tpl gcore.Template) {
-    c.WriteHeader(404)
-    c.View("404", gcore.M{
-        "path": c.Request().URL.Path,
-    })
-})
-```
-
-### 自定义 500 处理
-
-```go
-s.SetErrorHandler(func(c gmc.C, tpl gcore.Template, err interface{}) {
-    c.WriteHeader(500)
-    c.Logger().Errorf("Internal error: %v", err)
-    c.View("500", gcore.M{
-        "error": err,
-    })
-})
-```
-
-## HTTPS 和 HTTP/2
-
-### 启用 HTTPS
-
-```toml
-[httpserver]
-listen = ":8443"
-
-[httpserver.tls]
-enable = true
-cert = "./cert.pem"
-key = "./key.pem"
-```
-
-### 生成自签名证书（测试用）
-
-```bash
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
-```
-
-### 客户端证书认证
-
-```toml
-[httpserver.tls]
-enable = true
-cert = "./server.pem"
-key = "./server-key.pem"
-
-[httpserver.tls.clientauth]
-enable = true
-ca = "./ca.pem"
 ```
 
 ## 高级功能
 
-### 自定义监听器
+### 优雅关闭与热重载
+
+当 `HTTPServer` 或 `APIServer` 由 `gmc.App` 管理时，它们会自动支持优雅关闭和热重载。`gmc.App` 会在相应时机调用服务的 `GracefulStop()`、`Listeners()` 和 `InjectListeners()` 方法。
+
+### 文件服务
+
+两者都支持通过 `ServeFiles` 和 `ServeEmbedFS` 方法提供静态文件或嵌入式文件服务。
 
 ```go
-s.SetListenerFactory(func(addr string) (net.Listener, error) {
-    // 自定义 Listener 配置
-    lc := net.ListenConfig{
-        KeepAlive: 30 * time.Second,
-    }
-    return lc.Listen(context.Background(), "tcp", addr)
-})
+// 提供本地 ./static 目录下的文件, URL 以 /s/ 开头
+s.ServeFiles("./static", "/s")
+
+// 提供嵌入式文件系统的文件, URL 以 /assets/ 开头
+//go:embed assets/*
+var assetsFS embed.FS
+s.ServeEmbedFS(assetsFS, "/assets")
 ```
 
-### 连接计数
+### 嵌入资源文件
+
+GMC 支持使用 Go 1.16+ 的 `embed` 功能将资源文件打包到二进制中：
+
+**静态文件和模板：**
 
 ```go
-count := s.ActiveConnCount()
-fmt.Printf("Active connections: %d\n", count)
-```
+import "embed"
 
-### 优雅关闭
+//go:embed static/*
+var staticFS embed.FS
 
-```go
-// 配置文件设置超时
-[httpserver]
-graceshutdowntimeout = 15
+//go:embed views/*
+var viewsFS embed.FS
 
-// 或代码设置
-s.SetConfig(cfg)
-
-// 服务器会在接收到 SIGTERM/SIGINT 信号时优雅关闭
-```
-
-## API 参考
-
-### HTTPServer 主要方法
-
-```go
-// 初始化
-func (s *HTTPServer) Init(cfg gcore.Config) error
-
-// 路由
-func (s *HTTPServer) Router() gcore.HTTPRouter
-
-// 中间件
-func (s *HTTPServer) AddMiddleware0(m gcore.Middleware)
-func (s *HTTPServer) AddMiddleware1(m gcore.Middleware)
-func (s *HTTPServer) AddMiddleware2(m gcore.Middleware)
-func (s *HTTPServer) AddMiddleware3(m gcore.Middleware)
-
-// 静态文件
-func (s *HTTPServer) SetStaticDir(dir string)
-func (s *HTTPServer) SetStaticUrlPath(path string)
-
-// 错误处理
-func (s *HTTPServer) SetNotFoundHandler(fn func(ctx gcore.Ctx, tpl gcore.Template))
-func (s *HTTPServer) SetErrorHandler(fn func(ctx gcore.Ctx, tpl gcore.Template, err interface{}))
-
-// 模板
-func (s *HTTPServer) AddFuncMap(f map[string]interface{})
-
-// 配置
-func (s *HTTPServer) Config() gcore.Config
-func (s *HTTPServer) SetConfig(c gcore.Config)
-
-// 其他
-func (s *HTTPServer) Logger() gcore.Logger
-func (s *HTTPServer) ActiveConnCount() int64
-func (s *HTTPServer) Close()
-```
-
-### APIServer
-
-APIServer 是 HTTPServer 的轻量级版本，移除了模板、会话等功能，适合纯 API 服务：
-
-```go
-// 创建 API 服务器
-func NewAPIServer(ctx gcore.Ctx, address string) (gcore.APIServer, error)
-
-// API 服务器有相同的路由和中间件功能，但没有：
-// - 模板引擎
-// - 会话管理
-// - 静态文件服务
-```
-
-## 最佳实践
-
-### 1. 项目结构
-
-```
-myapp/
-├── main.go              # 入口
-├── app.toml            # 配置
-├── controller/         # 控制器
-│   ├── user.go
-│   └── product.go
-├── router/             # 路由配置
-│   └── router.go
-├── initialize/         # 初始化
-│   └── init.go
-├── model/              # 数据模型
-├── views/              # 模板
-└── static/             # 静态文件
-```
-
-### 2. 路由组织
-
-```go
-// router/router.go
-package router
-
-import "github.com/snail007/gmc"
-
-func InitRouter(s *gmc.HTTPServer) {
-    r := s.Router()
-    
-    // 静态页面
-    r.Controller("/", new(controller.Home))
-    
-    // API 路由
-    api := r.Group("/api")
-    {
-        api.Controller("/users", new(controller.User))
-        api.Controller("/products", new(controller.Product))
-    }
-    
-    // 管理后台
-    admin := r.Group("/admin")
-    {
-        admin.Controller("/dashboard", new(controller.Dashboard))
-    }
+func main() {
+    s := ghttp.NewHTTPServer()
+    s.ServeEmbedFS(staticFS, "/static")
+    // 配置模板使用 viewsFS...
 }
 ```
 
-### 3. 中间件使用
+**i18n 文件：**
+
+在 `i18n` 目录下创建 `i18n.go`：
 
 ```go
-// 按需使用不同级别的中间件
-s.AddMiddleware0(corsMiddleware)      // 全局 CORS
-s.AddMiddleware1(authMiddleware)      // 需要路由信息的认证
-s.AddMiddleware2(responseMiddleware)  // 修改响应
-s.AddMiddleware3(accesslog.NewFromConfig(s.Config())) // 访问日志
+package i18n
+
+import "embed"
+
+//go:embed *.toml
+var I18nFS embed.FS
 ```
 
-### 4. 错误恢复
+在 `main.go` 中：
 
-控制器中的 panic 会被自动捕获，触发 500 错误处理器。
+```go
+import (
+    "embed"
+    gi18n "github.com/snail007/gmc/module/i18n"
+    "myapp/i18n"  // 导入你的 i18n 包
+)
 
-## 性能优化
+func main() {
+    // 初始化嵌入的 i18n 文件
+    gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
+    
+    s := ghttp.NewHTTPServer()
+    s.Run(":8080")
+}
+```
 
-1. **启用 Gzip**：自动压缩响应（配置 `gzip = true`）
-2. **静态文件缓存**：设置适当的 Cache-Control 头
-3. **连接池**：数据库连接池配置
-4. **异步日志**：使用异步日志减少 I/O 阻塞
-5. **HTTP/2**：启用 HTTP/2 提升性能
-
-## 注意事项
-
-1. **端口权限**：监听 1024 以下端口需要 root 权限
-2. **优雅关闭**：设置合理的 graceshutdowntimeout
-3. **日志记录**：生产环境使用异步日志
-4. **HTTPS**：生产环境务必使用 HTTPS
-5. **会话安全**：使用 HttpOnly 和 Secure Cookie
-
-## 相关链接
-
-- [GMC 框架主页](https://github.com/snail007/gmc)
-- [GMC Router](../router/README.md)
-- [GMC Controller](../controller/README.md)
-- [GMC Session](../session/README.md)
-- [GMC Template](../template/README.md)
+查看 [i18n 模块文档](../../module/i18n/README.md) 了解更多详情。

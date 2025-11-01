@@ -2,214 +2,233 @@
 
 ## 简介
 
-GMC I18n（国际化）模块提供多语言支持，可轻松实现应用的国际化和本地化。
+GMC I18n（国际化）模块提供了一套完整的多语言解决方案，可以轻松地为你的 Web 应用或 API 服务实现国际化和本地化。
 
 ## 功能特性
 
-- **多语言支持**：支持任意数量的语言
-- **语言解析**：自动解析 Accept-Language header
-- **回退机制**：支持语言回退
-- **HTML 安全**：支持 HTML 模板安全输出
-- **键值翻译**：基于键值对的翻译机制
+-   **TOML 格式**：语言文件使用简单直观的 `key = "value"` TOML 格式。
+-   **自动加载**：可根据 `app.toml` 配置自动加载语言目录。
+-   **嵌入式支持**：支持使用 `go:embed` 将语言文件直接打包到二进制文件中，实现单文件部署。
+-   **自动语言检测**：能自动从 HTTP 请求的 `Accept-Language` 头中解析出用户的首选语言列表。
+-   **回退机制**：当指定语言的翻译不存在时，会自动尝试使用备用语言（Fallback）或默认语言。
+-   **模板集成**：在模板中可以方便地调用翻译函数。
 
 ## 快速开始
 
-### 初始化 I18n
+### 1. 创建语言文件
+
+在你的项目 `i18n` 目录下（目录名可在 `app.toml` 中配置），创建语言文件。文件名应遵循 `IETF BCP 47` 语言标签规范，如 `en-US.toml`, `zh-CN.toml`。
+
+**`i18n/en-US.toml`:**
+
+```toml
+hello = "Hello GMC!"
+welcome = "Welcome, %s"
+```
+
+**`i18n/zh-CN.toml`:**
+
+```toml
+hello = "你好 GMC！"
+welcome = "欢迎, %s"
+```
+
+### 2. 配置 `app.toml`
+
+在 `app.toml` 中启用 `i18n` 并指定语言文件目录。
+
+```toml
+[i18n]
+# 启用 i18n
+enable=true
+# 语言文件所在目录
+dir="i18n"
+# 默认回退语言
+default="en-US"
+```
+
+框架在启动时会自动加载 `dir` 目录下的所有 `.toml` 文件。
+
+### 3. 在控制器中使用
+
+```go
+package controller
+
+import (
+    "github.com/snail007/gmc"
+)
+
+type DemoController struct {
+    gmc.Controller
+}
+
+func (this *DemoController) Hello() {
+    // Tr 方法会自动从请求头中解析语言，并按优先级查找翻译
+    // 如果找不到，则使用在 app.toml 中配置的默认语言
+    // "Guest" 会替换掉翻译文本中的 %s
+    this.Write(this.Tr("welcome", "Guest"))
+}
+```
+
+### 4. 在模板中使用
+
+在控制器中，通过 `this.View.Set` 传递翻译后的文本。
+
+```go
+func (this *DemoController) Index() {
+    this.View.Set("title", this.Tr("hello"))
+    this.View.Render("index.html")
+}
+```
+
+**`views/index.html`:**
+
+```html
+<h1>{{.title}}</h1>
+```
+
+## 打包到二进制文件 (go:embed)
+
+你可以将所有语言文件嵌入到最终的二进制程序中，实现真正的单文件部署。
+
+### 方法一：使用 InitEmbedFS（推荐）
+
+这是最简单的方式，直接使用框架提供的 `InitEmbedFS` 方法。
+
+**`i18n/i18n.go`:**
+
+```go
+package i18n
+
+import "embed"
+
+//go:embed *.toml
+var I18nFS embed.FS
+```
+
+**`main.go`:**
 
 ```go
 package main
 
 import (
-    "github.com/snail007/gmc/module/i18n"
+    "github.com/snail007/gmc"
+    gi18n "github.com/snail007/gmc/module/i18n"
+    
+    // 导入你的 i18n 包
+    "myapp/i18n"
 )
 
 func main() {
-    i18n := gi18n.NewI18n()
-    
-    // 添加英语翻译
-    i18n.Add("en", map[string]string{
-        "hello":   "Hello",
-        "welcome": "Welcome to our site",
-        "goodbye": "Goodbye",
-    })
-    
-    // 添加中文翻译
-    i18n.Add("zh", map[string]string{
-        "hello":   "你好",
-        "welcome": "欢迎访问我们的网站",
-        "goodbye": "再见",
-    })
-    
-    // 设置默认语言
-    i18n.Lang("en")
-    
-    // 翻译
-    msg := i18n.Tr("zh", "hello")
-    println(msg) // 输出: 你好
-}
-```
-
-### 在 Web 应用中使用
-
-```go
-func Handler(ctx gcore.Ctx) {
-    i18n := ctx.I18n()
-    
-    // 从请求中解析用户语言
-    langs, _ := i18n.ParseAcceptLanguage(ctx.Request())
-    
-    // 翻译文本
-    msg := i18n.TrLangs(langs, "welcome", "Welcome")
-    
-    ctx.Write(msg)
-}
-```
-
-### 模板中使用
-
-```go
-func Handler(ctx gcore.Ctx) {
-    data := gcore.M{
-        "title": ctx.I18n().Tr("en", "welcome"),
+    // 初始化嵌入的 i18n 文件，设置默认语言为 zh-CN
+    err := gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
+    if err != nil {
+        panic(err)
     }
     
-    ctx.View("index.html", data)
+    app := gmc.New.AppDefault()
+    app.Run()
+}
+```
+
+**重要提示**：使用 `InitEmbedFS` 时，应将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false` 或 `dir` 设置为空 (`dir=""`)，以避免框架尝试从文件系统加载。
+
+### 方法二：手动加载（高级用法）
+
+如果你需要更多的控制，可以手动遍历和加载嵌入的文件。
+
+**`i18n/i18n.go`:**
+
+```go
+package i18n
+
+import "embed"
+
+//go:embed *.toml
+var I18nFS embed.FS
+```
+
+**`main.go`:**
+
+```go
+package main
+
+import (
+    "bytes"
+    "github.com/snail007/gmc"
+    gcore "github.com/snail007/gmc/core"
+    gconfig "github.com/snail007/gmc/module/config"
+    gi18n "github.com/snail007/gmc/module/i18n"
+    "io/fs"
+    "path/filepath"
+    "strings"
+
+    // 显式导入你的 i18n 包
+    "myapp/i18n"
+)
+
+func main() {
+    app := gmc.New.AppDefault()
+
+    // 在 AfterInit 钩子中加载嵌入的 i18n 文件
+    app.AddService(gcore.ServiceItem{
+        Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
+        AfterInit: func(s *gcore.ServiceItem) (err error) {
+            // 获取 i18n 服务实例
+            i18nService := gcore.ProviderI18n()(s.Service.(gcore.HTTPServer).Ctx()).(gcore.I18n)
+
+            // 遍历 embed.FS 并加载语言文件
+            err = fs.WalkDir(i18n.I18nFS, ".", func(path string, d fs.DirEntry, err error) error {
+                if err != nil {
+                    return err
+                }
+                if d.IsDir() {
+                    return nil
+                }
+                if strings.HasSuffix(path, ".toml") {
+                    content, err := i18n.I18nFS.ReadFile(path)
+                    if err != nil {
+                        return err
+                    }
+                    // 使用 gconfig 解析 TOML 内容
+                    c := gconfig.New()
+                    c.SetConfigType("toml")
+                    err = c.ReadConfig(bytes.NewReader(content))
+                    if err != nil {
+                        return err
+                    }
+                    // 添加到 i18n 服务
+                    lang := strings.TrimSuffix(filepath.Base(path), ".toml")
+                    data := map[string]string{}
+                    for _, k := range c.AllKeys() {
+                        data[k] = c.GetString(k)
+                    }
+                    i18nService.Add(lang, data)
+                }
+                return nil
+            })
+            return
+        },
+    })
+
+    app.Run()
 }
 ```
 
 ## API 参考
 
-### 初始化
+### `gcore.I18n` 接口
 
-```go
-func NewI18n() gcore.I18n
-```
+-   `Tr(lang, key string, defaultMessage ...string) string`: 翻译一个键。`lang` 参数通常可以传空字符串，此时会自动从 HTTP 请求头或默认配置中获取语言。
+-   `TrLangs(langs []string, key string, defaultMessage ...string) string`: 按指定的语言列表优先级进行翻译。
+-   `Add(lang string, data map[string]interface{})`: 手动添加一个语言的翻译数据。
+-   `ParseAcceptLanguage(r *http.Request) ([]string, error)`: 从 HTTP 请求头解析出语言列表。
 
-### 方法
+### `Controller` 中的方法
 
-```go
-// 添加语言翻译
-Add(lang string, data map[string]string)
+-   `this.Tr(key string, args ...interface{}) string`: 在控制器中使用的便捷方法。它会自动处理语言检测，并使用 `fmt.Sprintf` 格式化翻译结果。
 
-// 设置默认语言
-Lang(lang string)
-
-// 翻译文本
-Tr(lang, key string, defaultMessage ...string) string
-
-// 多语言翻译（按优先级）
-TrLangs(langs []string, key string, defaultMessage ...string) string
-
-// HTML 模板安全翻译
-TrV(lang, key string, defaultMessage ...string) template.HTML
-
-// 解析 Accept-Language
-ParseAcceptLanguage(r *http.Request) ([]string, error)
-ParseAcceptLanguageStr(s string) (string, error)
-
-// 克隆 i18n 实例
-Clone(lang string) gcore.I18n
-```
-
-## 配置示例
-
-### 从文件加载翻译
-
-```go
-package main
-
-import (
-    "encoding/json"
-    "io/ioutil"
-    "github.com/snail007/gmc/module/i18n"
-)
-
-func LoadI18n() gcore.I18n {
-    i18n := gi18n.NewI18n()
-    
-    // 加载英语翻译
-    enData, _ := ioutil.ReadFile("lang/en.json")
-    var enTrans map[string]string
-    json.Unmarshal(enData, &enTrans)
-    i18n.Add("en", enTrans)
-    
-    // 加载中文翻译
-    zhData, _ := ioutil.ReadFile("lang/zh.json")
-    var zhTrans map[string]string
-    json.Unmarshal(zhData, &zhTrans)
-    i18n.Add("zh", zhTrans)
-    
-    i18n.Lang("en") // 默认英语
-    
-    return i18n
-}
-```
-
-### 翻译文件示例
-
-**lang/en.json:**
-```json
-{
-  "hello": "Hello",
-  "welcome": "Welcome to our site",
-  "user.login": "Login",
-  "user.logout": "Logout",
-  "error.not_found": "Page not found"
-}
-```
-
-**lang/zh.json:**
-```json
-{
-  "hello": "你好",
-  "welcome": "欢迎访问我们的网站",
-  "user.login": "登录",
-  "user.logout": "登出",
-  "error.not_found": "页面未找到"
-}
-```
-
-## 使用场景
-
-1. **多语言网站**：支持多种语言的网站
-2. **国际化应用**：面向全球用户的应用
-3. **本地化内容**：根据用户语言显示不同内容
-4. **多语言 API**：提供多语言的 API 响应
-
-## 最佳实践
-
-### 1. 自动检测用户语言
-
-```go
-func GetUserLang(ctx gcore.Ctx) string {
-    i18n := ctx.I18n()
-    langs, err := i18n.ParseAcceptLanguage(ctx.Request())
-    if err == nil && len(langs) > 0 {
-        return langs[0]
-    }
-    return "en" // 默认语言
-}
-```
-
-### 2. 使用语言回退
-
-```go
-// 尝试多个语言，直到找到翻译
-msg := i18n.TrLangs([]string{"zh-CN", "zh", "en"}, "key", "Default")
-```
-
-### 3. 组织翻译键
-
-```go
-// 使用命名空间组织翻译键
-translations := map[string]string{
-    "user.login":    "Login",
-    "user.register": "Register",
-    "error.400":     "Bad Request",
-    "error.404":     "Not Found",
-}
-```
-
-## 相关链接
-
-- [GMC 框架主页](https://github.com/snail007/gmc)
+    ```go
+    // i18n/en-US.toml: welcome = "Welcome, %s"
+    this.Tr("welcome", "John") // 输出: "Welcome, John"
+    ```

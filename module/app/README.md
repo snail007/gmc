@@ -156,7 +156,85 @@ func main() {
 }
 ```
 
-### 应用生命周期钩子
+### 应用生命周期与钩子
+
+GMC App 的生命周期设计精巧，通过一系列钩子方法，你可以在应用的不同阶段注入自定义逻辑。下面是完整的生命周期流程和钩子说明。
+
+#### 启动流程 (Startup Sequence)
+
+当调用 `app.Run()` 时，应用按以下顺序启动：
+
+```
++------------------------------------+
+| 1. 解析配置文件 (app.toml)         |
++------------------------------------+
+                 |
+                 ▼
++------------------------------------+
+| 2. 初始化核心组件                  |
+|    (Log, DB, Cache, i18n)        |
++------------------------------------+
+                 |
+                 ▼
++------------------------------------+
+| 3. 执行 app.OnRun() 钩子           |
++------------------------------------+
+                 |
+                 ▼
++------------------------------------+
+| 4. 遍历并初始化所有服务 (Services) |
+|    +----------------------------+  |
+|    | a. 调用 service.BeforeInit |  |
+|    +----------------------------+  |
+|    | b. 调用 service.Init()     |  |
+|    +----------------------------+  |
+|    | c. 调用 service.AfterInit  |  |
+|    +----------------------------+  |
+|    | d. 调用 service.Start()    |  |
+|    +----------------------------+  |
++------------------------------------+
+                 |
+                 ▼
++------------------------------------+
+| 5. 监听并等待关闭信号              |
+|    (阻塞运行)                    |
++------------------------------------+
+```
+
+#### 关闭流程 (Shutdown Sequence)
+
+当应用接收到关闭信号 (如 `Ctrl+C`) 时，`app.Stop()` 被调用：
+
+1.  **执行 `app.OnShutdown()` 钩子**：按注册顺序执行所有应用级别的关闭钩子，用于资源清理等。
+2.  **停止所有服务**：遍历所有服务，调用每个服务的 `Stop()` 方法。
+
+#### 热重载流程 (Hot Reload Sequence)
+
+在非 Windows 系统上，当应用接收到 `SIGUSR2` 信号时：
+
+1.  **旧进程**：获取所有服务的网络监听器 (`Listeners`)，并启动一个带监听器文件描述符的新子进程。
+2.  **新进程**：通过 `InjectListeners` 方法接收网络监听器，并完整地执行一遍**启动流程**。
+3.  **旧进程**：在新进程成功启动后，调用所有服务的 `GracefulStop()` 方法优雅退出，实现零停机更新。
+
+#### 钩子方法详解
+
+-   **`app.OnRun(func(gcore.Config) error)`**
+    -   **触发时机**：在核心组件 (log, db, cache) 初始化之后，但在任何服务 (`Service`) 初始化之前。
+    -   **主要用途**：进行应用级别的初始化检查、数据准备等。
+
+-   **`app.OnShutdown(func())`**
+    -   **触发时机**：在应用关闭流程开始时，在任何服务被停止之前。
+    -   **主要用途**：执行最终的清理工作，如关闭数据库连接、等待异步日志刷盘等。
+
+-   **`service.BeforeInit(func(*gcore.ServiceItem, gcore.Config) error)`**
+    -   **触发时机**：在单个服务 `Init()` 方法被调用之前。
+    -   **主要用途**：对特定服务进行预配置或检查。
+
+-   **`service.AfterInit(func(*gcore.ServiceItem) error)`**
+    -   **触发时机**：在单个服务 `Init()` 方法成功调用之后，但在 `Start()` 之前。
+    -   **主要用途**：在服务初始化后、启动前进行一些操作，例如注册路由、添加中间件等，这是最常用的服务钩子。
+
+#### 完整示例
 
 ```go
 package main
@@ -168,26 +246,58 @@ import (
 )
 
 func main() {
+    // 1. 创建 App
     app := gmc.New.AppDefault()
-    
-    // 在应用运行前执行
+
+    // 2. 注册 App 级别的钩子
     app.OnRun(func(cfg gcore.Config) error {
-        fmt.Println("App is about to run")
-        // 可以在这里进行初始化操作
+        fmt.Println("-> Hook: app.OnRun")
+        // 此时可以访问已初始化的配置和核心组件
         return nil
     })
-    
-    // 在应用关闭时执行
+
     app.OnShutdown(func() {
-        fmt.Println("App is shutting down")
-        // 可以在这里进行清理操作
+        fmt.Println("-> Hook: app.OnShutdown")
+        // 执行最后的清理工作
     })
-    
-    err := app.Run()
-    if err != nil {
+
+    // 3. 添加服务并注册服务级别的钩子
+    app.AddService(gcore.ServiceItem{
+        Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
+        BeforeInit: func(s *gcore.ServiceItem, cfg gcore.Config) error {
+            fmt.Println("--> Hook: service.BeforeInit")
+            return nil
+        },
+        AfterInit: func(s *gcore.ServiceItem) error {
+            fmt.Println("--> Hook: service.AfterInit")
+            // 这是注册路由和中间件的最佳位置
+            httpServer := s.Service.(gcore.HTTPServer)
+            httpServer.Router().GET("/", func(ctx gmc.Ctx) {
+                ctx.Write("Hello GMC!")
+            })
+            return nil
+        },
+    })
+
+    // 4. 运行 App
+    fmt.Println("App is starting...")
+    if err := app.Run(); err != nil {
         panic(err)
     }
 }
+
+// 预期的输出顺序:
+// App is starting...
+// -> Hook: app.OnRun
+// --> Hook: service.BeforeInit
+// (服务自身的 Init 方法被调用)
+// --> Hook: service.AfterInit
+// (服务自身的 Start 方法被调用)
+// gmc app started done.
+// (应用阻塞运行，等待关闭信号...)
+// (接收到关闭信号后)
+// -> Hook: app.OnShutdown
+// (服务自身的 Stop 方法被调用)
 ```
 
 ## 热重载（Hot Reload）
@@ -268,49 +378,179 @@ type Service interface {
 
 ## 配置文件
 
+提示：如果使用 `gmc.New.AppDefault()` 创建应用，并且希望运行 `APIServer`，则需要在 `app.toml` 中添加 `[apiserver]` 配置块。
+
 默认配置文件 `app.toml` 示例：
 
 ```toml
-[app]
-# 应用名称
-name = "myapp"
-# 应用版本
-version = "1.0.0"
+# GMC 默认配置文件 app.toml
 
+############################################################
+# HTTP 服务配置
+############################################################
+[httpserver]
+listen=":7080"
+tlsenable=false
+tlscert="conf/server.crt"
+tlskey="conf/server.key"
+tlsclientauth=false
+tlsclientsca="./conf/clintsca.crt"
+printroute=true
+showerrorstack=true
+
+############################################################
+# 静态文件服务配置
+############################################################
+[static]
+dir="static"
+urlpath="/static/"
+
+#############################################################
+# 日志配置
+#############################################################
 [log]
-# 日志级别: debug, info, warn, error
-level = "info"
-# 日志输出: stdout, stderr, file
-output = "stdout"
+level=0
+output=[0,1]
+dir="./logs"
+archive_dir=""
+filename="web_%Y%m%d.log"
+gzip=true
+async=true
 
-[database]
-default = "default"
+#############################################################
+# i18n (国际化) 配置
+#############################################################
+[i18n]
+enable=false
+dir="i18n"
+default="zh-CN"
 
-[[database.mysql]]
-enable = true
-id = "default"
-host = "127.0.0.1"
-port = 3306
-username = "root"
-password = ""
-database = "test"
-prefix = ""
-charset = "utf8mb4"
-collate = "utf8mb4_general_ci"
-maxidle = 10
-maxconns = 100
-timeout = 3000
+#############################################################
+# 视图/模板配置
+#############################################################
+[template]
+dir="views"
+ext=".html"
+delimiterleft="{{"
+delimiterright="}}"
+layout="layout"
 
+########################################################
+# Session 配置
+########################################################
+[session]
+enable=true
+store="memory"
+cookiename="gmcsid"
+ttl=3600
+
+[session.file]
+dir="{tmp}"
+gctime=300
+prefix=".gmcsession_"
+
+[session.memory]
+gctime=300
+
+[session.redis]
+debug=false
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
+maxconnlifetime=3600
+wait=false
+
+############################################################
+# 缓存配置
+############################################################
 [cache]
-default = "default"
+default="redis"
 
 [[cache.redis]]
-enable = true
-id = "default"
-address = "127.0.0.1:6379"
-password = ""
-dbnum = 0
-```
+debug=true
+enable=true
+id="default"
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
+maxconnlifetime=3600
+wait=false
+
+[[cache.memory]]
+enable=true
+id="default"
+cleanupinterval=30
+
+[[cache.file]]
+enable=true
+id="default"
+dir="{tmp}"
+cleanupinterval=30
+
+########################################################
+# 数据库配置
+########################################################
+[database]
+default="mysql"
+
+[[database.mysql]]
+enable=true
+id="default"
+host="127.0.0.1"
+port="3306"
+username="user"
+password="user"
+database="test"
+prefix=""
+prefix_sql_holder="__PREFIX__"
+charset="utf8"
+collate="utf8_general_ci"
+maxidle=30
+maxconns=200
+timeout=15000
+readtimeout=15000
+writetimeout=15000
+maxlifetimeseconds=1800
+
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+password=""
+prefix=""
+prefix_sql_holder="__PREFIX__"
+syncmode=0
+openmode="rw"
+cachemode="shared"
+
+##############################################################
+# 访问日志中间件配置
+##############################################################
+[accesslog]
+dir = "./logs"
+archive_dir = ""
+filename="access_%Y%m%d.log"
+gzip=true
+format="$req_time $client_ip $host $uri?$query $status_code ${time_used}ms"
+
+##############################################################
+# 前端代理配置
+##############################################################
+[frontend]
+#type="proxy"
+#ips=["192.168.1.1","192.168.0.0/16"]
+#header=""
+
 
 ## API 参考
 

@@ -75,7 +75,7 @@ GMC is not just a web framework, but a complete development toolkit suitable for
 - **Configuration Management** - Support for TOML, JSON, YAML and more
 - **Logging System** - Leveled logging, async writing, auto-rotation
 - **Error Handling** - Complete error stack and error chain
-- **Internationalization** - i18n support for easy multi-language implementation
+- **Internationalization** - [i18n support for easy multi-language implementation](module/i18n/README.md)
 - **CAPTCHA** - Built-in CAPTCHA generator
 - **Paginator** - Ready-to-use pagination component
 
@@ -370,6 +370,11 @@ gmct i18n --clean
 
 After packaging, your application can be compiled into a single binary without carrying any resource files.
 
+**Manually use Go 1.16+ embed feature**, see module documentation for details:
+- [i18n Embedding Guide](module/i18n/README.md#packing-to-binary-goembed)
+- [Template Embedding Guide](http/template/README.md)
+- [Static Files Embedding Guide](http/server/README.md#embedding-resources)
+
 #### 4. Project Information
 
 ```bash
@@ -516,66 +521,56 @@ router.Controller("/user", new(UserController))
 
 ### Database Operations
 
+GMC provides a powerful database abstraction layer with out-of-the-box support for MySQL and SQLite3, and is easily extensible. Core features include:
+
+- **Multi-DB & Multi-Datasource**: Supports connecting to and managing multiple database instances simultaneously.
+- **ActiveRecord Pattern**: Provides a chainable query builder for constructing complex SQL queries intuitively.
+- **Transactions & Query Caching**: Full transaction support and optional query result caching.
+- **Flexible Operations**: Supports both flexible `gdb.Model` for ORM mapping and model-free database operations directly through ActiveRecord.
+
 ```go
-// Initialize database
-gmc.DB.Init(cfg)
-db := gmc.DB.DB()
+// Chained query example
+rs, err := gmc.DB.DB().AR().From("users").Where(gdb.M{"age >": 18}).Query()
 
-// Query using ActiveRecord (Recommended)
-ar := db.AR()
-ar.From("users").Where(gdb.M{"age >": 18}).OrderBy("created_at", "DESC")
-rs, err := db.Query(ar)
-
-// Insert data
-ar = db.AR()
-ar.Insert("users", gdb.M{
-    "name":  "John",
-    "email": "john@example.com",
-    "age":   25,
-})
-result, err := db.Exec(ar)
-lastID := result.LastInsertId()
-
-// Update data
-ar = db.AR()
-ar.Update("users", gdb.M{"age": 26}, gdb.M{"id": lastID})
-db.Exec(ar)
+// Insert data example
+_, err := gmc.DB.DB().AR().Insert("users", gdb.M{"name": "John"})
 ```
 
-📖 **Full Documentation**: [Database Module Guide](module/db/README.md)
+📖 **For detailed usage, API, and complete examples, see**: [**Database Module Guide**](module/db/README.md)
 
 ### Cache Usage
 
+GMC provides a unified caching layer with out-of-the-box support for Redis, in-memory, and file-based backends. You can configure and manage multiple cache instances simultaneously.
+
 ```go
-// Initialize cache
+// Initialize and get the default cache instance
 gmc.Cache.Init(cfg)
 cache := gmc.Cache.Cache()
 
-// Set cache (expires in 60 seconds)
-cache.Set("key", "value", 60)
-
-// Get cache
-value, exists := cache.Get("key")
-
-// Delete cache
-cache.Del("key")
+// Basic operations
+cache.Set("my_key", "my_value", 60) // Cache for 60 seconds
+val, _ := cache.Get("my_key")
 ```
 
-📖 **Full Documentation**: [Cache Module Guide](module/cache/README.md)
+📖 **For detailed usage, multi-instance configuration, and API, see**: [**Cache Module Guide**](module/cache/README.md)
 
 ### Goroutine Pool
+
+GMC provides a high-performance and powerful goroutine pool `gpool` for efficiently managing a large number of concurrent tasks. It supports dynamic scaling, concurrency limiting, automatic recycling, panic recovery, and more.
+
+**It is recommended to use `gpool.NewOptimized()`**, which is an optimized, lock-free version with better performance.
 
 ```go
 import "github.com/snail007/gmc/util/gpool"
 
-// Create goroutine pool (max 10 concurrent)
-pool := gpool.New(10)
+// Create an optimized goroutine pool with 10 workers
+pool := gpool.NewOptimized(10)
 defer pool.Stop()
 
 // Submit tasks
 for i := 0; i < 100; i++ {
     pool.Submit(func() {
-        // Execute task
+        // Execute your task...
     })
 }
 
@@ -583,43 +578,58 @@ for i := 0; i < 100; i++ {
 pool.WaitDone()
 ```
 
-**Notes**:
-- `gpool.New()` returns `*gpool.BasicPool` which implements the `gpool.Pool` interface
-- You can also use `gpool.NewOptimized()` for better performance
-
-📖 **Full Documentation**: [Goroutine Pool Guide](util/gpool/README.md)
+📖 **For detailed usage, performance comparison, and API, see**: [**Goroutine Pool (gpool) Guide**](util/gpool/README.md)
 
 ### CAPTCHA Generation
+
+GMC includes an easy-to-use CAPTCHA generation tool `captcha` that does not rely on third-party graphics libraries. It supports various character modes, custom fonts, colors, sizes, and disturbance levels.
 
 ```go
 import "github.com/snail007/gmc/util/captcha"
 
-// Create CAPTCHA
+// Create a default CAPTCHA instance
 cap := gcaptcha.NewDefault()
+// Generate a 4-digit numeric CAPTCHA
 img, code := cap.Create(4, gcaptcha.NUM)
 
-// img is the CAPTCHA image data
-// code is the CAPTCHA text
+// img is the CAPTCHA image data (image.Image)
+// code is the CAPTCHA text (string)
 ```
 
-📖 **Full Documentation**: [CAPTCHA Utility Guide](util/captcha/README.md)
+📖 **For detailed usage, custom settings, and API, see**: [**CAPTCHA (captcha) Guide**](util/captcha/README.md)
 
 ### Rate Limiter
 
+GMC provides high-performance sliding window and token bucket rate limiters (`rate`) for precisely controlling request rates and bandwidth. They support high concurrency and burst traffic.
+
+-   **Sliding Window Limiter**: Suitable for strictly controlling QPS, such as API rate limiting and anti-brushing.
+-   **Token Bucket Limiter**: Suitable for smooth rate limiting, supporting burst traffic, such as bandwidth control and message queue consumption.
+
 ```go
-import "github.com/snail007/gmc/util/rate"
+import (
+    "context"
+    "time"
+    "github.com/snail007/gmc/util/rate"
+)
 
-// Create rate limiter (100 requests per second)
-limiter := grate.NewLimiter(100, 1)
+// Create a sliding window limiter: max 100 requests per second
+slidingLimiter := grate.NewSlidingWindowLimiter(100, time.Second)
 
-if limiter.Allow() {
-    // Handle request
-} else {
-    // Request rate limited
+// Create a token bucket limiter: 50 tokens per second, burst capacity 100
+tokenLimiter := grate.NewTokenBucketBurstLimiter(50, time.Second, 100)
+
+// Use sliding window limiter
+if slidingLimiter.Allow() {
+    // Process request
+}
+
+// Use token bucket limiter (blocking wait)
+if err := tokenLimiter.Wait(context.Background()); err == nil {
+    // Process request
 }
 ```
 
-📖 **Full Documentation**: [Rate Limiter Guide](util/rate/README.md)
+📖 **For detailed usage, comparison of limiters, and API, see**: [**Rate Limiter (rate) Guide**](util/rate/README.md)
 
 ---
 
@@ -655,10 +665,9 @@ if limiter.Allow() {
 
 ### HTTP Server
 
-GMC provides two types of HTTP servers:
+GMC provides two types of HTTP servers: **`HTTPServer`** (a full-featured Web server) and **`APIServer`** (a lightweight API server). They share a powerful routing system and middleware architecture.
 
-- **HTTPServer** - Full-featured web server with MVC, templates, sessions, etc.
-- **APIServer** - Lightweight API server focused on RESTful API development
+📖 **For detailed lifecycle, middleware, and hooks, see**: [**HTTP Server Module Guide**](http/server/README.md)
 
 ### Routing System
 
@@ -668,23 +677,25 @@ GMC provides two types of HTTP servers:
 - Route groups and middleware
 - RESTful route design
 
+📖 **For detailed routing configuration and usage, see**: [**Router Module Guide**](http/router/README.md)
+
 ### Middleware
 
+GMC provides complete middleware support, including CORS, Gzip, logging, authentication, rate limiting, etc. All middleware is optimized for production use.
+
 ```go
-// Global middleware
-api.Use(func(c gmc.C, next func()) {
-    // Pre-processing
-    start := time.Now()
-    
-    next() // Call next handler
-    
-    // Post-processing
-    duration := time.Since(start)
-    log.Printf("Request took %v", duration)
-})
+// Add middleware
+server.AddMiddleware(middleware.Recovery())    // Error recovery
+server.AddMiddleware(middleware.AccessLog())   // Access logging
+server.AddMiddleware(middleware.CORS())        // CORS support
+server.AddMiddleware(middleware.Gzip())        // Response compression
 ```
 
+📖 **For detailed middleware configuration and customization, see**: [**Middleware Module Guide**](module/middleware/README.md)
+
 ### Template Engine
+
+Built-in powerful template engine with support for layouts, inheritance, custom functions, etc.
 
 ```go
 // Render template
@@ -693,6 +704,8 @@ c.View().Render("user/profile", gmap.M{
     "age":  25,
 })
 ```
+
+📖 **For detailed template syntax and configuration, see**: [**Template Engine Guide**](http/template/README.md)
 
 ---
 
@@ -746,65 +759,53 @@ num := gcast.ToInt("456")
 
 GMC supports multiple configuration formats (TOML, JSON, YAML). TOML format is recommended.
 
+### Configuration File Structure
+
+GMC uses `app.toml` as the main configuration file with the following main configuration blocks:
+
+- `[httpserver]` - HTTP server configuration
+- `[apiserver]` - API server configuration
+- `[template]` - Template engine configuration
+- `[static]` - Static file configuration
+- `[log]` - Logging configuration
+- `[database]` - Database configuration
+- `[cache]` - Cache configuration
+- `[session]` - Session configuration
+- `[i18n]` - Internationalization configuration
+
 ### Basic Configuration Example (app.toml)
 
 ```toml
-# HTTP server configuration
+# HTTP Server Configuration
 [httpserver]
-listen = ":8080"
-tlsenable = false
-tlscert = ""
-tlskey = ""
+listen=":7080"
+printroute=true
 
-# Template configuration
-[template]
-dir = "views"
-ext = ".html"
-
-# Database configuration
-[database]
-default = "mysql"
-
-[database.mysql]
-enable = true
-driver = "mysql"
-dsn = "root:password@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True"
-maxidle = 10
-maxconns = 100
-maxlifetimeseconds = 3600
-
-# Cache configuration
-[cache]
-default = "redis"
-
-[cache.redis]
-enable = true
-address = "127.0.0.1:6379"
-password = ""
-db = 0
-timeout = 10
-
-# Log configuration
+# Logging Configuration
 [log]
-level = "info"
-output = "stdout"
+level=3  # 3-INFO, 4-WARN, 5-ERROR
+output=[0,1]  # 0-console, 1-file
+dir="./logs"
 
-# Session configuration
-[session]
-store = "memory"
-ttl = 3600
+# Database Configuration (example)
+[database]
+default="default"
+
+[[database.mysql]]
+enable=true
+id="default"
+host="127.0.0.1"
+port="3306"
+database="test"
 ```
 
-### Load Configuration
-
-```go
-cfg := gmc.New.Config()
-cfg.SetConfigFile("app.toml")
-err := cfg.ReadInConfig()
-```
+📖 **For complete configuration and advanced usage, see**:
+- [Config Module Guide](module/config/README.md)
+- [Database Configuration](module/db/README.md#configuration)
+- [Cache Configuration](module/cache/README.md#configuration)
+- [Logging Configuration](module/log/README.md)
 
 ---
-
 ## 📊 Performance
 
 GMC performs excellently in performance tests:
@@ -830,7 +831,7 @@ Recommended project structure:
 ```
 myapp/
 ├── main.go              # Application entry
-├── app.toml            # Configuration file
+├── app.toml            # Configuration file ([App Module Details](module/app/README.md))
 ├── controller/         # Controllers
 │   ├── home.go
 │   └── user.go

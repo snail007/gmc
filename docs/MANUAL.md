@@ -273,26 +273,328 @@ URL binding: /src/*filepath
 ```
 
 
-# TEMPLATE
+# CONFIGURATION (`app.toml`)
 
 The GMC template engine, a wrapper around `text/template`, enhances its functionality. The basic usage of templates is the same syntax as `text/template `.
-
-## CONFIGURATION
 
 The template configuration is in app.toml, and the default is as follows:
 
 ```toml
+# GMC Default Configuration File: app.toml
+
+############################################################
+# HTTP Server Configuration
+############################################################
+[httpserver]
+# Listen address and port
+listen=":7080"
+# Enable or disable TLS (HTTPS)
+tlsenable=false
+# Path to TLS certificate file
+tlscert="conf/server.crt"
+# Path to TLS key file
+tlskey="conf/server.key"
+# Enable client certificate authentication (two-way TLS)
+tlsclientauth=false
+# Path to client CA certificate
+tlsclientsca="./conf/clintsca.crt"
+# Whether to print the routing table on startup
+printroute=true
+# Whether to show errors and stack traces in the browser on panic
+showerrorstack=true
+
+############################################################
+# Static File Server Configuration (when not using embed)
+############################################################
+[static]
+# Local filesystem path to the static files directory
+dir="static"
+# URL prefix to access the static files
+urlpath="/static/"
+
+#############################################################
+# Logging Configuration
+#############################################################
+[log]
+# Log level: 1-7 corresponding to TRACE, DEBUG, INFO, WARN, ERROR, PANIC, NONE
+# 7 means no log output
+level=3 # Default is INFO
+# Log output destination: 0 for console, 1 for file
+output=[0,1]
+# Directory to store log files (only effective if output includes 1)
+dir="./logs"
+# Archive directory, if set, expired log files will be moved here
+archive_dir=""
+# Log filename, supports placeholders: %Y(Year), %m(Month), %d(Day), %H(Hour)
+filename="web_%Y%m%d.log"
+# Whether to enable gzip compression for log files
+gzip=true
+# Whether to enable asynchronous logging. If true, you must call logger.WaitAsyncDone() before shutdown.
+async=true
+
+#############################################################
+# i18n (Internationalization) Configuration
+#############################################################
+[i18n]
+# Enable or disable i18n
+enable=false
+# Directory for language files
+dir="i18n"
+# Default language (filename without extension, e.g., en-US.toml)
+default="en-US"
+
+#############################################################
+# View/Template Configuration
+#############################################################
 [template]
+# Template files directory (when not using embed)
 dir="views"
+# Template file extension
 ext=".html"
+# Template syntax delimiters
 delimiterleft="{{"
 delimiterright="}}"
+# Subdirectory name for layout files
+layout="layout"
+
+########################################################
+# Session Configuration
+########################################################
+[session]
+# Enable or disable Session
+enable=true
+# Storage engine: "file", "memory", "redis"
+store="memory"
+# Name of the session ID in the cookie
+cookiename="gmcsid"
+# Session expiration time (in seconds)
+ttl=3600
+
+# File store configuration
+[session.file]
+# Directory for session files, {tmp} is a placeholder for the system temp directory
+dir="{tmp}"
+# GC (garbage collection) interval (in seconds)
+gctime=300
+# Session file prefix
+prefix=".gmcsession_"
+
+# Memory store configuration
+[session.memory]
+# GC interval (in seconds)
+gctime=300
+
+# Redis store configuration
+[session.redis]
+debug=false
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
+maxconnlifetime=3600
+wait=false
+
+############################################################
+# Cache Configuration
+############################################################
+[cache]
+# Default cache instance ID to use
+default="default"
+
+# Redis cache instance configuration (can have multiple)
+[[cache.redis]]
+debug=true
+enable=true
+# Unique ID for the instance
+id="default"
+address="127.0.0.1:6379"
+prefix=""
+password=""
+timeout=10
+dbnum=0
+maxidle=10
+maxactive=30
+idletimeout=300
+maxconnlifetime=3600
+wait=false
+
+# Memory cache instance configuration
+[[cache.memory]]
+enable=true
+id="default"
+# Cleanup interval (in seconds)
+cleanupinterval=30
+
+# File cache instance configuration
+[[cache.file]]
+enable=true
+id="default"
+# Cache directory, {tmp} is a placeholder for the system temp directory
+dir="{tmp}"
+# Cleanup interval (in seconds)
+cleanupinterval=30
+
+########################################################
+# Database Configuration
+########################################################
+[database]
+# Default database instance ID to use
+default="default"
+
+# MySQL instance configuration (can have multiple)
+[[database.mysql]]
+enable=true
+id="default"
+host="127.0.0.1"
+port="3306"
+username="user"
+password="user"
+database="test"
+# Table prefix
+prefix=""
+# Placeholder for table prefix in SQL statements
+prefix_sql_holder="__PREFIX__"
+charset="utf8"
+collate="utf8_general_ci"
+maxidle=30
+maxconns=200
+timeout=15000
+readtimeout=15000
+writetimeout=15000
+maxlifetimeseconds=1800
+
+# SQLite instance configuration
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+# If password is not empty, the database will be encrypted
+password=""
+prefix=""
+prefix_sql_holder="__PREFIX__"
+# Sync mode: 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+syncmode=0
+# Open mode: ro,rw,rwc,memory
+openmode="rw"
+# Cache mode: shared,private
+cachemode="shared"
+
+# SQLite instance configuration
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+# If password is not empty, the database will be encrypted
+password=""
+prefix=""
+prefix_sql_holder="__PREFIX__"
+# Sync mode: 0:OFF, 1:NORMAL, 2:FULL, 3:EXTRA
+syncmode=0
+# Open mode: ro,rw,rwc,memory
+openmode="rw"
+# Cache mode: shared,private
+cachemode="shared"
+
+##############################################################
+# Web & API Access Log Middleware Configuration
+##############################################################
+[accesslog]
+dir = "./logs"
+archive_dir = ""
+# Log filename, supports placeholders
+filename="access_%Y%m%d.log"
+gzip=true
+# Log format, available placeholders:
+# $host: Hostname in URL (including port)
+# $uri: Request path
+# $query: Query string in URL
+# $status_code: HTTP status code of the response
+# $time_used: Time taken to process the request (in milliseconds)
+# $req_time: Time of the request, format: 2020-10-55 15:33:55
+# $client_ip: Real client IP address
+# $remote_addr: Client address (including port)
+# $local_addr: Server address that was accessed
+format="$req_time $client_ip $host $uri?$query $status_code ${time_used}ms"
+
+##############################################################
+# Frontend Proxy Configuration (for safely getting client IP)
+##############################################################
+[frontend]
+# Proxy type: "cloudflare", "proxy"
+# When type is cloudflare, gmc will automatically fetch Cloudflare's IP ranges to verify the request header.
+# When type is proxy, you must provide your proxy server's IP address(es) in the 'ips' field below.
+#type="proxy"
+# IP or CIDR address ranges of your proxy servers
+#ips=["192.168.1.1","192.168.0.0/16"]
+# The request header field to get the real IP from
+# For cloudflare: True-Client-IP, CF-Connecting-IP (default)
+# For proxy: X-Real-IP, X-Forwarded-For (default)
+#header=""
 ```
 
-- dir: the directory where the view template files are stored.
-- ext: the suffix of a template file. Only files with this suffix will be parsed.
-- delimiterleft: left symbol of the syntax block in the template.
-- delimiterRight: right symbol of the syntax block in the template.
+### API Server Configuration Example (api.toml)
+
+For a pure API service, the configuration can be much leaner. If you use the default app (`gmc.New.AppDefault()`) and want to run an `APIServer`, you need to add the `[apiserver]` configuration block to `app.toml`.
+
+```toml
+# GMC API Server Configuration: api.toml
+
+############################################################
+# API Server Configuration
+############################################################
+[apiserver]
+# Listen address and port
+listen=":7081"
+# Whether to print the routing table on startup
+printroute=true
+# Whether to show errors and stack traces on panic
+showerrorstack=true
+
+#############################################################
+# Logging Configuration
+#############################################################
+[log]
+# Log level: 1-7 (INFO, WARN, ERROR, etc.)
+level=3
+# Output destination: 0-console
+output=[0]
+
+############################################################
+# Cache Configuration (enable as needed)
+############################################################
+[cache]
+default="default"
+
+[[cache.redis]]
+enable=false
+id="default"
+address="127.0.0.1:6379"
+
+########################################################
+# Database Configuration (enable as needed)
+########################################################
+[database]
+default="default"
+
+[[database.mysql]]
+enable=false
+id="default"
+host="127.0.0.1"
+port="3306"
+username="user"
+password="user"
+database="test"
+
+[[database.sqlite3]]
+enable=false
+id="default"
+database="test.db"
+password=""
+```
 
 ## INCLUDE
 
@@ -1488,68 +1790,210 @@ Parameter description:
 
 -f if the file to be generated already exists and is not overwritten by default, the `-f` parameter can be used to enforce overwriting.
 
-## PACK TEMPLATE FILES INTO BINARY
+## Embedding Resources with Go Embed
 
-The GMC View module supports packaging view files into compiled binaries. Since the packaging functionality is related to the project directory structure, it is assumed that the directory structure is the Web project directory structure generated by GMCT.
+GMC supports Go 1.16+'s `embed` feature to package static assets and view templates directly into the application binary, enabling single-file deployment.
 
-The directory structure is as follows:
+The key is that you must **explicitly import** the packages containing the `embed.FS` variables and **use those variables directly** in your code.
 
-```text
-new_web/
-├── conf
-├── controller
-├── initialize
-├── router
-├── static
-└── views
+### Embedding Static Files
+
+1.  Create a `static.go` file in your `static` folder and export an `embed.FS` variable:
+
+```go
+package static
+
+import (
+	"embed"
+)
+
+//go:embed *
+var StaticFS embed.FS
 ```
 
-The following steps are required to complete this function:
+**IMPORTANT**: When using `go:embed` for static resources, to prevent the framework from prioritizing local file loading, you should set `dir` under the `[static]` block in `app.toml` to be empty, i.e., `dir = ""`.
 
-```shell
-cd initialize
-gmct tpl --dir ../views
+
+### Embedding View Files
+
+1.  Create a `views.go` file in your `views` folder and export an `embed.FS` variable:
+
+```go
+package views
+
+import (
+	"embed"
+)
+
+//go:embed *
+var ViewFS embed.FS
 ```
 
-When you execute the command, you will notice that there is an extra go file in the initialize directory that is prefixed by `gmc_templates_bindata_`,
-For example: `g_templates_bindata_2630881503983182670.go`. There's an init method in this file, this is done automatically when the `initialize` package is referenced and view file binary data is injected into the GMC view module.
+### Embedding i18n Files
 
-When you go Build your project, avoid later development, run the code and always use the view data in the go file, the initialize execute on the directory is: `GMCT TPL -- Clean` to safely clean the go files generated above.
+GMC provides a simple API to embed i18n internationalization files:
 
-## PACK STATIC FILES INTO BINARY
+1.  Create an `i18n.go` file in your `i18n` folder:
 
-GMC's HTTP static file module supports packaging static files into compiled binaries. Since the packaging function is related to the project directory structure. So it is assumed that the directory structure is the web project directory structure generated by GMCT.
+```go
+package i18n
 
-The directory structure is as follows:
+import "embed"
 
-```text
-new_web/
-├── conf
-├── controller
-├── initialize
-├── router
-├── static
-└── views
+//go:embed *.toml
+var I18nFS embed.FS
 ```
 
-The following steps are required to complete this function:
+2.  Initialize in your `main.go`:
 
-```shell
-cd initialize
-gmct static --dir ../static
+```go
+import (
+    gi18n "github.com/snail007/gmc/module/i18n"
+    "myapp/i18n"
+)
+
+func main() {
+    // Initialize embedded i18n files with default language
+    err := gi18n.InitEmbedFS(i18n.I18nFS, "en-US")
+    if err != nil {
+        panic(err)
+    }
+    
+    // Continue initializing application...
+}
 ```
 
-After executing the command, you will notice that there is an extra go file in the initialize directory that is prefixed by `gmc_static_bindata_`,
-For example: `gmc_static_bindata_1780615241186372497. Go`. There's an init method in this file,
-This is done automatically when the `initialize` package is referenced, injecting view file binary data into GMC's HTTP static file service module.
+**IMPORTANT**: When using `InitEmbedFS`, you should set `enable` to `false` or `dir` to empty (`dir=""`) in `[i18n]` section of `app.toml`.
 
-When you go Build your project, avoid later development, run the code using the static file data in the go file,
-The initialize execute on the directory is: `gmct static --clean` to safely clean the go files generated above.
+See [i18n module documentation](../module/i18n/README.md) for more details.
 
-In addition, after static files are packed into binary, the order to find static files is:
-1. Find out if the file is in binary data.
-2. Find the static directory static if there is this file.  
+### Complete Examples
 
+Here are two correct methods for initializing and using embedded resources.
+
+**Common Files:**
+
+*   **Project Structure:**
+
+    ```text
+    /myapp
+    ├── go.mod
+    ├── static/
+    │   ├── css/
+    │   │   └── style.css
+    │   └── static.go
+    ├── views/
+    │   ├── index.html
+    │   └── views.go
+    └── main.go
+    ```
+
+*   **`static/static.go`:**
+
+    ```go
+    package static
+    import "embed"
+
+    //go:embed all:*
+    var StaticFS embed.FS
+    ```
+
+*   **`views/views.go`:**
+
+    ```go
+    package views
+    import "embed"
+
+    //go:embed all:*
+    var ViewFS embed.FS
+    ```
+
+---
+
+**Method 1: Direct HTTPServer Usage (Simple & Direct)**
+
+*   **`main.go` (Correct Version):**
+
+    ```go
+    package main
+
+    import (
+    	"github.com/snail007/gmc"
+    	gtemplate "github.com/snail007/gmc/http/template"
+
+    	// Import the static and views packages directly
+    	"myapp/static"
+    	"myapp/views"
+    )
+
+    func main() {
+    	// 1. Create an HTTP Server
+    	s := gmc.New.HTTPServer(gmc.New.CtxDefault())
+
+    	// 2. Register embedded static files
+    	// Directly use the exported StaticFS variable from the static package
+    	s.ServeEmbedFS(static.StaticFS, "/static")
+
+    	// 3. Register embedded view files
+    	// Directly use the exported ViewFS variable from the views package
+    	tpl := gtemplate.NewEmbedTemplateFS(s.Tpl(), views.ViewFS, ".")
+    	if err := tpl.Parse(); err != nil {
+    		s.Logger().Panicf("Failed to parse templates: %s", err)
+    	}
+
+    	// 4. Set up a route and run the server
+    	s.Router().GET("/", func(ctx gmc.Ctx) {
+    		ctx.View.Render("index.html")
+    	})
+    	s.Run()
+    }
+    ```
+
+---
+
+**Method 2: Using `gmc.App` to Manage Services (Recommended for Complex Apps)**
+
+*   **`main.go` (Correct Version):**
+
+    ```go
+    package main
+
+    import (
+    	"github.com/snail007/gmc"
+    	gcore "github.com/snail007/gmc/core"
+    	gtemplate "github.com/snail007/gmc/http/template"
+
+    	// Import the static and views packages directly
+    	"myapp/static"
+    	"myapp/views"
+    )
+
+    func main() {
+    	app := gmc.New.App()
+    	app.AddService(gcore.ServiceItem{
+    		Service: gmc.New.HTTPServer(app.Ctx()).(gcore.Service),
+    		AfterInit: func(s *gcore.ServiceItem) (err error) {
+    			httpServer := s.Service.(*gmc.HTTPServer)
+
+    			// Register static files using the imported static.StaticFS
+    			httpServer.ServeEmbedFS(static.StaticFS, "/static")
+
+    			// Register view files using the imported views.ViewFS
+    			tpl := gtemplate.NewEmbedTemplateFS(httpServer.Tpl(), views.ViewFS, ".")
+    			if err = tpl.Parse(); err != nil {
+    				return
+    			}
+
+    			// Set up routes
+    			httpServer.Router().GET("/", func(ctx gmc.Ctx) {
+    				ctx.View.Render("index.html")
+    			})
+    			return
+    		},
+    	})
+    	app.Run()
+    }
+    ```
 ## PACK I18N FILES INTO BINARY
 
 GMC's i18n module supports packaging i18n files into compiled binaries. Since the packaging function is related to the project directory structure. So it is assumed that the directory structure is the web project directory structure generated by GMCT.

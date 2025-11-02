@@ -52,13 +52,14 @@ package main
 
 import (
     "os"
+    "github.com/snail007/gmc"
     gtemplate "github.com/snail007/gmc/http/template"
-    gcore "github.com/snail007/gmc/core"
 )
 
 func main() {
-    // 创建模板实例
-    tpl, err := gtemplate.NewTemplate(nil, "./views")
+    // 创建模板实例，需要提供一个 Ctx 对象
+    ctx := gmc.New.Ctx()
+    tpl, err := gtemplate.NewTemplate(ctx, "./views")
     if err != nil {
         panic(err)
     }
@@ -327,18 +328,27 @@ GMC 集成了 [Sprig](https://masterminds.github.io/sprig/) 函数库的子集�
 
 ```html
 <!-- 列表操作 -->
-{{list 1 2 3}}
-{{append (list 1 2) 3}}
-{{first (list 1 2 3)}}  <!-- 1 -->
-{{rest (list 1 2 3)}}  <!-- [2 3] -->
+{{$list := slice 1 2 3}}  <!-- 使用 slice 创建列表 -->
+{{append $list 4}}  <!-- 追加元素 -->
+{{prepend $list 0}}  <!-- 前置元素 -->
+{{first $list}}  <!-- 1 -->
+{{rest $list}}  <!-- [2 3] -->
+{{last $list}}  <!-- 3 -->
 ```
 
-### 字典函数
+**注意**：GMC 模板没有提供 `dict` 函数。如需创建字典，请在控制器中准备数据：
+
+```go
+// 在控制器中
+c.View.Set("myDict", map[string]interface{}{
+    "key1": "value1",
+    "key2": "value2",
+})
+```
 
 ```html
-<!-- 创建字典 -->
-{{$dict := dict "key1" "value1" "key2" "value2"}}
-{{$dict.key1}}
+<!-- 在模板中使用 -->
+{{.myDict.key1}}
 ```
 
 ### 默认值函数
@@ -497,6 +507,7 @@ delimiterright = "%>"
 
 ```go
 // 在应用启动时预编译所有模板
+ctx := gmc.New.Ctx()
 tpl, err := gtemplate.NewTemplate(ctx, "./views")
 if err != nil {
     panic(err)
@@ -580,6 +591,7 @@ c.View.Set("content", content)
 模板语法错误会在解析时抛出：
 
 ```go
+ctx := gmc.New.Ctx()
 tpl, err := gtemplate.NewTemplate(ctx, "./views")
 if err != nil {
     log.Fatal("模板解析错误:", err)

@@ -276,12 +276,30 @@ import (
 )
 
 func main() {
-    // 初始化嵌入的 i18n 文件
+    // 方式1：在main中初始化（简单场景）
     gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
     
     s := ghttp.NewHTTPServer()
     s.Run(":8080")
 }
+
+// 方式2：使用App和OnRun钩子（推荐）
+func mainWithApp() {
+    app := gmc.New.AppDefault()
+    
+    // 在OnRun钩子中初始化i18n
+    app.OnRun(func(cfg gcore.Config) error {
+        return gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
+    })
+    
+    // 添加HTTP服务
+    s := gmc.New.HTTPServer(app.Ctx())
+    app.AddService(gcore.ServiceItem{Service: s})
+    
+    app.Run()
+}
 ```
+
+**注意**：使用 `InitEmbedFS` 时，需要将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false`。
 
 查看 [i18n 模块文档](../../module/i18n/README.md) 了解更多详情。

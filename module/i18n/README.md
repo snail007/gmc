@@ -106,7 +106,7 @@ import "embed"
 var I18nFS embed.FS
 ```
 
-**`main.go`:**
+**`main.go` - 方式A（在main中初始化）：**
 
 ```go
 package main
@@ -120,7 +120,7 @@ import (
 )
 
 func main() {
-    // 初始化嵌入的 i18n 文件，设置默认语言为 zh-CN
+    // 在 app.Run() 之前初始化嵌入的 i18n 文件
     err := gi18n.InitEmbedFS(i18n.I18nFS, "zh-CN")
     if err != nil {
         panic(err)
@@ -131,7 +131,41 @@ func main() {
 }
 ```
 
-**重要提示**：使用 `InitEmbedFS` 时，应将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false` 或 `dir` 设置为空 (`dir=""`)，以避免框架尝试从文件系统加载。
+**`main.go` - 方式B（在OnRun钩子中初始化，推荐）：**
+
+```go
+package main
+
+import (
+    "github.com/snail007/gmc"
+    gcore "github.com/snail007/gmc/core"
+    gi18n "github.com/snail007/gmc/module/i18n"
+    
+    // 导入你的 i18n 包
+    "myapp/i18n"
+)
+
+func main() {
+    app := gmc.New.AppDefault()
+    
+    // 在 OnRun 钩子中初始化（推荐方式）
+    app.OnRun(func(cfg gcore.Config) error {
+        // 可以从配置中读取默认语言
+        defaultLang := cfg.GetString("i18n.default")
+        if defaultLang == "" {
+            defaultLang = "zh-CN"
+        }
+        return gi18n.InitEmbedFS(i18n.I18nFS, defaultLang)
+    })
+    
+    app.Run()
+}
+```
+
+**重要提示**：
+1. 使用 `InitEmbedFS` 时，必须将 `app.toml` 中 `[i18n]` 的 `enable` 设置为 `false` 或 `dir` 设置为空 (`dir=""`)，以避免框架尝试从文件系统加载。
+2. 推荐使用方式B（OnRun钩子），因为可以访问配置对象，更加灵活。
+3. 方式A更简单直接，适合不需要配置的简单场景。
 
 ### 方法二：手动加载（高级用法）
 

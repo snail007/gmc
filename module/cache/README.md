@@ -267,13 +267,13 @@ func Init(cfg gcore.Config) error
 func Cache(id ...string) gcore.Cache
 
 // 获取 Redis 缓存
-func Redis(id ...string) gcore.Cache
+func Redis(id ...string) *RedisCache
 
 // 获取内存缓存
-func Memory(id ...string) gcore.Cache
+func Memory(id ...string) *MemCache
 
 // 获取文件缓存
-func File(id ...string) gcore.Cache
+func File(id ...string) *FileCache
 
 // 设置日志记录器
 func SetLogger(logger gcore.Logger)
@@ -284,34 +284,43 @@ func SetLogger(logger gcore.Logger)
 ```go
 type Cache interface {
     // 设置键值
-    Set(key string, value interface{}, ttl time.Duration) error
+    Set(key string, value string, ttl time.Duration) error
     
     // 获取值
-    Get(key string) (interface{}, error)
+    Get(key string) (string, error)
     
     // 删除键
     Del(key string) error
     
     // 检查键是否存在
-    Exists(key string) (bool, error)
+    Has(key string) (bool, error)
     
-    // 设置过期时间
-    Expire(key string, ttl time.Duration) error
+    // 清除所有缓存数据
+    Clear() error
     
-    // 增加数值
-    Incr(key string, delta int64) (int64, error)
+    // 返回驱动信息
+    String() string
     
-    // 减少数值
-    Decr(key string, delta int64) (int64, error)
+    // 增加数值（增加1）
+    Incr(key string) (int64, error)
+    
+    // 减少数值（减少1）
+    Decr(key string) (int64, error)
+    
+    // 增加数值（增加N）
+    IncrN(key string, n int64) (int64, error)
+    
+    // 减少数值（减少N）
+    DecrN(key string, n int64) (int64, error)
     
     // 获取多个键的值
-    MGet(keys ...string) ([]interface{}, error)
+    GetMulti(keys []string) (map[string]string, error)
     
     // 设置多个键值
-    MSet(items map[string]interface{}, ttl time.Duration) error
+    SetMulti(values map[string]string, ttl time.Duration) error
     
-    // 关闭缓存连接
-    Close() error
+    // 删除多个键
+    DelMulti(keys []string) error
 }
 ```
 
@@ -402,16 +411,17 @@ if err != nil {
 ### 4. 批量操作
 
 ```go
-// 使用 MSet 批量设置，提高性能
-items := map[string]interface{}{
+// 使用 SetMulti 批量设置，提高性能
+items := map[string]string{
     "key1": "value1",
     "key2": "value2",
     "key3": "value3",
 }
-cache.MSet(items, time.Hour)
+cache.SetMulti(items, time.Hour)
 
-// 使用 MGet 批量获取
-values, err := cache.MGet("key1", "key2", "key3")
+// 使用 GetMulti 批量获取
+values, err := cache.GetMulti([]string{"key1", "key2", "key3"})
+// values 是 map[string]string 类型
 ```
 
 ## 性能考虑

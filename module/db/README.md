@@ -83,7 +83,7 @@ func main() {
     if err != nil {
         panic(err)
     }
-    fmt.Println("Inserted ID:", result.LastInsertId())
+    fmt.Println("Inserted ID:", result.LastInsertID())
     fmt.Println("Rows affected:", result.RowsAffected())
     
     // 查询数据

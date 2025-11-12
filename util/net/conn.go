@@ -110,6 +110,7 @@ type Conn struct {
 	onIdleTimeout             func(*Conn)
 	readLimiter, writeLimiter *rate.Limiter
 	rwCtx                     context.Context
+	createTime                time.Time
 }
 
 func (s *Conn) ReadLimiter() *rate.Limiter {
@@ -354,6 +355,7 @@ func newContextConn(ctx Context, conn net.Conn, f ...bool) *Conn {
 	} else {
 		c = &Conn{
 			Conn:                      conn,
+			createTime:                time.Now(),
 			writeBytes:                new(int64),
 			readBytes:                 new(int64),
 			rawConn:                   conn,
@@ -389,6 +391,7 @@ type EventConn struct {
 	codec          []Codec
 	ctx            Context
 	started        bool
+	createTime     time.Time
 }
 
 func (s *EventConn) Ctx() Context {
@@ -556,6 +559,7 @@ func NewEventConn(c net.Conn) *EventConn {
 func NewContextEventConn(ctx Context, c net.Conn) *EventConn {
 	ec := &EventConn{
 		ctx:            ctx,
+		createTime:     time.Now(),
 		writeBytes:     new(int64),
 		readBytes:      new(int64),
 		readBufferSize: defaultEventConnReadBufferSize,

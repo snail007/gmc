@@ -835,3 +835,30 @@ func TestConnBinder_SetAfterRead(t *testing.T) {
 	assert.True(t, srcFirstRead.IsTrue())
 	assert.True(t, dstFirstRead.IsTrue())
 }
+
+func TestConn_CreateTime(t *testing.T) {
+	t.Parallel()
+	clientConn, _ := net.Pipe()
+	defer clientConn.Close()
+
+	beforeCreate := time.Now()
+	conn := NewConn(clientConn)
+	createTime := conn.CreateTime()
+
+	assert.NotZero(t, createTime)
+	assert.WithinDuration(t, beforeCreate, createTime, time.Second)
+}
+
+func TestEventConn_CreateTime(t *testing.T) {
+	t.Parallel()
+	clientConn, _ := net.Pipe()
+	defer clientConn.Close()
+
+	beforeCreate := time.Now()
+	eventConn := NewEventConn(clientConn)
+	createTime := eventConn.CreateTime()
+
+	assert.NotZero(t, createTime)
+	assert.WithinDuration(t, beforeCreate, createTime, time.Second)
+}
+

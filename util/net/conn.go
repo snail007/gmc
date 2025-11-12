@@ -113,6 +113,10 @@ type Conn struct {
 	createTime                time.Time
 }
 
+func (s *Conn) CreateTime() time.Time {
+	return s.createTime
+}
+
 func (s *Conn) ReadLimiter() *rate.Limiter {
 	return s.readLimiter
 }
@@ -493,6 +497,10 @@ func (s *EventConn) Close() {
 		s.conn.Close()
 		s.onClose(s.ctx)
 	})
+}
+
+func (s *EventConn) CreateTime() time.Time {
+	return s.createTime
 }
 
 func (s *EventConn) AddCodec(codec Codec) *EventConn {

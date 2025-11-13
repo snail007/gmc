@@ -354,6 +354,11 @@ func (s *EventListener) OnFistReadTimeout(h FirstReadTimeoutHandler) *EventListe
 	return s
 }
 
+func (s *EventListener) BeforeFirstRead(h BeforeFirstReadHandler) *EventListener {
+	s.l.SetBeforeFirstRead(h)
+	return s
+}
+
 func (s *EventListener) AddCodecFactory(codecFactory CodecFactory) *EventListener {
 	s.l.AddCodecFactory(codecFactory)
 	return s

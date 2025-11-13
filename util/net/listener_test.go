@@ -63,7 +63,7 @@ func TestNewEventListener_BeforeFirstRead_Success(t *testing.T) {
 	el := NewEventListener(l)
 	timeout := gatomic.NewBool(false)
 	beforeRead := gatomic.NewBool(false)
-	el.l.SetBeforeFirstRead(func(ctx Context, c net.Conn) error {
+	el.BeforeFirstRead(func(ctx Context, c net.Conn) error {
 		beforeRead.SetTrue()
 		return nil
 	})
@@ -84,7 +84,7 @@ func TestNewEventListener_BeforeFirstRead_Error(t *testing.T) {
 	el := NewEventListener(l)
 	timeout := gatomic.NewBool(false)
 	beforeRead := gatomic.NewBool(false)
-	el.l.SetBeforeFirstRead(func(ctx Context, c net.Conn) error {
+	el.BeforeFirstRead(func(ctx Context, c net.Conn) error {
 		beforeRead.SetTrue()
 		return fmt.Errorf("before read error")
 	})

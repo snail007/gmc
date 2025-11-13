@@ -22,14 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
+func TestNewEventListener_OnFirstReadTimeout(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
 	el := NewEventListener(l)
 	timeout := gatomic.NewBool(false)
 	el.SetFirstReadTimeout(time.Millisecond * 100).
-		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+		OnFirstReadTimeout(func(ctx Context, c net.Conn, err error) {
 			timeout.SetTrue()
 		}).Start()
 	net.Dial("tcp", "127.0.0.1:"+p)
@@ -37,7 +37,7 @@ func TestNewEventListener_OnFistReadTimeout(t *testing.T) {
 	assert.True(t, timeout.IsTrue())
 }
 
-func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
+func TestNewEventListener_OnFirstReadTimeout2(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
 	_, p, _ := net.SplitHostPort(l.Addr().String())
@@ -48,7 +48,7 @@ func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
 		return c, nil
 	})
 	el.SetFirstReadTimeout(time.Millisecond * 100).
-		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+		OnFirstReadTimeout(func(ctx Context, c net.Conn, err error) {
 			timeout.SetTrue()
 		}).Start()
 	net.Dial("tcp", "127.0.0.1:"+p)
@@ -68,7 +68,7 @@ func TestNewEventListener_BeforeFirstRead_Success(t *testing.T) {
 		return nil
 	})
 	el.SetFirstReadTimeout(time.Millisecond * 100).
-		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+		OnFirstReadTimeout(func(ctx Context, c net.Conn, err error) {
 			timeout.SetTrue()
 		}).Start()
 	net.Dial("tcp", "127.0.0.1:"+p)
@@ -89,7 +89,7 @@ func TestNewEventListener_BeforeFirstRead_Error(t *testing.T) {
 		return fmt.Errorf("before read error")
 	})
 	el.SetFirstReadTimeout(time.Millisecond * 100).
-		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+		OnFirstReadTimeout(func(ctx Context, c net.Conn, err error) {
 			timeout.SetTrue()
 		}).Start()
 	net.Dial("tcp", "127.0.0.1:"+p)
@@ -97,7 +97,6 @@ func TestNewEventListener_BeforeFirstRead_Error(t *testing.T) {
 	assert.False(t, timeout.IsTrue())
 	assert.True(t, beforeRead.IsTrue())
 }
-
 
 func TestNewEventListener_Hijacked(t *testing.T) {
 	t.Parallel()

@@ -70,7 +70,7 @@ type Listener struct {
 	onConnClose                   CloseHandler
 	filters                       []ConnFilter
 	firstReadTimeout              time.Duration
-	onFistReadTimeoutError        FirstReadTimeoutHandler
+	onFirstReadTimeoutError       FirstReadTimeoutHandler
 	beforeFirstRead               BeforeFirstReadHandler
 	connCount                     *int64
 	autoCloseConnOnReadWriteError bool
@@ -154,8 +154,8 @@ func (s *Listener) ConnCount() int64 {
 	return atomic.LoadInt64(s.connCount)
 }
 
-func (s *Listener) OnFistReadTimeout(h FirstReadTimeoutHandler) {
-	s.onFistReadTimeoutError = h
+func (s *Listener) OnFirstReadTimeout(h FirstReadTimeoutHandler) {
+	s.onFirstReadTimeoutError = h
 }
 
 func (s *Listener) Accept() (c net.Conn, err error) {
@@ -222,8 +222,8 @@ retry:
 		bc.SetReadDeadline(time.Time{})
 		if err != nil {
 			bc.Close()
-			if s.onFistReadTimeoutError != nil {
-				s.onFistReadTimeoutError(ctx, c, err)
+			if s.onFirstReadTimeoutError != nil {
+				s.onFirstReadTimeoutError(ctx, c, err)
 			}
 			goto retry
 		}
@@ -349,8 +349,8 @@ func (s *EventListener) AddListenerFilter(f ConnFilter) *EventListener {
 	return s
 }
 
-func (s *EventListener) OnFistReadTimeout(h FirstReadTimeoutHandler) *EventListener {
-	s.l.onFistReadTimeoutError = h
+func (s *EventListener) OnFirstReadTimeout(h FirstReadTimeoutHandler) *EventListener {
+	s.l.onFirstReadTimeoutError = h
 	return s
 }
 

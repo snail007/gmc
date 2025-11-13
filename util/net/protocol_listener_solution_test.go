@@ -1,4 +1,3 @@
-
 // Copyright 2025 The GMC Author. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
@@ -30,7 +29,7 @@ func TestProtocolListener_Solution(t *testing.T) {
 	// This prevents the listener's accept loop from blocking on clients that connect
 	// but don't send any data, which is the root cause of the hang.
 	l.SetFirstReadTimeout(200 * time.Millisecond)
-	l.OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+	l.OnFirstReadTimeout(func(ctx Context, c net.Conn, err error) {
 		// This handler is called when a client is dropped due to the timeout.
 		t.Logf("A client from %s timed out on first read and was dropped.", c.RemoteAddr())
 	})

@@ -71,6 +71,7 @@ type (
 	AcceptHandler           func(ctx Context, c net.Conn)
 	CodecFactory            func(ctx Context) Codec
 	FirstReadTimeoutHandler func(ctx Context, c net.Conn, err error)
+	BeforeFirstReadHandler  func(ctx Context, c net.Conn) error
 )
 
 // make sure all codec implements Codec

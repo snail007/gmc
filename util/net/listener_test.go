@@ -56,6 +56,49 @@ func TestNewEventListener_OnFistReadTimeout2(t *testing.T) {
 	assert.True(t, timeout.IsTrue())
 }
 
+func TestNewEventListener_BeforeFirstRead_Success(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	el := NewEventListener(l)
+	timeout := gatomic.NewBool(false)
+	beforeRead := gatomic.NewBool(false)
+	el.l.SetBeforeFirstRead(func(ctx Context, c net.Conn) error {
+		beforeRead.SetTrue()
+		return nil
+	})
+	el.SetFirstReadTimeout(time.Millisecond * 100).
+		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+			timeout.SetTrue()
+		}).Start()
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.True(t, timeout.IsTrue())
+	assert.True(t, beforeRead.IsTrue())
+}
+
+func TestNewEventListener_BeforeFirstRead_Error(t *testing.T) {
+	t.Parallel()
+	l, _ := net.Listen("tcp", ":0")
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	el := NewEventListener(l)
+	timeout := gatomic.NewBool(false)
+	beforeRead := gatomic.NewBool(false)
+	el.l.SetBeforeFirstRead(func(ctx Context, c net.Conn) error {
+		beforeRead.SetTrue()
+		return fmt.Errorf("before read error")
+	})
+	el.SetFirstReadTimeout(time.Millisecond * 100).
+		OnFistReadTimeout(func(ctx Context, c net.Conn, err error) {
+			timeout.SetTrue()
+		}).Start()
+	net.Dial("tcp", "127.0.0.1:"+p)
+	time.Sleep(time.Second)
+	assert.False(t, timeout.IsTrue())
+	assert.True(t, beforeRead.IsTrue())
+}
+
+
 func TestNewEventListener_Hijacked(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")

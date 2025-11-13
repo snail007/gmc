@@ -71,6 +71,7 @@ type Listener struct {
 	filters                       []ConnFilter
 	firstReadTimeout              time.Duration
 	onFistReadTimeoutError        FirstReadTimeoutHandler
+	beforeFirstRead               BeforeFirstReadHandler
 	connCount                     *int64
 	autoCloseConnOnReadWriteError bool
 	ctx                           Context
@@ -122,6 +123,11 @@ func (s *Listener) AddListenerFilter(f ConnFilter) *Listener {
 
 func (s *Listener) SetFirstReadTimeout(firstReadTimeout time.Duration) *Listener {
 	s.firstReadTimeout = firstReadTimeout
+	return s
+}
+
+func (s *Listener) SetBeforeFirstRead(h BeforeFirstReadHandler) *Listener {
+	s.beforeFirstRead = h
 	return s
 }
 
@@ -203,6 +209,13 @@ retry:
 
 	// first read timeout check
 	if s.firstReadTimeout > 0 {
+		if s.beforeFirstRead != nil {
+			err = s.beforeFirstRead(ctx, c)
+			if err != nil {
+				c.Close()
+				goto retry
+			}
+		}
 		bc := NewBufferedConn(c)
 		bc.SetReadDeadline(time.Now().Add(s.firstReadTimeout))
 		_, err = bc.ReadByte()

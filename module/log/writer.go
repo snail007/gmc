@@ -346,7 +346,7 @@ func (s *ConsoleWriter) isRedirected() bool {
 }
 
 func (s *ConsoleWriter) Write(p []byte, level gcore.LogLevel) (n int, err error) {
-	if s.isRedirected() || s.disableColor {
+	if s.redirected || s.disableColor {
 		return s.w.Write(p)
 	}
 	defer func() {

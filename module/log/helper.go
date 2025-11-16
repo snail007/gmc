@@ -40,6 +40,8 @@ func NewFromConfig(c gcore.Config, prefix ...string) (l gcore.Logger) {
 				ArchiveDir:    cfg.GetString("archive_dir"),
 				IsGzip:        cfg.GetBool("gzip"),
 				AliasFilename: cfg.GetString("filename_alias"),
+				MaxSize:       cfg.GetString("max_size"),
+				MaxBackups:    cfg.GetInt("max_backups"),
 			})
 			writers = append(writers, w0)
 		}

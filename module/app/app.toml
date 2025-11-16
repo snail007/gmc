@@ -47,6 +47,10 @@ archive_dir=""
 filename="web_%Y%m%d.log"
 gzip=true
 async=true
+# max_backups max backups of log files, 0 no limit
+max_backups=0
+# max_size  max size of log file, example: 1M, 2G, empty no limit.
+max_size=""
 
 #############################################################
 # i18n configuration

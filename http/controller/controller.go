@@ -78,7 +78,7 @@ func (this *Controller) GetConfig() gcore.Config {
 	return this.Config
 }
 
-//MethodCallPre called before controller method and Before() if have.
+// MethodCallPre called before controller method and Before() if have.
 func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 	// 1. init basic objects
 	this.Ctx = ctx
@@ -106,14 +106,15 @@ func (this *Controller) MethodCallPre(ctx gcore.Ctx) {
 
 // initLang parse browser's accept language to i18n lang flag.
 func (this *Controller) initLang() {
-	if this.Config.GetBool("i18n.enable") {
+	i18n := this.Ctx.I18n()
+	if i18n != nil && i18n.LangCount() > 0 {
 		this.Lang = "none"
-		t, e := this.Ctx.I18n().MatchAcceptLanguageT(this.Request)
+		t, e := i18n.MatchAcceptLanguageT(this.Request)
 		if e == nil {
 			this.Lang = t.String()
 			this.View.Set("Lang", this.Lang)
 		}
-		this.I18n = this.Ctx.I18n().Clone(this.Lang)
+		this.I18n = i18n.Clone(this.Lang)
 	}
 }
 
@@ -195,7 +196,7 @@ func (this *Controller) initGPSC() {
 	this.View.SetMap(data)
 }
 
-//MethodCallPost called after controller method and After() if have.
+// MethodCallPost called after controller method and After() if have.
 func (this *Controller) MethodCallPost() {
 	if this.SessionStore != nil && this.Session != nil {
 		if this.Session.IsDestroy() {
@@ -209,17 +210,17 @@ func (this *Controller) MethodCallPost() {
 	}
 }
 
-//Tr translates the key to `this.Lang's` text.
+// Tr translates the key to `this.Lang's` text.
 func (this *Controller) Tr(key string, defaultText ...string) string {
 	return this.I18n.Tr(this.Lang, key, defaultText...)
 }
 
-//Die will prevent to call After() if have, and MethodCallPost()
+// Die will prevent to call After() if have, and MethodCallPost()
 func (this *Controller) Die(msg ...interface{}) {
 	ghttputil.Die(this.Response, msg...)
 }
 
-//Stop will exit controller method at once
+// Stop will exit controller method at once
 func (this *Controller) Stop(msg ...interface{}) {
 	ghttputil.Stop(this.Response, msg...)
 }

@@ -6,9 +6,10 @@
 package gcore
 
 import (
-	"golang.org/x/text/language"
 	"html/template"
 	"net/http"
+
+	"golang.org/x/text/language"
 )
 
 type I18n interface {
@@ -26,5 +27,7 @@ type I18n interface {
 	LanguagesT() (languages []language.Tag, err error)
 	MatchT(languages []language.Tag) (t language.Tag, err error)
 	MatchAcceptLanguageT(r *http.Request) (tag language.Tag, err error)
+	LangDataMap() map[string]map[string]string
+	LangCount() int
 	Clone(lang string) I18n
 }

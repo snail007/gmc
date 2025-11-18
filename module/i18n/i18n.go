@@ -6,11 +6,12 @@
 package gi18n
 
 import (
-	gcore "github.com/snail007/gmc/core"
-	"golang.org/x/text/language"
 	"html/template"
 	"net/http"
 	"strings"
+
+	gcore "github.com/snail007/gmc/core"
+	"golang.org/x/text/language"
 )
 
 type I18n struct {
@@ -30,6 +31,15 @@ func (this *I18n) Clone(lang string) gcore.I18n {
 		fallbackLang: strings.ToLower(lang),
 	}
 }
+
+func (this *I18n) LangDataMap() map[string]map[string]string {
+	return this.langs
+}
+
+func (this *I18n) LangCount() int {
+	return len(this.langs)
+}
+
 func (this *I18n) Add(lang string, data map[string]string) {
 	this.langs[strings.ToLower(lang)] = data
 }

@@ -14,10 +14,6 @@ import (
 	"embed"
 	"encoding/base64"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
-	ghttputil "github.com/snail007/gmc/internal/util/http"
-	"github.com/snail007/gmc/module/log"
-	gfile "github.com/snail007/gmc/util/file"
 	"io"
 	"io/ioutil"
 	"log"
@@ -30,6 +26,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gcore "github.com/snail007/gmc/core"
+	ghttputil "github.com/snail007/gmc/internal/util/http"
+	"github.com/snail007/gmc/module/log"
+	gfile "github.com/snail007/gmc/util/file"
 )
 
 var (
@@ -631,6 +632,8 @@ func serveEmbedFS(router gcore.HTTPRouter, fs embed.FS, urlPath string, filter g
 			notFound(w)
 			return
 		}
+		// embed files will not change, so set long cache time
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, bytes.NewReader(b))
 	})
 }

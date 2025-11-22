@@ -355,6 +355,9 @@ GMC 推荐使用 Go 1.16+ 原生的 `embed` 功能将静态资源和视图模板
 
 关键在于，你需要**显式导入**包含 `embed.FS` 变量的包，并在代码中**直接使用**这些变量。
 
+> **资源打包指南-详细文档：** [资源打包指南](https://github.com/snail007/gmc/blob/master/doc/资源打包指南.md) - 查看三种资源打包的完整说明
+
+
 #### 嵌入静态文件
 
 > **详细文档：** [http/server/README.md](https://github.com/snail007/gmc/blob/master/http/server/README.md) - 查看静态文件服务和嵌入的完整说明

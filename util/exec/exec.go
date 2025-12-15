@@ -5,10 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	gcore "github.com/snail007/gmc/core"
-	gerror "github.com/snail007/gmc/module/error"
-	gfile "github.com/snail007/gmc/util/file"
-	grand "github.com/snail007/gmc/util/rand"
 	"io"
 	"os"
 	"os/exec"
@@ -17,6 +13,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	gcore "github.com/snail007/gmc/core"
+	gerror "github.com/snail007/gmc/module/error"
+	gfile "github.com/snail007/gmc/util/file"
+	grand "github.com/snail007/gmc/util/rand"
 )
 
 type TermType string
@@ -258,6 +259,7 @@ trap cleanup_punaelc EXIT
 	}
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{}
 	s.cmd.Dir = s.workDir
+	s.cmd.Env = os.Environ()
 	env := map[string]string{}
 	for _, v := range os.Environ() {
 		kv := strings.SplitN(v, "=", 2)

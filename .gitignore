@@ -20,3 +20,4 @@ gmcrun.toml
 coverage.txt
 /util/net/coverage.html
 /.serena/
+/.qoder/
